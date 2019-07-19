@@ -9,7 +9,7 @@
 #include "disasm.h"
 #include "glue.h"
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #include "rom_labels.h"
@@ -79,8 +79,11 @@ main(int argc, char **argv)
 			printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 		}
 		printf("\n");
-
 #endif
+		if (pc == 0xffd2) {
+			printf("BSOUT: '%c'\n", a);
+		}
+
 		step6502();
 		instruction_counter++;
 	}

@@ -20,7 +20,9 @@ read6502(uint16_t address)
 void
 write6502(uint16_t address, uint8_t value)
 {
-	RAM[address] = value;
+	if (address < 0xc000) {
+		RAM[address] = value;
+	}
 }
 
 // RAMTAS - Perform RAM test
