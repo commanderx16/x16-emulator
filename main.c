@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "fake6502.h"
+#include "disasm.h"
 #include "glue.h"
 
 #define DEBUG
@@ -46,16 +47,42 @@ main(int argc, char **argv)
 
 	reset6502();
 
+	int instruction_counter = 0;
 	for (;;) {
 #ifdef DEBUG
-		printf("pc = %04x", pc);
+		printf("[%6d] ", instruction_counter);
+
 		char *label = label_for_address(pc);
+		int label_len = label ? strlen(label) : 0;
 		if (label) {
-			printf(" [%s]", label);
+			printf("%s", label);
 		}
-		printf("; %02x %02x %02x, sp=%02x [%02x, %02x, %02x, %02x, %02x]\n", RAM[pc], RAM[pc+1], RAM[pc+2], sp, RAM[0x100 + sp + 1], RAM[0x100 + sp + 2], RAM[0x100 + sp + 3], RAM[0x100 + sp + 4], RAM[0x100 + sp + 5]);
+		for (int i = 0; i < 10 - label_len; i++) {
+			printf(" ");
+		}
+		printf(" .,%04x ", pc);
+		char disasm_line[15];
+		int len = disasm(pc, RAM, disasm_line, sizeof(disasm_line));
+		for (int i = 0; i < len; i++) {
+			printf("%02x ", RAM[pc + i]);
+		}
+		for (int i = 0; i < 9 - 3 * len; i++) {
+			printf(" ");
+		}
+		printf("%s", disasm_line);
+		for (int i = 0; i < 15 - strlen(disasm_line); i++) {
+			printf(" ");
+		}
+
+		printf("a=$%02x x=$%02x y=$%02x s=$%02x p=", a, x, y, sp);
+		for (int i = 7; i >= 0; i--) {
+			printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
+		}
+		printf("\n");
+
 #endif
 		step6502();
+		instruction_counter++;
 	}
 
 	return 0;
