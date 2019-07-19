@@ -92,9 +92,9 @@ main(int argc, char **argv)
 		}
 		printf("\n");
 #endif
-		if (pc == 0xffd2) {
-			printf("BSOUT: '%c'\n", a);
-		}
+//		if (pc == 0xffd2) {
+//			printf("BSOUT: '%c'\n", a);
+//		}
 
 		step6502();
 		instruction_counter++;
