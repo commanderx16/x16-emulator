@@ -1,2 +1,3 @@
 *.o
 x16emu
+rom_labels.h

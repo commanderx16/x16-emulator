@@ -8,6 +8,22 @@
 #include "fake6502.h"
 #include "glue.h"
 
+#define DEBUG
+
+#ifdef DEBUG
+#include "rom_labels.h"
+char *
+label_for_address(uint16_t address)
+{
+	for (int i = 0; i < sizeof(addresses) / sizeof(*addresses); i++) {
+		if (address == addresses[i]) {
+			return labels[i];
+		}
+	}
+	return NULL;
+}
+#endif
+
 int
 main(int argc, char **argv)
 {
@@ -31,7 +47,14 @@ main(int argc, char **argv)
 	reset6502();
 
 	for (;;) {
-		printf("pc = %04x; %02x %02x %02x, sp=%02x [%02x, %02x, %02x, %02x, %02x]\n", pc, RAM[pc], RAM[pc+1], RAM[pc+2], sp, RAM[0x100 + sp + 1], RAM[0x100 + sp + 2], RAM[0x100 + sp + 3], RAM[0x100 + sp + 4], RAM[0x100 + sp + 5]);
+#ifdef DEBUG
+		printf("pc = %04x", pc);
+		char *label = label_for_address(pc);
+		if (label) {
+			printf(" [%s]", label);
+		}
+		printf("; %02x %02x %02x, sp=%02x [%02x, %02x, %02x, %02x, %02x]\n", RAM[pc], RAM[pc+1], RAM[pc+2], sp, RAM[0x100 + sp + 1], RAM[0x100 + sp + 2], RAM[0x100 + sp + 3], RAM[0x100 + sp + 4], RAM[0x100 + sp + 5]);
+#endif
 		step6502();
 	}
 
