@@ -7,9 +7,10 @@
 #include <string.h>
 #include "fake6502.h"
 #include "disasm.h"
+#include "video.h"
 #include "glue.h"
 
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #include "rom_labels.h"
@@ -44,6 +45,8 @@ main(int argc, char **argv)
 	fclose(f);
 	memcpy(RAM + 65536 - rom_size, rom, rom_size);
 	free(rom);
+
+	video_init();
 
 	reset6502();
 
@@ -86,7 +89,15 @@ main(int argc, char **argv)
 
 		step6502();
 		instruction_counter++;
+
+		if (instruction_counter % 20000 == 0) {
+			if (!video_update()) {
+				break;
+			}
+		}
 	}
+
+	video_end();
 
 	return 0;
 }
