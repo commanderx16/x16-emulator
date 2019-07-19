@@ -10,7 +10,7 @@
 #include "video.h"
 #include "glue.h"
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #include "rom_labels.h"
@@ -29,8 +29,8 @@ label_for_address(uint16_t address)
 int
 main(int argc, char **argv)
 {
-	if (argc < 2) {
-		printf("Usage: %s <rom.bin>\n", argv[0]);
+	if (argc < 3) {
+		printf("Usage: %s <rom.bin> <chargen.bin>\n", argv[0]);
 		exit(1);
 	}
 
@@ -46,7 +46,16 @@ main(int argc, char **argv)
 	memcpy(RAM + 65536 - rom_size, rom, rom_size);
 	free(rom);
 
-	video_init();
+	f = fopen(argv[2], "r");
+	if (!f) {
+		printf("Cannot open %s!\n", argv[2]);
+		exit(1);
+	}
+	uint8_t chargen[4096];
+	fread(chargen, 1, sizeof(chargen), f);
+	fclose(f);
+
+	video_init(chargen);
 
 	reset6502();
 
