@@ -11,4 +11,7 @@ void video_end(void);
 uint8_t video_read(uint8_t reg);
 void video_write(uint8_t reg, uint8_t value);
 
+uint8_t via1_read(uint8_t reg);
+void via1_write(uint8_t reg, uint8_t value);
+
 #endif

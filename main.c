@@ -105,7 +105,7 @@ main(int argc, char **argv)
 				break;
 			}
 			usleep(20000);
-			printf("IRQ!\n");
+//			printf("IRQ!\n");
 			irq6502();
 		}
 	}

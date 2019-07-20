@@ -26,8 +26,7 @@ read6502(uint16_t address)
 			// TODO: character LCD
 			return 0;
 		} else if (address >= 0x9f60 && address < 0x9f70) {
-			// TODO: VIA #1
-			return 0;
+			return via1_read(address & 0xf);
 		} else if (address >= 0x9f70 && address < 0x9f80) {
 			// TODO: VIA #2
 			return 0;
@@ -56,7 +55,7 @@ write6502(uint16_t address, uint8_t value)
 		} else if (address >= 0x9f40 && address < 0x9f60) {
 			// TODO: character LCD
 		} else if (address >= 0x9f60 && address < 0x9f70) {
-			// TODO: VIA #1
+			via1_write(address & 7, value);
 		} else if (address >= 0x9f70 && address < 0x9f80) {
 			// TODO: VIA #2
 		} else if (address >= 0x9f80 && address < 0x9fa0) {
