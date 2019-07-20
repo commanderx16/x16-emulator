@@ -5,6 +5,7 @@
 #define SCREEN_HEIGHT 200
 
 #define CHARGEN_OFFSET 0x20000
+#define PALETTE_OFFSET 0x40200
 
 static SDL_Window *window;
 static SDL_Renderer *renderer;
@@ -14,12 +15,36 @@ static uint8_t video_ram[0x40400];
 static uint8_t registers[8];
 static uint8_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT * 4];
 
+static const uint8_t palette[] = { // colodore
+	0x00, 0x00, 0x00,
+	0xff, 0xff, 0xff,
+	0x81, 0x33, 0x38,
+	0x75, 0xce, 0xc8,
+	0x8e, 0x3c, 0x97,
+	0x56, 0xac, 0x4d,
+	0x2e, 0x2c, 0x9b,
+	0xed, 0xf1, 0x71,
+	0x8e, 0x50, 0x29,
+	0x55, 0x38, 0x00,
+	0xc4, 0x6c, 0x71,
+	0x4a, 0x4a, 0x4a,
+	0x7b, 0x7b, 0x7b,
+	0xa9, 0xff, 0x9f,
+	0x70, 0x6d, 0xeb,
+	0xb2, 0xb2, 0xb2,
+};
+
 bool
 video_init(uint8_t *chargen)
 {
+	// init registers
+	memset(registers, 0, sizeof(registers));
+
+	// copy chargen into video RAM
 	memcpy(&video_ram[CHARGEN_OFFSET], chargen, 4096);
 
-	memset(registers, 0, sizeof(registers));
+	// init palette
+	memcpy(&video_ram[PALETTE_OFFSET], palette, sizeof(palette));
 
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &window, &renderer);
@@ -37,20 +62,22 @@ video_update()
 {
 	for (int y = 0; y < SCREEN_HEIGHT; y++) {
 		for (int x = 0; x < SCREEN_WIDTH; x++) {
-			uint8_t c = video_ram[0x400 + y / 8 * 40 + x / 8];
+			uint32_t addr = 0x400 + (y / 8 * 40 + x / 8) * 2;
+			uint8_t ch = video_ram[addr];
+			uint8_t col = video_ram[addr + 1];
 			int xx = x % 8;
 			int yy = y % 8;
-			uint8_t s = video_ram[CHARGEN_OFFSET + c * 8 + yy];
-			uint8_t r, g, b;
+			uint8_t s = video_ram[CHARGEN_OFFSET + ch * 8 + yy];
+			uint32_t palette_addr;
 			if (s & (1 << (7 - xx))) {
-				r = 255; g = 255; b = 255;
+				palette_addr = PALETTE_OFFSET + (col & 15) * 3;
 			} else {
-				r = 0; g = 0; b = 0;
+				palette_addr = PALETTE_OFFSET + (col >> 4) * 3;
 			}
 			int fbi = (y * SCREEN_WIDTH + x) * 4;
-			framebuffer[fbi + 0] = r;
-			framebuffer[fbi + 1] = g;
-			framebuffer[fbi + 2] = b;
+			framebuffer[fbi + 2] = video_ram[palette_addr + 0];
+			framebuffer[fbi + 1] = video_ram[palette_addr + 1];
+			framebuffer[fbi + 0] = video_ram[palette_addr + 2];
 		}
 	}
 

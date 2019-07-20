@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "fake6502.h"
 #include "disasm.h"
 #include "video.h"
@@ -92,9 +93,9 @@ main(int argc, char **argv)
 		}
 		printf("\n");
 #endif
-//		if (pc == 0xffd2) {
-//			printf("BSOUT: '%c'\n", a);
-//		}
+		if (pc == 0xffd2) {
+			printf("BSOUT: '%c'\n", a);
+		}
 
 		step6502();
 		instruction_counter++;
@@ -103,6 +104,9 @@ main(int argc, char **argv)
 			if (!video_update()) {
 				break;
 			}
+			usleep(20000);
+			printf("IRQ!\n");
+			irq6502();
 		}
 	}
 

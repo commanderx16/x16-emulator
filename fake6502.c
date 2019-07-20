@@ -915,7 +915,7 @@ void nmi6502() {
 
 void irq6502() {
     push16(pc);
-    push8(status);
+    push8(status & ~FLAG_BREAK);
     status |= FLAG_INTERRUPT;
     pc = (uint16_t)read6502(0xFFFE) | ((uint16_t)read6502(0xFFFF) << 8);
 }
