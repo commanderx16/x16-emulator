@@ -261,6 +261,14 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 			return 0x59;
 		case SDLK_LSHIFT:
 			return 0x12;
+		case SDLK_LCTRL:
+			return 0x14;
+		case SDLK_RCTRL:
+			return 0x14 | 0x80;
+		case SDLK_LALT:
+			return 0x11;
+		case SDLK_LGUI: // Windows/Command
+			return 0x5b | 0x80;
 		default:
 			return 0;
 	}
@@ -399,7 +407,9 @@ via1_read(uint8_t reg)
 {
 	if (reg == 0) { // PORT B: fake scan code for now
 		uint8_t code = kbd_buffer_remove();
-//		printf("VIA1PB: $%02x\n", code);
+		if (code) {
+//			printf("VIA1PB: $%02x\n", code);
+		}
 		return code;
 	} else {
 		return 0;
