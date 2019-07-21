@@ -92,7 +92,7 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 		case SDLK_AMPERSAND:
 			return 0x3d;
 		case SDLK_QUOTE:
-			return 0;
+			return 0x52;
 		case SDLK_LEFTPAREN:
 			return 0x46;
 		case SDLK_RIGHTPAREN:
@@ -210,17 +210,17 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 		case SDLK_DELETE:
 			return 0;
 		case SDLK_UP:
-			return 0;
+			return 0x75 | 0x80;
 		case SDLK_DOWN:
-			return 0;
+			return 0x72 | 0x80;
 		case SDLK_RIGHT:
-			return 0;
+			return 0x74 | 0x80;
 		case SDLK_LEFT:
-			return 0;
+			return 0x6b | 0x80;
 		case SDLK_INSERT:
 			return 0;
 		case SDLK_HOME:
-			return 0;
+			return 0x6c | 0x80;
 		case SDLK_END:
 			return 0;
 		case SDLK_PAGEUP:
@@ -329,7 +329,11 @@ video_update()
 				return false;
 			} else {
 				printf("DOWN 0x%02x\n", event.key.keysym.sym);
-				kbd_buffer_add(ps2_scancode_from_SDLKey(event.key.keysym.sym));
+				int scancode = ps2_scancode_from_SDLKey(event.key.keysym.sym);
+				if (scancode & 0x80) {
+					kbd_buffer_add(0xe0);
+				}
+				kbd_buffer_add(scancode & 0x7f);
 				return true;
 			}
 		}
