@@ -11,6 +11,8 @@
 #include "video.h"
 #include "glue.h"
 
+#define MHZ 8
+
 //#define DEBUG
 
 #ifdef DEBUG
@@ -93,9 +95,9 @@ main(int argc, char **argv)
 		}
 		printf("\n");
 #endif
-		if (pc == 0xffd2) {
-			printf("BSOUT: '%c'\n", a);
-		}
+//		if (pc == 0xffd2) {
+//			printf("BSOUT: '%c'\n", a);
+//		}
 
 		step6502();
 		instruction_counter++;
@@ -109,7 +111,7 @@ main(int argc, char **argv)
 		}
 #endif
 
-		if (instruction_counter % 20000 == 0) {
+		if (instruction_counter % (20000 * MHZ) == 0) {
 			if (!video_update()) {
 				break;
 			}

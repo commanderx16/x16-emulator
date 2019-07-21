@@ -328,7 +328,7 @@ video_update()
 			if (event.key.keysym.sym == SDLK_ESCAPE) {
 				return false;
 			} else {
-				printf("DOWN 0x%02x\n", event.key.keysym.sym);
+//				printf("DOWN 0x%02x\n", event.key.keysym.sym);
 				int scancode = ps2_scancode_from_SDLKey(event.key.keysym.sym);
 				if (scancode & 0x80) {
 					kbd_buffer_add(0xe0);
@@ -338,13 +338,10 @@ video_update()
 			}
 		}
 		if (event.type == SDL_KEYUP) {
-			printf("UP   0x%02x\n", event.key.keysym.sym);
+//			printf("UP   0x%02x\n", event.key.keysym.sym);
 			kbd_buffer_add(0xf0); // BREAK
 			kbd_buffer_add(ps2_scancode_from_SDLKey(event.key.keysym.sym));
 			return true;
-		}
-		if (event.type == SDL_MOUSEBUTTONDOWN) {
-			return false;
 		}
 	}
 	return true;
