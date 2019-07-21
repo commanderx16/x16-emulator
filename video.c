@@ -4,8 +4,9 @@
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 200
 
-#define CHARGEN_OFFSET 0x20000
-#define PALETTE_OFFSET 0x40200
+#define SCREEN_RAM_OFFSET 0x00000
+#define CHARGEN_OFFSET    0x20000
+#define PALETTE_OFFSET    0x40200
 
 static SDL_Window *window;
 static SDL_Renderer *renderer;
@@ -294,7 +295,7 @@ video_update()
 {
 	for (int y = 0; y < SCREEN_HEIGHT; y++) {
 		for (int x = 0; x < SCREEN_WIDTH; x++) {
-			uint32_t addr = 0x400 + (y / 8 * 40 + x / 8) * 2;
+			uint32_t addr = SCREEN_RAM_OFFSET + (y / 8 * 40 + x / 8) * 2;
 			uint8_t ch = video_ram[addr];
 			uint8_t col = video_ram[addr + 1];
 			int xx = x % 8;
@@ -371,7 +372,9 @@ uint8_t
 video_read(uint8_t reg)
 {
 	if (reg == 3) {
-		return video_ram[get_and_inc_address()];
+		uint32_t address = get_and_inc_address();
+//		printf("READ  video_ram[$%x] = $%02x\n", address, video_ram[address]);
+		return video_ram[address];
 	} else {
 		return registers[reg];
 	}
@@ -382,7 +385,9 @@ video_write(uint8_t reg, uint8_t value)
 {
 //	printf("registers[%d] = $%02x\n", reg, value);
 	if (reg == 3) {
-		video_ram[get_and_inc_address()] = value;
+		uint32_t address = get_and_inc_address();
+//		printf("WRITE video_ram[$%x] = $%02x\n", address, value);
+		video_ram[address] = value;
 	} else {
 		registers[reg] = value;
 	}

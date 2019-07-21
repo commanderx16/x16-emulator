@@ -100,6 +100,15 @@ main(int argc, char **argv)
 		step6502();
 		instruction_counter++;
 
+#if 0
+		if (instruction_counter == 1778) {
+			for (int i = 0; i < 25; i++) {
+				printf("%02x ", RAM[0xd9 +i]);
+			}
+			printf("\n");
+		}
+#endif
+
 		if (instruction_counter % 20000 == 0) {
 			if (!video_update()) {
 				break;
