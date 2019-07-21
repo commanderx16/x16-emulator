@@ -1,8 +1,8 @@
 #include "video.h"
 #include "glue.h"
 
-#define SCREEN_WIDTH 320
-#define SCREEN_HEIGHT 200
+#define SCREEN_WIDTH 640
+#define SCREEN_HEIGHT 480
 
 #define SCREEN_RAM_OFFSET 0x00000
 #define CHARGEN_OFFSET    0x20000
@@ -295,7 +295,7 @@ video_update()
 {
 	for (int y = 0; y < SCREEN_HEIGHT; y++) {
 		for (int x = 0; x < SCREEN_WIDTH; x++) {
-			uint32_t addr = SCREEN_RAM_OFFSET + (y / 8 * 40 + x / 8) * 2;
+			uint32_t addr = SCREEN_RAM_OFFSET + (y / 8 * SCREEN_WIDTH / 8 + x / 8) * 2;
 			uint8_t ch = video_ram[addr];
 			uint8_t col = video_ram[addr + 1];
 			int xx = x % 8;
