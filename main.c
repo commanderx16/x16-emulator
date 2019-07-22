@@ -33,7 +33,7 @@ int
 main(int argc, char **argv)
 {
 	if (argc < 3) {
-		printf("Usage: %s <rom.bin> <chargen.bin>\n", argv[0]);
+		printf("Usage: %s <rom.bin> <chargen.bin> [<app.prg>]\n", argv[0]);
 		exit(1);
 	}
 
@@ -57,6 +57,19 @@ main(int argc, char **argv)
 	uint8_t chargen[4096];
 	fread(chargen, 1, sizeof(chargen), f);
 	fclose(f);
+
+	if (argc == 4) {
+		f = fopen(argv[3], "r");
+		if (!f) {
+			printf("Cannot open %s!\n", argv[3]);
+			exit(1);
+		}
+		uint8_t start_lo = fgetc(f);
+		uint8_t start_hi = fgetc(f);
+		uint16_t start = start_hi << 8 | start_lo;
+		fread(RAM + start, 1, 65536-start, f);
+		fclose(f);
+	}
 
 	video_init(chargen);
 
