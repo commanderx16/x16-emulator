@@ -228,21 +228,21 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 		case SDLK_PAGEDOWN:
 			return 0;
 		case SDLK_F1:
-			return 0;
+			return 0x05;
 		case SDLK_F2:
-			return 0;
+			return 0x06;
 		case SDLK_F3:
-			return 0;
+			return 0x04;
 		case SDLK_F4:
-			return 0;
+			return 0x0c;
 		case SDLK_F5:
-			return 0;
+			return 0x03;
 		case SDLK_F6:
-			return 0;
+			return 0x0b;
 		case SDLK_F7:
-			return 0;
+			return 0x83;
 		case SDLK_F8:
-			return 0;
+			return 0x0a;
 		case SDLK_F9:
 			return 0;
 		case SDLK_F10:
