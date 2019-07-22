@@ -240,7 +240,7 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 		case SDLK_F6:
 			return 0x0b;
 		case SDLK_F7:
-			return 0x83;
+			return 0x83; // XXX the MSB clashes with the "extended" flag!
 		case SDLK_F8:
 			return 0x0a;
 		case SDLK_F9:
@@ -333,17 +333,13 @@ video_update()
 			return false;
 		}
 		if (event.type == SDL_KEYDOWN) {
-			if (event.key.keysym.sym == SDLK_ESCAPE) {
-				return false;
-			} else {
-//				printf("DOWN 0x%02x\n", event.key.keysym.sym);
-				int scancode = ps2_scancode_from_SDLKey(event.key.keysym.sym);
-				if (scancode & 0x80) {
-					kbd_buffer_add(0xe0);
-				}
-				kbd_buffer_add(scancode & 0x7f);
-				return true;
+//			printf("DOWN 0x%02x\n", event.key.keysym.sym);
+			int scancode = ps2_scancode_from_SDLKey(event.key.keysym.sym);
+			if (scancode & 0x80) {
+				kbd_buffer_add(0xe0);
 			}
+			kbd_buffer_add(scancode & 0x7f);
+			return true;
 		}
 		if (event.type == SDL_KEYUP) {
 //			printf("UP   0x%02x\n", event.key.keysym.sym);
