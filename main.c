@@ -58,17 +58,13 @@ main(int argc, char **argv)
 	fread(chargen, 1, sizeof(chargen), f);
 	fclose(f);
 
+	FILE *prg_file = NULL;
 	if (argc == 4) {
-		f = fopen(argv[3], "r");
-		if (!f) {
+		prg_file = fopen(argv[3], "r");
+		if (!prg_file) {
 			printf("Cannot open %s!\n", argv[3]);
 			exit(1);
 		}
-		uint8_t start_lo = fgetc(f);
-		uint8_t start_hi = fgetc(f);
-		uint16_t start = start_hi << 8 | start_lo;
-		fread(RAM + start, 1, 65536-start, f);
-		fclose(f);
 	}
 
 	video_init(chargen);
@@ -131,6 +127,17 @@ main(int argc, char **argv)
 			usleep(20000);
 //			printf("IRQ!\n");
 			irq6502();
+		}
+
+		if (pc == 0xffcf && prg_file) {
+			// as soon as BASIC starts reading a line,
+			// inject the app
+			uint8_t start_lo = fgetc(prg_file);
+			uint8_t start_hi = fgetc(prg_file);
+			uint16_t start = start_hi << 8 | start_lo;
+			fread(RAM + start, 1, 65536-start, prg_file);
+			fclose(prg_file);
+			prg_file = NULL;
 		}
 	}
 
