@@ -1,4 +1,5 @@
 #include "video.h"
+#include "memory.h"
 #include "glue.h"
 
 #define SCREEN_WIDTH 640
@@ -267,8 +268,8 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 			return 0x14 | 0x80;
 		case SDLK_LALT:
 			return 0x11;
-		case SDLK_LGUI: // Windows/Command
-			return 0x5b | 0x80;
+//		case SDLK_LGUI: // Windows/Command
+//			return 0x5b | 0x80;
 		default:
 			return 0;
 	}
@@ -327,24 +328,35 @@ video_update()
 	SDL_RenderCopy(renderer, sdlTexture, NULL, NULL);
 	SDL_RenderPresent(renderer);
 
+	static bool cmd_down = false;
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_QUIT) {
 			return false;
 		}
 		if (event.type == SDL_KEYDOWN) {
-//			printf("DOWN 0x%02x\n", event.key.keysym.sym);
-			int scancode = ps2_scancode_from_SDLKey(event.key.keysym.sym);
-			if (scancode & 0x80) {
-				kbd_buffer_add(0xe0);
+			if (event.key.keysym.sym == SDLK_LGUI) { // Windows/Command
+				cmd_down = true;
+			} else if (cmd_down && event.key.keysym.sym == SDLK_s) {
+				memory_save();
+			} else {
+	//			printf("DOWN 0x%02x\n", event.key.keysym.sym);
+				int scancode = ps2_scancode_from_SDLKey(event.key.keysym.sym);
+				if (scancode & 0x80) {
+					kbd_buffer_add(0xe0);
+				}
+				kbd_buffer_add(scancode & 0x7f);
 			}
-			kbd_buffer_add(scancode & 0x7f);
 			return true;
 		}
 		if (event.type == SDL_KEYUP) {
-//			printf("UP   0x%02x\n", event.key.keysym.sym);
-			kbd_buffer_add(0xf0); // BREAK
-			kbd_buffer_add(ps2_scancode_from_SDLKey(event.key.keysym.sym));
+			if (event.key.keysym.sym == SDLK_LGUI) { // Windows/Command
+				cmd_down = false;
+			} else {
+	//			printf("UP   0x%02x\n", event.key.keysym.sym);
+				kbd_buffer_add(0xf0); // BREAK
+				kbd_buffer_add(ps2_scancode_from_SDLKey(event.key.keysym.sym));
+			}
 			return true;
 		}
 	}

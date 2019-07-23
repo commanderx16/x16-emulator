@@ -1,3 +1,1 @@
-void RAMTAS();
-void MEMTOP();
-void MEMBOT();
+void memory_save();

@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <string.h>
+#include <unistd.h>
 #include "glue.h"
 #include "memory.h"
 #include "video.h"
@@ -64,4 +65,30 @@ write6502(uint16_t address, uint8_t value)
 			// future expansion
 		}
 	}
+}
+
+void
+memory_save()
+{
+	int index = 0;
+	char filename[20];
+	for (;;) {
+		if (!index) {
+			strcpy(filename, "memory.bin");
+		} else {
+			sprintf(filename, "memory-%i.bin", index);
+		}
+		if (access(filename, F_OK) == -1) {
+			break;
+		}
+		index++;
+	}
+	FILE *f = fopen(filename, "w");
+	if (!f) {
+		printf("Cannot write to %s!\n", filename);
+		return;
+	}
+	fwrite(RAM, 65536, 1, f);
+	fclose(f);
+	printf("Saved memory contents to %s.\n", filename);
 }
