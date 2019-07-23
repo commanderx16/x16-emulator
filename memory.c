@@ -30,8 +30,7 @@ read6502(uint16_t address)
 		} else if (address >= 0x9f60 && address < 0x9f70) {
 			return via1_read(address & 0xf);
 		} else if (address >= 0x9f70 && address < 0x9f80) {
-			// TODO: VIA #2
-			return 0;
+			return via2_read(address & 0xf);
 		} else if (address >= 0x9f80 && address < 0x9fa0) {
 			// TODO: RTC
 			return 0;
@@ -59,7 +58,7 @@ write6502(uint16_t address, uint8_t value)
 		} else if (address >= 0x9f60 && address < 0x9f70) {
 			via1_write(address & 7, value);
 		} else if (address >= 0x9f70 && address < 0x9f80) {
-			// TODO: VIA #2
+			via2_write(address & 7, value);
 		} else if (address >= 0x9f80 && address < 0x9fa0) {
 			// TODO: RTC
 		} else {
