@@ -2,6 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "glue.h"
+#include "via.h"
 #include "memory.h"
 #include "video.h"
 

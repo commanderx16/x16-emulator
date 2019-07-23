@@ -1,5 +1,6 @@
 #include "video.h"
 #include "memory.h"
+#include "ps2.h"
 #include "glue.h"
 
 #define SCREEN_WIDTH 640
@@ -19,11 +20,6 @@ static uint8_t ioregisters[8];
 static uint8_t l1registers[16];
 
 static uint8_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT * 4];
-
-#define KBD_BUFFER_SIZE 32
-uint8_t kbd_buffer[KBD_BUFFER_SIZE];
-uint8_t kbd_buffer_read = 0;
-uint8_t kbd_buffer_write = 0;
 
 static const uint8_t c64_palette[] = { // colodore
 	0x00, 0x00, 0x00,
@@ -301,30 +297,6 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 	}
 }
 
-void
-kbd_buffer_add(uint8_t code)
-{
-	if ((kbd_buffer_write + 1) % KBD_BUFFER_SIZE == kbd_buffer_read) {
-		// buffer full
-		return;
-	}
-
-	kbd_buffer[kbd_buffer_write] = code;
-	kbd_buffer_write = (kbd_buffer_write + 1) % KBD_BUFFER_SIZE;
-}
-
-uint8_t
-kbd_buffer_remove()
-{
-	if (kbd_buffer_read == kbd_buffer_write) {
-		return 0; // empty
-	} else {
-		uint8_t code = kbd_buffer[kbd_buffer_read];
-		kbd_buffer_read = (kbd_buffer_read + 1) % KBD_BUFFER_SIZE;
-		return code;
-	}
-}
-
 bool
 video_update()
 {
@@ -501,28 +473,4 @@ video_write(uint8_t reg, uint8_t value)
 	} else {
 		ioregisters[reg] = value;
 	}
-}
-
-//
-// VIA#1
-//
-
-uint8_t
-via1_read(uint8_t reg)
-{
-	if (reg == 0) { // PORT B: fake scan code for now
-		uint8_t code = kbd_buffer_remove();
-		if (code) {
-//			printf("VIA1PB: $%02x\n", code);
-		}
-		return code;
-	} else {
-		return 0;
-	}
-}
-
-void
-via1_write(uint8_t reg, uint8_t value)
-{
-	// TODO
 }
