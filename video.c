@@ -15,7 +15,9 @@ static uint8_t video_ram[0x20000];
 static uint8_t chargen_rom[4096];
 static uint8_t palette[256 * 2];
 
-static uint8_t registers[8];
+static uint8_t ioregisters[8];
+static uint8_t l1registers[16];
+
 static uint8_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT * 4];
 
 #define KBD_BUFFER_SIZE 32
@@ -42,16 +44,25 @@ static const uint8_t c64_palette[] = { // colodore
 	0xb2, 0xb2, 0xb2,
 };
 
+static uint8_t video_ram_read(uint32_t address);
+
 bool
 video_init(uint8_t *in_chargen)
 {
-	// init registers
-	memset(registers, 0, sizeof(registers));
+	// init I/O registers
+	memset(ioregisters, 0, sizeof(ioregisters));
+
+	// init Layer 1 registers
+	memset(l1registers, 0, sizeof(l1registers));
+	uint32_t tile_base = 0x20000;
+	l1registers[3] = tile_base >> 2;
+	l1registers[4] = tile_base >> 10;
 
 	// copy chargen into video RAM
 	memcpy(chargen_rom, in_chargen, sizeof(chargen_rom));
 
 	// init palette
+	// 0-15: C64 colors
 	for (int i = 0; i < 16; i++) {
 		uint8_t r = c64_palette[i * 3 + 0] >> 4;
 		uint8_t g = c64_palette[i * 3 + 1] >> 4;
@@ -60,6 +71,13 @@ video_init(uint8_t *in_chargen)
 		palette[i * 2 + 0] = entry & 0xff;
 		palette[i * 2 + 1] = entry >> 8;
 	}
+	// 16-31: grayscale ramp
+	for (int i = 0; i < 16; i++) {
+		uint16_t entry = i << 8 | i << 4 | i;
+		palette[(i + 16) * 2 + 0] = entry & 0xff;
+		palette[(i + 16)* 2 + 1] = entry >> 8;
+	}
+	// 32-255: TODO
 
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &window, &renderer);
@@ -310,14 +328,17 @@ kbd_buffer_remove()
 bool
 video_update()
 {
+	uint32_t map_base = l1registers[1] << 2 | l1registers[2] << 10;
+	uint32_t tile_base = l1registers[3] << 2 | l1registers[4] << 10;
+
 	for (int y = 0; y < SCREEN_HEIGHT; y++) {
 		for (int x = 0; x < SCREEN_WIDTH; x++) {
-			uint32_t addr = SCREEN_RAM_OFFSET + (y / 8 * SCREEN_WIDTH / 8 + x / 8) * 2;
-			uint8_t ch = video_ram[addr];
-			uint8_t col = video_ram[addr + 1];
+			uint32_t addr = map_base + (y / 8 * SCREEN_WIDTH / 8 + x / 8) * 2;
+			uint8_t ch = video_ram_read(addr);
+			uint8_t col = video_ram_read(addr + 1);
 			int xx = x % 8;
 			int yy = y % 8;
-			uint8_t s = chargen_rom[ch * 8 + yy];
+			uint8_t s = video_ram_read(tile_base + ch * 8 + yy);
 			if (s & (1 << (7 - xx))) {
 				col &= 15;
 			} else {
@@ -384,11 +405,11 @@ video_end()
 uint32_t
 get_and_inc_address()
 {
-	uint32_t address = ((uint32_t)(registers[0] & 7)) << 16 | registers[1] << 8 | registers[2];
-	uint32_t new_address = address + (registers[0] >> 4);
-	registers[0] = (registers[0] & 0xf0) | ((new_address >> 16) & 0x0f);
-	registers[1] = (new_address >> 8) & 0xff;
-	registers[2] = new_address & 0xff;
+	uint32_t address = ((uint32_t)(ioregisters[0] & 7)) << 16 | ioregisters[1] << 8 | ioregisters[2];
+	uint32_t new_address = address + (ioregisters[0] >> 4);
+	ioregisters[0] = (ioregisters[0] & 0xf0) | ((new_address >> 16) & 0x0f);
+	ioregisters[1] = (new_address >> 8) & 0xff;
+	ioregisters[2] = new_address & 0xff;
 //	printf("address = %06x, new = %06x\n", address, new_address);
 	return address;
 }
@@ -398,16 +419,15 @@ get_and_inc_address()
 //
 
 static uint8_t
-video_reg_read(uint8_t reg)
+video_l1_reg_read(uint8_t reg)
 {
-	printf("XXX reading from video reg %d\n", reg);
-	return 0;
+	return l1registers[reg];
 }
 
 void
-video_reg_write(uint8_t reg, uint8_t value)
+video_l1_reg_write(uint8_t reg, uint8_t value)
 {
-	printf("XXX writing to video reg %d\n", reg);
+	l1registers[reg] = value;
 }
 
 //
@@ -424,7 +444,7 @@ video_ram_read(uint32_t address)
 	} else if (address < 0x40000) {
 		return 0xFF; // unassigned
 	} else if (address < 0x40010) {
-		return video_reg_read(address & 0xf);
+		return video_l1_reg_read(address & 0xf);
 	} else if (address < 0x40200) {
 		return 0xFF; // unassigned
 	} else if (address < 0x40400) {
@@ -444,7 +464,7 @@ video_ram_write(uint32_t address, uint8_t value)
 	} else if (address < 0x40000) {
 		// unassigned, do nothing
 	} else if (address < 0x40010) {
-		video_reg_write(address & 0xf, value);
+		video_l1_reg_write(address & 0xf, value);
 	} else if (address < 0x40200) {
 		// unassigned, do nothing
 	} else if (address < 0x40400) {
@@ -466,20 +486,20 @@ video_read(uint8_t reg)
 //		printf("READ  video_ram[$%x] = $%02x\n", address, video_ram[address]);
 		return video_ram_read(address);
 	} else {
-		return registers[reg];
+		return ioregisters[reg];
 	}
 }
 
 void
 video_write(uint8_t reg, uint8_t value)
 {
-//	printf("registers[%d] = $%02x\n", reg, value);
+//	printf("ioregisters[%d] = $%02x\n", reg, value);
 	if (reg == 3) {
 		uint32_t address = get_and_inc_address();
 //		printf("WRITE video_ram[$%x] = $%02x\n", address, value);
 		video_ram_write(address, value);
 	} else {
-		registers[reg] = value;
+		ioregisters[reg] = value;
 	}
 }
 
