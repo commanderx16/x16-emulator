@@ -13,7 +13,7 @@ static SDL_Texture *sdlTexture;
 
 static uint8_t video_ram[0x20000];
 static uint8_t chargen_rom[4096];
-static uint8_t palette[256 * 3];
+static uint8_t palette[256 * 2];
 
 static uint8_t registers[8];
 static uint8_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT * 4];
@@ -23,7 +23,7 @@ uint8_t kbd_buffer[KBD_BUFFER_SIZE];
 uint8_t kbd_buffer_read = 0;
 uint8_t kbd_buffer_write = 0;
 
-static const uint8_t default_palette[] = { // colodore
+static const uint8_t c64_palette[] = { // colodore
 	0x00, 0x00, 0x00,
 	0xff, 0xff, 0xff,
 	0x81, 0x33, 0x38,
@@ -52,7 +52,14 @@ video_init(uint8_t *in_chargen)
 	memcpy(chargen_rom, in_chargen, sizeof(chargen_rom));
 
 	// init palette
-	memcpy(palette, default_palette, sizeof(default_palette));
+	for (int i = 0; i < 16; i++) {
+		uint8_t r = c64_palette[i * 3 + 0] >> 4;
+		uint8_t g = c64_palette[i * 3 + 1] >> 4;
+		uint8_t b = c64_palette[i * 3 + 2] >> 4;
+		uint16_t entry = r << 8 | g << 4 | b;
+		palette[i * 2 + 0] = entry & 0xff;
+		palette[i * 2 + 1] = entry >> 8;
+	}
 
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &window, &renderer);
@@ -311,16 +318,16 @@ video_update()
 			int xx = x % 8;
 			int yy = y % 8;
 			uint8_t s = chargen_rom[ch * 8 + yy];
-			uint32_t palette_addr;
 			if (s & (1 << (7 - xx))) {
-				palette_addr = (col & 15) * 3;
+				col &= 15;
 			} else {
-				palette_addr = (col >> 4) * 3;
+				col >>= 4;
 			}
+			uint16_t entry = palette[col * 2] | palette[col * 2 + 1] << 8;
 			int fbi = (y * SCREEN_WIDTH + x) * 4;
-			framebuffer[fbi + 2] = palette[palette_addr + 0];
-			framebuffer[fbi + 1] = palette[palette_addr + 1];
-			framebuffer[fbi + 0] = palette[palette_addr + 2];
+			framebuffer[fbi + 0] = (entry & 0xf) << 4;
+			framebuffer[fbi + 1] = ((entry >> 4) & 0xf) << 4;
+			framebuffer[fbi + 2] = ((entry >> 8) & 0xf) << 4;
 		}
 	}
 
