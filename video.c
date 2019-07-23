@@ -6,14 +6,15 @@
 #define SCREEN_HEIGHT 480
 
 #define SCREEN_RAM_OFFSET 0x00000
-#define CHARGEN_OFFSET    0x20000
-#define PALETTE_OFFSET    0x40200
 
 static SDL_Window *window;
 static SDL_Renderer *renderer;
 static SDL_Texture *sdlTexture;
 
-static uint8_t video_ram[0x40400];
+static uint8_t video_ram[0x20000];
+static uint8_t chargen_rom[4096];
+static uint8_t palette[256 * 3];
+
 static uint8_t registers[8];
 static uint8_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT * 4];
 
@@ -22,7 +23,7 @@ uint8_t kbd_buffer[KBD_BUFFER_SIZE];
 uint8_t kbd_buffer_read = 0;
 uint8_t kbd_buffer_write = 0;
 
-static const uint8_t palette[] = { // colodore
+static const uint8_t default_palette[] = { // colodore
 	0x00, 0x00, 0x00,
 	0xff, 0xff, 0xff,
 	0x81, 0x33, 0x38,
@@ -42,16 +43,16 @@ static const uint8_t palette[] = { // colodore
 };
 
 bool
-video_init(uint8_t *chargen)
+video_init(uint8_t *in_chargen)
 {
 	// init registers
 	memset(registers, 0, sizeof(registers));
 
 	// copy chargen into video RAM
-	memcpy(&video_ram[CHARGEN_OFFSET], chargen, 4096);
+	memcpy(chargen_rom, in_chargen, sizeof(chargen_rom));
 
 	// init palette
-	memcpy(&video_ram[PALETTE_OFFSET], palette, sizeof(palette));
+	memcpy(palette, default_palette, sizeof(default_palette));
 
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &window, &renderer);
@@ -309,17 +310,17 @@ video_update()
 			uint8_t col = video_ram[addr + 1];
 			int xx = x % 8;
 			int yy = y % 8;
-			uint8_t s = video_ram[CHARGEN_OFFSET + ch * 8 + yy];
+			uint8_t s = chargen_rom[ch * 8 + yy];
 			uint32_t palette_addr;
 			if (s & (1 << (7 - xx))) {
-				palette_addr = PALETTE_OFFSET + (col & 15) * 3;
+				palette_addr = (col & 15) * 3;
 			} else {
-				palette_addr = PALETTE_OFFSET + (col >> 4) * 3;
+				palette_addr = (col >> 4) * 3;
 			}
 			int fbi = (y * SCREEN_WIDTH + x) * 4;
-			framebuffer[fbi + 2] = video_ram[palette_addr + 0];
-			framebuffer[fbi + 1] = video_ram[palette_addr + 1];
-			framebuffer[fbi + 0] = video_ram[palette_addr + 2];
+			framebuffer[fbi + 2] = palette[palette_addr + 0];
+			framebuffer[fbi + 1] = palette[palette_addr + 1];
+			framebuffer[fbi + 0] = palette[palette_addr + 2];
 		}
 	}
 
@@ -385,13 +386,78 @@ get_and_inc_address()
 	return address;
 }
 
+//
+// Vera: Layer 1 Registers
+//
+
+static uint8_t
+video_reg_read(uint8_t reg)
+{
+	printf("XXX reading from video reg %d\n", reg);
+	return 0;
+}
+
+void
+video_reg_write(uint8_t reg, uint8_t value)
+{
+	printf("XXX writing to video reg %d\n", reg);
+}
+
+//
+// Vera: Internal Video Address Space
+//
+
+static uint8_t
+video_ram_read(uint32_t address)
+{
+	if (address < 0x20000) {
+		return video_ram[address];
+	} else if (address < 0x21000) {
+		return chargen_rom[address & 0xfff];
+	} else if (address < 0x40000) {
+		return 0xFF; // unassigned
+	} else if (address < 0x40010) {
+		return video_reg_read(address & 0xf);
+	} else if (address < 0x40200) {
+		return 0xFF; // unassigned
+	} else if (address < 0x40400) {
+		return palette[address & 0x40200];
+	} else {
+		return 0xFF; // unassigned
+	}
+}
+
+void
+video_ram_write(uint32_t address, uint8_t value)
+{
+	if (address < 0x20000) {
+		video_ram[address] = value;
+	} else if (address < 0x21000) {
+		// ROM, do nothing
+	} else if (address < 0x40000) {
+		// unassigned, do nothing
+	} else if (address < 0x40010) {
+		video_reg_write(address & 0xf, value);
+	} else if (address < 0x40200) {
+		// unassigned, do nothing
+	} else if (address < 0x40400) {
+		palette[address & 0x40200] = value;
+	} else {
+		// unassigned, do nothing
+	}
+}
+
+//
+// Vera: 6502 I/O Interface
+//
+
 uint8_t
 video_read(uint8_t reg)
 {
 	if (reg == 3) {
 		uint32_t address = get_and_inc_address();
 //		printf("READ  video_ram[$%x] = $%02x\n", address, video_ram[address]);
-		return video_ram[address];
+		return video_ram_read(address);
 	} else {
 		return registers[reg];
 	}
@@ -404,11 +470,15 @@ video_write(uint8_t reg, uint8_t value)
 	if (reg == 3) {
 		uint32_t address = get_and_inc_address();
 //		printf("WRITE video_ram[$%x] = $%02x\n", address, value);
-		video_ram[address] = value;
+		video_ram_write(address, value);
 	} else {
 		registers[reg] = value;
 	}
 }
+
+//
+// VIA#1
+//
 
 uint8_t
 via1_read(uint8_t reg)
