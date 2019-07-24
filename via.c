@@ -1,6 +1,11 @@
+#include <stdio.h>
+#include <stdbool.h>
 #include "via.h"
 #include "ps2.h"
 #include "memory.h"
+//XXX
+#include "glue.h"
+
 
 //
 // VIA#1
@@ -53,12 +58,11 @@ static uint8_t via2registers[16];
 uint8_t
 via2_read(uint8_t reg)
 {
-	if (reg == 0) { // PB: fake scan code for now
-		uint8_t code = kbd_buffer_remove();
-		if (code) {
-			//			printf("VIA1PB: $%02x\n", code);
-		}
-		return code;
+	if (reg == 1) {
+		uint8_t value =
+			(via1registers[3] & PS2_CLK_MASK ? 0 : ps2_clk_out << 1) |
+			(via1registers[3] & PS2_DATA_MASK ? 0 : ps2_data_out);
+		return value;
 	} else {
 		return via2registers[reg];
 	}
@@ -68,5 +72,10 @@ void
 via2_write(uint8_t reg, uint8_t value)
 {
 	via1registers[reg] = value;
+
+	if (reg == 1 || reg == 3) {
+		ps2_clk_in = via1registers[3] & PS2_CLK_MASK ? via1registers[1] & PS2_CLK_MASK : 1;
+		ps2_data_in = via1registers[3] & PS2_DATA_MASK ? via1registers[1] & PS2_DATA_MASK : 1;
+	}
 }
 
