@@ -15,7 +15,7 @@
 
 #define MHZ 8
 
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #include "rom_labels.h"
@@ -125,9 +125,9 @@ main(int argc, char **argv)
 		}
 		printf("\n");
 #endif
-//		if (pc == 0xffd2) {
-//			printf("BSOUT: '%c'\n", a);
-//		}
+		if (pc == 0xf785) {
+			printf("$02d0 = $%02x\n", RAM[0x2d0]);
+		}
 
 
 		if (pc == 0xffd5 || pc == 0xffd8) {
