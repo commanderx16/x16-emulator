@@ -10,7 +10,7 @@ OBJS = fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o main.o
 HEADERS = disasm.h fake6502.h glue.h memory.h rom_labels.h video.h ps2.h via.h loadsave.h
 
 all: $(OBJS) $(HEADERS)
-	cc $(LDFLAGS) -o x16emu $(OBJS)
+	cc -o x16emu $(OBJS) $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

@@ -2,6 +2,7 @@
 #define _VIDEO_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <SDL.h>
 
 bool video_init(uint8_t *chargen);

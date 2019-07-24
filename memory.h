@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 uint8_t read6502(uint16_t address);
 
 void memory_save();
