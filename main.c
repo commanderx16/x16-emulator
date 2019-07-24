@@ -9,6 +9,7 @@
 #include "fake6502.h"
 #include "disasm.h"
 #include "video.h"
+#include "loadsave.h"
 #include "glue.h"
 
 #define MHZ 8
@@ -126,6 +127,17 @@ main(int argc, char **argv)
 //		if (pc == 0xffd2) {
 //			printf("BSOUT: '%c'\n", a);
 //		}
+
+
+		if (pc == 0xffd5 || pc == 0xffd8) {
+			if (pc == 0xffd5) {
+				LOAD();
+			} else {
+				SAVE();
+			}
+			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
+			sp += 2;
+		}
 
 		step6502();
 		instruction_counter++;
