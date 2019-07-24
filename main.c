@@ -33,10 +33,23 @@ int
 main(int argc, char **argv)
 {
 	if (argc < 3) {
-		printf("Usage: %s <rom.bin> <chargen.bin> [<app.prg>]\n", argv[0]);
+		printf("Usage: %s <rom.bin> <chargen.bin> [<app.prg>[,<load_addr>]]\n\n", argv[0]);
+		printf("<rom.bin>:     ROM file:\n");
+		printf("                 $0000-$1FFF bank #0 of banked ROM (BASIC)\n");
+		printf("                 $2000-$3FFF fixed ROM at $E000-$FFFF (KERNAL)\n");
+		printf("                 $4000-$5FFF bank #1 of banked ROM\n");
+		printf("                 $6000-$7FFF bank #2 of banked ROM\n");
+		printf("                 ...\n");
+		printf("               The file needs to be at least $4000 bytes in size.\n\n");
+		printf("<chargen.bin>: Character ROM file:\n");
+		printf("                 $0000-$07FF upper case/graphics\n");
+		printf("                 $0800-$0FFF lower case\n\n");
+		printf("<app.prg>:     Application PRG file (with 2 byte start address header)\n\n");
+		printf("<load_addr>:   Override load address (hex, no prefix)\n\n");
 		exit(1);
 	}
 
+	// 1st argument: ROM
 	FILE *f = fopen(argv[1], "r");
 	if (!f) {
 		printf("Cannot open %s!\n", argv[1]);
@@ -45,6 +58,7 @@ main(int argc, char **argv)
 	fread(ROM, 1, ROM_SIZE, f);
 	fclose(f);
 
+	// 2nd argument: Character ROM
 	f = fopen(argv[2], "r");
 	if (!f) {
 		printf("Cannot open %s!\n", argv[2]);
@@ -54,9 +68,18 @@ main(int argc, char **argv)
 	fread(chargen, 1, sizeof(chargen), f);
 	fclose(f);
 
+	// 3rd argument: application (optional)
 	FILE *prg_file = NULL;
+	int prg_override_start = -1;
 	if (argc == 4) {
-		prg_file = fopen(argv[3], "r");
+		char *filename = argv[3];
+		char *comma = strchr(filename, ',');
+		if (comma) {
+			prg_override_start = (uint16_t)strtol(comma + 1, NULL, 16);
+			*comma = 0;
+		}
+
+		prg_file = fopen(filename, "r");
 		if (!prg_file) {
 			printf("Cannot open %s!\n", argv[3]);
 			exit(1);
@@ -130,7 +153,12 @@ main(int argc, char **argv)
 			// inject the app
 			uint8_t start_lo = fgetc(prg_file);
 			uint8_t start_hi = fgetc(prg_file);
-			uint16_t start = start_hi << 8 | start_lo;
+			uint16_t start;
+			if (prg_override_start >= 0) {
+				start = prg_override_start;
+			} else {
+				start = start_hi << 8 | start_lo;
+			}
 			fread(RAM + start, 1, 65536-start, prg_file);
 			fclose(prg_file);
 			prg_file = NULL;
