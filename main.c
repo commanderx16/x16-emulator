@@ -9,13 +9,14 @@
 #include <unistd.h>
 #include "fake6502.h"
 #include "disasm.h"
+#include "memory.h"
 #include "video.h"
 #include "loadsave.h"
 #include "glue.h"
 
 #define MHZ 8
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #include "rom_labels.h"
@@ -109,7 +110,7 @@ main(int argc, char **argv)
 		char disasm_line[15];
 		int len = disasm(pc, RAM, disasm_line, sizeof(disasm_line));
 		for (int i = 0; i < len; i++) {
-			printf("%02x ", RAM[pc + i]);
+			printf("%02x ", read6502(pc + i));
 		}
 		for (int i = 0; i < 9 - 3 * len; i++) {
 			printf(" ");
@@ -125,10 +126,6 @@ main(int argc, char **argv)
 		}
 		printf("\n");
 #endif
-		if (pc == 0xf785) {
-			printf("$02d0 = $%02x\n", RAM[0x2d0]);
-		}
-
 
 		if (pc == 0xffd5 || pc == 0xffd8) {
 			if (pc == 0xffd5) {
@@ -142,15 +139,6 @@ main(int argc, char **argv)
 
 		step6502();
 		instruction_counter++;
-
-#if 0
-		if (instruction_counter == 1778) {
-			for (int i = 0; i < 25; i++) {
-				printf("%02x ", RAM[0xd9 +i]);
-			}
-			printf("\n");
-		}
-#endif
 
 		if (instruction_counter % (20000 * MHZ) == 0) {
 			if (!video_update()) {
