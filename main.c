@@ -42,12 +42,8 @@ main(int argc, char **argv)
 		printf("Cannot open %s!\n", argv[1]);
 		exit(1);
 	}
-
-	uint8_t *rom = malloc(65536);
-	size_t rom_size = fread(rom, 1, 65536, f);
+	fread(ROM, 1, ROM_SIZE, f);
 	fclose(f);
-	memcpy(RAM + 65536 - rom_size, rom, rom_size);
-	free(rom);
 
 	f = fopen(argv[2], "r");
 	if (!f) {
