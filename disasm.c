@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include "memory.h"
 
 #define N_SHIFT 7
 #define V_SHIFT 6
@@ -380,22 +381,22 @@ static const char *mnemo[] = {
  */
 int
 disasm(uint16_t pc, uint8_t *RAM, char *line, unsigned int max_line) {
-	uint8_t opcode = RAM[pc];
+	uint8_t opcode = read6502(pc);
 	char line2[8];
 	int addmode = get_addmode(opcode);
 
 	if (addmode == ADDMODE_BRA) {
-			snprintf(line2, sizeof(line2), "$%02x", pc+2 + (int8_t)RAM[pc+1]);
+			snprintf(line2, sizeof(line2), "$%02x", pc+2 + (int8_t)read6502(pc+1));
 	} else {
 		switch (get_length(addmode)) {
 			case 1:
 				snprintf(line2, sizeof(line2), addmode_template[addmode], 0);
 				break;
 			case 2:
-				snprintf(line2, sizeof(line2), addmode_template[addmode], RAM[pc+1]);
+				snprintf(line2, sizeof(line2), addmode_template[addmode], read6502(pc+1));
 				break;
 			case 3:
-				snprintf(line2, sizeof(line2), addmode_template[addmode], RAM[pc+1] | RAM[pc+2]<<8);
+				snprintf(line2, sizeof(line2), addmode_template[addmode], read6502(pc+1) | read6502(pc+2)<<8);
 				break;
 			default:
 				printf("Table error at %s:%d\n", __FILE__, __LINE__);
@@ -404,5 +405,5 @@ disasm(uint16_t pc, uint8_t *RAM, char *line, unsigned int max_line) {
 	}
 
 	snprintf(line, max_line, "%s %s", mnemo[get_instr(opcode)], line2);
-	return get_length(get_addmode(RAM[pc]));
+	return get_length(get_addmode(read6502(pc)));
 }
