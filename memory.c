@@ -66,10 +66,6 @@ read6502(uint16_t address)
 void
 write6502(uint16_t address, uint8_t value)
 {
-	if (address == 0x2d0) {
-		printf("WRITE $2D0 = %02x\n", value);
-	}
-
 	if (address < 0x9f00) { // RAM
 		RAM[address] = value;
 	} else if (address < 0xa000) { // I/O
