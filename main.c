@@ -11,12 +11,13 @@
 #include "disasm.h"
 #include "memory.h"
 #include "video.h"
+#include "via.h"
 #include "loadsave.h"
 #include "glue.h"
 
 #define MHZ 8
 
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #include "rom_labels.h"
@@ -96,7 +97,7 @@ main(int argc, char **argv)
 	int instruction_counter = 0;
 	for (;;) {
 #ifdef DEBUG
-		printf("[%6d] ", instruction_counter);
+		printf("\t\t\t\t[%6d] ", instruction_counter);
 
 		char *label = label_for_address(pc);
 		int label_len = label ? strlen(label) : 0;
@@ -138,6 +139,7 @@ main(int argc, char **argv)
 		}
 
 		step6502();
+		ps2_step();
 		instruction_counter++;
 
 		if (instruction_counter % (20000 * MHZ) == 0) {
