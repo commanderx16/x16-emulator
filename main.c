@@ -11,7 +11,7 @@
 #include "disasm.h"
 #include "memory.h"
 #include "video.h"
-#include "via.h"
+#include "ps2.h"
 #include "loadsave.h"
 #include "glue.h"
 
