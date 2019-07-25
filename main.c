@@ -17,7 +17,7 @@
 
 #define MHZ 8
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #include "rom_labels.h"

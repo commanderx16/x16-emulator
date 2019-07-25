@@ -61,15 +61,11 @@ static uint8_t via2registers[16];
 //}
 
 static bool sending = false;
-
-static const uint8_t bytes[] = { 0x31, 0xea, 0x14, 0x03 };
-static int bytes_index = 0;
+static bool has_byte = false;
+static uint8_t current_byte;
 static int bit_index = 0;
-
 static int data_bits;
-
 static int send_state = 0;
-
 static int clk_out, data_out;
 
 //#define HOLD 10 /* times 3 cycles = 75 cycles */
@@ -93,17 +89,20 @@ ps2_step()
 //		printf("PS2: STATE: idle\n");
 		if (!sending) {
 			// get next byte
-			if (bytes_index >= sizeof(bytes)) {
-				// we have nothing to send
-				clk_out = 1;
-				data_out = 0;
-				printf("PS2: nothing to send.\n");
-				goto out;
+			if (!has_byte) {
+				current_byte = kbd_buffer_remove();
+				if (!current_byte) {
+					// we have nothing to send
+					clk_out = 1;
+					data_out = 0;
+					printf("PS2: nothing to send.\n");
+					goto out;
+				}
+				printf("PS2: current_byte: %x\n", current_byte);
+				has_byte = true;
 			}
 
-			printf("PS2: sending byte #%d.\n", bytes_index);
-			uint8_t byte = bytes[bytes_index];
-			data_bits = byte << 1 | (1 - __builtin_parity(byte)) << 9 | (1 << 10);
+			data_bits = current_byte << 1 | (1 - __builtin_parity(current_byte)) << 9 | (1 << 10);
 			printf("PS2: data_bits: %x\n", data_bits);
 			bit_index = 0;
 			send_state = 0;
@@ -117,7 +116,7 @@ ps2_step()
 			if (send_state == 0 && bit_index == 10) {
 				// we have sent the last bit, if the host
 				// inhibits now, we'll send the next byte
-				bytes_index++;
+				has_byte = false;
 			}
 			if (send_state == HOLD) {
 				data_bits >>= 1;

@@ -20,6 +20,7 @@ kbd_buffer_add(uint8_t code)
 uint8_t
 kbd_buffer_remove()
 {
+//	return 0x1d;
 	if (kbd_buffer_read == kbd_buffer_write) {
 		return 0; // empty
 	} else {
