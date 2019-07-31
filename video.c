@@ -276,21 +276,60 @@ video_update()
 {
 	uint32_t map_base = l1registers[1] << 2 | l1registers[2] << 10;
 	uint32_t tile_base = l1registers[3] << 2 | l1registers[4] << 10;
+	uint8_t mode = l1registers[0] >> 5;
+	uint16_t mapw = 1 << ((l1registers[1] & 3) + 5);
+	uint16_t maph = 1 << (((l1registers[1] >> 2) & 3) + 5);
+	uint8_t tilew = 1 << (((l1registers[1] >> 4) & 1) + 3);
+	uint8_t tileh = 1 << (((l1registers[1] >> 5) & 1) + 3);
+	uint8_t bits_per_pixel;
+
+	switch (mode) {
+		case 0:
+		case 1:
+			mapw = 80;
+			maph = 60;
+			tilew = 8;
+			tileh = 8;
+			bits_per_pixel = 1;
+			break;
+	}
+	uint8_t tile_size = tilew * bits_per_pixel * tileh / 8;
 
 	for (int y = 0; y < SCREEN_HEIGHT; y++) {
 		for (int x = 0; x < SCREEN_WIDTH; x++) {
-			uint32_t addr = map_base + (y / 8 * SCREEN_WIDTH / 8 + x / 8) * 2;
-			uint8_t ch = video_ram_read(addr);
-			uint8_t col = video_ram_read(addr + 1);
-			int xx = x % 8;
-			int yy = y % 8;
-			uint8_t s = video_ram_read(tile_base + ch * 8 + yy);
-			if (s & (1 << (7 - xx))) {
-				col &= 15;
-			} else {
-				col >>= 4;
+			uint32_t map_addr = map_base + (y / 8 * mapw + x / 8) * 2;
+			uint8_t byte0 = video_ram_read(map_addr);
+			uint8_t byte1 = video_ram_read(map_addr + 1);
+			uint16_t tile_index;
+			switch (mode) {
+				case 0: case 1:
+					tile_index = byte0;
+					break;
+				case 2: case 3: case 4:
+					tile_index = byte0 | ((byte1 & 3) << 8);
+					break;
 			}
-			uint16_t entry = palette[col * 2] | palette[col * 2 + 1] << 8;
+			int xx = x % tilew;
+			int yy = y % tileh;
+			uint8_t s = video_ram_read(tile_base + tile_index * tile_size + yy * tilew * bits_per_pixel / 8);
+			uint8_t col_index;
+			switch (mode) {
+				case 0:
+					col_index = (s & (1 << (7 - xx))) ? byte1 & 15 : byte1 >> 4;
+					break;
+				case 1:
+					col_index = (s & (1 << (7 - xx))) ? byte1 : 0;
+					break;
+				case 4:
+//					uint8_t palette_offset = byte1 >> 4;
+					col_index = s;
+					break;
+				default:
+					col_index = 0;
+					// XXX TODO
+					break;
+			}
+			uint16_t entry = palette[col_index * 2] | palette[col_index * 2 + 1] << 8;
 			int fbi = (y * SCREEN_WIDTH + x) * 4;
 			framebuffer[fbi + 0] = (entry & 0xf) << 4;
 			framebuffer[fbi + 1] = ((entry >> 4) & 0xf) << 4;
@@ -345,8 +384,6 @@ video_end()
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 }
-
-//uint32_t address = 0;
 
 uint32_t
 get_and_inc_address()
