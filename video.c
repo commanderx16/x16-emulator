@@ -36,8 +36,8 @@ video_init(uint8_t *in_chargen)
 	// init Layer 1 registers
 	memset(l1registers, 0, sizeof(l1registers));
 	uint32_t tile_base = 0x20000;
-	l1registers[3] = tile_base >> 2;
-	l1registers[4] = tile_base >> 10;
+	l1registers[4] = tile_base >> 2;
+	l1registers[5] = tile_base >> 10;
 
 	// copy chargen into video RAM
 	memcpy(chargen_rom, in_chargen, sizeof(chargen_rom));
@@ -274,8 +274,8 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 bool
 video_update()
 {
-	uint32_t map_base = l1registers[1] << 2 | l1registers[2] << 10;
-	uint32_t tile_base = l1registers[3] << 2 | l1registers[4] << 10;
+	uint32_t map_base = l1registers[2] << 2 | l1registers[3] << 10;
+	uint32_t tile_base = l1registers[4] << 2 | l1registers[5] << 10;
 	uint8_t mode = l1registers[0] >> 5;
 	uint16_t mapw = 1 << ((l1registers[1] & 3) + 5);
 	uint16_t maph = 1 << (((l1registers[1] >> 2) & 3) + 5);
@@ -292,12 +292,21 @@ video_update()
 			tileh = 8;
 			bits_per_pixel = 1;
 			break;
+		case 2:
+			bits_per_pixel = 2;
+			break;
+		case 3:
+			bits_per_pixel = 4;
+			break;
+		case 4:
+			bits_per_pixel = 8;
+			break;
 	}
-	uint8_t tile_size = tilew * bits_per_pixel * tileh / 8;
+	uint16_t tile_size = tilew * bits_per_pixel * tileh / 8;
 
 	for (int y = 0; y < SCREEN_HEIGHT; y++) {
 		for (int x = 0; x < SCREEN_WIDTH; x++) {
-			uint32_t map_addr = map_base + (y / 8 * mapw + x / 8) * 2;
+			uint32_t map_addr = map_base + (y / tileh * mapw + x / tilew) * 2;
 			uint8_t byte0 = video_ram_read(map_addr);
 			uint8_t byte1 = video_ram_read(map_addr + 1);
 			uint16_t tile_index;
@@ -311,7 +320,7 @@ video_update()
 			}
 			int xx = x % tilew;
 			int yy = y % tileh;
-			uint8_t s = video_ram_read(tile_base + tile_index * tile_size + yy * tilew * bits_per_pixel / 8);
+			uint8_t s = video_ram_read(tile_base + tile_index * tile_size + (yy * tilew + xx) * bits_per_pixel / 8);
 			uint8_t col_index;
 			switch (mode) {
 				case 0:
