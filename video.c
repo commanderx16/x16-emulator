@@ -274,13 +274,16 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 bool
 video_update()
 {
+	uint8_t mode = l1registers[0] >> 5;
+	uint8_t hscale = ((l1registers[0] >> 1) & 3) + 1;
+	uint8_t vscale = ((l1registers[0] >> 3) & 3) + 1;
 	uint32_t map_base = l1registers[2] << 2 | l1registers[3] << 10;
 	uint32_t tile_base = l1registers[4] << 2 | l1registers[5] << 10;
-	uint8_t mode = l1registers[0] >> 5;
 	uint16_t mapw = 1 << ((l1registers[1] & 3) + 5);
 	uint16_t maph = 1 << (((l1registers[1] >> 2) & 3) + 5);
-	uint8_t tilew = 1 << (((l1registers[1] >> 4) & 1) + 3);
-	uint8_t tileh = 1 << (((l1registers[1] >> 5) & 1) + 3);
+	uint16_t tilew = 1 << (((l1registers[1] >> 4) & 1) + 3);
+	uint16_t tileh = 1 << (((l1registers[1] >> 5) & 1) + 3);
+	uint8_t bm_stride = l1registers[6];
 	uint8_t bits_per_pixel;
 
 	switch (mode) {
@@ -293,34 +296,67 @@ video_update()
 			bits_per_pixel = 1;
 			break;
 		case 2:
+		case 5:
 			bits_per_pixel = 2;
 			break;
 		case 3:
+		case 6:
 			bits_per_pixel = 4;
 			break;
 		case 4:
+		case 7:
 			bits_per_pixel = 8;
 			break;
 	}
+	if (mode >= 5) {
+		tilew = SCREEN_WIDTH;
+		tileh = SCREEN_HEIGHT;
+		tile_base = map_base;
+	}
+
 	uint16_t tile_size = tilew * bits_per_pixel * tileh / 8;
 
 	for (int y = 0; y < SCREEN_HEIGHT; y++) {
+		int eff_y = y / vscale;
 		for (int x = 0; x < SCREEN_WIDTH; x++) {
-			uint32_t map_addr = map_base + (y / tileh * mapw + x / tilew) * 2;
-			uint8_t byte0 = video_ram_read(map_addr);
-			uint8_t byte1 = video_ram_read(map_addr + 1);
+			int eff_x = x / hscale;
 			uint16_t tile_index;
-			switch (mode) {
-				case 0: case 1:
-					tile_index = byte0;
-					break;
-				case 2: case 3: case 4:
-					tile_index = byte0 | ((byte1 & 3) << 8);
-					break;
+			uint8_t byte0;
+			uint8_t byte1;
+
+			if (mode < 5) {
+				uint32_t map_addr = map_base + (eff_y / tileh * mapw + eff_x / tilew) * 2;
+				byte0 = video_ram_read(map_addr);
+				byte1 = video_ram_read(map_addr + 1);
+				switch (mode) {
+					case 0:
+					case 1:
+						tile_index = byte0;
+						break;
+					case 2:
+					case 3:
+					case 4:
+						tile_index = byte0 | ((byte1 & 3) << 8);
+						break;
+				}
+			} else {
+				tile_index = 0;
 			}
-			int xx = x % tilew;
-			int yy = y % tileh;
-			uint8_t s = video_ram_read(tile_base + tile_index * tile_size + (yy * tilew + xx) * bits_per_pixel / 8);
+			int xx = eff_x % tilew;
+			int yy = eff_y % tileh;
+			// offset within tilemap of the current tile
+			uint16_t tile_start = tile_index * tile_size;
+			// additional bytes to reach the correct line of the tile
+			uint16_t y_add;
+			if (mode < 5) {
+				y_add = yy * tilew * bits_per_pixel / 8;
+			} else {
+				y_add = yy * bm_stride * 4;
+			}
+			// additional bytes to reach the correct column of the tile
+			uint16_t x_add = xx * bits_per_pixel / 8;
+			uint16_t tile_offset = tile_start + y_add + x_add;
+			uint8_t s = video_ram_read(tile_base + tile_offset);
 			uint8_t col_index;
 			switch (mode) {
 				case 0:
@@ -330,6 +366,7 @@ video_update()
 					col_index = (s & (1 << (7 - xx))) ? byte1 : 0;
 					break;
 				case 4:
+				case 7:
 //					uint8_t palette_offset = byte1 >> 4;
 					col_index = s;
 					break;
@@ -440,7 +477,7 @@ video_ram_read(uint32_t address)
 	} else if (address < 0x40200) {
 		return 0xFF; // unassigned
 	} else if (address < 0x40400) {
-		return palette[address & 0x40200];
+		return palette[address & 0x1ff];
 	} else {
 		return 0xFF; // unassigned
 	}
@@ -460,7 +497,7 @@ video_ram_write(uint32_t address, uint8_t value)
 	} else if (address < 0x40200) {
 		// unassigned, do nothing
 	} else if (address < 0x40400) {
-		palette[address & 0x40200] = value;
+		palette[address & 0x1ff] = value;
 	} else {
 		// unassigned, do nothing
 	}
