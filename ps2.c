@@ -108,7 +108,7 @@ ps2_step()
 			}
 		}
 	} else {
-		printf("PS2: Warning: unknown PS/2 bus state: CLK_IN=%d, DATA_IN=%d\n", ps2_clk_in, ps2_data_in);
+//		printf("PS2: Warning: unknown PS/2 bus state: CLK_IN=%d, DATA_IN=%d\n", ps2_clk_in, ps2_data_in);
 		ps2_clk_out = 0;
 		ps2_data_out = 0;
 	}

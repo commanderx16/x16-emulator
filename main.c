@@ -148,7 +148,9 @@ main(int argc, char **argv)
 			}
 			usleep(20000);
 //			printf("IRQ!\n");
-			irq6502();
+			if (!(status & 4)) {
+				irq6502();
+			}
 		}
 
 		if (pc == 0xffcf && prg_file) {

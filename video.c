@@ -280,7 +280,7 @@ video_update()
 	uint32_t map_base = l1registers[2] << 2 | l1registers[3] << 10;
 	uint32_t tile_base = l1registers[4] << 2 | l1registers[5] << 10;
 	uint16_t mapw = 1 << ((l1registers[1] & 3) + 5);
-	uint16_t maph = 1 << (((l1registers[1] >> 2) & 3) + 5);
+	uint16_t maph = 1 << (((l1registers[1] >> 2) & 3) + 5); // XXX unused!
 	uint16_t tilew = 1 << (((l1registers[1] >> 4) & 1) + 3);
 	uint16_t tileh = 1 << (((l1registers[1] >> 5) & 1) + 3);
 	uint8_t bm_stride = l1registers[6];
