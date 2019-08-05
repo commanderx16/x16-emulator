@@ -307,7 +307,6 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 		// bitmap mode is basically tiled mode with a single huge tile
 		tilew = SCREEN_WIDTH;
 		tileh = SCREEN_HEIGHT;
-		tile_base = map_base;
 	}
 
 	uint8_t hscale = ((layer_registers[layer][0] >> 1) & 3) + 1;
