@@ -16,7 +16,11 @@ static uint8_t video_ram[0x20000];
 static uint8_t chargen_rom[4096];
 static uint8_t palette[256 * 2];
 
-static uint8_t ioregisters[8];
+// I/O registers
+static uint32_t io_addr[2];
+static uint8_t io_inc[2];
+bool io_addrsel;
+
 static uint8_t layer_registers[2][16];
 
 static uint8_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT * 4];
@@ -27,11 +31,13 @@ static const uint16_t default_palette[] = {
 
 static uint8_t video_ram_read(uint32_t address);
 
-bool
-video_init(uint8_t *in_chargen)
+static void
+video_reset()
 {
 	// init I/O registers
-	memset(ioregisters, 0, sizeof(ioregisters));
+	memset(io_addr, 0, sizeof(io_addr));
+	memset(io_inc, 0, sizeof(io_inc));
+	io_addrsel = 0;
 
 	// init Layer registers
 	memset(layer_registers, 0, sizeof(layer_registers));
@@ -40,15 +46,21 @@ video_init(uint8_t *in_chargen)
 	layer_registers[0][4] = tile_base >> 2;
 	layer_registers[0][5] = tile_base >> 10;
 
-	// copy chargen into video RAM
-	memcpy(chargen_rom, in_chargen, sizeof(chargen_rom));
-
 	// copy palette
 	memcpy(palette, default_palette, sizeof(palette));
 	for (int i = 0; i < 256; i++) {
 		palette[i * 2 + 0] = default_palette[i] & 0xff;
 		palette[i * 2 + 1] = default_palette[i] >> 8;
 	}
+}
+
+bool
+video_init(uint8_t *in_chargen)
+{
+	// copy chargen
+	memcpy(chargen_rom, in_chargen, sizeof(chargen_rom));
+
+	video_reset();
 
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &window, &renderer);
@@ -483,14 +495,11 @@ video_end()
 }
 
 uint32_t
-get_and_inc_address()
+get_and_inc_address(uint8_t sel)
 {
-	uint32_t address = ((uint32_t)(ioregisters[0] & 7)) << 16 | ioregisters[1] << 8 | ioregisters[2];
-	uint32_t new_address = address + (ioregisters[0] >> 4);
-	ioregisters[0] = (ioregisters[0] & 0xf0) | ((new_address >> 16) & 0x0f);
-	ioregisters[1] = (new_address >> 8) & 0xff;
-	ioregisters[2] = new_address & 0xff;
-//	printf("address = %06x, new = %06x\n", address, new_address);
+	uint32_t address = io_addr[sel];
+	io_addr[sel] += io_inc[sel];
+//	printf("address = %06x, new = %06x\n", address, io_addr[sel]);
 	return address;
 }
 
@@ -565,12 +574,23 @@ video_ram_write(uint32_t address, uint8_t value)
 uint8_t
 video_read(uint8_t reg)
 {
-	if (reg == 3) {
-		uint32_t address = get_and_inc_address();
-//		printf("READ  video_ram[$%x] = $%02x\n", address, video_ram[address]);
-		return video_ram_read(address);
-	} else {
-		return ioregisters[reg];
+	switch (reg) {
+		case 0:
+			return (io_addr[io_addrsel] >> 16) | (io_inc[io_addrsel] << 4);
+		case 1:
+			return (io_addr[io_addrsel] >> 8) & 0xff;
+		case 2:
+			return io_addr[io_addrsel] & 0xff;
+		case 3:
+		case 4: {
+			uint32_t address = get_and_inc_address(reg - 3);
+//			printf("READ  video_ram[$%x] = $%02x\n", address, video_ram[address]);
+			return video_ram_read(address);
+		case 5:
+			return io_addrsel;
+		default:
+			return 0;
+		}
 	}
 }
 
@@ -578,11 +598,29 @@ void
 video_write(uint8_t reg, uint8_t value)
 {
 //	printf("ioregisters[%d] = $%02x\n", reg, value);
-	if (reg == 3) {
-		uint32_t address = get_and_inc_address();
-//		printf("WRITE video_ram[$%x] = $%02x\n", address, value);
-		video_ram_write(address, value);
-	} else {
-		ioregisters[reg] = value;
+	switch (reg) {
+		case 0:
+			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x0ffff) | ((value & 0xf) << 16);
+			io_inc[io_addrsel] = value >> 4;
+			break;
+		case 1:
+			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0xf00ff) | (value << 8);
+			break;
+		case 2:
+			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0xfff00) | value;
+			break;
+		case 3:
+		case 4: {
+			uint32_t address = get_and_inc_address(reg - 3);
+//			printf("WRITE video_ram[$%x] = $%02x\n", address, value);
+			video_ram_write(address, value);
+			break;
+		case 5:
+			if (value & 0x80) {
+				video_reset();
+			}
+			io_addrsel = value  & 1;
+			break;
+		}
 	}
 }
