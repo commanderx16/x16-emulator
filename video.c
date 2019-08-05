@@ -17,7 +17,7 @@ static uint8_t chargen_rom[4096];
 static uint8_t palette[256 * 2];
 
 static uint8_t ioregisters[8];
-static uint8_t l1registers[16];
+static uint8_t layer_registers[2][16];
 
 static uint8_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT * 4];
 
@@ -33,11 +33,12 @@ video_init(uint8_t *in_chargen)
 	// init I/O registers
 	memset(ioregisters, 0, sizeof(ioregisters));
 
-	// init Layer 1 registers
-	memset(l1registers, 0, sizeof(l1registers));
-	uint32_t tile_base = 0x20000;
-	l1registers[4] = tile_base >> 2;
-	l1registers[5] = tile_base >> 10;
+	// init Layer registers
+	memset(layer_registers, 0, sizeof(layer_registers));
+	uint32_t tile_base = 0x20000; // uppercase PETSCII
+	layer_registers[0][0] = 1; // enabled
+	layer_registers[0][4] = tile_base >> 2;
+	layer_registers[0][5] = tile_base >> 10;
 
 	// copy chargen into video RAM
 	memcpy(chargen_rom, in_chargen, sizeof(chargen_rom));
@@ -271,19 +272,24 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 	}
 }
 
-bool
-video_update()
+uint8_t
+get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 {
-	uint8_t mode = l1registers[0] >> 5;
-	uint8_t hscale = ((l1registers[0] >> 1) & 3) + 1;
-	uint8_t vscale = ((l1registers[0] >> 3) & 3) + 1;
-	uint32_t map_base = l1registers[2] << 2 | l1registers[3] << 10;
-	uint32_t tile_base = l1registers[4] << 2 | l1registers[5] << 10;
-	uint16_t mapw = 1 << ((l1registers[1] & 3) + 5);
-	uint16_t maph = 1 << (((l1registers[1] >> 2) & 3) + 5); // XXX unused!
-	uint16_t tilew = 1 << (((l1registers[1] >> 4) & 1) + 3);
-	uint16_t tileh = 1 << (((l1registers[1] >> 5) & 1) + 3);
-	uint8_t bm_stride = l1registers[6];
+	uint8_t enabled = layer_registers[layer][0] & 1;
+	if (!enabled) {
+		return 0; // transparent
+	}
+
+	uint8_t mode = layer_registers[layer][0] >> 5;
+	uint8_t hscale = ((layer_registers[layer][0] >> 1) & 3) + 1;
+	uint8_t vscale = ((layer_registers[layer][0] >> 3) & 3) + 1;
+	uint32_t map_base = layer_registers[layer][2] << 2 | layer_registers[layer][3] << 10;
+	uint32_t tile_base = layer_registers[layer][4] << 2 | layer_registers[layer][5] << 10;
+	uint16_t mapw = 1 << ((layer_registers[layer][1] & 3) + 5);
+	uint16_t maph = 1 << (((layer_registers[layer][1] >> 2) & 3) + 5); // XXX unused!
+	uint16_t tilew = 1 << (((layer_registers[layer][1] >> 4) & 1) + 3);
+	uint16_t tileh = 1 << (((layer_registers[layer][1] >> 5) & 1) + 3);
+	uint8_t bm_stride = layer_registers[layer][6];
 	uint8_t bits_per_pixel;
 
 	switch (mode) {
@@ -316,65 +322,81 @@ video_update()
 
 	uint16_t tile_size = tilew * bits_per_pixel * tileh / 8;
 
-	for (int y = 0; y < SCREEN_HEIGHT; y++) {
-		int eff_y = y / vscale;
-		for (int x = 0; x < SCREEN_WIDTH; x++) {
-			int eff_x = x / hscale;
-			uint16_t tile_index;
-			uint8_t byte0;
-			uint8_t byte1;
+	int eff_x = x / hscale;
+	int eff_y = y / vscale;
 
-			if (mode < 5) {
-				uint32_t map_addr = map_base + (eff_y / tileh * mapw + eff_x / tilew) * 2;
-				byte0 = video_ram_read(map_addr);
-				byte1 = video_ram_read(map_addr + 1);
-				switch (mode) {
-					case 0:
-					case 1:
-						tile_index = byte0;
-						break;
-					case 2:
-					case 3:
-					case 4:
-						tile_index = byte0 | ((byte1 & 3) << 8);
-						break;
-				}
-			} else {
-				tile_index = 0;
+	uint16_t tile_index;
+	uint8_t byte0;
+	uint8_t byte1;
+
+	if (mode < 5) {
+		uint32_t map_addr = map_base + (eff_y / tileh * mapw + eff_x / tilew) * 2;
+		byte0 = video_ram_read(map_addr);
+		byte1 = video_ram_read(map_addr + 1);
+		switch (mode) {
+			case 0:
+			case 1:
+				tile_index = byte0;
+				break;
+			case 2:
+			case 3:
+			case 4:
+				tile_index = byte0 | ((byte1 & 3) << 8);
+				break;
+		}
+	} else {
+		tile_index = 0;
+	}
+	int xx = eff_x % tilew;
+	int yy = eff_y % tileh;
+	// offset within tilemap of the current tile
+	uint16_t tile_start = tile_index * tile_size;
+	// additional bytes to reach the correct line of the tile
+	uint16_t y_add;
+	if (mode < 5) {
+		y_add = yy * tilew * bits_per_pixel / 8;
+	} else {
+		y_add = yy * bm_stride * 4;
+	}
+	// additional bytes to reach the correct column of the tile
+	uint16_t x_add = xx * bits_per_pixel / 8;
+	uint16_t tile_offset = tile_start + y_add + x_add;
+	uint8_t s = video_ram_read(tile_base + tile_offset);
+	uint8_t col_index;
+	switch (mode) {
+		case 0:
+			col_index = (s & (1 << (7 - xx))) ? byte1 & 15 : byte1 >> 4;
+			break;
+		case 1:
+			col_index = (s & (1 << (7 - xx))) ? byte1 : 0;
+			break;
+		case 4:
+		case 7:
+			//					uint8_t palette_offset = byte1 >> 4;
+			col_index = s;
+			break;
+		default:
+			col_index = 0;
+			// XXX TODO
+			break;
+	}
+	return col_index;
+}
+
+bool
+video_update()
+{
+
+
+
+	for (int y = 0; y < SCREEN_HEIGHT; y++) {
+		for (int x = 0; x < SCREEN_WIDTH; x++) {
+
+			uint8_t col_index = get_pixel(1, x, y);
+			if (col_index == 0) { // Layer 2 is transparent
+				col_index = get_pixel(0, x, y);
 			}
-			int xx = eff_x % tilew;
-			int yy = eff_y % tileh;
-			// offset within tilemap of the current tile
-			uint16_t tile_start = tile_index * tile_size;
-			// additional bytes to reach the correct line of the tile
-			uint16_t y_add;
-			if (mode < 5) {
-				y_add = yy * tilew * bits_per_pixel / 8;
-			} else {
-				y_add = yy * bm_stride * 4;
-			}
-			// additional bytes to reach the correct column of the tile
-			uint16_t x_add = xx * bits_per_pixel / 8;
-			uint16_t tile_offset = tile_start + y_add + x_add;
-			uint8_t s = video_ram_read(tile_base + tile_offset);
-			uint8_t col_index;
-			switch (mode) {
-				case 0:
-					col_index = (s & (1 << (7 - xx))) ? byte1 & 15 : byte1 >> 4;
-					break;
-				case 1:
-					col_index = (s & (1 << (7 - xx))) ? byte1 : 0;
-					break;
-				case 4:
-				case 7:
-//					uint8_t palette_offset = byte1 >> 4;
-					col_index = s;
-					break;
-				default:
-					col_index = 0;
-					// XXX TODO
-					break;
-			}
+
 			uint16_t entry = palette[col_index * 2] | palette[col_index * 2 + 1] << 8;
 			int fbi = (y * SCREEN_WIDTH + x) * 4;
 			framebuffer[fbi + 0] = (entry & 0xf) << 4;
@@ -444,19 +466,19 @@ get_and_inc_address()
 }
 
 //
-// Vera: Layer 1 Registers
+// Vera: Layer Registers
 //
 
 static uint8_t
-video_l1_reg_read(uint8_t reg)
+video_layer_reg_read(uint8_t layer, uint8_t reg)
 {
-	return l1registers[reg];
+	return layer_registers[layer][reg];
 }
 
 void
-video_l1_reg_write(uint8_t reg, uint8_t value)
+video_layer_reg_write(uint8_t layer, uint8_t reg, uint8_t value)
 {
-	l1registers[reg] = value;
+	layer_registers[layer][reg] = value;
 }
 
 //
@@ -473,7 +495,9 @@ video_ram_read(uint32_t address)
 	} else if (address < 0x40000) {
 		return 0xFF; // unassigned
 	} else if (address < 0x40010) {
-		return video_l1_reg_read(address & 0xf);
+		return video_layer_reg_read(0, address & 0xf);
+	} else if (address < 0x40020) {
+		return video_layer_reg_read(1, address & 0xf);
 	} else if (address < 0x40200) {
 		return 0xFF; // unassigned
 	} else if (address < 0x40400) {
@@ -493,7 +517,9 @@ video_ram_write(uint32_t address, uint8_t value)
 	} else if (address < 0x40000) {
 		// unassigned, do nothing
 	} else if (address < 0x40010) {
-		video_l1_reg_write(address & 0xf, value);
+		video_layer_reg_write(0, address & 0xf, value);
+	} else if (address < 0x40020) {
+		video_layer_reg_write(1, address & 0xf, value);
 	} else if (address < 0x40200) {
 		// unassigned, do nothing
 	} else if (address < 0x40400) {
