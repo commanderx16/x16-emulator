@@ -281,114 +281,144 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 	}
 
 	uint8_t mode = layer_registers[layer][0] >> 5;
-	uint8_t hscale = ((layer_registers[layer][0] >> 1) & 3) + 1;
-	uint8_t vscale = ((layer_registers[layer][0] >> 3) & 3) + 1;
 	uint32_t map_base = layer_registers[layer][2] << 2 | layer_registers[layer][3] << 10;
 	uint32_t tile_base = layer_registers[layer][4] << 2 | layer_registers[layer][5] << 10;
-	uint16_t mapw = 1 << ((layer_registers[layer][1] & 3) + 5);
-	uint16_t maph = 1 << (((layer_registers[layer][1] >> 2) & 3) + 5); // XXX unused!
-	uint16_t tilew = 1 << (((layer_registers[layer][1] >> 4) & 1) + 3);
-	uint16_t tileh = 1 << (((layer_registers[layer][1] >> 5) & 1) + 3);
-	uint8_t bm_stride = layer_registers[layer][6];
-	uint8_t bits_per_pixel;
 
-	switch (mode) {
-		case 0:
-		case 1:
-			mapw = 80;
-			maph = 60;
-			tilew = 8;
-			tileh = 8;
-			bits_per_pixel = 1;
-			break;
-		case 2:
-		case 5:
-			bits_per_pixel = 2;
-			break;
-		case 3:
-		case 6:
-			bits_per_pixel = 4;
-			break;
-		case 4:
-		case 7:
-			bits_per_pixel = 8;
-			break;
-	}
-	if (mode >= 5) {
+	bool text_mode = mode == 0 || mode == 1;
+	bool tile_mode = mode == 2 || mode == 3 || mode == 4;
+	bool bitmap_mode = mode == 5 || mode == 6 || mode == 7;
+
+	uint16_t mapw;
+	uint16_t maph;
+	uint16_t tilew = 0;
+	uint16_t tileh = 0;
+
+	if (text_mode) {
+		mapw = 80;
+		maph = 60;
+		tilew = 8;
+		tileh = 8;
+	} else if (tile_mode) {
+		mapw = 1 << ((layer_registers[layer][1] & 3) + 5);
+		maph = 1 << (((layer_registers[layer][1] >> 2) & 3) + 5); // XXX unused!
+		tilew = 1 << (((layer_registers[layer][1] >> 4) & 1) + 3);
+		tileh = 1 << (((layer_registers[layer][1] >> 5) & 1) + 3);
+	} else if (bitmap_mode) {
+		// bitmap mode is basically tiled mode with a single huge tile
 		tilew = SCREEN_WIDTH;
 		tileh = SCREEN_HEIGHT;
 		tile_base = map_base;
 	}
 
-	uint16_t tile_size = tilew * bits_per_pixel * tileh / 8;
+	uint8_t hscale = ((layer_registers[layer][0] >> 1) & 3) + 1;
+	uint8_t vscale = ((layer_registers[layer][0] >> 3) & 3) + 1;
 
 	int eff_x = x / hscale;
 	int eff_y = y / vscale;
 
-	uint16_t tile_index;
-	uint8_t byte0;
-	uint8_t byte1;
+	// Scrolling
+	if (!bitmap_mode) {
+		uint16_t hscroll = layer_registers[layer][6] | (layer_registers[layer][7] & 0xf) << 8;
+		uint16_t vscroll = layer_registers[layer][8] | (layer_registers[layer][9] & 0xf) << 8;
 
-	if (mode < 5) {
-		uint32_t map_addr = map_base + (eff_y / tileh * mapw + eff_x / tilew) * 2;
-		byte0 = video_ram_read(map_addr);
-		byte1 = video_ram_read(map_addr + 1);
-		switch (mode) {
-			case 0:
-			case 1:
-				tile_index = byte0;
-				break;
-			case 2:
-			case 3:
-			case 4:
-				tile_index = byte0 | ((byte1 & 3) << 8);
-				break;
-		}
-	} else {
-		tile_index = 0;
+		eff_x = (eff_x + hscroll) % (mapw * tilew);
+		eff_y = (eff_y + vscroll) % (maph * tileh);
 	}
+
 	int xx = eff_x % tilew;
 	int yy = eff_y % tileh;
+
+	uint16_t tile_index = 0;
+	uint8_t fg_color = 0;
+	uint8_t bg_color = 0;
+	uint8_t palette_offset = 0;
+
+	// extract all information from the map
+	if (bitmap_mode) {
+		tile_index = 0;
+		palette_offset = layer_registers[layer][7] & 0xf;
+	} else {
+		uint32_t map_addr = map_base + (eff_y / tileh * mapw + eff_x / tilew) * 2;
+		uint8_t byte0 = video_ram_read(map_addr);
+		uint8_t byte1 = video_ram_read(map_addr + 1);
+		if (text_mode) {
+			tile_index = byte0;
+
+			if (mode == 0) {
+				fg_color = byte1 & 15;
+				bg_color = byte1 >> 4;
+			} else {
+				fg_color = byte1;
+				bg_color = 0;
+			}
+		} else if (tile_mode) {
+			tile_index = byte0 | ((byte1 & 3) << 8);
+
+			// Tile Flipping
+			bool vflip = (byte1 >> 3) & 1;
+			bool hflip = (byte1 >> 2) & 1;
+			if (vflip) {
+				yy = yy ^ (tileh - 1);
+			}
+			if (hflip) {
+				xx = xx ^ (tilew - 1);
+			}
+
+			palette_offset = byte1 >> 4;
+		}
+	}
+
+	uint8_t bits_per_pixel = 0;
+	if (mode == 0 || mode == 1) {
+		bits_per_pixel = 1;
+	} else if (mode == 2 || mode == 5) {
+		bits_per_pixel = 2;
+	} else if (mode == 3 || mode == 6) {
+		bits_per_pixel = 4;
+	} else if (mode == 4 || mode == 7) {
+		bits_per_pixel = 8;
+	}
+
+	uint16_t tile_size = (tilew * bits_per_pixel * tileh) >> 3;
 	// offset within tilemap of the current tile
 	uint16_t tile_start = tile_index * tile_size;
 	// additional bytes to reach the correct line of the tile
 	uint16_t y_add;
-	if (mode < 5) {
-		y_add = yy * tilew * bits_per_pixel / 8;
-	} else {
+	if (bitmap_mode) {
+		uint8_t bm_stride = layer_registers[layer][6];
 		y_add = yy * bm_stride * 4;
+	} else {
+		y_add = (yy * tilew * bits_per_pixel) >> 3;
 	}
 	// additional bytes to reach the correct column of the tile
-	uint16_t x_add = xx * bits_per_pixel / 8;
+	uint16_t x_add = (xx * bits_per_pixel) >> 3;
 	uint16_t tile_offset = tile_start + y_add + x_add;
 	uint8_t s = video_ram_read(tile_base + tile_offset);
-	uint8_t col_index;
-	switch (mode) {
-		case 0:
-			col_index = (s & (1 << (7 - xx))) ? byte1 & 15 : byte1 >> 4;
-			break;
-		case 1:
-			col_index = (s & (1 << (7 - xx))) ? byte1 : 0;
-			break;
-		case 4:
-		case 7:
-			//					uint8_t palette_offset = byte1 >> 4;
-			col_index = s;
-			break;
-		default:
-			col_index = 0;
-			// XXX TODO
-			break;
+
+	// convert tile byte to indexed color
+	uint8_t col_index = 0;
+	if (bits_per_pixel == 1) {
+		bool bit = (s >> (7 - xx)) & 1;
+		col_index = bit ? fg_color : bg_color;
+	} else if (bits_per_pixel == 2) {
+		col_index = (s >> (6 - (xx << 1))) & 3;
+	} else if (bits_per_pixel == 4) {
+		col_index = (s >> (4 - (xx << 2))) & 0xf;
+	} else if (bits_per_pixel == 8) {
+		col_index = s;
 	}
+
+	// Apply Palette Offset
+	if (palette_offset && col_index > 0 && col_index < 16) {
+		col_index += palette_offset << 4;
+	}
+
 	return col_index;
 }
 
 bool
 video_update()
 {
-
-
-
 	for (int y = 0; y < SCREEN_HEIGHT; y++) {
 		for (int x = 0; x < SCREEN_WIDTH; x++) {
 
