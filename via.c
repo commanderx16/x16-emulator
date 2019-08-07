@@ -60,8 +60,8 @@ via2_read(uint8_t reg)
 {
 	if (reg == 1) {
 		uint8_t value =
-			(via1registers[3] & PS2_CLK_MASK ? 0 : ps2_clk_out << 1) |
-			(via1registers[3] & PS2_DATA_MASK ? 0 : ps2_data_out);
+			(via2registers[3] & PS2_CLK_MASK ? 0 : ps2_clk_out << 1) |
+			(via2registers[3] & PS2_DATA_MASK ? 0 : ps2_data_out);
 		return value;
 	} else {
 		return via2registers[reg];
@@ -71,11 +71,11 @@ via2_read(uint8_t reg)
 void
 via2_write(uint8_t reg, uint8_t value)
 {
-	via1registers[reg] = value;
+	via2registers[reg] = value;
 
 	if (reg == 1 || reg == 3) {
-		ps2_clk_in = via1registers[3] & PS2_CLK_MASK ? via1registers[1] & PS2_CLK_MASK : 1;
-		ps2_data_in = via1registers[3] & PS2_DATA_MASK ? via1registers[1] & PS2_DATA_MASK : 1;
+		ps2_clk_in = via2registers[3] & PS2_CLK_MASK ? via2registers[1] & PS2_CLK_MASK : 1;
+		ps2_data_in = via2registers[3] & PS2_DATA_MASK ? via2registers[1] & PS2_DATA_MASK : 1;
 	}
 }
 
