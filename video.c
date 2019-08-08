@@ -3,6 +3,8 @@
 #include "ps2.h"
 #include "glue.h"
 
+#define ESC_IS_BREAK /* if enabled, Esc sends Break/Pause key instead of Esc */
+
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 
@@ -88,7 +90,11 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 		case SDLK_PAUSE:
 			return 0;
 		case SDLK_ESCAPE:
+#ifdef ESC_IS_BREAK
+			return 0xff;
+#else
 			return 0x76;
+#endif
 		case SDLK_SPACE:
 			return 0x29;
 		case SDLK_EXCLAIM:
@@ -465,10 +471,22 @@ video_update()
 			} else {
 	//			printf("DOWN 0x%02x\n", event.key.keysym.sym);
 				int scancode = ps2_scancode_from_SDLKey(event.key.keysym.sym);
-				if (scancode & 0x80) {
-					kbd_buffer_add(0xe0);
+				if (scancode == 0xff) {
+					// "Pause/Break" sequence
+					kbd_buffer_add(0xe1);
+					kbd_buffer_add(0x14);
+					kbd_buffer_add(0x77);
+					kbd_buffer_add(0xe1);
+					kbd_buffer_add(0xf0);
+					kbd_buffer_add(0x14);
+					kbd_buffer_add(0xf0);
+					kbd_buffer_add(0x77);
+				} else {
+					if (scancode & 0x80) {
+						kbd_buffer_add(0xe0);
+					}
+					kbd_buffer_add(scancode & 0x7f);
 				}
-				kbd_buffer_add(scancode & 0x7f);
 			}
 			return true;
 		}
