@@ -17,7 +17,7 @@ LOAD()
 
 	FILE *f = fopen(filename, "r");
 	if (!f) {
-		a = 0x40; // FNF
+		a = 4; // FNF
 		RAM[0x90] = a;
 		status |= 1;
 		return;
@@ -60,7 +60,7 @@ SAVE()
 
 	FILE *f = fopen(filename, "w");
 	if (!f) {
-		a = 0x40; // FNF
+		a = 4; // FNF
 		RAM[0x90] = a;
 		status |= 1;
 		return;
