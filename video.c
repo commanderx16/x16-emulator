@@ -305,16 +305,16 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 	uint16_t tilew = 0;
 	uint16_t tileh = 0;
 
-	if (text_mode) {
-		mapw = 80;
-		maph = 60;
-		tilew = 8;
-		tileh = 8;
-	} else if (tile_mode) {
+	if (tile_mode || text_mode) {
 		mapw = 1 << ((layer_registers[layer][1] & 3) + 5);
-		maph = 1 << (((layer_registers[layer][1] >> 2) & 3) + 5); // XXX unused!
-		tilew = 1 << (((layer_registers[layer][1] >> 4) & 1) + 3);
-		tileh = 1 << (((layer_registers[layer][1] >> 5) & 1) + 3);
+		maph = 1 << (((layer_registers[layer][1] >> 2) & 3) + 5);
+		if (tile_mode) {
+			tilew = 1 << (((layer_registers[layer][1] >> 4) & 1) + 3);
+			tileh = 1 << (((layer_registers[layer][1] >> 5) & 1) + 3);
+		} else {
+			tilew = 8;
+			tileh = 8;
+		}
 	} else if (bitmap_mode) {
 		// bitmap mode is basically tiled mode with a single huge tile
 		tilew = SCREEN_WIDTH;
