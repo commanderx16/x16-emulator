@@ -396,11 +396,11 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 		bits_per_pixel = 8;
 	}
 
-	uint16_t tile_size = (tilew * bits_per_pixel * tileh) >> 3;
+	uint32_t tile_size = (tilew * bits_per_pixel * tileh) >> 3;
 	// offset within tilemap of the current tile
-	uint16_t tile_start = tile_index * tile_size;
+	uint32_t tile_start = tile_index * tile_size;
 	// additional bytes to reach the correct line of the tile
-	uint16_t y_add;
+	uint32_t y_add;
 	if (bitmap_mode) {
 		uint8_t bm_stride = layer_registers[layer][6];
 		y_add = yy * bm_stride * 4;
@@ -409,7 +409,7 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 	}
 	// additional bytes to reach the correct column of the tile
 	uint16_t x_add = (xx * bits_per_pixel) >> 3;
-	uint16_t tile_offset = tile_start + y_add + x_add;
+	uint32_t tile_offset = tile_start + y_add + x_add;
 	uint8_t s = video_ram_read(tile_base + tile_offset);
 
 	// convert tile byte to indexed color
