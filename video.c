@@ -33,7 +33,7 @@ static const uint16_t default_palette[] = {
 
 static uint8_t video_ram_read(uint32_t address);
 
-static void
+void
 video_reset()
 {
 	// init I/O registers
@@ -468,6 +468,8 @@ video_update()
 				cmd_down = true;
 			} else if (cmd_down && event.key.keysym.sym == SDLK_s) {
 				memory_save();
+			} else if (cmd_down && event.key.keysym.sym == SDLK_r) {
+				machine_reset();
 			} else {
 	//			printf("DOWN 0x%02x\n", event.key.keysym.sym);
 				int scancode = ps2_scancode_from_SDLKey(event.key.keysym.sym);

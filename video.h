@@ -6,6 +6,7 @@
 #include <SDL.h>
 
 bool video_init(uint8_t *chargen);
+void video_reset(void);
 bool video_update(void);
 void video_end(void);
 

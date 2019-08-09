@@ -33,6 +33,13 @@ label_for_address(uint16_t address)
 }
 #endif
 
+void
+machine_reset()
+{
+	video_reset();
+	reset6502();
+}
+
 int
 main(int argc, char **argv)
 {
@@ -92,7 +99,7 @@ main(int argc, char **argv)
 
 	video_init(chargen);
 
-	reset6502();
+	machine_reset();
 
 	int instruction_counter = 0;
 	for (;;) {
