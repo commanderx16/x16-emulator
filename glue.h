@@ -4,7 +4,7 @@
 #define NUM_ROM_BANKS 8
 
 #define RAM_SIZE (0xa000 + NUM_RAM_BANKS * 8192) /* $0000-$9FFF + banks at $C000-$DFFF */
-#define ROM_SIZE (NUM_ROM_BANKS * 8192)          /* banks at $A000-$BFFF */
+#define ROM_SIZE (8192 + NUM_ROM_BANKS * 8192)   /* $E000-$FFFF + banks at $A000-$BFFF */
 
 extern uint8_t a, x, y, sp, status;
 extern uint16_t pc;
