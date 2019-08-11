@@ -75,6 +75,8 @@ video_init(uint8_t *in_chargen)
 	return true;
 }
 
+#define EXTENDED_FLAG 0x100
+
 int
 ps2_scancode_from_SDLKey(SDL_Keycode k)
 {
@@ -226,17 +228,17 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 		case SDLK_DELETE:
 			return 0;
 		case SDLK_UP:
-			return 0x75 | 0x80;
+			return 0x75 | EXTENDED_FLAG;
 		case SDLK_DOWN:
-			return 0x72 | 0x80;
+			return 0x72 | EXTENDED_FLAG;
 		case SDLK_RIGHT:
-			return 0x74 | 0x80;
+			return 0x74 | EXTENDED_FLAG;
 		case SDLK_LEFT:
-			return 0x6b | 0x80;
+			return 0x6b | EXTENDED_FLAG;
 		case SDLK_INSERT:
 			return 0;
 		case SDLK_HOME:
-			return 0x6c | 0x80;
+			return 0x6c | EXTENDED_FLAG;
 		case SDLK_END:
 			return 0;
 		case SDLK_PAGEUP:
@@ -256,7 +258,7 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 		case SDLK_F6:
 			return 0x0b;
 		case SDLK_F7:
-			return 0x83; // XXX the MSB clashes with the "extended" flag!
+			return 0x83;
 		case SDLK_F8:
 			return 0x0a;
 		case SDLK_F9:
@@ -280,11 +282,11 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 		case SDLK_LCTRL:
 			return 0x14;
 		case SDLK_RCTRL:
-			return 0x14 | 0x80;
+			return 0x14 | EXTENDED_FLAG;
 		case SDLK_LALT:
 			return 0x11;
 //		case SDLK_LGUI: // Windows/Command
-//			return 0x5b | 0x80;
+//			return 0x5b | EXTENDED_FLAG;
 		default:
 			return 0;
 	}
@@ -484,10 +486,10 @@ video_update()
 					kbd_buffer_add(0xf0);
 					kbd_buffer_add(0x77);
 				} else {
-					if (scancode & 0x80) {
+					if (scancode & EXTENDED_FLAG) {
 						kbd_buffer_add(0xe0);
 					}
-					kbd_buffer_add(scancode & 0x7f);
+					kbd_buffer_add(scancode & 0xff);
 				}
 			}
 			return true;
@@ -497,8 +499,12 @@ video_update()
 				cmd_down = false;
 			} else {
 	//			printf("UP   0x%02x\n", event.key.keysym.sym);
+				int scancode = ps2_scancode_from_SDLKey(event.key.keysym.sym);
+				if (scancode & EXTENDED_FLAG) {
+					kbd_buffer_add(0xe0);
+				}
 				kbd_buffer_add(0xf0); // BREAK
-				kbd_buffer_add(ps2_scancode_from_SDLKey(event.key.keysym.sym));
+				kbd_buffer_add(scancode & 0xff);
 			}
 			return true;
 		}
