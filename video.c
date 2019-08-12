@@ -13,6 +13,7 @@
 static SDL_Window *window;
 static SDL_Renderer *renderer;
 static SDL_Texture *sdlTexture;
+static bool is_fullscreen = false;
 
 static uint8_t video_ram[0x20000];
 static uint8_t chargen_rom[4096];
@@ -472,6 +473,9 @@ video_update()
 				memory_save();
 			} else if (cmd_down && event.key.keysym.sym == SDLK_r) {
 				machine_reset();
+			} else if (cmd_down && event.key.keysym.sym == SDLK_f) {
+				is_fullscreen = !is_fullscreen;
+				SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
 			} else {
 	//			printf("DOWN 0x%02x\n", event.key.keysym.sym);
 				int scancode = ps2_scancode_from_SDLKey(event.key.keysym.sym);
