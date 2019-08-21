@@ -24,7 +24,9 @@ static uint32_t io_addr[2];
 static uint8_t io_inc[2];
 bool io_addrsel;
 
-static uint8_t layer_registers[2][16];
+static uint8_t reg_layer[2][16];
+static uint8_t reg_sprites[16];
+static uint8_t reg_composer[32];
 
 static uint8_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT * 4];
 
@@ -43,11 +45,19 @@ video_reset()
 	io_addrsel = 0;
 
 	// init Layer registers
-	memset(layer_registers, 0, sizeof(layer_registers));
+	memset(reg_layer, 0, sizeof(reg_layer));
 	uint32_t tile_base = 0x20000; // uppercase PETSCII
-	layer_registers[0][0] = 1; // enabled
-	layer_registers[0][4] = tile_base >> 2;
-	layer_registers[0][5] = tile_base >> 10;
+	reg_layer[0][0] = 1; // mode=0, enabled=1
+	reg_layer[0][4] = tile_base >> 2;
+	reg_layer[0][5] = tile_base >> 10;
+
+	// init sprite registers
+	memset(reg_sprites, 0, sizeof(reg_sprites));
+
+	// init composer registers
+	memset(reg_composer, 0, sizeof(reg_composer));
+	reg_composer[1] = 128; // hscale = 1.0
+	reg_composer[2] = 128; // vscale = 1.0
 
 	// copy palette
 	memcpy(palette, default_palette, sizeof(palette));
@@ -296,14 +306,14 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 uint8_t
 get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 {
-	uint8_t enabled = layer_registers[layer][0] & 1;
+	uint8_t enabled = reg_layer[layer][0] & 1;
 	if (!enabled) {
 		return 0; // transparent
 	}
 
-	uint8_t mode = layer_registers[layer][0] >> 5;
-	uint32_t map_base = layer_registers[layer][2] << 2 | layer_registers[layer][3] << 10;
-	uint32_t tile_base = layer_registers[layer][4] << 2 | layer_registers[layer][5] << 10;
+	uint8_t mode = reg_layer[layer][0] >> 5;
+	uint32_t map_base = reg_layer[layer][2] << 2 | reg_layer[layer][3] << 10;
+	uint32_t tile_base = reg_layer[layer][4] << 2 | reg_layer[layer][5] << 10;
 
 	bool text_mode = mode == 0 || mode == 1;
 	bool tile_mode = mode == 2 || mode == 3 || mode == 4;
@@ -315,38 +325,32 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 	uint16_t tileh = 0;
 
 	if (tile_mode || text_mode) {
-		mapw = 1 << ((layer_registers[layer][1] & 3) + 5);
-		maph = 1 << (((layer_registers[layer][1] >> 2) & 3) + 5);
+		mapw = 1 << ((reg_layer[layer][1] & 3) + 5);
+		maph = 1 << (((reg_layer[layer][1] >> 2) & 3) + 5);
 		if (tile_mode) {
-			tilew = 1 << (((layer_registers[layer][1] >> 4) & 1) + 3);
-			tileh = 1 << (((layer_registers[layer][1] >> 5) & 1) + 3);
+			tilew = 1 << (((reg_layer[layer][1] >> 4) & 1) + 3);
+			tileh = 1 << (((reg_layer[layer][1] >> 5) & 1) + 3);
 		} else {
 			tilew = 8;
 			tileh = 8;
 		}
 	} else if (bitmap_mode) {
 		// bitmap mode is basically tiled mode with a single huge tile
-		tilew = SCREEN_WIDTH;
+		tilew = ((reg_layer[layer][1] >> 4) & 1) ? 640 : 320;
 		tileh = SCREEN_HEIGHT;
 	}
 
-	uint8_t hscale = ((layer_registers[layer][0] >> 1) & 3) + 1;
-	uint8_t vscale = ((layer_registers[layer][0] >> 3) & 3) + 1;
-
-	int eff_x = x / hscale;
-	int eff_y = y / vscale;
-
 	// Scrolling
 	if (!bitmap_mode) {
-		uint16_t hscroll = layer_registers[layer][6] | (layer_registers[layer][7] & 0xf) << 8;
-		uint16_t vscroll = layer_registers[layer][8] | (layer_registers[layer][9] & 0xf) << 8;
+		uint16_t hscroll = reg_layer[layer][6] | (reg_layer[layer][7] & 0xf) << 8;
+		uint16_t vscroll = reg_layer[layer][8] | (reg_layer[layer][9] & 0xf) << 8;
 
-		eff_x = (eff_x + hscroll) % (mapw * tilew);
-		eff_y = (eff_y + vscroll) % (maph * tileh);
+		x = (x + hscroll) % (mapw * tilew);
+		y = (y + vscroll) % (maph * tileh);
 	}
 
-	int xx = eff_x % tilew;
-	int yy = eff_y % tileh;
+	int xx = x % tilew;
+	int yy = y % tileh;
 
 	uint16_t tile_index = 0;
 	uint8_t fg_color = 0;
@@ -356,9 +360,9 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 	// extract all information from the map
 	if (bitmap_mode) {
 		tile_index = 0;
-		palette_offset = layer_registers[layer][7] & 0xf;
+		palette_offset = reg_layer[layer][7] & 0xf;
 	} else {
-		uint32_t map_addr = map_base + (eff_y / tileh * mapw + eff_x / tilew) * 2;
+		uint32_t map_addr = map_base + (y / tileh * mapw + x / tilew) * 2;
 		uint8_t byte0 = video_ram_read(map_addr);
 		uint8_t byte1 = video_ram_read(map_addr + 1);
 		if (text_mode) {
@@ -403,13 +407,7 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 	// offset within tilemap of the current tile
 	uint32_t tile_start = tile_index * tile_size;
 	// additional bytes to reach the correct line of the tile
-	uint32_t y_add;
-	if (bitmap_mode) {
-		uint8_t bm_stride = layer_registers[layer][6];
-		y_add = yy * bm_stride * 4;
-	} else {
-		y_add = (yy * tilew * bits_per_pixel) >> 3;
-	}
+	uint32_t y_add = (yy * tilew * bits_per_pixel) >> 3;
 	// additional bytes to reach the correct column of the tile
 	uint16_t x_add = (xx * bits_per_pixel) >> 3;
 	uint32_t tile_offset = tile_start + y_add + x_add;
@@ -439,19 +437,45 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 bool
 video_update()
 {
+	uint8_t out_mode = reg_composer[0] & 3;
+	bool chroma_disable = (reg_composer[0] >> 2) & 1;
+
+	float hscale = 128.0 / reg_composer[1];
+	float vscale = 128.0 / reg_composer[2];
+
 	for (int y = 0; y < SCREEN_HEIGHT; y++) {
 		for (int x = 0; x < SCREEN_WIDTH; x++) {
+			int eff_x = 1.0 / hscale * x;
+			int eff_y = 1.0 / vscale * y;
 
-			uint8_t col_index = get_pixel(1, x, y);
-			if (col_index == 0) { // Layer 2 is transparent
-				col_index = get_pixel(0, x, y);
+			uint8_t r;
+			uint8_t g;
+			uint8_t b;
+
+			if (out_mode == 0) {
+				// video generation off
+				// -> show blue screen
+				r = 0;
+				g = 0;
+				b = 255;
+			} else {
+				uint8_t col_index = get_pixel(1, eff_x, eff_y);
+				if (col_index == 0) { // Layer 2 is transparent
+					col_index = get_pixel(0, eff_x, eff_y);
+				}
+
+				uint16_t entry = palette[col_index * 2] | palette[col_index * 2 + 1] << 8;
+				r = ((entry >> 8) & 0xf) << 4;
+				g = ((entry >> 4) & 0xf) << 4;
+				b = (entry & 0xf) << 4;
+				if (chroma_disable) {
+					r = g = b = (r + b + g) / 3;
+				}
 			}
-
-			uint16_t entry = palette[col_index * 2] | palette[col_index * 2 + 1] << 8;
 			int fbi = (y * SCREEN_WIDTH + x) * 4;
-			framebuffer[fbi + 0] = (entry & 0xf) << 4;
-			framebuffer[fbi + 1] = ((entry >> 4) & 0xf) << 4;
-			framebuffer[fbi + 2] = ((entry >> 8) & 0xf) << 4;
+			framebuffer[fbi + 0] = b;
+			framebuffer[fbi + 1] = g;
+			framebuffer[fbi + 2] = r;
 		}
 	}
 
@@ -534,22 +558,6 @@ get_and_inc_address(uint8_t sel)
 }
 
 //
-// Vera: Layer Registers
-//
-
-static uint8_t
-video_layer_reg_read(uint8_t layer, uint8_t reg)
-{
-	return layer_registers[layer][reg];
-}
-
-void
-video_layer_reg_write(uint8_t layer, uint8_t reg, uint8_t value)
-{
-	layer_registers[layer][reg] = value;
-}
-
-//
 // Vera: Internal Video Address Space
 //
 
@@ -563,9 +571,13 @@ video_ram_read(uint32_t address)
 	} else if (address < 0x40000) {
 		return 0xFF; // unassigned
 	} else if (address < 0x40010) {
-		return video_layer_reg_read(0, address & 0xf);
+		return reg_layer[0][address & 0xf];
 	} else if (address < 0x40020) {
-		return video_layer_reg_read(1, address & 0xf);
+		return reg_layer[1][address & 0xf];
+	} else if (address < 0x40040) {
+		return reg_sprites[address & 0xf];
+	} else if (address < 0x40060) {
+		return reg_composer[address & 0x1f];
 	} else if (address < 0x40200) {
 		return 0xFF; // unassigned
 	} else if (address < 0x40400) {
@@ -585,9 +597,13 @@ video_ram_write(uint32_t address, uint8_t value)
 	} else if (address < 0x40000) {
 		// unassigned, do nothing
 	} else if (address < 0x40010) {
-		video_layer_reg_write(0, address & 0xf, value);
+		reg_layer[0][address & 0xf] = value;
 	} else if (address < 0x40020) {
-		video_layer_reg_write(1, address & 0xf, value);
+		reg_layer[1][address & 0xf] = value;
+	} else if (address < 0x40040) {
+		reg_sprites[address & 0xf] = value;
+	} else if (address < 0x40060) {
+		reg_composer[address & 0x1f] = value;
 	} else if (address < 0x40200) {
 		// unassigned, do nothing
 	} else if (address < 0x40400) {
