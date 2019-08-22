@@ -113,3 +113,48 @@ ps2_step()
 	}
 }
 
+// fake mouse
+
+static uint8_t buttons;
+static uint16_t mouse_x = 0;
+static uint16_t mouse_y = 0;
+
+void
+mouse_button_down(int num)
+{
+	buttons |= 1 << num;
+}
+
+void
+mouse_button_up(int num)
+{
+	buttons &= (1 << num) ^ 0xff;
+}
+
+void
+mouse_move(int x, int y)
+{
+	mouse_x = x;
+	mouse_y = y;
+	printf("%d/%d\n", x, y);
+}
+
+uint8_t
+mouse_read(uint8_t reg)
+{
+	switch (reg) {
+		case 0:
+			return mouse_x & 0xff;
+		case 1:
+			return mouse_x >> 8;
+		case 2:
+			return mouse_y & 0xff;
+		case 3:
+			return mouse_y >> 8;
+		case 4:
+			return buttons;
+		default:
+			return 0xff;
+	}
+}
+

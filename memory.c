@@ -5,6 +5,7 @@
 #include "via.h"
 #include "memory.h"
 #include "video.h"
+#include "ps2.h"
 
 uint8_t ram_bank = NUM_RAM_BANKS - 1;
 uint8_t rom_bank = NUM_ROM_BANKS - 1;
@@ -44,6 +45,9 @@ read6502(uint16_t address)
 		} else if (address >= 0x9f80 && address < 0x9fa0) {
 			// TODO: RTC
 			return 0;
+		} else if (address >= 0x9fa0 && address < 0x9fb0) {
+			// fake mouse
+			return mouse_read(address & 0x1f);
 		} else {
 			return 0;
 		}

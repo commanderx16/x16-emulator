@@ -536,6 +536,29 @@ video_update()
 			}
 			return true;
 		}
+		if (event.type == SDL_MOUSEBUTTONDOWN) {
+			switch (event.button.button) {
+				case SDL_BUTTON_LEFT:
+					mouse_button_down(0);
+					break;
+				case SDL_BUTTON_RIGHT:
+					mouse_button_down(1);
+					break;
+			}
+		}
+		if (event.type == SDL_MOUSEBUTTONUP) {
+			switch (event.button.button) {
+				case SDL_BUTTON_LEFT:
+					mouse_button_up(0);
+					break;
+				case SDL_BUTTON_RIGHT:
+					mouse_button_up(1);
+					break;
+			}
+		}
+		if (event.type == SDL_MOUSEMOTION) {
+			mouse_move(event.motion.x, event.motion.y);
+		}
 	}
 	return true;
 }

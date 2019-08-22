@@ -9,3 +9,9 @@ extern int ps2_clk_in, ps2_data_in;
 void kbd_buffer_add(uint8_t code);
 uint8_t kbd_buffer_remove();
 void ps2_step();
+
+// fake mouse
+void mouse_button_down(int num);
+void mouse_button_up(int num);
+void mouse_move(int x, int y);
+uint8_t mouse_read(uint8_t reg);
