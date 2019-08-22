@@ -135,7 +135,11 @@ main(int argc, char **argv)
 		printf("\n");
 #endif
 
-		if (pc == 0xffd5 || pc == 0xffd8) {
+		if ((pc == 0xffd5 || pc == 0xffd8) &&
+			ROM[0x3ff6] == 'M' && // only for KERNAL
+			ROM[0x3ff7] == 'I' &&
+			ROM[0x3ff8] == 'S' &&
+			ROM[0x3ff9] == 'T') {
 			if (pc == 0xffd5) {
 				LOAD();
 			} else {
@@ -149,7 +153,7 @@ main(int argc, char **argv)
 		ps2_step();
 		instruction_counter++;
 
-		if (instruction_counter % (20000 * MHZ) == 0) {
+		if (instruction_counter && instruction_counter % (20000 * MHZ) == 0) {
 			if (!video_update()) {
 				break;
 			}
