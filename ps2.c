@@ -136,7 +136,6 @@ mouse_move(int x, int y)
 {
 	mouse_x = x;
 	mouse_y = y;
-	printf("%d/%d\n", x, y);
 }
 
 uint8_t

@@ -18,6 +18,7 @@ static bool is_fullscreen = false;
 static uint8_t video_ram[0x20000];
 static uint8_t chargen_rom[4096];
 static uint8_t palette[256 * 2];
+static uint8_t sprite_data[256][8];
 
 // I/O registers
 static uint32_t io_addr[2];
@@ -58,6 +59,9 @@ video_reset()
 	memset(reg_composer, 0, sizeof(reg_composer));
 	reg_composer[1] = 128; // hscale = 1.0
 	reg_composer[2] = 128; // vscale = 1.0
+
+	// init sprite data
+	memset(sprite_data, 0, sizeof(sprite_data));
 
 	// copy palette
 	memcpy(palette, default_palette, sizeof(palette));
@@ -434,6 +438,52 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 	return col_index;
 }
 
+//#define NUM_SPRITES 256
+#define NUM_SPRITES 8 /* XXX speedup */
+
+uint8_t
+get_sprite(uint16_t x, uint16_t y)
+{
+	if (!(reg_sprites[0] & 1)) {
+		// sprites disabled
+		return 0;
+	}
+	for (int i = 0; i < NUM_SPRITES; i++) {
+		uint8_t sprite_zdepth = (sprite_data[i][3] >> 2) & 3;
+		if (sprite_zdepth == 0) {
+			continue;
+		}
+		uint16_t sprite_x = sprite_data[i][0] | (sprite_data[i][1] & 3) << 8;
+		uint16_t sprite_y = sprite_data[i][2] | (sprite_data[i][3] & 1) << 8;
+		uint8_t sprite_width = 1 << (((sprite_data[i][5] >> 4) & 3) + 3);
+		uint8_t sprite_height = 1 << ((sprite_data[i][5] >> 6) + 3);
+
+		if (x < sprite_x || x >= sprite_x + sprite_width) {
+			continue;
+		}
+		if (y < sprite_y || y >= sprite_y + sprite_height) {
+			continue;
+		}
+
+		bool mode = (sprite_data[i][3] >> 1) & 1;
+		uint32_t sprite_address = sprite_data[i][4] << 5 | (sprite_data[i][5] & 0xf) << 13;
+
+		if (!mode) {
+			// 4 bpp
+			uint8_t byte = video_ram[sprite_address + (y - sprite_y) * sprite_width + (x - sprite_x) / 2];
+			if (x & 1) {
+				return byte & 0xf;
+			} else {
+				return byte >> 4;
+			}
+		} else {
+			// 8 bpp
+			return video_ram[sprite_address + (y - sprite_y) * sprite_width + (x - sprite_x)];
+		}
+	}
+	return 0;
+}
+
 bool
 video_update()
 {
@@ -462,6 +512,10 @@ video_update()
 				uint8_t col_index = get_pixel(1, eff_x, eff_y);
 				if (col_index == 0) { // Layer 2 is transparent
 					col_index = get_pixel(0, eff_x, eff_y);
+				}
+				uint8_t spr_col_index = get_sprite(eff_x, eff_y);
+				if (spr_col_index) {
+					col_index = spr_col_index;
 				}
 
 				uint16_t entry = palette[col_index * 2] | palette[col_index * 2 + 1] << 8;
@@ -605,6 +659,10 @@ video_ram_read(uint32_t address)
 		return 0xFF; // unassigned
 	} else if (address < 0x40400) {
 		return palette[address & 0x1ff];
+	} else if (address < 0x40800) {
+		return 0xFF; // unassigned
+	} else if (address < 0x41000) {
+		return sprite_data[(address >> 3) & 0xff][address & 0x7];
 	} else {
 		return 0xFF; // unassigned
 	}
@@ -631,6 +689,10 @@ video_ram_write(uint32_t address, uint8_t value)
 		// unassigned, do nothing
 	} else if (address < 0x40400) {
 		palette[address & 0x1ff] = value;
+	} else if (address < 0x40800) {
+		// unassigned, do nothing
+	} else if (address < 0x41000) {
+		sprite_data[(address >> 3) & 0xff][address & 0x7] = value;
 	} else {
 		// unassigned, do nothing
 	}
