@@ -40,6 +40,15 @@ machine_reset()
 	reset6502();
 }
 
+static bool
+is_kernal()
+{
+	return ROM[0x3ff6] == 'M' && // only for KERNAL
+	       ROM[0x3ff7] == 'I' &&
+	       ROM[0x3ff8] == 'S' &&
+	       ROM[0x3ff9] == 'T';
+}
+
 int
 main(int argc, char **argv)
 {
@@ -132,14 +141,11 @@ main(int argc, char **argv)
 		for (int i = 7; i >= 0; i--) {
 			printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 		}
+//		printf(" --- %04x", RAM[0xf4]  | RAM[0xf5]  << 8);
 		printf("\n");
 #endif
 
-		if ((pc == 0xffd5 || pc == 0xffd8) &&
-			ROM[0x3ff6] == 'M' && // only for KERNAL
-			ROM[0x3ff7] == 'I' &&
-			ROM[0x3ff8] == 'S' &&
-			ROM[0x3ff9] == 'T') {
+		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal()) {
 			if (pc == 0xffd5) {
 				LOAD();
 			} else {
@@ -149,6 +155,43 @@ main(int argc, char **argv)
 			sp += 2;
 		}
 
+#if 0
+		if (pc == 0) {
+			uint32_t lba =
+				RAM[0x280] << 0 |
+				RAM[0x281] << 8 |
+				RAM[0x282] << 16 |
+				RAM[0x283] << 24;
+			uint16_t offset =
+				RAM[0xf4] << 0 |
+				RAM[0xf5] << 8;
+			printf("Reading LBA %d to $%04x\n", lba, offset);
+			FILE *f = fopen("/tmp/disk.img", "r");
+			fseek(f, lba * 512, SEEK_SET);
+			fread(&RAM[offset], 512, 1, f);
+			fclose(f);
+			for (int i = 0; i < 512; i++) {
+				printf("%02x ", RAM[offset + i]);
+				if (i && ((i & 15) == 15)) {
+					printf("|");
+					for (int j = i - 16; j < i; j++) {
+						uint8_t c = RAM[offset + j];
+						if (c < 0x20 || c > 0x7f) {
+							c = '.';
+						}
+						printf("%c", c);
+					}
+					printf("|\n");
+				}
+			}
+			RAM[0xf5]++; // side effect!! -- see comment "TODO FIXME clarification with TW" in fat32.asm
+			a = 0;
+			status |= 2; // Z
+			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
+			sp += 2;
+			continue;
+		} else
+#endif
 		step6502();
 		ps2_step();
 		instruction_counter++;
@@ -164,7 +207,7 @@ main(int argc, char **argv)
 			}
 		}
 
-		if (pc == 0xffcf && prg_file) {
+		if (pc == 0xffcf && is_kernal() && prg_file) {
 			// as soon as BASIC starts reading a line,
 			// inject the app
 			uint8_t start_lo = fgetc(prg_file);
@@ -185,4 +228,3 @@ main(int argc, char **argv)
 
 	return 0;
 }
-
