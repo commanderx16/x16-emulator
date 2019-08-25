@@ -17,9 +17,11 @@
 
 #define MHZ 8
 
-//#define DEBUG
+//#define TRACE
+#define SDCARD_HYPERCALLS
+//#define LOAD_HYPERCALLS
 
-#ifdef DEBUG
+#ifdef TRACE
 #include "rom_labels.h"
 char *
 label_for_address(uint16_t address)
@@ -52,6 +54,10 @@ is_kernal()
 int
 main(int argc, char **argv)
 {
+#ifdef TRACE
+	bool trace = false;
+#endif
+
 	if (argc < 3) {
 		printf("Usage: %s <rom.bin> <chargen.bin> [<app.prg>[,<load_addr>]]\n\n", argv[0]);
 		printf("<rom.bin>:     ROM file:\n");
@@ -112,39 +118,45 @@ main(int argc, char **argv)
 
 	int instruction_counter = 0;
 	for (;;) {
-#ifdef DEBUG
-		printf("\t\t\t\t[%6d] ", instruction_counter);
+#ifdef TRACE
+		if (pc == 0xffd5) {
+			trace = true;
+		}
+		if (trace) {
+			printf("\t\t\t\t[%6d] ", instruction_counter);
 
-		char *label = label_for_address(pc);
-		int label_len = label ? strlen(label) : 0;
-		if (label) {
-			printf("%s", label);
-		}
-		for (int i = 0; i < 10 - label_len; i++) {
-			printf(" ");
-		}
-		printf(" .,%04x ", pc);
-		char disasm_line[15];
-		int len = disasm(pc, RAM, disasm_line, sizeof(disasm_line));
-		for (int i = 0; i < len; i++) {
-			printf("%02x ", read6502(pc + i));
-		}
-		for (int i = 0; i < 9 - 3 * len; i++) {
-			printf(" ");
-		}
-		printf("%s", disasm_line);
-		for (int i = 0; i < 15 - strlen(disasm_line); i++) {
-			printf(" ");
-		}
+			char *label = label_for_address(pc);
+			int label_len = label ? strlen(label) : 0;
+			if (label) {
+				printf("%s", label);
+			}
+			for (int i = 0; i < 10 - label_len; i++) {
+				printf(" ");
+			}
+			printf(" .,%04x ", pc);
+			char disasm_line[15];
+			int len = disasm(pc, RAM, disasm_line, sizeof(disasm_line));
+			for (int i = 0; i < len; i++) {
+				printf("%02x ", read6502(pc + i));
+			}
+			for (int i = 0; i < 9 - 3 * len; i++) {
+				printf(" ");
+			}
+			printf("%s", disasm_line);
+			for (int i = 0; i < 15 - strlen(disasm_line); i++) {
+				printf(" ");
+			}
 
-		printf("a=$%02x x=$%02x y=$%02x s=$%02x p=", a, x, y, sp);
-		for (int i = 7; i >= 0; i--) {
-			printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
+			printf("a=$%02x x=$%02x y=$%02x s=$%02x p=", a, x, y, sp);
+			for (int i = 7; i >= 0; i--) {
+				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
+			}
+			printf(" --- %04x", RAM[0xf2]  | RAM[0xf3]  << 8);
+			printf("\n");
 		}
-//		printf(" --- %04x", RAM[0xf4]  | RAM[0xf5]  << 8);
-		printf("\n");
 #endif
 
+#ifdef LOAD_HYPERCALLS
 		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal()) {
 			if (pc == 0xffd5) {
 				LOAD();
@@ -154,8 +166,10 @@ main(int argc, char **argv)
 			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
 			sp += 2;
 		}
+#endif
 
-#if 0
+
+#ifdef SDCARD_HYPERCALLS
 		if (pc == 0) {
 			uint32_t lba =
 				RAM[0x280] << 0 |
@@ -174,7 +188,7 @@ main(int argc, char **argv)
 				printf("%02x ", RAM[offset + i]);
 				if (i && ((i & 15) == 15)) {
 					printf("|");
-					for (int j = i - 16; j < i; j++) {
+					for (int j = i - 15; j < i + 1; j++) {
 						uint8_t c = RAM[offset + j];
 						if (c < 0x20 || c > 0x7f) {
 							c = '.';
@@ -189,7 +203,32 @@ main(int argc, char **argv)
 			status |= 2; // Z
 			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
 			sp += 2;
-			continue;
+		} else if (pc == 1) {
+			printf("A: '%c'\n", a);
+			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
+			sp += 2;
+		} else if (pc == 2) {
+			printf("A: %d\n", a);
+			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
+			sp += 2;
+		} else if (pc == 3) {
+			uint16_t offset = 0x8000;
+			for (int i = 0; i < 256; i++) {
+				printf("%02x ", RAM[offset + i]);
+				if (i && ((i & 15) == 15)) {
+					printf("|");
+					for (int j = i - 15; j < i + 1; j++) {
+						uint8_t c = RAM[offset + j];
+						if (c < 0x20 || c > 0x7f) {
+							c = '.';
+						}
+						printf("%c", c);
+					}
+					printf("|\n");
+				}
+			}
+			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
+			sp += 2;
 		} else
 #endif
 		step6502();
