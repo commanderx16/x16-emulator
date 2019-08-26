@@ -54,11 +54,19 @@ via1_write(uint8_t reg, uint8_t value)
 // PA7 NESJOY joy2 CLK
 
 static uint8_t via2registers[16];
+static uint8_t via2pb_in;
 
 uint8_t
 via2_read(uint8_t reg)
 {
-	if (reg == 1) {
+	if (reg == 0) {
+		// PB
+		// 0 input  -> take input bit
+		// 1 output -> take output bit
+		return (via2pb_in & (via2registers[2] ^ 0xff)) |
+		       (via2registers[0] & via2registers[2]);
+	} else if (reg == 1) {
+		// PA
 		uint8_t value =
 			(via2registers[3] & PS2_CLK_MASK ? 0 : ps2_clk_out << 1) |
 			(via2registers[3] & PS2_DATA_MASK ? 0 : ps2_data_out);
@@ -73,9 +81,31 @@ via2_write(uint8_t reg, uint8_t value)
 {
 	via2registers[reg] = value;
 
-	if (reg == 1 || reg == 3) {
+	if (reg == 0) {
+		// PB
+	} else if (reg == 2) {
+		// PB DDRB
+	} else if (reg == 1 || reg == 3) {
+		// PA
 		ps2_clk_in = via2registers[3] & PS2_CLK_MASK ? via2registers[1] & PS2_CLK_MASK : 1;
 		ps2_data_in = via2registers[3] & PS2_DATA_MASK ? via2registers[1] & PS2_DATA_MASK : 1;
 	}
 }
 
+uint8_t
+via2_pb_get_out()
+{
+	return via2registers[2] /* DDR  */ & via2registers[0]; /* PB */
+}
+
+void
+via2_pb_set_in(uint8_t value)
+{
+	via2pb_in = value;
+}
+
+void
+via2_sr_set(uint8_t value)
+{
+	via2registers[10] = value;
+}

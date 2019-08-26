@@ -12,6 +12,7 @@
 #include "memory.h"
 #include "video.h"
 #include "ps2.h"
+#include "sdcard.h"
 #include "loadsave.h"
 #include "glue.h"
 
@@ -113,6 +114,7 @@ main(int argc, char **argv)
 	}
 
 	video_init(chargen);
+	sdcard_init();
 
 	machine_reset();
 
@@ -233,6 +235,7 @@ main(int argc, char **argv)
 #endif
 		step6502();
 		ps2_step();
+		sdcard_step();
 		instruction_counter++;
 
 		if (instruction_counter && instruction_counter % (20000 * MHZ) == 0) {
