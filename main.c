@@ -19,8 +19,7 @@
 #define MHZ 8
 
 //#define TRACE
-#define SDCARD_HYPERCALLS
-//#define LOAD_HYPERCALLS
+#define LOAD_HYPERCALLS
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -159,7 +158,7 @@ main(int argc, char **argv)
 #endif
 
 #ifdef LOAD_HYPERCALLS
-		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal()) {
+		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && RAM[0xba] == 1) {
 			if (pc == 0xffd5) {
 				LOAD();
 			} else {
@@ -170,69 +169,6 @@ main(int argc, char **argv)
 		}
 #endif
 
-
-#ifdef SDCARD_HYPERCALLS
-		if (pc == 0) {
-			uint32_t lba =
-				RAM[0x280] << 0 |
-				RAM[0x281] << 8 |
-				RAM[0x282] << 16 |
-				RAM[0x283] << 24;
-			uint16_t offset =
-				RAM[0xf4] << 0 |
-				RAM[0xf5] << 8;
-			printf("Reading LBA %d to $%04x\n", lba, offset);
-			FILE *f = fopen("/tmp/disk.img", "r");
-			fseek(f, lba * 512, SEEK_SET);
-			fread(&RAM[offset], 512, 1, f);
-			fclose(f);
-			for (int i = 0; i < 512; i++) {
-				printf("%02x ", RAM[offset + i]);
-				if (i && ((i & 15) == 15)) {
-					printf("|");
-					for (int j = i - 15; j < i + 1; j++) {
-						uint8_t c = RAM[offset + j];
-						if (c < 0x20 || c > 0x7f) {
-							c = '.';
-						}
-						printf("%c", c);
-					}
-					printf("|\n");
-				}
-			}
-			RAM[0xf5]++; // side effect!! -- see comment "TODO FIXME clarification with TW" in fat32.asm
-			a = 0;
-			status |= 2; // Z
-			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
-			sp += 2;
-		} else if (pc == 1) {
-			printf("A: '%c'\n", a);
-			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
-			sp += 2;
-		} else if (pc == 2) {
-			printf("A: %d\n", a);
-			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
-			sp += 2;
-		} else if (pc == 3) {
-			uint16_t offset = 0x8000;
-			for (int i = 0; i < 256; i++) {
-				printf("%02x ", RAM[offset + i]);
-				if (i && ((i & 15) == 15)) {
-					printf("|");
-					for (int j = i - 15; j < i + 1; j++) {
-						uint8_t c = RAM[offset + j];
-						if (c < 0x20 || c > 0x7f) {
-							c = '.';
-						}
-						printf("%c", c);
-					}
-					printf("|\n");
-				}
-			}
-			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
-			sp += 2;
-		} else
-#endif
 		step6502();
 		ps2_step();
 		sdcard_step();
