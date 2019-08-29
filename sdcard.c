@@ -13,6 +13,8 @@
 // CB1 SPICLK (=PB0)
 // CB2 MISO
 
+FILE *sdcard_file = NULL;
+
 static bool initialized;
 
 void
@@ -24,6 +26,10 @@ sdcard_init()
 void
 sdcard_step()
 {
+	if (!sdcard_file) {
+		return;
+	}
+
 	uint8_t port = via2_pb_get_out();
 	bool clk = port & 1;
 	bool ss = !((port >> 1) & 1);
@@ -144,10 +150,8 @@ sdcard_step()
 						read_block_respose[0] = 0;
 						read_block_respose[1] = 0xfe;
 						printf("Reading LBA %d\n", lba);
-						FILE *f = fopen("/tmp/disk.img", "r");
-						fseek(f, lba * 512, SEEK_SET);
-						fread(&read_block_respose[2], 512, 1, f);
-						fclose(f);
+						fseek(sdcard_file, lba * 512, SEEK_SET);
+						fread(&read_block_respose[2], 512, 1, sdcard_file);
 
 						response = read_block_respose;
 						response_length = 2 + 512 + 2;

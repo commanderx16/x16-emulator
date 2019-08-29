@@ -20,6 +20,7 @@
 
 //#define TRACE
 #define LOAD_HYPERCALLS
+#define SDCARD_SUPPORT
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -59,7 +60,11 @@ main(int argc, char **argv)
 #endif
 
 	if (argc < 3) {
+#ifdef SDCARD_SUPPORT
 		printf("Usage: %s <rom.bin> <chargen.bin> [<app.prg>[,<load_addr>]]\n\n", argv[0]);
+#else
+		printf("Usage: %s <rom.bin> <chargen.bin> [<sdcard.img>]\n\n", argv[0]);
+#endif
 		printf("<rom.bin>:     ROM file:\n");
 		printf("                 $0000-$1FFF bank #0 of banked ROM (BASIC)\n");
 		printf("                 $2000-$3FFF fixed ROM at $E000-$FFFF (KERNAL)\n");
@@ -70,8 +75,12 @@ main(int argc, char **argv)
 		printf("<chargen.bin>: Character ROM file:\n");
 		printf("                 $0000-$07FF upper case/graphics\n");
 		printf("                 $0800-$0FFF lower case\n\n");
+#ifdef SDCARD_SUPPORT
+		printf("<sdcard.img>:  SD card image (partition map + FAT32)\n\n");
+#else
 		printf("<app.prg>:     Application PRG file (with 2 byte start address header)\n\n");
 		printf("<load_addr>:   Override load address (hex, no prefix)\n\n");
+#endif
 		exit(1);
 	}
 
@@ -94,6 +103,16 @@ main(int argc, char **argv)
 	fread(chargen, 1, sizeof(chargen), f);
 	fclose(f);
 
+#ifdef SDCARD_SUPPORT
+	// 3rd argument: SD card image (optional)
+	if (argc == 4) {
+		sdcard_file = fopen(argv[3], "r");
+		if (!sdcard_file) {
+			printf("Cannot open %s!\n", argv[3]);
+			exit(1);
+		}
+	}
+#else
 	// 3rd argument: application (optional)
 	FILE *prg_file = NULL;
 	int prg_override_start = -1;
@@ -111,6 +130,7 @@ main(int argc, char **argv)
 			exit(1);
 		}
 	}
+#endif
 
 	video_init(chargen);
 	sdcard_init();
@@ -120,6 +140,7 @@ main(int argc, char **argv)
 	int instruction_counter = 0;
 	for (;;) {
 #ifdef TRACE
+//		if (pc == 0xffc0) {
 		if (pc == 0xffd5) {
 			trace = true;
 		}
@@ -185,6 +206,7 @@ main(int argc, char **argv)
 			}
 		}
 
+#ifndef SDCARD_SUPPORT
 		if (pc == 0xffcf && is_kernal() && prg_file) {
 			// as soon as BASIC starts reading a line,
 			// inject the app
@@ -200,6 +222,7 @@ main(int argc, char **argv)
 			fclose(prg_file);
 			prg_file = NULL;
 		}
+#endif
 	}
 
 	video_end();
