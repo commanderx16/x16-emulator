@@ -190,17 +190,23 @@ main(int argc, char **argv)
 		}
 #endif
 
+		uint32_t old_clockticks6502 = clockticks6502;
 		step6502();
-		ps2_step();
-		sdcard_step();
+		uint8_t clocks = clockticks6502 - old_clockticks6502;
+		bool new_frame = false;
+		for (uint8_t i = 0; i < clocks; i++) {
+			ps2_step();
+			sdcard_step();
+			new_frame |= video_step(MHZ);
+		}
+
 		instruction_counter++;
 
-		if (instruction_counter && instruction_counter % (20000 * MHZ) == 0) {
+		if (new_frame) {
 			if (!video_update()) {
 				break;
 			}
 			usleep(20000);
-//			printf("IRQ!\n");
 			if (!(status & 4)) {
 				irq6502();
 			}

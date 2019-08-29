@@ -37,6 +37,8 @@ static const uint16_t default_palette[] = {
 
 static uint8_t video_ram_read(uint32_t address);
 
+static float scan_pixel_pos = 0;
+
 void
 video_reset()
 {
@@ -484,55 +486,99 @@ get_sprite(uint16_t x, uint16_t y)
 	return 0;
 }
 
+// Screen refresh rate	60 Hz
+// Pixel freq.	25.175 MHz
+//
+// Horizontal timing (line)
+//
+// Visible area	640
+// Front porch	16
+// Sync pulse	96
+// Back porch	48
+// Whole line	800
+//
+// Vertical timing (frame)
+//
+// Visible area	480
+// Front porch	10
+// Sync pulse	2
+// Back porch	33
+// Whole frame	525
+
+// http://tinyvga.com/vga-timing/640x480@60Hz
+
 bool
-video_update()
+video_step(float mhz)
 {
+	bool new_frame = false;
+	float new_scan_pixel_pos = scan_pixel_pos;
+	new_scan_pixel_pos += 25.175/mhz;
+	if (new_scan_pixel_pos >= 800 * 525) {
+		new_scan_pixel_pos -= 800 * 525;
+		new_frame = true;
+	}
+
 	uint8_t out_mode = reg_composer[0] & 3;
 	bool chroma_disable = (reg_composer[0] >> 2) & 1;
 
 	float hscale = 128.0 / reg_composer[1];
 	float vscale = 128.0 / reg_composer[2];
 
-	for (int y = 0; y < SCREEN_HEIGHT; y++) {
-		for (int x = 0; x < SCREEN_WIDTH; x++) {
-			int eff_x = 1.0 / hscale * x;
-			int eff_y = 1.0 / vscale * y;
-
-			uint8_t r;
-			uint8_t g;
-			uint8_t b;
-
-			if (out_mode == 0) {
-				// video generation off
-				// -> show blue screen
-				r = 0;
-				g = 0;
-				b = 255;
-			} else {
-				uint8_t col_index = get_pixel(1, eff_x, eff_y);
-				if (col_index == 0) { // Layer 2 is transparent
-					col_index = get_pixel(0, eff_x, eff_y);
-				}
-				uint8_t spr_col_index = get_sprite(eff_x, eff_y);
-				if (spr_col_index) {
-					col_index = spr_col_index;
-				}
-
-				uint16_t entry = palette[col_index * 2] | palette[col_index * 2 + 1] << 8;
-				r = ((entry >> 8) & 0xf) << 4;
-				g = ((entry >> 4) & 0xf) << 4;
-				b = (entry & 0xf) << 4;
-				if (chroma_disable) {
-					r = g = b = (r + b + g) / 3;
-				}
-			}
-			int fbi = (y * SCREEN_WIDTH + x) * 4;
-			framebuffer[fbi + 0] = b;
-			framebuffer[fbi + 1] = g;
-			framebuffer[fbi + 2] = r;
+//	printf("%f->%f\n", floor(scan_pixel_pos), floor(new_scan_pixel_pos));
+	for (int pp = floor(scan_pixel_pos); pp < floor(new_scan_pixel_pos); pp++) {
+		int scan_x = pp % 800;
+		int scan_y = pp / 800;
+		int x = scan_x - 16;
+		int y = scan_y - 10;
+		if (x < 0 || x >= 640 || y < 0 || y >= 480) {
+			continue;
 		}
+
+		int eff_x = 1.0 / hscale * x;
+		int eff_y = 1.0 / vscale * y;
+
+		uint8_t r;
+		uint8_t g;
+		uint8_t b;
+
+		if (out_mode == 0) {
+			// video generation off
+			// -> show blue screen
+			r = 0;
+			g = 0;
+			b = 255;
+		} else {
+			uint8_t col_index = get_pixel(1, eff_x, eff_y);
+			if (col_index == 0) { // Layer 2 is transparent
+				col_index = get_pixel(0, eff_x, eff_y);
+			}
+			uint8_t spr_col_index = get_sprite(eff_x, eff_y);
+			if (spr_col_index) {
+				col_index = spr_col_index;
+			}
+
+			uint16_t entry = palette[col_index * 2] | palette[col_index * 2 + 1] << 8;
+			r = ((entry >> 8) & 0xf) << 4;
+			g = ((entry >> 4) & 0xf) << 4;
+			b = (entry & 0xf) << 4;
+			if (chroma_disable) {
+				r = g = b = (r + b + g) / 3;
+			}
+		}
+		int fbi = (y * SCREEN_WIDTH + x) * 4;
+		framebuffer[fbi + 0] = b;
+		framebuffer[fbi + 1] = g;
+		framebuffer[fbi + 2] = r;
 	}
 
+	scan_pixel_pos = new_scan_pixel_pos;
+
+	return new_frame;
+}
+
+bool
+video_update()
+{
 	SDL_UpdateTexture(sdlTexture, NULL, framebuffer, SCREEN_WIDTH * 4);
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, sdlTexture, NULL, NULL);

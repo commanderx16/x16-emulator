@@ -7,6 +7,7 @@
 
 bool video_init(uint8_t *chargen);
 void video_reset(void);
+bool video_step(float mhz);
 bool video_update(void);
 void video_end(void);
 
