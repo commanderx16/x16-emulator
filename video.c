@@ -307,7 +307,7 @@ ps2_scancode_from_SDLKey(SDL_Keycode k)
 	}
 }
 
-uint8_t
+static uint8_t
 get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 {
 	uint8_t enabled = reg_layer[layer][0] & 1;
@@ -519,7 +519,6 @@ video_flush_internal(int start, int end)
 	float hscale = 128.0 / reg_composer[1];
 	float vscale = 128.0 / reg_composer[2];
 
-//	printf("%d->%d\n", start, end);
 	for (int pp = start; pp < end; pp++) {
 		int scan_x = pp % VGA_SCAN_WIDTH;
 		int scan_y = pp / VGA_SCAN_WIDTH;
@@ -576,7 +575,7 @@ video_step(float mhz)
 		new_frame = true;
 		int start = (int)floor(start_scan_pixel_pos);
 		int end = VGA_SCAN_WIDTH * VGA_SCAN_HEIGHT;
-		printf("SCREEN %d->%d\n", start, end);
+//		printf("SCREEN %d->%d\n", start, end);
 		video_flush_internal(start, end);
 		start_scan_pixel_pos = 0;
 		end_scan_pixel_pos = 0;
@@ -590,7 +589,7 @@ video_flush()
 {
 	int start = (int)floor(start_scan_pixel_pos);
 	int end = (int)floor(end_scan_pixel_pos);
-	printf("DIRTY  %d->%d\n", start, end);
+//	printf("DIRTY  %d->%d\n", start, end);
 	video_flush_internal(start, end);
 	start_scan_pixel_pos = end_scan_pixel_pos;
 }
@@ -761,6 +760,7 @@ video_ram_write(uint32_t address, uint8_t value)
 	} else {
 		// unassigned, do nothing
 	}
+	video_flush();
 }
 
 //
@@ -819,5 +819,4 @@ video_write(uint8_t reg, uint8_t value)
 			break;
 		}
 	}
-	video_flush();
 }

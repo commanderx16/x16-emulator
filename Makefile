@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Werror -g $(shell sdl2-config --cflags)
+CFLAGS=-O3 -Wall -Werror -g $(shell sdl2-config --cflags)
 LDFLAGS=$(shell sdl2-config --libs)
 
 #
