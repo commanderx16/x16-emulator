@@ -37,8 +37,6 @@ static const uint16_t default_palette[] = {
 
 static uint8_t video_ram_read(uint32_t address);
 
-static float scan_pixel_pos = 0;
-
 void
 video_reset()
 {
@@ -507,27 +505,24 @@ get_sprite(uint16_t x, uint16_t y)
 
 // http://tinyvga.com/vga-timing/640x480@60Hz
 
-bool
-video_step(float mhz)
-{
-	bool new_frame = false;
-	float new_scan_pixel_pos = scan_pixel_pos;
-	new_scan_pixel_pos += 25.175/mhz;
-	if (new_scan_pixel_pos >= 800 * 525) {
-		new_scan_pixel_pos -= 800 * 525;
-		new_frame = true;
-	}
+#define VGA_SCAN_WIDTH 800
+#define VGA_SCAN_HEIGHT 525
 
+float start_scan_pixel_pos, end_scan_pixel_pos;
+
+static void
+video_flush_internal(int start, int end)
+{
 	uint8_t out_mode = reg_composer[0] & 3;
 	bool chroma_disable = (reg_composer[0] >> 2) & 1;
 
 	float hscale = 128.0 / reg_composer[1];
 	float vscale = 128.0 / reg_composer[2];
 
-//	printf("%f->%f\n", floor(scan_pixel_pos), floor(new_scan_pixel_pos));
-	for (int pp = floor(scan_pixel_pos); pp < floor(new_scan_pixel_pos); pp++) {
-		int scan_x = pp % 800;
-		int scan_y = pp / 800;
+//	printf("%d->%d\n", start, end);
+	for (int pp = start; pp < end; pp++) {
+		int scan_x = pp % VGA_SCAN_WIDTH;
+		int scan_y = pp / VGA_SCAN_WIDTH;
 		int x = scan_x - 16;
 		int y = scan_y - 10;
 		if (x < 0 || x >= 640 || y < 0 || y >= 480) {
@@ -570,10 +565,34 @@ video_step(float mhz)
 		framebuffer[fbi + 1] = g;
 		framebuffer[fbi + 2] = r;
 	}
+}
 
-	scan_pixel_pos = new_scan_pixel_pos;
+bool
+video_step(float mhz)
+{
+	bool new_frame = false;
+	end_scan_pixel_pos += 25.175/mhz;
+	if (end_scan_pixel_pos >= VGA_SCAN_WIDTH * VGA_SCAN_HEIGHT) {
+		new_frame = true;
+		int start = (int)floor(start_scan_pixel_pos);
+		int end = VGA_SCAN_WIDTH * VGA_SCAN_HEIGHT;
+		printf("SCREEN %d->%d\n", start, end);
+		video_flush_internal(start, end);
+		start_scan_pixel_pos = 0;
+		end_scan_pixel_pos = 0;
+	}
 
 	return new_frame;
+}
+
+static void
+video_flush()
+{
+	int start = (int)floor(start_scan_pixel_pos);
+	int end = (int)floor(end_scan_pixel_pos);
+	printf("DIRTY  %d->%d\n", start, end);
+	video_flush_internal(start, end);
+	start_scan_pixel_pos = end_scan_pixel_pos;
 }
 
 bool
@@ -800,4 +819,5 @@ video_write(uint8_t reg, uint8_t value)
 			break;
 		}
 	}
+	video_flush();
 }
