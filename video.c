@@ -505,8 +505,8 @@ get_sprite(uint16_t x, uint16_t y)
 
 // http://tinyvga.com/vga-timing/640x480@60Hz
 
-#define VGA_SCAN_WIDTH 800
-#define VGA_SCAN_HEIGHT 525
+#define SCAN_WIDTH 800
+#define SCAN_HEIGHT 525
 
 float start_scan_pixel_pos, end_scan_pixel_pos;
 
@@ -520,11 +520,29 @@ video_flush_internal(int start, int end)
 	float vscale = 128.0 / reg_composer[2];
 
 	for (int pp = start; pp < end; pp++) {
-		int scan_x = pp % VGA_SCAN_WIDTH;
-		int scan_y = pp / VGA_SCAN_WIDTH;
-		int x = scan_x - 16;
-		int y = scan_y - 10;
-		if (x < 0 || x >= 640 || y < 0 || y >= 480) {
+		int x;
+		int y;
+		if (out_mode == 0 || out_mode == 1) {
+			// VGA
+			x = pp % SCAN_WIDTH;
+			y = pp / SCAN_WIDTH;
+			x -= 16;
+			y -= 10;
+		} else {
+			// NTSC
+			// 262.5 lines per frame
+			// lower field first
+			int pp2 = pp;
+			int field = pp2 > SCAN_WIDTH * SCAN_HEIGHT / 2;
+			if (field == 1) {
+				pp2 -= SCAN_WIDTH * SCAN_HEIGHT / 2;
+			}
+			x = pp2 % SCAN_WIDTH;
+			y = pp2 / SCAN_WIDTH * 2 + (1 - field);
+			x -= 16;
+			y -= 10;
+		}
+		if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT) {
 			continue;
 		}
 
@@ -558,6 +576,21 @@ video_flush_internal(int start, int end)
 			if (chroma_disable) {
 				r = g = b = (r + b + g) / 3;
 			}
+
+#define TITLE_SAFE_X 0.067
+#define TITLE_SAFE_Y 0.05
+
+			// NTSC overscan
+			if (out_mode == 2) {
+				if (x < SCREEN_WIDTH * TITLE_SAFE_X ||
+				    x > SCREEN_WIDTH * (1 - TITLE_SAFE_X) ||
+				    y < SCREEN_HEIGHT * TITLE_SAFE_Y ||
+				    y > SCREEN_HEIGHT * (1 - TITLE_SAFE_Y)) {
+					r /= 3;
+					g /= 3;
+					b /= 3;
+				}
+			}
 		}
 		int fbi = (y * SCREEN_WIDTH + x) * 4;
 		framebuffer[fbi + 0] = b;
@@ -569,12 +602,18 @@ video_flush_internal(int start, int end)
 bool
 video_step(float mhz)
 {
+	uint8_t out_mode = reg_composer[0] & 3;
+
 	bool new_frame = false;
-	end_scan_pixel_pos += 25.175/mhz;
-	if (end_scan_pixel_pos >= VGA_SCAN_WIDTH * VGA_SCAN_HEIGHT) {
+	if (out_mode == 0 || out_mode == 1) {
+		end_scan_pixel_pos += 25.175 / mhz;
+	} else {
+		end_scan_pixel_pos += 15.750 / mhz;
+	}
+	if (end_scan_pixel_pos >= SCAN_WIDTH * SCAN_HEIGHT) {
 		new_frame = true;
 		int start = (int)floor(start_scan_pixel_pos);
-		int end = VGA_SCAN_WIDTH * VGA_SCAN_HEIGHT;
+		int end = SCAN_WIDTH * SCAN_HEIGHT;
 //		printf("SCREEN %d->%d\n", start, end);
 		video_flush_internal(start, end);
 		start_scan_pixel_pos = 0;
