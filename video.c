@@ -5,6 +5,23 @@
 
 #define ESC_IS_BREAK /* if enabled, Esc sends Break/Pause key instead of Esc */
 
+// both VGA and NTSC
+#define SCAN_WIDTH 800
+#define SCAN_HEIGHT 525
+
+// VGA
+#define VGA_FRONT_PORCH_X 16
+#define VGA_FRONT_PORCH_Y 10
+#define VGA_PIXEL_FREQ 25.175
+
+// NTSC: 262.5 lines per frame, lower field first
+#define NTSC_FRONT_PORCH_X 80
+#define NTSC_FRONT_PORCH_Y 22
+#define NTSC_PIXEL_FREQ (15.750 * 800 / 1000)
+#define TITLE_SAFE_X 0.067
+#define TITLE_SAFE_Y 0.05
+
+// visible area we're darwing
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 
@@ -484,30 +501,6 @@ get_sprite(uint16_t x, uint16_t y)
 	return 0;
 }
 
-// Screen refresh rate	60 Hz
-// Pixel freq.	25.175 MHz
-//
-// Horizontal timing (line)
-//
-// Visible area	640
-// Front porch	16
-// Sync pulse	96
-// Back porch	48
-// Whole line	800
-//
-// Vertical timing (frame)
-//
-// Visible area	480
-// Front porch	10
-// Sync pulse	2
-// Back porch	33
-// Whole frame	525
-
-// http://tinyvga.com/vga-timing/640x480@60Hz
-
-#define SCAN_WIDTH 800
-#define SCAN_HEIGHT 525
-
 float start_scan_pixel_pos, end_scan_pixel_pos;
 
 static void
@@ -519,6 +512,12 @@ video_flush_internal(int start, int end)
 	float hscale = 128.0 / reg_composer[1];
 	float vscale = 128.0 / reg_composer[2];
 
+	uint8_t border_color = reg_composer[3];
+	uint16_t hstart = reg_composer[4] | (reg_composer[8] & 3) << 8;
+	uint16_t hstop = reg_composer[5] | ((reg_composer[8] >> 2) & 3) << 8;
+	uint16_t vstart = reg_composer[6] | ((reg_composer[8] >> 4) & 1) << 8;
+	uint16_t vstop = reg_composer[7] | ((reg_composer[8] >> 5) & 1) << 8;
+
 	for (int pp = start; pp < end; pp++) {
 		int x;
 		int y;
@@ -526,12 +525,10 @@ video_flush_internal(int start, int end)
 			// VGA
 			x = pp % SCAN_WIDTH;
 			y = pp / SCAN_WIDTH;
-			x -= 16;
-			y -= 10;
+			x -= VGA_FRONT_PORCH_X;
+			y -= VGA_FRONT_PORCH_Y;
 		} else {
 			// NTSC
-			// 262.5 lines per frame
-			// lower field first
 			int pp2 = pp;
 			int field = pp2 > SCAN_WIDTH * SCAN_HEIGHT / 2;
 			if (field == 1) {
@@ -539,8 +536,8 @@ video_flush_internal(int start, int end)
 			}
 			x = pp2 % SCAN_WIDTH;
 			y = pp2 / SCAN_WIDTH * 2 + (1 - field);
-			x -= 16;
-			y -= 10;
+			x -= NTSC_FRONT_PORCH_X;
+			y -= NTSC_FRONT_PORCH_Y;
 		}
 		if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT) {
 			continue;
@@ -560,13 +557,18 @@ video_flush_internal(int start, int end)
 			g = 0;
 			b = 255;
 		} else {
-			uint8_t col_index = get_pixel(1, eff_x, eff_y);
-			if (col_index == 0) { // Layer 2 is transparent
-				col_index = get_pixel(0, eff_x, eff_y);
-			}
-			uint8_t spr_col_index = get_sprite(eff_x, eff_y);
-			if (spr_col_index) {
-				col_index = spr_col_index;
+			uint8_t col_index;
+			if (x < hstart || x > hstop || y < vstart || y > vstop) {
+				col_index = border_color;
+			} else {
+				col_index = get_pixel(1, eff_x, eff_y);
+				if (col_index == 0) { // Layer 2 is transparent
+					col_index = get_pixel(0, eff_x, eff_y);
+				}
+				uint8_t spr_col_index = get_sprite(eff_x, eff_y);
+				if (spr_col_index) {
+					col_index = spr_col_index;
+				}
 			}
 
 			uint16_t entry = palette[col_index * 2] | palette[col_index * 2 + 1] << 8;
@@ -577,18 +579,22 @@ video_flush_internal(int start, int end)
 				r = g = b = (r + b + g) / 3;
 			}
 
-#define TITLE_SAFE_X 0.067
-#define TITLE_SAFE_Y 0.05
-
 			// NTSC overscan
 			if (out_mode == 2) {
 				if (x < SCREEN_WIDTH * TITLE_SAFE_X ||
 				    x > SCREEN_WIDTH * (1 - TITLE_SAFE_X) ||
 				    y < SCREEN_HEIGHT * TITLE_SAFE_Y ||
 				    y > SCREEN_HEIGHT * (1 - TITLE_SAFE_Y)) {
+#if 1
 					r /= 3;
 					g /= 3;
 					b /= 3;
+#else
+					r ^= 128;
+					g ^= 128;
+					b ^= 128;
+#endif
+
 				}
 			}
 		}
@@ -606,9 +612,9 @@ video_step(float mhz)
 
 	bool new_frame = false;
 	if (out_mode == 0 || out_mode == 1) {
-		end_scan_pixel_pos += 25.175 / mhz;
+		end_scan_pixel_pos += VGA_PIXEL_FREQ / mhz;
 	} else {
-		end_scan_pixel_pos += 15.750 / mhz;
+		end_scan_pixel_pos += NTSC_PIXEL_FREQ / mhz;
 	}
 	if (end_scan_pixel_pos >= SCAN_WIDTH * SCAN_HEIGHT) {
 		new_frame = true;
@@ -774,6 +780,7 @@ video_ram_read(uint32_t address)
 void
 video_ram_write(uint32_t address, uint8_t value)
 {
+	video_flush();
 	if (address < 0x20000) {
 		video_ram[address] = value;
 	} else if (address < 0x21000) {
@@ -799,7 +806,6 @@ video_ram_write(uint32_t address, uint8_t value)
 	} else {
 		// unassigned, do nothing
 	}
-	video_flush();
 }
 
 //
