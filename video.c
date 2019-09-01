@@ -5,6 +5,9 @@
 
 #define ESC_IS_BREAK /* if enabled, Esc sends Break/Pause key instead of Esc */
 
+//#define NUM_SPRITES 256
+#define NUM_SPRITES 16 /* XXX speedup */
+
 // both VGA and NTSC
 #define SCAN_WIDTH 800
 #define SCAN_HEIGHT 525
@@ -455,9 +458,6 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 	return col_index;
 }
 
-//#define NUM_SPRITES 256
-#define NUM_SPRITES 8 /* XXX speedup */
-
 uint8_t
 get_sprite(uint16_t x, uint16_t y)
 {
@@ -482,21 +482,38 @@ get_sprite(uint16_t x, uint16_t y)
 			continue;
 		}
 
+		uint16_t sx = x - sprite_x;
+		uint16_t sy = y - sprite_y;
+
+		// flip
+		if ((sprite_data[i][1] >> 2) & 1) {
+			sx = sprite_width - sx;
+		}
+		if ((sprite_data[i][1] >> 3) & 1) {
+			sy = sprite_height - sy;
+		}
+
 		bool mode = (sprite_data[i][3] >> 1) & 1;
 		uint32_t sprite_address = sprite_data[i][4] << 5 | (sprite_data[i][5] & 0xf) << 13;
 
+		uint8_t col_index = 0;
 		if (!mode) {
 			// 4 bpp
-			uint8_t byte = video_ram[sprite_address + (y - sprite_y) * sprite_width + (x - sprite_x) / 2];
+			uint8_t byte = video_ram[sprite_address + sy * sprite_width + sx / 2];
 			if (x & 1) {
-				return byte & 0xf;
+				col_index = byte & 0xf;
 			} else {
-				return byte >> 4;
+				col_index = byte >> 4;
 			}
 		} else {
 			// 8 bpp
-			return video_ram[sprite_address + (y - sprite_y) * sprite_width + (x - sprite_x)];
+			col_index = video_ram[sprite_address + sy * sprite_width + sx];
 		}
+		// palette offset
+		if (col_index > 0) {
+			col_index += sprite_data[i][1] >> 4;
+		}
+		return col_index;
 	}
 	return 0;
 }
