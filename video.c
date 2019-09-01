@@ -466,15 +466,24 @@ get_sprite(uint16_t x, uint16_t y)
 		return 0;
 	}
 	for (int i = 0; i < NUM_SPRITES; i++) {
-		uint8_t sprite_zdepth = (sprite_data[i][3] >> 2) & 3;
+		int8_t sprite_zdepth = (sprite_data[i][3] >> 2) & 3;
 		if (sprite_zdepth == 0) {
 			continue;
 		}
-		uint16_t sprite_x = sprite_data[i][0] | (sprite_data[i][1] & 3) << 8;
-		uint16_t sprite_y = sprite_data[i][2] | (sprite_data[i][3] & 1) << 8;
+		int16_t sprite_x = sprite_data[i][0] | (sprite_data[i][1] & 3) << 8;
+		int16_t sprite_y = sprite_data[i][2] | (sprite_data[i][3] & 1) << 8;
 		uint8_t sprite_width = 1 << (((sprite_data[i][5] >> 4) & 3) + 3);
 		uint8_t sprite_height = 1 << ((sprite_data[i][5] >> 6) + 3);
 
+		// fix up negative coordinates
+		if (sprite_x >= 0x400 - sprite_width) {
+			sprite_x |= 0xff00 - 0x200;
+		}
+		if (sprite_y >= 0x200 - sprite_height) {
+			sprite_y |= 0xff00 - 0x100;
+		}
+
+		// check whether this pixel falls within the sprite
 		if (x < sprite_x || x >= sprite_x + sprite_width) {
 			continue;
 		}
@@ -482,6 +491,7 @@ get_sprite(uint16_t x, uint16_t y)
 			continue;
 		}
 
+		// relative position within the sprite
 		uint16_t sx = x - sprite_x;
 		uint16_t sy = y - sprite_y;
 
