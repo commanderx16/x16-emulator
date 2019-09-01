@@ -539,12 +539,13 @@ video_flush_internal(int start, int end)
 			x -= NTSC_FRONT_PORCH_X;
 			y -= NTSC_FRONT_PORCH_Y;
 		}
+
 		if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT) {
 			continue;
 		}
 
-		int eff_x = 1.0 / hscale * x;
-		int eff_y = 1.0 / vscale * y;
+		int eff_x = 1.0 / hscale * (x - hstart);
+		int eff_y = 1.0 / vscale * (y - vstart);
 
 		uint8_t r;
 		uint8_t g;
