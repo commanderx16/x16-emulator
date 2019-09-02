@@ -521,9 +521,9 @@ get_sprite(uint16_t x, uint16_t y)
 		}
 		// palette offset
 		if (col_index > 0) {
-			col_index += sprite_data[i][1] >> 4;
+			col_index += sprite_data[i][1] & 0xf0;
+			return col_index;
 		}
-		return col_index;
 	}
 	return 0;
 }
