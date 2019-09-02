@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
 #include "fake6502.h"
 #include "disasm.h"
 #include "memory.h"
@@ -91,13 +92,38 @@ main(int argc, char **argv)
 	uint16_t trace_address = 0;
 #endif
 
+	char *rom_filename = "/rom.bin";
+	char *char_filename = "/chargen.bin";
+	char rom_path_data[PATH_MAX];
+	char char_path_data[PATH_MAX];
+
+	char *rom_path = rom_path_data;
+	char *char_path = char_path_data;
+	char *prg_path = NULL;
+	char *sdcard_path = NULL;
+
+#ifdef __APPLE__
+	// on macOS, double clicking runs an executable in the user's
+	// home directory, so we prepend the executable's path to
+	// the rom filenames
+	if (argv[0][0] == '/') {
+		*strrchr(argv[0], '/') = 0;
+
+		strncpy(rom_path, argv[0], PATH_MAX);
+		strncpy(rom_path + strlen(rom_path), rom_filename, PATH_MAX - strlen(rom_path));
+		strncpy(char_path, argv[0], PATH_MAX);
+		strncpy(char_path + strlen(char_path), char_filename, PATH_MAX - strlen(char_path));
+	} else
+#endif
+	{
+		strncpy(rom_path, rom_filename + 1, PATH_MAX);
+		strncpy(char_path, char_filename + 1, PATH_MAX);
+	}
+
+	printf("%s / %s\n", rom_path, char_path);
+
 	argc--;
 	argv++;
-
-	char *rom_filename = "rom.bin";
-	char *char_filename = "chargen.bin";
-	char *prg_filename = NULL;
-	char *sdcard_filename = NULL;
 
 	while (argc > 0) {
 		if (!strcmp(argv[0], "-rom")) {
@@ -106,7 +132,7 @@ main(int argc, char **argv)
 			if (!argc) {
 				usage();
 			}
-			rom_filename = argv[0];
+			rom_path = argv[0];
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-char")) {
@@ -115,7 +141,7 @@ main(int argc, char **argv)
 			if (!argc) {
 				usage();
 			}
-			char_filename = argv[0];
+			char_path = argv[0];
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-prg")) {
@@ -124,7 +150,7 @@ main(int argc, char **argv)
 			if (!argc) {
 				usage();
 			}
-			prg_filename = argv[0];
+			prg_path = argv[0];
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-sdcard")) {
@@ -133,7 +159,7 @@ main(int argc, char **argv)
 			if (!argc) {
 				usage();
 			}
-			sdcard_filename = argv[0];
+			sdcard_path = argv[0];
 			argc--;
 			argv++;
 #ifdef TRACE
@@ -156,43 +182,43 @@ main(int argc, char **argv)
 		}
 	}
 
-	FILE *f = fopen(rom_filename, "r");
+	FILE *f = fopen(rom_path, "r");
 	if (!f) {
-		printf("Cannot open %s!\n", rom_filename);
+		printf("Cannot open %s!\n", rom_path);
 		exit(1);
 	}
 	fread(ROM, 1, ROM_SIZE, f);
 	fclose(f);
 
-	f = fopen(char_filename, "r");
+	f = fopen(char_path, "r");
 	if (!f) {
-		printf("Cannot open %s!\n", char_filename);
+		printf("Cannot open %s!\n", char_path);
 		exit(1);
 	}
 	uint8_t chargen[4096];
 	fread(chargen, 1, sizeof(chargen), f);
 	fclose(f);
 
-	if (sdcard_filename) {
-		sdcard_file = fopen(sdcard_filename, "r");
+	if (sdcard_path) {
+		sdcard_file = fopen(sdcard_path, "r");
 		if (!sdcard_file) {
-			printf("Cannot open %s!\n", sdcard_filename);
+			printf("Cannot open %s!\n", sdcard_path);
 			exit(1);
 		}
 	}
 
 	FILE *prg_file = NULL;
 	int prg_override_start = -1;
-	if (prg_filename) {
-		char *comma = strchr(prg_filename, ',');
+	if (prg_path) {
+		char *comma = strchr(prg_path, ',');
 		if (comma) {
 			prg_override_start = (uint16_t)strtol(comma + 1, NULL, 16);
 			*comma = 0;
 		}
 
-		prg_file = fopen(prg_filename, "r");
+		prg_file = fopen(prg_path, "r");
 		if (!prg_file) {
-			printf("Cannot open %s!\n", prg_filename);
+			printf("Cannot open %s!\n", prg_path);
 			exit(1);
 		}
 	}

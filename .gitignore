@@ -1,3 +1,6 @@
 *.o
 x16emu
+x16emu.exe
+x16emu_mac.zip
+x16emu_win.zip
 rom_labels.h

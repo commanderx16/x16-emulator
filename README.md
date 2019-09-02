@@ -4,7 +4,9 @@ This is an emulator for the Commander X16 computer system. It only depends on SD
 
 ## Starting
 
-* When starting `x16emu` without arguments, it will pick up the system ROM (`rom.bin`) and the character ROM (`chargen.bin`).
+You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the command line. The latter allows you to specify additional arguments.
+
+* When starting `x16emu` without arguments, it will pick up the system ROM (`rom.bin`) and the character ROM (`chargen.bin`) from the executable's directory.
 * The system ROM and character ROM filenames/paths can be overridden with the `-rom` and `-char` command line arguments.
 * `-sdcard` lets you specify an SD card image (partition table + FAT32).
 * `-prg` leys you specify a `.prg` file that gets injected into RAM after start.
@@ -76,6 +78,7 @@ Copyright (c) 2019 Michael Steil. All rights reserved. License: 2-clause BSD
 * Command line overhaul. Supports `-rom`, `-char`, `-sdcard` and `-prg`.
 * ROM and char filename defaults, so x16emu can be started without arguments.
 * Host Filesystem Interface supports LOAD"$"
+* macOS and Windows packaging logic in Makefile
 
 ### Release 26
 
