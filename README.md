@@ -1,47 +1,228 @@
 # Commander X16 Emulator
 
-This is an emulator for the Commander X16 computer.
+This is an emulator for the Commander X16 computer system. It only depends on SDL2 and should compile on all modern operating systems.
 
-## Building
- The build requires a `make`, C compiler and SDL2 (Mac: `brew install sdl2`, Ubuntu: `apt-get install libsdl2-dev`). Build like this:
+## Starting
 
- 	make
+* When starting `x16emu` without arguments, it will pick up the system ROM (`rom.bin`) and the character ROM (`chargen.bin`).
+* The system ROM and character ROM filenames/paths can be overridden with the `-rom` and `-char` command line arguments.
+* `-sdcard` lets you specify an SD card image (partition table + FAT32).
+* `-prg` leys you specify a `.prg` file that gets injected into RAM after start.
+* When compiled with `#define TRACE`, `-trace` will enable an instruction trace on stdout.
 
-## Usage
-	Usage: ./x16emu <rom.bin> <chargen.bin> [<app.prg>[,<load_addr>]]
+Run `x16emu -h` to see all command line options.
 
-	<rom.bin>:     ROM file:
-			 $0000-$1FFF bank #0 of banked ROM (BASIC)
-			 $2000-$3FFF fixed ROM at $E000-$FFFF (KERNAL)
-			 $4000-$5FFF bank #1 of banked ROM
-			 $6000-$7FFF bank #2 of banked ROM
-			 ...
-		       The file needs to be at least $4000 bytes in size.
+## Functions while running
 
-	<chargen.bin>: Character ROM file:
-			 $0000-$07FF upper case/graphics
-			 $0800-$0FFF lower case
+* Cmd + R will reset the computer.
+* Cmd + S will save a memory dump (40 KB main RAM + 2 MB bankable RAM) to disk.
 
-	<app.prg>:     Application PRG file (with 2 byte start address header)
+(These shortcuts currently only work on macOS.)
 
-	<load_addr>:   Override load address (hex, no prefix)
+## Host Filesystem Interface
 
-* The BASIC commands `LOAD` and `SAVE` are trapped by the emulator and will be directed to PRG files on the local filesystem. The device number is not required. "Absolute load" (to the original address) is possible with `LOAD"FILE.PRG",8,1`.
-* Cmd+S (Mac only) saves all of RAM into a file "memory.bin" (or "memory-2.bin" etc.) in the current directory.
+If the system ROM contains any version of the KERNAL, the LOAD (`$FFD5`) and SAVE (`$FFD8`) KERNAL calls are intercepted by the emulator if the device is 1 (which is the default). So the BASIC statements
 
-## Status
+      LOAD"$
+      LOAD"FOO.PRG
+      LOAD"IMAGE.PRG",1,1
+      SAVE"BAR.PRG
 
-### Implemented Hardware Features
-* 6502 core
-* memory layout and RAM/ROM mapping
-* complete Vera video emulation (spec dated 2019-07-06)
-* PS/2 keyboard emulation
-* hardcoded 50 Hz IRQ
+will target the host computer's local filesystem.
 
-### Missing Hardware Features
-* 65C02 extensions
-* VIA timers and interrupts
-* audio
+## Using the KERNAL/BASIC environment
 
-## Authors
-Michael Steil, <mist64@mac.com>
+Please see the KERNAL/BASIC documentation.
+
+## Features
+
+* CPU: Full 6502 instruction set ("fake6502")
+* VERA
+	* Mostly cycle exact emulation
+	* Supports almost all features: composer, two layers, sprites, progressive/interlaced
+* VIA
+	* ROM/RAM banking
+	* PS/2 keyboard
+	* SD card (SPI)
+* A 60 Hz interrupt is injected independently of the VIA settings.
+
+
+## Missing Features
+
+* CPU
+	* Only supports the 6502 instruction set, not the 65C02 additions.
+* VERA
+	* Does not support IRQs
+	* Does not support the "CURRENT_FIELD" bit
+	* Does not sprite z-depth, collisions or limitations
+	* Only supports the first 16 sprites
+	* Interlaced modes (NTSC/RGB) don't render at the full horizontal fidelity
+* VIA
+	* Does not support counters/timers/IRQs
+	* Does not support game controllers
+* Sound
+	* No support
+
+
+## License
+
+Copyright (c) 2019 Michael Steil. All rights reserved. License: 2-clause BSD
+
+
+## Release Notes
+
+### Release 27
+
+* Command line overhaul. Supports `-rom`, `-char`, `-sdcard` and `-prg`.
+* ROM and char filename defaults, so x16emu can be started without arguments.
+* Host Filesystem Interface supports LOAD"$"
+
+### Release 26
+
+* better sprite support (clipping, palette offset, flipping)
+* better border support
+* KERNAL can set up interlaced NTSC mode with scaling and borders (compile time option)
+
+### Release 25
+
+* sdcard: fixed LOAD,x,1 to load to the correct addressg
+* sdcard: all temp data will be on bank #255; current bank will remain unchanged
+* DOS: support for DOS commands ("UI", "I", "V", ...) and more status messages (e.g. 26,WRITE PROTECT ON,00,00)
+* BASIC: "DOS" command. Without argument: print disk status; with "$" argument: show directory; with "8" or "9" argument: switch default drive; otherwise: send DOS command; also accessible through F7/F8
+* Vera: cycle exact rendering, NTSC, interlacing, border
+
+### Release 24
+
+* SD card support
+	* pass path to SD card image as third argument
+	* access SD card as drive 8
+	* the local PC/Mac disk is still drive 1
+	* modulo debugging, this would work on a real X16 with the SD card (plus level shifters) hooked up to VIA#2PB as described in sdcard.c in the emulator surce
+
+### Release 23
+
+* Updated emulator and ROM to spec 0.6 – the ROM image should work on a real X16 with VERA 0.6 now.
+
+### Release 22
+
+SYS65375 (SWAPPER) now also clears the screen, avoid ing side effects.
+
+### Release 21
+
+* support for $ and % number prefixes in BASIC
+* support for C128 KERNAL APIs LKUPLA, LKUPSA and CLOSE_ALL
+
+### Release 20
+
+* Toggle fullscreen using Cmd+F or Cmd+return
+* new BASIC instructions and functions:
+	* MON: enter monitor; no more SYS65280 required
+	* VPEEK(bank, address)
+	* VPOKE bank, address, value
+example: VPOKE4,0,VPEEK(4,0) OR 32 [for 256 color BASIC]
+
+### Release 19
+
+* fixed cursor trail bug
+* fixed f7 key in PS/2 driver
+* f keys are assigned with shortcuts now:
+F1: LIST
+F2: &lt;enter monitor&gt;
+F3: RUN
+F4: &lt;switch 40/80&gt;
+F5: LOAD
+F6: SAVE"
+F7: DOS"$ &lt;doesn't work yet&gt;
+F8: DOS &lt;doesn't work yet&gt; 
+
+### Release 18
+
+* Fixed scrolling in 40x30 mode when there are double lines on the screen.
+
+### Release 17
+
+* video RAM support in the monitor (SYS65280)
+* 40x30 screen support (SYS65375 to toggle)
+
+### Release 16
+
+* Integrated monitor, start with SYS65280
+rom.bin is now 3*8 KB:
+	* 0: BASIC (bank 0 at $C000)
+	* 1: KERNAL ($E000)
+	* 2: UTIL (bank 1 at $C000)
+
+### Release 15
+
+* correct text mode video RAM layout both in emulator and KERNAL
+
+### Release 14
+
+* KERNAL: fast scrolling
+* KERNAL: upper/lower switching using CHR$($0E)/CHR$($8E)
+* KERNAL: banking init
+* KERNAL: new PS/2 driver
+* Emulator: VERA updates (more modes, second data port)
+* Emulator: RAM and ROM banks start out as all 1 bits
+
+### Release 13
+
+* Supports mode 7 (8bpp bitmap).
+
+### Release 12
+
+* Supports 8bpp tile mode (mode 4)
+
+### Release 11
+
+* The emulator and the KERNAL now speak the bit-level PS/2 protocol over VIA#2 PA0/PA1. The system behaves the same, but keyboard input in the ROM should work on a real device. 
+
+### Release 10
+
+updated KERNAL with proper power-on message
+
+### Release 9
+
+* LOAD and SAVE commands are intercepted by the emulator, can be used to access local file system, like this:
+
+      LOAD"TETRIS.PRG
+      SAVE"TETRIS.PRG
+
+* No device number is necessary. Loading absolute works like this:
+
+      LOAD"FILE.PRG",1,1
+
+### Release 8
+
+* New optional override load address for PRG files:
+
+      ./x64emu rom.bin chargen.bin basic.prg,0401
+
+### Release 7
+
+* Now with banking. POKE40801,n to switch the RAM bank at $A000. POKE40800,n to switch the ROM bank at $C000. The ROM file at the command line can be up to 72 KB now (layout: 0: bank 0, 1: KERNAL, 2: bank 1, 3: bank 2 etc.), and the RAM that Cmd+S saves is 2088KB ($0000-$9F00: regular RAM, $9F00-$9FFF: unused, $A000+: extra banks)
+
+### Release 6
+
+* Vera emulation now matches the complete spec dated 2019-07-06: correct video address space layout, palette format, redefinable character set
+
+### Release 5
+
+* BASIC now starts at $0401 (39679 BASIC BYTES FREE)
+
+### Release 4
+
+* Cmd+S now saves all of memory (linear 64 KB for now, including ROM) to "memory.bin", "memory-1.bin", "memory-2.bin", etc. You can extract parts of it with Unix "dd", like: dd if=memory.bin of=basic.bin bs=1 skip=2049 count=38655
+
+### Release 3
+
+* Supports PRG file as third argument, which is injected after "READY.", so BASIC programs work as well.
+
+### Release 2
+
+* STOP key support
+
+### Release 1
+
+* 6502 core, fake PS/2 keyboard emulation (PS/2 data bytes appear at VIA#1 PB) and text mode Vera emulation
+* KERNAL/BASIC modified for memory layout, missing VIC, Vera text mode and PS/2 keyboard
