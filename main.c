@@ -1,4 +1,5 @@
-// Copyright (c) 2009 Michael Steil
+// Commander X16 Emulator
+// Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
 #include <stdlib.h>
@@ -20,7 +21,7 @@
 
 //#define TRACE
 #define LOAD_HYPERCALLS
-#define SDCARD_SUPPORT
+//#define SDCARD_SUPPORT
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -52,85 +53,150 @@ is_kernal()
 	       ROM[0x3ff9] == 'T';
 }
 
+static void
+usage()
+{
+	printf("\nCommander X16 Emulator  (C)2019 Michael Steil\n");
+	printf("All rights reserved. License: 2-clause BSD\n\n");
+	printf("Usage: x16emu [option] ...\n\n");
+	printf("-rom <rom.bin>\n");
+	printf("\tOverride KERNAL/BASIC/* ROM file:\n");
+	printf("\t$0000-$1FFF bank #0 of banked ROM (BASIC)\n");
+	printf("\t$2000-$3FFF fixed ROM at $E000-$FFFF (KERNAL)\n");
+	printf("\t$4000-$5FFF bank #1 of banked ROM\n");
+	printf("\t$6000-$7FFF bank #2 of banked ROM\n");
+	printf("\t...\n");
+	printf("\tThe file needs to be at least $4000 bytes in size.\n");
+	printf("-char <chargen.bin>\n");
+	printf("\tOverride character ROM file:\n");
+	printf("\t$0000-$07FF upper case/graphics\n");
+	printf("\t$0800-$0FFF lower case\n");
+	printf("-sdcard <sdcard.img>\n");
+	printf("\tSpecify SD card image (partition map + FAT32)\n");
+	printf("-prg <app.prg>[,<load_addr>]\n");
+	printf("\tLoad application from the local disk into RAM\n");
+	printf("\t(.PRG file with 2 byte start address header)\n");
+	printf("\tThe override load address is hex without a prefix.\n\n");
+#ifdef TRACE
+	printf("-trace [<address>]\n");
+	printf("\tPrint instruction trace. Optionally, a trigger address\n");
+	printf("\tcan be specified.\n");
+#endif
+	exit(1);
+}
 int
 main(int argc, char **argv)
 {
 #ifdef TRACE
 	bool trace = false;
+	uint16_t trace_address = 0;
 #endif
 
-	if (argc < 3) {
-#ifdef SDCARD_SUPPORT
-		printf("Usage: %s <rom.bin> <chargen.bin> [<app.prg>[,<load_addr>]]\n\n", argv[0]);
-#else
-		printf("Usage: %s <rom.bin> <chargen.bin> [<sdcard.img>]\n\n", argv[0]);
+	argc--;
+	argv++;
+
+	char *rom_filename = "rom.bin";
+	char *char_filename = "chargen.bin";
+	char *prg_filename = NULL;
+	char *sdcard_filename = NULL;
+
+	while (argc > 0) {
+		if (!strcmp(argv[0], "-rom")) {
+			argc--;
+			argv++;
+			if (!argc) {
+				usage();
+			}
+			rom_filename = argv[0];
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-char")) {
+			argc--;
+			argv++;
+			if (!argc) {
+				usage();
+			}
+			char_filename = argv[0];
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-prg")) {
+			argc--;
+			argv++;
+			if (!argc) {
+				usage();
+			}
+			prg_filename = argv[0];
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-sdcard")) {
+			argc--;
+			argv++;
+			if (!argc) {
+				usage();
+			}
+			sdcard_filename = argv[0];
+			argc--;
+			argv++;
+#ifdef TRACE
+
+		} else if (!strcmp(argv[0], "-trace")) {
+			argc--;
+			argv++;
+			if (argc && argv[0][0] != '-') {
+				trace = false;
+				trace_address = (uint16_t)strtol(argv[0], NULL, 16);
+				argc--;
+				argv++;
+			} else {
+				trace = true;
+				trace_address = 0;
+			}
 #endif
-		printf("<rom.bin>:     ROM file:\n");
-		printf("                 $0000-$1FFF bank #0 of banked ROM (BASIC)\n");
-		printf("                 $2000-$3FFF fixed ROM at $E000-$FFFF (KERNAL)\n");
-		printf("                 $4000-$5FFF bank #1 of banked ROM\n");
-		printf("                 $6000-$7FFF bank #2 of banked ROM\n");
-		printf("                 ...\n");
-		printf("               The file needs to be at least $4000 bytes in size.\n\n");
-		printf("<chargen.bin>: Character ROM file:\n");
-		printf("                 $0000-$07FF upper case/graphics\n");
-		printf("                 $0800-$0FFF lower case\n\n");
-#ifdef SDCARD_SUPPORT
-		printf("<sdcard.img>:  SD card image (partition map + FAT32)\n\n");
-#else
-		printf("<app.prg>:     Application PRG file (with 2 byte start address header)\n\n");
-		printf("<load_addr>:   Override load address (hex, no prefix)\n\n");
-#endif
-		exit(1);
+		} else {
+			usage();
+		}
 	}
 
-	// 1st argument: ROM
-	FILE *f = fopen(argv[1], "r");
+	FILE *f = fopen(rom_filename, "r");
 	if (!f) {
-		printf("Cannot open %s!\n", argv[1]);
+		printf("Cannot open %s!\n", rom_filename);
 		exit(1);
 	}
 	fread(ROM, 1, ROM_SIZE, f);
 	fclose(f);
 
-	// 2nd argument: Character ROM
-	f = fopen(argv[2], "r");
+	f = fopen(char_filename, "r");
 	if (!f) {
-		printf("Cannot open %s!\n", argv[2]);
+		printf("Cannot open %s!\n", char_filename);
 		exit(1);
 	}
 	uint8_t chargen[4096];
 	fread(chargen, 1, sizeof(chargen), f);
 	fclose(f);
 
-#ifdef SDCARD_SUPPORT
-	// 3rd argument: SD card image (optional)
-	if (argc == 4) {
-		sdcard_file = fopen(argv[3], "r");
+	if (sdcard_filename) {
+		sdcard_file = fopen(sdcard_filename, "r");
 		if (!sdcard_file) {
-			printf("Cannot open %s!\n", argv[3]);
+			printf("Cannot open %s!\n", sdcard_filename);
 			exit(1);
 		}
 	}
-#else
-	// 3rd argument: application (optional)
+
 	FILE *prg_file = NULL;
 	int prg_override_start = -1;
-	if (argc == 4) {
-		char *filename = argv[3];
-		char *comma = strchr(filename, ',');
+	if (prg_filename) {
+		char *comma = strchr(prg_filename, ',');
 		if (comma) {
 			prg_override_start = (uint16_t)strtol(comma + 1, NULL, 16);
 			*comma = 0;
 		}
 
-		prg_file = fopen(filename, "r");
+		prg_file = fopen(prg_filename, "r");
 		if (!prg_file) {
-			printf("Cannot open %s!\n", argv[3]);
+			printf("Cannot open %s!\n", prg_filename);
 			exit(1);
 		}
 	}
-#endif
 
 	video_init(chargen);
 	sdcard_init();
@@ -140,8 +206,7 @@ main(int argc, char **argv)
 	int instruction_counter = 0;
 	for (;;) {
 #ifdef TRACE
-//		if (pc == 0xffc0) {
-		if (pc == 0xffd5) {
+		if (pc == trace_address && trace_address != 0) {
 			trace = true;
 		}
 		if (trace) {
@@ -173,7 +238,7 @@ main(int argc, char **argv)
 			for (int i = 7; i >= 0; i--) {
 				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 			}
-			printf(" --- %04x", RAM[0xf2]  | RAM[0xf3]  << 8);
+//			printf(" --- %04x", RAM[0xae]  | RAM[0xaf]  << 8);
 			printf("\n");
 		}
 #endif
@@ -211,6 +276,10 @@ main(int argc, char **argv)
 				irq6502();
 			}
 		}
+
+//		if (clockticks6502 >= 5 * MHZ * 1000 * 1000) {
+//			break;
+//		}
 
 #ifndef SDCARD_SUPPORT
 		if (pc == 0xffcf && is_kernal() && prg_file) {
