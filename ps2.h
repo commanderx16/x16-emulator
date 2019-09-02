@@ -2,6 +2,9 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
+#ifndef _PS2_H_
+#define _PS2_H_
+
 #include <stdint.h>
 
 #define PS2_DATA_MASK 1
@@ -19,3 +22,5 @@ void mouse_button_down(int num);
 void mouse_button_up(int num);
 void mouse_move(int x, int y);
 uint8_t mouse_read(uint8_t reg);
+
+#endif

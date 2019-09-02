@@ -21,7 +21,6 @@
 
 //#define TRACE
 #define LOAD_HYPERCALLS
-//#define SDCARD_SUPPORT
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -277,11 +276,12 @@ main(int argc, char **argv)
 			}
 		}
 
-//		if (clockticks6502 >= 5 * MHZ * 1000 * 1000) {
-//			break;
-//		}
+#if 0
+		if (clockticks6502 >= 5 * MHZ * 1000 * 1000) {
+			break;
+		}
+#endif
 
-#ifndef SDCARD_SUPPORT
 		if (pc == 0xffcf && is_kernal() && prg_file) {
 			// as soon as BASIC starts reading a line,
 			// inject the app
@@ -297,7 +297,6 @@ main(int argc, char **argv)
 			fclose(prg_file);
 			prg_file = NULL;
 		}
-#endif
 	}
 
 	video_end();

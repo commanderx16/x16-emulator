@@ -2,6 +2,9 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
+#ifndef _GLUE_H_
+#define _GLUE_H_
+
 #include <stdint.h>
 
 #define NUM_RAM_BANKS 256
@@ -16,3 +19,5 @@ extern uint8_t RAM[];
 extern uint8_t ROM[];
 
 extern void machine_reset();
+
+#endif
