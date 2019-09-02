@@ -107,7 +107,7 @@ void
 memory_save()
 {
 	int index = 0;
-	char filename[20];
+	char filename[22];
 	for (;;) {
 		if (!index) {
 			strcpy(filename, "memory.bin");
