@@ -1,8 +1,3 @@
-# Use
-#   CROSS_COMPILE_WINDOWS=1 make
-# to cross-compile for Windows on macOS. See
-# https://blog.wasin.io/2018/10/21/cross-compile-sdl2-library-and-app-on-windows-from-macos.html
-# for details on how to install mingw and libsdl2.
 
 # the mingw32 path on macOS installed through homebrew
 MINGW32=/usr/local/Cellar/mingw-w64/6.0.0_2/toolchain-i686/i686-w64-mingw32
@@ -17,10 +12,6 @@ endif
 
 CFLAGS=-O3 -Wall -Werror -g $(shell $(SDL2CONFIG) --cflags)
 LDFLAGS=$(shell $(SDL2CONFIG) --libs)
-
-ifeq ($(LINUX_STATIC),1)
-	LDFLAGS=$(shell $(SDL2CONFIG) --static-libs)
-endif
 
 ifeq ($(MAC_STATIC),1)
 	LDFLAGS=/usr/local/lib/libSDL2.a -lm -liconv -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,ForceFeedback -lobjc -Wl,-framework,CoreVideo -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,IOKit -Wl,-weak_framework,QuartzCore -Wl,-weak_framework,Metal
@@ -50,11 +41,31 @@ all: $(OBJS) $(HEADERS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-
-# Packaging requires pandoc:
+#
+# PACKAGING
+#
+# Packaging is tricky and partially depends on Michael's specific setup. :/
+#
+# * The Mac build is done on a Mac.
+# * The Windows build is cross-compiled on the Mac using mingw. For more info, see:
+#   https://blog.wasin.io/2018/10/21/cross-compile-sdl2-library-and-app-on-windows-from-macos.html
+# * The Linux build is done by sshing into a VMware Ubuntu machine that has the same
+#   directory tree mounted. Since unlike on Windows and Mac, there are 0 libraries guaranteed
+#   to be present, a static build would mean linking everything that is not the kernel. And since
+#   there are always 3 ways of doing something on Linux, it would mean including three graphics
+#   and three sounds backends. Therefore, the Linux build uses dynamic linking, requires libsdl2
+#   to be installed and might only work on the version of Linux I used for building, which is the
+#   current version of Ubuntu.
+# * For converting the documentation from Markdown to HTML, pandoc is required:
 #   brew install pandoc
+#
 
-package: package_mac package_win
+# hostname of the Linux VM
+LINUX_COMPILE_HOST = ubuntu.local
+# path to the equivalent of `pwd` on the Mac
+LINUX_BASE_DIR = /mnt/Documents/git/x16emu
+
+package: package_mac package_win package_linux
 	make clean
 
 package_mac:
@@ -65,8 +76,8 @@ package_mac:
 	cp x16emu ~x16emu-package
 	cp ../x16-kernalbasic/rom.bin ~x16emu-package
 	cp -p ~/tmp/chargen ~x16emu-package/chargen.bin
-	pandoc --from gfm --to html --standalone README.md --output ~x16emu-package/README.html
-	pandoc --from gfm --to html --standalone ../x16-kernalbasic/README.md --output ~x16emu-package/KERNAL-BASIC.html
+	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 Emulator" README.md --output ~x16emu-package/README.html
+	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 KERNAL/BASIC/DOS ROM"  ../x16-kernalbasic/README.md --output ~x16emu-package/KERNAL-BASIC.html
 	(cd ~x16emu-package/; zip "../x16emu_mac.zip" *)
 	rm -rf ~x16emu-package
 
@@ -88,7 +99,7 @@ package_win:
 
 package_linux:
 	(cd ../x16-kernalbasic/; ./build.sh)
-	CROSS_COMPILE_WINDOWS=1 make clean all
+	ssh $(LINUX_COMPILE_HOST) "cd $(LINUX_BASE_DIR); make clean all"
 	rm -rf ~x16emu-package x16emu_linux.zip
 	mkdir ~x16emu-package
 	cp x16emu ~x16emu-package
