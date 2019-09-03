@@ -30,7 +30,11 @@ ifeq ($(CROSS_COMPILE_WINDOWS),1)
 endif
 
 OBJS = fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o sdcard.o main.o
-HEADERS = disasm.h fake6502.h glue.h memory.h rom_labels.h video.h ps2.h via.h loadsave.h
+HEADERS = disasm.h fake6502.h glue.h memory.h video.h ps2.h via.h loadsave.h
+
+ifneq ("$(wildcard ./rom_labels.h)","")
+HEADERS+=rom_labels.h
+endif
 
 all: $(OBJS) $(HEADERS)
 	$(CC) -o x16emu $(OBJS) $(LDFLAGS)
