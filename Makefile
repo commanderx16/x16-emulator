@@ -54,6 +54,7 @@ package_mac:
 	cp ../x16-kernalbasic/rom.bin ~x16emu-package
 	cp -p ~/tmp/chargen ~x16emu-package/chargen.bin
 	pandoc --from gfm --to html --standalone README.md --output ~x16emu-package/README.html
+	pandoc --from gfm --to html --standalone ../x16-kernalbasic/README.md --output ~x16emu-package/KERNAL-BASIC.html
 	(cd ~x16emu-package/; zip "../x16emu_mac.zip" *)
 	rm -rf ~x16emu-package
 
@@ -69,6 +70,7 @@ package_win:
 	cp ../x16-kernalbasic/rom.bin ~x16emu-package
 	cp -p ~/tmp/chargen ~x16emu-package/chargen.bin
 	pandoc --from gfm --to html --standalone README.md --output ~x16emu-package/README.html
+	pandoc --from gfm --to html --standalone ../x16-kernalbasic/README.md --output ~x16emu-package/KERNAL-BASIC.html
 	(cd ~x16emu-package/; zip "../x16emu_win.zip" *)
 	rm -rf ~x16emu-package
 

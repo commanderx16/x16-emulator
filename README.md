@@ -68,8 +68,8 @@ Please see the KERNAL/BASIC documentation.
 
 ## License
 
-Copyright (c) 2019 Michael Steil. All rights reserved. License: 2-clause BSD
-
+Copyright (c) 2019 Michael Steil &lt;mist64@mac.com&gt;, [www.pagetable.com](https://www.pagetable.com/).
+All rights reserved. License: 2-clause BSD
 
 ## Release Notes
 
