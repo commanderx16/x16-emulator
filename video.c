@@ -347,8 +347,8 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 	bool tile_mode = mode == 2 || mode == 3 || mode == 4;
 	bool bitmap_mode = mode == 5 || mode == 6 || mode == 7;
 
-	uint16_t mapw;
-	uint16_t maph;
+	uint16_t mapw = 0;
+	uint16_t maph = 0;
 	uint16_t tilew = 0;
 	uint16_t tileh = 0;
 

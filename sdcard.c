@@ -155,8 +155,10 @@ sdcard_step()
 						read_block_respose[1] = 0xfe;
 						printf("Reading LBA %d\n", lba);
 						fseek(sdcard_file, lba * 512, SEEK_SET);
-						fread(&read_block_respose[2], 512, 1, sdcard_file);
-
+						int bytes_read = fread(&read_block_respose[2], 512, 1, sdcard_file);
+						if (bytes_read != 512) {
+							printf("Warning: short read!\n");
+						}
 						response = read_block_respose;
 						response_length = 2 + 512 + 2;
 						break;

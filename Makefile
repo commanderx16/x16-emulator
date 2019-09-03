@@ -18,9 +18,17 @@ endif
 CFLAGS=-O3 -Wall -Werror -g $(shell $(SDL2CONFIG) --cflags)
 LDFLAGS=$(shell $(SDL2CONFIG) --libs)
 
+ifeq ($(LINUX_STATIC),1)
+	LDFLAGS=$(shell $(SDL2CONFIG) --static-libs)
+endif
+
 ifeq ($(MAC_STATIC),1)
 	LDFLAGS=/usr/local/lib/libSDL2.a -lm -liconv -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,ForceFeedback -lobjc -Wl,-framework,CoreVideo -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,IOKit -Wl,-weak_framework,QuartzCore -Wl,-weak_framework,Metal
 endif
+
+#ifeq ($(LINUX_STATIC),1)
+#	LDFLAGS+=-Wl,-Bstatic -lSDL2 -L/lib/x86_64-linux-gnu/
+#endif
 
 ifeq ($(CROSS_COMPILE_WINDOWS),1)
 	LDFLAGS+=-L$(MINGW32)/lib
@@ -73,9 +81,22 @@ package_win:
 	cp $(WIN_SDL2)/bin/SDL2.dll ~x16emu-package/
 	cp ../x16-kernalbasic/rom.bin ~x16emu-package
 	cp -p ~/tmp/chargen ~x16emu-package/chargen.bin
-	pandoc --from gfm --to html --standalone README.md --output ~x16emu-package/README.html
-	pandoc --from gfm --to html --standalone ../x16-kernalbasic/README.md --output ~x16emu-package/KERNAL-BASIC.html
+	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 Emulator" README.md --output ~x16emu-package/README.html
+	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 KERNAL/BASIC/DOS ROM"  ../x16-kernalbasic/README.md --output ~x16emu-package/KERNAL-BASIC.html
 	(cd ~x16emu-package/; zip "../x16emu_win.zip" *)
+	rm -rf ~x16emu-package
+
+package_linux:
+	(cd ../x16-kernalbasic/; ./build.sh)
+	CROSS_COMPILE_WINDOWS=1 make clean all
+	rm -rf ~x16emu-package x16emu_linux.zip
+	mkdir ~x16emu-package
+	cp x16emu ~x16emu-package
+	cp ../x16-kernalbasic/rom.bin ~x16emu-package
+	cp -p ~/tmp/chargen ~x16emu-package/chargen.bin
+	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 Emulator" README.md --output ~x16emu-package/README.html
+	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 KERNAL/BASIC/DOS ROM"  ../x16-kernalbasic/README.md --output ~x16emu-package/KERNAL-BASIC.html
+	(cd ~x16emu-package/; zip "../x16emu_linux.zip" *)
 	rm -rf ~x16emu-package
 
 clean:

@@ -120,8 +120,6 @@ main(int argc, char **argv)
 		strncpy(char_path, char_filename + 1, PATH_MAX);
 	}
 
-	printf("%s / %s\n", rom_path, char_path);
-
 	argc--;
 	argv++;
 
@@ -187,7 +185,11 @@ main(int argc, char **argv)
 		printf("Cannot open %s!\n", rom_path);
 		exit(1);
 	}
-	fread(ROM, 1, ROM_SIZE, f);
+	int rom_size = fread(ROM, 1, ROM_SIZE, f);
+	if (rom_size < 16384)  {
+		printf("ROM needs to be at least 16 KB!\n");
+		exit(1);
+	}
 	fclose(f);
 
 	f = fopen(char_path, "r");
@@ -196,7 +198,11 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	uint8_t chargen[4096];
-	fread(chargen, 1, sizeof(chargen), f);
+	int chargen_size = fread(chargen, 1, sizeof(chargen), f);
+	if (chargen_size < 4096)  {
+		printf("ROM needs to be at least 4 KB!\n");
+		exit(1);
+	}
 	fclose(f);
 
 	if (sdcard_path) {
@@ -319,7 +325,8 @@ main(int argc, char **argv)
 			} else {
 				start = start_hi << 8 | start_lo;
 			}
-			fread(RAM + start, 1, 65536-start, prg_file);
+			int prg_size = fread(RAM + start, 1, 65536-start, prg_file);
+			(void)prg_size; // make compiler happy
 			fclose(prg_file);
 			prg_file = NULL;
 		}
