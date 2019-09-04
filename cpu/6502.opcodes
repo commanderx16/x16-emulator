@@ -1,0 +1,191 @@
+; *******************************************************************************************
+; *******************************************************************************************
+;
+;		File:		6502.opcodes
+;		Date:		3rd September 2019
+;		Purpose:	Descriptor file, standard 6502 opcodes
+;		Author:		Paul Robson (paul@robson.org.uk)
+;
+; *******************************************************************************************
+; *******************************************************************************************
+
+adc abso 4 $6d
+adc absx 4 $7d
+adc absy 4 $79
+adc imm  2 $69
+adc indx 6 $61
+adc indy 5 $71
+adc zp   3 $65
+adc zpx  4 $75
+
+and abso 4 $2d
+and absx 4 $3d
+and absy 4 $39
+and imm  2 $29
+and indx 6 $21
+and indy 5 $31
+and zp   3 $25
+and zpx  4 $35
+
+asl abso 6 $0e
+asl absx 7 $1e
+asl acc  2 $0a
+asl zp   5 $06
+asl zpx  6 $16
+
+bcc rel  2 $90
+bcs rel  2 $b0
+beq rel  2 $f0
+bmi rel  2 $30
+bne rel  2 $d0
+bpl rel  2 $10
+bvc rel  2 $50
+bvs rel  2 $70
+
+brk imp  7 $00
+
+bit abso 4 $2c
+bit zp   3 $24
+
+clc imp  2 $18
+cld imp  2 $d8
+cli imp  2 $58
+clv imp  2 $b8
+
+cmp abso 4 $cd
+cmp absx 4 $dd
+cmp absy 4 $d9
+cmp imm  2 $c9
+cmp indx 6 $c1
+cmp indy 5 $d1
+cmp zp   3 $c5
+cmp zpx  4 $d5
+
+cpx abso 4 $ec
+cpx imm  2 $e0
+cpx zp   3 $e4
+
+cpy abso 4 $cc
+cpy imm  2 $c0
+cpy zp   3 $c4
+
+dec abso 6 $ce
+dec absx 7 $de
+dec zp   5 $c6
+dec zpx  6 $d6
+
+dex imp  2 $ca
+dey imp  2 $88
+
+eor abso 4 $4d
+eor absx 4 $5d
+eor absy 4 $59
+eor imm  2 $49
+eor indx 6 $41
+eor indy 5 $51
+eor zp   3 $45
+eor zpx  4 $55
+
+inc abso 6 $ee
+inc absx 7 $fe
+inc zp   5 $e6
+inc zpx  6 $f6
+
+inx imp  2 $e8
+iny imp  2 $c8
+
+jmp abso 3 $4c
+jmp ind  5 $6c
+jsr abso 6 $20
+
+lda abso 4 $ad
+lda absx 4 $bd
+lda absy 4 $b9
+lda imm  2 $a9
+lda indx 6 $a1
+lda indy 5 $b1
+lda zp   3 $a5
+lda zpx  4 $b5
+
+ldx abso 4 $ae
+ldx absy 4 $be
+ldx imm  2 $a2
+ldx zp   3 $a6
+ldx zpy  4 $b6
+ldy abso 4 $ac
+ldy absx 4 $bc
+
+ldy imm  2 $a0
+ldy zp   3 $a4
+ldy zpx  4 $b4
+
+lsr abso 6 $4e
+lsr absx 7 $5e
+lsr acc  2 $4a
+lsr zp   5 $46
+lsr zpx  6 $56
+
+ora abso 4 $0d
+ora absx 4 $1d
+ora absy 4 $19
+ora imm  2 $09
+ora indx 6 $01
+ora indy 5 $11
+ora zp   3 $05
+ora zpx  4 $15
+
+pha imp  3 $48
+php imp  3 $08
+pla imp  4 $68
+plp imp  4 $28
+
+rol abso 6 $2e
+rol absx 7 $3e
+rol acc  2 $2a
+rol zp   5 $26
+rol zpx  6 $36
+
+ror abso 6 $6e
+ror absx 7 $7e
+ror acc  2 $6a
+ror zp   5 $66
+ror zpx  6 $76
+
+rti imp  6 $40
+rts imp  6 $60
+
+sbc abso 4 $ed
+sbc absx 4 $fd
+sbc absy 4 $f9
+sbc imm  2 $e9
+sbc indx 6 $e1
+sbc indy 5 $f1
+sbc zp   3 $e5
+sbc zpx  4 $f5
+
+sec imp  2 $38
+sed imp  2 $f8
+sei imp  2 $78
+
+sta abso 4 $8d
+sta absx 5 $9d
+sta absy 5 $99
+sta indx 6 $81
+sta indy 6 $91
+sta zp   3 $85
+sta zpx  4 $95
+
+stx abso 4 $8e
+stx zp   3 $86
+stx zpy  4 $96
+
+sty abso 4 $8c
+sty zp   3 $84
+sty zpx  4 $94
+
+tax imp  2 $aa
+tay imp  2 $a8
+tsx imp  2 $ba
+txa imp  2 $8a
+txs imp  2 $9a
+tya imp  2 $98

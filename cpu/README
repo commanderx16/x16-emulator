@@ -1,0 +1,46 @@
+The original fake6502.c has been split up into subcomponents, rather than being one long file - 
+support functions, 6502 instructions, address modes, data tables and 65c02 extensions.
+
+The file tables.h is now created from 6502.opcodes and 65c02.opcodes which are lists of instructions, 
+cycle times, address modes and opcodes.
+
+The python script buildtables.py creates this.
+
+Minor changes have been made to modes.h and instructions.h to correct for 65C02 behaviour. These
+are documented in the files.
+
+Breaking Changes
+================
+
+Note: these breaking changes are *only in the emulator*. The behaviour is correct for a 65C02, which is
+almost but not the same as a 6502.
+
+(1) 		BRK 		clears D after pushing on the stack. Probably unimportant as most routines in 6502
+						code CLD to get round this issue anyway.
+
+(2)			ADC/SBC		In Decimal Mode, these now set N and Z flags. They did not previously. It is 
+						possible that code may rely on this to preserve flag status through an ALU
+						operation but unlikely.
+
+(3) 		JMP 		The absolute indirect mode JMP (xxxx) had a bug where JMP ($12FF) got its 
+						target address from $12FF and $1200. This bug is corrected. 
+						This could break code with oddly positioned jump tables. Even align any vector
+						tables or memory vectors.
+
+(4) 		(Misc)		Undocumented instructions now do not work. They don't work on a 65C02.
+					
+Also note that read-modify-write instructions all now do not do the double write. ASL xx would do
+read xx ; write xx ; write shifted xx on a 6502. On a 65C02 it does not. However, the emulator did
+not emulate this behaviour anyway, so it doesn't actually matter.
+
+Paul Robson 4/Sep/19
+
+Testing
+=======
+Fixed stz bug .... writing a ... duh !
+
+
+
+
+
+

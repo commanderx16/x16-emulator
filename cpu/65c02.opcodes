@@ -1,0 +1,47 @@
+; *******************************************************************************************
+; *******************************************************************************************
+;
+;		File:		65c02.opcodes
+;		Date:		3rd September 2019
+;		Purpose:	Descriptor file, extra 65C02 opcodes
+;		Author:		Paul Robson (paul@robson.org.uk)
+;
+; *******************************************************************************************
+; *******************************************************************************************
+
+adc ind0 5 $72
+and ind0 5 $32
+cmp ind0 5 $d2
+eor ind0 5 $52
+lda ind0 5 $b2
+ora ind0 5 $12
+sbc ind0 5 $f2
+sta ind0 5 $92
+
+bit imm 2 $89
+bit zpx 4 $34
+bit absx 4 $3c
+
+dec acc 2 $3a
+inc acc 2 $1a
+
+jmp ainx 6 $7c
+
+bra rel 3 $80
+
+phx imp 3 $da
+phy imp 3 $5a
+plx imp 4 $fa
+ply imp 4 $7a
+
+stz zp 3 $64
+stz zpx 4 $74
+stz abso 4 $9c
+stz absx 5 $9e
+
+trb zp 5 $14
+trb abso 6 $1c
+tsb zp 5 $04
+tsb abso 6 $0c
+
+
