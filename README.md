@@ -38,7 +38,7 @@ Please see the KERNAL/BASIC documentation.
 
 ## Features
 
-* CPU: Full 6502 instruction set ("fake6502")
+* CPU: Full 65C02 instruction set (improved "fake6502")
 * VERA
 	* Mostly cycle exact emulation
 	* Supports almost all features: composer, two layers, sprites, progressive/interlaced
@@ -51,8 +51,6 @@ Please see the KERNAL/BASIC documentation.
 
 ## Missing Features
 
-* CPU
-	* Only supports the 6502 instruction set, not the 65C02 additions.
 * VERA
 	* Does not support IRQs
 	* Does not support the "CURRENT_FIELD" bit
@@ -72,6 +70,13 @@ Copyright (c) 2019 Michael Steil &lt;mist64@mac.com&gt;, [www.pagetable.com](htt
 All rights reserved. License: 2-clause BSD
 
 ## Release Notes
+
+### Release 28
+
+* support for 65C02 opcodes [Paul Robson]
+* keep aspect ratio when resizing window [Sebastian Voges]
+* updated sprite logic to VERA 0.7 – **the layout of the sprite data registers has changed, you need to change your code!**
+
 
 ### Release 27
 
