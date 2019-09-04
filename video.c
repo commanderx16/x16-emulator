@@ -106,6 +106,7 @@ video_init(uint8_t *in_chargen)
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &window, &renderer);
 	SDL_SetWindowResizable(window, true);
+	SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	sdlTexture = SDL_CreateTexture(renderer,
 				       SDL_PIXELFORMAT_RGB888,
