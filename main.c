@@ -186,10 +186,7 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	int rom_size = fread(ROM, 1, ROM_SIZE, f);
-	if (rom_size < 16384)  {
-		printf("ROM needs to be at least 16 KB!\n");
-		exit(1);
-	}
+	(void)rom_size;
 	fclose(f);
 
 	f = fopen(char_path, "r");
@@ -199,10 +196,7 @@ main(int argc, char **argv)
 	}
 	uint8_t chargen[4096];
 	int chargen_size = fread(chargen, 1, sizeof(chargen), f);
-	if (chargen_size < 4096)  {
-		printf("ROM needs to be at least 4 KB!\n");
-		exit(1);
-	}
+	(void)chargen_size;
 	fclose(f);
 
 	if (sdcard_path) {

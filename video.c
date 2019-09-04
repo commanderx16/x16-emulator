@@ -9,7 +9,7 @@
 
 #define ESC_IS_BREAK /* if enabled, Esc sends Break/Pause key instead of Esc */
 
-//#define NUM_SPRITES 256
+//#define NUM_SPRITES 128
 #define NUM_SPRITES 16 /* XXX speedup */
 
 // both VGA and NTSC
@@ -472,14 +472,14 @@ get_sprite(uint16_t x, uint16_t y)
 		return 0;
 	}
 	for (int i = 0; i < NUM_SPRITES; i++) {
-		int8_t sprite_zdepth = (sprite_data[i][3] >> 2) & 3;
+		int8_t sprite_zdepth = (sprite_data[i][6] >> 2) & 3;
 		if (sprite_zdepth == 0) {
 			continue;
 		}
-		int16_t sprite_x = sprite_data[i][0] | (sprite_data[i][1] & 3) << 8;
-		int16_t sprite_y = sprite_data[i][2] | (sprite_data[i][3] & 1) << 8;
-		uint8_t sprite_width = 1 << (((sprite_data[i][5] >> 4) & 3) + 3);
-		uint8_t sprite_height = 1 << ((sprite_data[i][5] >> 6) + 3);
+		int16_t sprite_x = sprite_data[i][2] | (sprite_data[i][3] & 3) << 8;
+		int16_t sprite_y = sprite_data[i][4] | (sprite_data[i][5] & 3) << 8;
+		uint8_t sprite_width = 1 << (((sprite_data[i][7] >> 4) & 3) + 3);
+		uint8_t sprite_height = 1 << ((sprite_data[i][7] >> 6) + 3);
 
 		// fix up negative coordinates
 		if (sprite_x >= 0x400 - sprite_width) {
@@ -502,15 +502,15 @@ get_sprite(uint16_t x, uint16_t y)
 		uint16_t sy = y - sprite_y;
 
 		// flip
-		if ((sprite_data[i][1] >> 2) & 1) {
+		if (sprite_data[i][6] & 1) {
 			sx = sprite_width - sx;
 		}
-		if ((sprite_data[i][1] >> 3) & 1) {
+		if ((sprite_data[i][6] >> 1) & 1) {
 			sy = sprite_height - sy;
 		}
 
-		bool mode = (sprite_data[i][3] >> 1) & 1;
-		uint32_t sprite_address = sprite_data[i][4] << 5 | (sprite_data[i][5] & 0xf) << 13;
+		bool mode = (sprite_data[i][1] >> 7) & 1;
+		uint32_t sprite_address = sprite_data[i][0] << 5 | (sprite_data[i][1] & 0xf) << 13;
 
 		uint8_t col_index = 0;
 		if (!mode) {
@@ -527,7 +527,7 @@ get_sprite(uint16_t x, uint16_t y)
 		}
 		// palette offset
 		if (col_index > 0) {
-			col_index += sprite_data[i][1] & 0xf0;
+			col_index += (sprite_data[i][7] & 0x0f) << 4;
 			return col_index;
 		}
 	}
