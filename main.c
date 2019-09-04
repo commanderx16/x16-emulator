@@ -9,7 +9,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
-#include "fake6502.h"
+#include "cpu/fake6502.h"
 #include "disasm.h"
 #include "memory.h"
 #include "video.h"
