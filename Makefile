@@ -111,4 +111,4 @@ package_linux:
 	rm -rf ~x16emu-package
 
 clean:
-	rm -f *.o x16emu x16emu.exe
+	rm -f *.o cpu/*.o x16emu x16emu.exe
