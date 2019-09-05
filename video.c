@@ -6,6 +6,7 @@
 #include "memory.h"
 #include "ps2.h"
 #include "glue.h"
+#include "debugger.h"
 
 #define ESC_IS_BREAK /* if enabled, Esc sends Break/Pause key instead of Esc */
 
@@ -687,6 +688,13 @@ video_update()
 	SDL_UpdateTexture(sdlTexture, NULL, framebuffer, SCREEN_WIDTH * 4);
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, sdlTexture, NULL, NULL);
+
+	if (showDebugOnRender != 0) {
+		DEBUGRenderDisplay(SCREEN_WIDTH,SCREEN_HEIGHT,renderer);
+		SDL_RenderPresent(renderer);
+		return true;
+	}
+
 	SDL_RenderPresent(renderer);
 
 	static bool cmd_down = false;

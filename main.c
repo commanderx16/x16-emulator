@@ -18,6 +18,8 @@
 #include "loadsave.h"
 #include "glue.h"
 
+#include "debugger.h"
+
 #define MHZ 8
 
 //#define TRACE
@@ -293,6 +295,11 @@ main(int argc, char **argv)
 
 	int instruction_counter = 0;
 	for (;;) {
+
+		int dbgCmd = DEBUGGetCurrentStatus();
+		if (dbgCmd > 0) continue;
+		if (dbgCmd < 0) break;
+		
 #ifdef TRACE
 		if (pc == trace_address && trace_address != 0) {
 			trace_mode = true;
