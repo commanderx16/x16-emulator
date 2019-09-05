@@ -423,7 +423,7 @@ static void DEBUGWrite(int x,int y,int ch,int r,int g,int b) {
 		rc.y = yPos + (y * 8 * CHAR_SCALE);
 		int pixData = fontdata[(ch - 0x20) * 5 + x1];
 		while (pixData != 0) {
-			if (pixData & 1) SDL_RenderDrawRect(dbgRenderer,&rc);
+			if (pixData & 1) SDL_RenderFillRect(dbgRenderer,&rc);
 			pixData = pixData >> 1;
 			rc.y += rc.h;
 		}
