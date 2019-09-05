@@ -694,6 +694,8 @@ video_update()
 				memory_save();
 			} else if (cmd_down && event.key.keysym.sym == SDLK_r) {
 				machine_reset();
+			} else if (cmd_down && event.key.keysym.sym == SDLK_v) {
+				machine_paste(SDL_GetClipboardText());
 			} else if (cmd_down && (event.key.keysym.sym == SDLK_f ||  event.key.keysym.sym == SDLK_RETURN)) {
 				is_fullscreen = !is_fullscreen;
 				SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN : 0);

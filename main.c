@@ -44,6 +44,18 @@ machine_reset()
 	reset6502();
 }
 
+char *paste_text = NULL;
+bool pasting_bas = false;
+
+void
+machine_paste(char *s)
+{
+	if (s) {
+		paste_text = s;
+		pasting_bas = true;
+	}
+}
+
 static bool
 is_kernal()
 {
@@ -236,21 +248,23 @@ main(int argc, char **argv)
 		}
 	}
 
-	FILE *bas_file = NULL;
+	char paste_text_data[65536];
 	if (bas_path) {
-		bas_file = fopen(bas_path, "r");
+		FILE *bas_file = fopen(bas_path, "rb");
 		if (!bas_file) {
 			printf("Cannot open %s!\n", bas_path);
 			exit(1);
 		}
+		paste_text = paste_text_data;
+		size_t paste_size = fread(paste_text, 1, sizeof(paste_text_data) - 1, bas_file);
+		paste_text[paste_size] = 0;
+		fclose(bas_file);
 	}
 
 	video_init(chargen);
 	sdcard_init();
 
 	machine_reset();
-
-	bool pasting_bas = false;
 
 	int instruction_counter = 0;
 	for (;;) {
@@ -348,24 +362,24 @@ main(int argc, char **argv)
 				(void)prg_size; // make compiler happy
 				fclose(prg_file);
 				prg_file = NULL;
-			} else if (bas_file) {
+			} else if (paste_text) {
 				// ...paste the BASIC program into the keyboard buffer
 				pasting_bas = true;
 			}
 		}
 
 		while (pasting_bas && RAM[0xc6] < 10) {
-			uint8_t c = fgetc(bas_file);
-			if (feof(bas_file)) {
-				pasting_bas = false;
-				bas_file = NULL;
-				fclose(bas_file);
-			} else {
+			uint8_t c = *paste_text;
+			if (c) {
 				if (c == 10) {
 					c = 13;
 				}
 				RAM[0x0277 + RAM[0xc6]] = c;
 				RAM[0xc6]++;
+				paste_text++;
+			} else {
+				pasting_bas = false;
+				paste_text = NULL;
 			}
 		}
 	}
