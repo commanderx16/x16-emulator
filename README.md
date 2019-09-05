@@ -9,17 +9,21 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * When starting `x16emu` without arguments, it will pick up the system ROM (`rom.bin`) and the character ROM (`chargen.bin`) from the executable's directory.
 * The system ROM and character ROM filenames/paths can be overridden with the `-rom` and `-char` command line arguments.
 * `-sdcard` lets you specify an SD card image (partition table + FAT32).
-* `-prg` leys you specify a `.prg` file that gets injected into RAM after start.
+* `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
+* `-prg` lets you specify a BASIC program in ASCII format that automatically typed in (and tokenized).
+* `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
 * When compiled with `#define TRACE`, `-trace` will enable an instruction trace on stdout.
 
 Run `x16emu -h` to see all command line options.
 
 ## Functions while running
 
-* Cmd + R will reset the computer.
-* Cmd + S will save a memory dump (40 KB main RAM + 2 MB bankable RAM) to disk.
+* Ctrl + R will reset the computer.
+* Ctrl + V will paste the clipboard by injecting key presses.
+* Ctrl + S will save a memory dump (40 KB main RAM + 2 MB bankable RAM) to disk.
+* Ctrl + Return will toggle full screen mode.
 
-(These shortcuts currently only work on macOS.)
+On the Mac, use the Cmd key instead.
 
 ## Host Filesystem Interface
 
@@ -31,6 +35,13 @@ If the system ROM contains any version of the KERNAL, the LOAD (`$FFD5`) and SAV
       SAVE"BAR.PRG
 
 will target the host computer's local filesystem.
+
+## Dealing with BASIC Programs
+
+BASIC programs are encoded in a tokenized form, they are not simply ASCII files. If you want to edit BASIC programs on the host's text editor, you need to convert it between tokenized BASIC form and ASCII.
+
+* To convert ASCII to BASIC, reboot the machine and paste the ASCII text using Ctrl + V (Mac: Cmd + V). You can now run the program, or use the `SAVE` BASIC command to write the tokenized version to disk.
+* To convert BASIC to ASCII, start x16emu with the -echo argument, `LOAD` the BASIC file, and type `LIST`. Now copy the ASCII version from the terminal.
 
 ## Using the KERNAL/BASIC environment
 
