@@ -91,19 +91,24 @@ usage()
 	printf("\tThe override load address is hex without a prefix.\n");
 	printf("-bas <app.txt>\n");
 	printf("\tInject a BASIC program in ASCII encoding through the\n");
-	printf("\tkeyboard.\n\n");
+	printf("\tkeyboard.\n");
+	printf("-echo\n");
+	printf("\tPrint all KERNAL output to the host's stdout.\n");
+	printf("\tWith the BASIC statement \"LIST\", this can be used\n");
+	printf("\tto detokenize a BASIC program.\n");
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
 	printf("\tcan be specified.\n");
 #endif
+	printf("\n");
 	exit(1);
 }
 int
 main(int argc, char **argv)
 {
 #ifdef TRACE
-	bool trace = false;
+	bool trace_mode = false;
 	uint16_t trace_address = 0;
 #endif
 
@@ -117,6 +122,8 @@ main(int argc, char **argv)
 	char *prg_path = NULL;
 	char *bas_path = NULL;
 	char *sdcard_path = NULL;
+
+	bool echo_mode = false;
 
 #ifdef __APPLE__
 	// on macOS, double clicking runs an executable in the user's
@@ -185,18 +192,22 @@ main(int argc, char **argv)
 			sdcard_path = argv[0];
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-echo")) {
+			argc--;
+			argv++;
+			echo_mode = true;
 #ifdef TRACE
 
 		} else if (!strcmp(argv[0], "-trace")) {
 			argc--;
 			argv++;
 			if (argc && argv[0][0] != '-') {
-				trace = false;
+				trace_mode = false;
 				trace_address = (uint16_t)strtol(argv[0], NULL, 16);
 				argc--;
 				argv++;
 			} else {
-				trace = true;
+				trace_mode = true;
 				trace_address = 0;
 			}
 #endif
@@ -270,9 +281,9 @@ main(int argc, char **argv)
 	for (;;) {
 #ifdef TRACE
 		if (pc == trace_address && trace_address != 0) {
-			trace = true;
+			trace_mode = true;
 		}
-		if (trace) {
+		if (trace_mode) {
 			printf("\t\t\t\t[%6d] ", instruction_counter);
 
 			char *label = label_for_address(pc);
@@ -345,6 +356,14 @@ main(int argc, char **argv)
 			break;
 		}
 #endif
+
+		if (echo_mode && pc == 0xffd2 && is_kernal()) {
+			uint8_t c = a;
+			if (c == 13) {
+				c = 10;
+			}
+			printf("%c", c);
+		}
 
 		if (pc == 0xffcf && is_kernal()) {
 			// as soon as BASIC starts reading a line...
