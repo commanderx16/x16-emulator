@@ -16,40 +16,176 @@
 #include "glue.h"
 #include "disasm.h"
 #include "memory.h"
+#include "video.h"
+#include "cpu/fake6502.h"
 #include "debugger.h"
 
+static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift);
+
+static void DEBUGWrite(int x,int y,int ch,int r,int g,int b);
+static void DEBUGString(int x,int y,char *s,int r,int g,int b);
+static void DEBUGNumber(int x,int y,int n,int w,int r,int g,int b);
+
+static void DEBUGRenderData(int y,int data);
+static int DEBUGRenderRegisters(void);
+static void DEBUGRenderCode(int lines,int initialPC);
+
+// *******************************************************************************************
 //
 //		This is the minimum-interference flag. It's designed so that when
-//		its non-zero DEBUGRenderDisplay() is called. To insert the debugger
-//		all you do is include "debugger.h" and put in the code.
+//		its non-zero DEBUGRenderDisplay() is called. 
 //
-//		if (showDebugOnRender != 0) {
-//			DEBUGRenderDisplay(SCREEN_WIDTH,SCREEN_HEIGHT,renderer);
-//		}
+//			if (showDebugOnRender != 0) {
+//				DEBUGRenderDisplay(SCREEN_WIDTH,SCREEN_HEIGHT,renderer);
+//				SDL_RenderPresent(renderer);
+//				return true;
+//			}
 //
-//		after the SDL_RenderPresent call in video_update()
+//		before the SDL_RenderPresent call in video_update() in video.c
 //
+//		This controls what is happening. It is at the top of the main loop in main.c
+//
+//			if (isDebuggerEnabled != 0) {
+//				int dbgCmd = DEBUGGetCurrentStatus();
+//				if (dbgCmd > 0) continue;
+//				if (dbgCmd < 0) break;
+//			}
+//
+//		Both video.c and main.c require debugger.h to be included. 
+//
+//		isDebuggerEnabled should be a flag set as a command line switch - without it 
+//		it will run unchanged. It should not be necessary to test the render code
+//		because showDebugOnRender is statically initialised to zero and will only
+//		change if DEBUGGetCurrentStatus() is called.
+//
+// *******************************************************************************************
 
-int showDebugOnRender = 1;										// Used to trigger rendering in video.c
+//
+//				0-9A-F sets the program address, with shift sets the data address.
+//
+#define DBGKEY_HOME 	SDLK_F1 								// F1 is "Goto PC"
+#define DBGKEY_RESET 	SDLK_F2 								// F2 resets the 6502
+#define DBGKEY_RUN 		SDLK_F5 								// F5 is run.
+#define DBGKEY_SETBRK 	SDLK_F9									// F9 sets breakpoint
+#define DBGKEY_STEP 	SDLK_F11 								// F11 is step into.
+#define DBGKEY_STEPOVER	SDLK_F10 								// F10 is step over.
 
+#define DBGSCANKEY_BRK 	SDL_SCANCODE_F12 						// F12 is break into running code.	
+																// *** MUST BE SCAN CODE ***
+
+int showDebugOnRender = 0;										// Used to trigger rendering in video.c
+int currentPC = -1;												// Current PC value.
+int currentData = 0;											// Current data display address.
+int currentMode = DMODE_STOP;									// Waiting for instruction.
+int breakPoint = -1; 											// User Break
+int stepBreakPoint = -1;										// Single step break.
+//
+//		This flag controls 
+//
 int xPos = 0;													// Position of debug window
 int yPos = 0;	
 
 SDL_Renderer *dbgRenderer; 										// Renderer passed in.
 
-#define DBG_WIDTH 		(40)									// Char cells across
-#define DBG_HEIGHT 		(24)
+// *******************************************************************************************
+//
+//			This is used to determine who is in control. If it returns zero then
+//			everything runs normally till the next call. 
+//			If it returns +ve, then it will update the video, and loop round.
+//			If it returns -ve, then exit.
+//
+// *******************************************************************************************
 
-#define DBG_ASMX 		(4)										// Disassembly starts here
-#define DBG_LBLX 		(26) 									// Debug labels start here
-#define DBG_DATX		(29)									// Debug data starts here.
-#define DBG_MEMX 		(1)										// Memory Display starts here
+int  DEBUGGetCurrentStatus(void) {
 
-#define CHAR_SCALE 		(2)										// Debugger character pixel size.
+	SDL_Event event;
+	if (currentPC < 0) currentPC = pc;							// Initialise current PC displayed.
 
-#define COL_LABEL 		0,255,0									// RGB colours
-#define COL_DATA 		0,255,255
-#define COL_HIGHLIGHT 	255,255,0
+	if (currentMode == DMODE_STEP) {							// Single step before
+		currentPC = pc;											// Update current PC
+		currentMode = DMODE_STOP;								// So now stop, as we've done it.
+	}
+
+	if (pc == breakPoint || pc == stepBreakPoint) {				// Hit a breakpoint.
+		currentPC = pc;											// Update current PC
+		currentMode = DMODE_STOP;								// So now stop, as we've done it.
+		stepBreakPoint = -1;									// Clear step breakpoint.
+	}
+
+	if (SDL_GetKeyboardState(NULL)[DBGSCANKEY_BRK]) {			// Stop on break pressed.
+		currentMode = DMODE_STOP;
+		currentPC = pc; 										// Set the PC to what it is.
+	}
+
+	if (currentMode != DMODE_RUN) {								// Not running, we own the keyboard.
+		while (SDL_PollEvent(&event)) { 						// We now poll events here.
+			if (event.type == SDL_QUIT) return -1; 				// Time for exit
+			if (event.type == SDL_KEYDOWN) {					// Handle key presses.	
+				DEBUGHandleKeyEvent(event.key.keysym.sym,
+									SDL_GetModState() & (KMOD_LSHIFT|KMOD_RSHIFT));		
+			}
+		}
+	} 
+
+	showDebugOnRender = (currentMode != DMODE_RUN);				// Do we draw it - only in RUN mode.
+	if (currentMode == DMODE_STOP) { 							// We're in charge.
+		video_update();
+		return 1;
+	}
+	return 0;													// Run wild, run free.
+}
+
+// *******************************************************************************************
+//								Map keycodes to hexadecimal
+// *******************************************************************************************
+
+static SDL_Keycode keyToHex[] = { 
+	SDLK_0, SDLK_1, SDLK_2, SDLK_3, SDLK_4, SDLK_5, SDLK_6, SDLK_7,  
+	SDLK_8, SDLK_9, SDLK_a, SDLK_b, SDLK_c, SDLK_d, SDLK_e, SDLK_f
+};
+
+// *******************************************************************************************
+//
+//									Handle keyboard state.
+//
+// *******************************************************************************************
+
+static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift) {
+	if (key == DBGKEY_STEP) {									// Single step (F11 by default)
+		currentMode = DMODE_STEP; 								// Runs once, then switches back.
+	}
+	if (key == DBGKEY_STEPOVER) {								// Step over (F10 by default)
+		int opcode = read6502(pc);								// What opcode is it ?
+		if (opcode == 0x20) { 									// Is it JSR ?
+			stepBreakPoint = pc + 3;							// Then break 3 on.
+			currentMode = DMODE_RUN;							// And run.
+		} else {
+			currentMode = DMODE_STEP;							// Otherwise single step.
+		}
+	}
+	if (key == DBGKEY_RUN) {									// F5 Runs until Break.
+		currentMode = DMODE_RUN;
+	}
+	if (key == DBGKEY_SETBRK) {									// F9 Set breakpoint to displayed.
+		breakPoint = currentPC;
+	}
+	if (key == DBGKEY_HOME) {									// F1 sets the display PC to the actual one.
+		currentPC = pc;
+	}
+	if (key == DBGKEY_RESET) { 									// F2 reset the 6502
+		reset6502();
+		currentPC = pc;
+	}
+	for (int code = 0;code < 16;code++) { 						// Check hexadecimal.
+		if (key == keyToHex[code]) {
+			if (isShift) {
+				currentData = ((currentData << 4) | code) & 0xFFFF;
+			} else {
+				currentPC = ((currentPC << 4) | code) & 0xFFFF;
+			}
+		}
+	}
+}
 
 // *******************************************************************************************
 //
@@ -67,8 +203,8 @@ void DEBUGRenderDisplay(int width,int height,SDL_Renderer *pRenderer) {
 	SDL_SetRenderDrawColor(pRenderer,0,0,0,SDL_ALPHA_OPAQUE);
 	SDL_RenderFillRect(pRenderer,&rc);
 	int depth = DEBUGRenderRegisters();							// Draw register name and values.
-	DEBUGRenderCode(depth,pc);									// Render 6502 disassembly.
-	DEBUGRenderData(depth+1,0x40);
+	DEBUGRenderCode(depth,currentPC);							// Render 6502 disassembly.
+	DEBUGRenderData(depth+1,currentData);
 }
 
 // *******************************************************************************************
@@ -116,26 +252,27 @@ static void DEBUGRenderCode(int lines,int initialPC) {
 //
 // *******************************************************************************************
 
-static char *labels[] = { "PC","A","X","Y","S","SP","N","V","B","I","D","Z","C", NULL };
+static char *labels[] = { "PC","A","X","Y","S","SP","BRK","N","V","B","I","D","Z","C", NULL };
 
 static int DEBUGRenderRegisters(void) {
-	int n = 0,y = 0;
+	int n = 0,yc = 0;
 	while (labels[n] != NULL) {									// Labels
 		DEBUGString(DBG_LBLX,n,labels[n],COL_LABEL);n++;
 	}
-	DEBUGNumber(DBG_DATX,y++,pc,4,COL_DATA);					// Output registers
-	DEBUGNumber(DBG_DATX,y++,a,2,COL_DATA);
-	DEBUGNumber(DBG_DATX,y++,x,2,COL_DATA);
-	DEBUGNumber(DBG_DATX,y++,y,2,COL_DATA);
-	DEBUGNumber(DBG_DATX,y++,status,2,COL_DATA);
-	DEBUGNumber(DBG_DATX,y++,sp|0x100,4,COL_DATA);
-	DEBUGNumber(DBG_DATX,y++,(status >> 7) & 1,1,COL_DATA);
-	DEBUGNumber(DBG_DATX,y++,(status >> 6) & 1,1,COL_DATA);
-	DEBUGNumber(DBG_DATX,y++,(status >> 4) & 1,1,COL_DATA);
-	DEBUGNumber(DBG_DATX,y++,(status >> 3) & 1,1,COL_DATA);
-	DEBUGNumber(DBG_DATX,y++,(status >> 2) & 1,1,COL_DATA);
-	DEBUGNumber(DBG_DATX,y++,(status >> 1) & 1,1,COL_DATA);
-	DEBUGNumber(DBG_DATX,y++,(status >> 0) & 1,1,COL_DATA);
+	DEBUGNumber(DBG_DATX,yc++,pc,4,COL_DATA);					// Output registers
+	DEBUGNumber(DBG_DATX,yc++,a,2,COL_DATA);
+	DEBUGNumber(DBG_DATX,yc++,x,2,COL_DATA);
+	DEBUGNumber(DBG_DATX,yc++,y,2,COL_DATA);
+	DEBUGNumber(DBG_DATX,yc++,status,2,COL_DATA);
+	DEBUGNumber(DBG_DATX,yc++,sp|0x100,4,COL_DATA);
+	DEBUGNumber(DBG_DATX,yc++,breakPoint & 0xFFFF,4,COL_DATA);
+	DEBUGNumber(DBG_DATX,yc++,(status >> 7) & 1,1,COL_DATA);
+	DEBUGNumber(DBG_DATX,yc++,(status >> 6) & 1,1,COL_DATA);
+	DEBUGNumber(DBG_DATX,yc++,(status >> 4) & 1,1,COL_DATA);
+	DEBUGNumber(DBG_DATX,yc++,(status >> 3) & 1,1,COL_DATA);
+	DEBUGNumber(DBG_DATX,yc++,(status >> 2) & 1,1,COL_DATA);
+	DEBUGNumber(DBG_DATX,yc++,(status >> 1) & 1,1,COL_DATA);
+	DEBUGNumber(DBG_DATX,yc++,(status >> 0) & 1,1,COL_DATA);
 
 	return n; 													// Number of code display lines
 }
@@ -253,8 +390,8 @@ static unsigned char fontdata[] = {
 
 static void DEBUGNumber(int x,int y,int n,int w,int r,int g,int b) {
 	char fmtString[8],buffer[16];
-	sprintf(fmtString,"%%0%dx",w);
-	sprintf(buffer,fmtString,n);
+	snprintf(fmtString,sizeof(fmtString),"%%0%dx",w);
+	snprintf(buffer,sizeof(buffer),fmtString,n);
 	DEBUGString(x,y,buffer,r,g,b);
 
 }
@@ -293,4 +430,3 @@ static void DEBUGWrite(int x,int y,int ch,int r,int g,int b) {
 		rc.x += CHAR_SCALE;										// Horizontal spacing.
 	}
 }
-
