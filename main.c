@@ -44,6 +44,18 @@ machine_reset()
 	reset6502();
 }
 
+char *paste_text = NULL;
+bool pasting_bas = false;
+
+void
+machine_paste(char *s)
+{
+	if (s) {
+		paste_text = s;
+		pasting_bas = true;
+	}
+}
+
 static bool
 is_kernal()
 {
@@ -76,19 +88,27 @@ usage()
 	printf("-prg <app.prg>[,<load_addr>]\n");
 	printf("\tLoad application from the local disk into RAM\n");
 	printf("\t(.PRG file with 2 byte start address header)\n");
-	printf("\tThe override load address is hex without a prefix.\n\n");
+	printf("\tThe override load address is hex without a prefix.\n");
+	printf("-bas <app.txt>\n");
+	printf("\tInject a BASIC program in ASCII encoding through the\n");
+	printf("\tkeyboard.\n");
+	printf("-echo\n");
+	printf("\tPrint all KERNAL output to the host's stdout.\n");
+	printf("\tWith the BASIC statement \"LIST\", this can be used\n");
+	printf("\tto detokenize a BASIC program.\n");
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
 	printf("\tcan be specified.\n");
 #endif
+	printf("\n");
 	exit(1);
 }
 int
 main(int argc, char **argv)
 {
 #ifdef TRACE
-	bool trace = false;
+	bool trace_mode = false;
 	uint16_t trace_address = 0;
 #endif
 
@@ -100,7 +120,10 @@ main(int argc, char **argv)
 	char *rom_path = rom_path_data;
 	char *char_path = char_path_data;
 	char *prg_path = NULL;
+	char *bas_path = NULL;
 	char *sdcard_path = NULL;
+
+	bool echo_mode = false;
 
 #ifdef __APPLE__
 	// on macOS, double clicking runs an executable in the user's
@@ -151,6 +174,15 @@ main(int argc, char **argv)
 			prg_path = argv[0];
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-bas")) {
+			argc--;
+			argv++;
+			if (!argc) {
+				usage();
+			}
+			bas_path = argv[0];
+			argc--;
+			argv++;
 		} else if (!strcmp(argv[0], "-sdcard")) {
 			argc--;
 			argv++;
@@ -160,18 +192,22 @@ main(int argc, char **argv)
 			sdcard_path = argv[0];
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-echo")) {
+			argc--;
+			argv++;
+			echo_mode = true;
 #ifdef TRACE
 
 		} else if (!strcmp(argv[0], "-trace")) {
 			argc--;
 			argv++;
 			if (argc && argv[0][0] != '-') {
-				trace = false;
+				trace_mode = false;
 				trace_address = (uint16_t)strtol(argv[0], NULL, 16);
 				argc--;
 				argv++;
 			} else {
-				trace = true;
+				trace_mode = true;
 				trace_address = 0;
 			}
 #endif
@@ -223,6 +259,19 @@ main(int argc, char **argv)
 		}
 	}
 
+	char paste_text_data[65536];
+	if (bas_path) {
+		FILE *bas_file = fopen(bas_path, "rb");
+		if (!bas_file) {
+			printf("Cannot open %s!\n", bas_path);
+			exit(1);
+		}
+		paste_text = paste_text_data;
+		size_t paste_size = fread(paste_text, 1, sizeof(paste_text_data) - 1, bas_file);
+		paste_text[paste_size] = 0;
+		fclose(bas_file);
+	}
+
 	video_init(chargen);
 	sdcard_init();
 
@@ -232,9 +281,9 @@ main(int argc, char **argv)
 	for (;;) {
 #ifdef TRACE
 		if (pc == trace_address && trace_address != 0) {
-			trace = true;
+			trace_mode = true;
 		}
-		if (trace) {
+		if (trace_mode) {
 			printf("\t\t\t\t[%6d] ", instruction_counter);
 
 			char *label = label_for_address(pc);
@@ -308,21 +357,49 @@ main(int argc, char **argv)
 		}
 #endif
 
-		if (pc == 0xffcf && is_kernal() && prg_file) {
-			// as soon as BASIC starts reading a line,
-			// inject the app
-			uint8_t start_lo = fgetc(prg_file);
-			uint8_t start_hi = fgetc(prg_file);
-			uint16_t start;
-			if (prg_override_start >= 0) {
-				start = prg_override_start;
-			} else {
-				start = start_hi << 8 | start_lo;
+		if (echo_mode && pc == 0xffd2 && is_kernal()) {
+			uint8_t c = a;
+			if (c == 13) {
+				c = 10;
 			}
-			int prg_size = fread(RAM + start, 1, 65536-start, prg_file);
-			(void)prg_size; // make compiler happy
-			fclose(prg_file);
-			prg_file = NULL;
+			printf("%c", c);
+		}
+
+		if (pc == 0xffcf && is_kernal()) {
+			// as soon as BASIC starts reading a line...
+			if (prg_file) {
+				// ...inject the app into RAM
+				uint8_t start_lo = fgetc(prg_file);
+				uint8_t start_hi = fgetc(prg_file);
+				uint16_t start;
+				if (prg_override_start >= 0) {
+					start = prg_override_start;
+				} else {
+					start = start_hi << 8 | start_lo;
+				}
+				int prg_size = fread(RAM + start, 1, 65536-start, prg_file);
+				(void)prg_size; // make compiler happy
+				fclose(prg_file);
+				prg_file = NULL;
+			} else if (paste_text) {
+				// ...paste the BASIC program into the keyboard buffer
+				pasting_bas = true;
+			}
+		}
+
+		while (pasting_bas && RAM[0xc6] < 10) {
+			uint8_t c = *paste_text;
+			if (c) {
+				if (c == 10) {
+					c = 13;
+				}
+				RAM[0x0277 + RAM[0xc6]] = c;
+				RAM[0xc6]++;
+				paste_text++;
+			} else {
+				pasting_bas = false;
+				paste_text = NULL;
+			}
 		}
 	}
 

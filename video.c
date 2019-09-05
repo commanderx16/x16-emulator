@@ -35,6 +35,14 @@
 
 #define SCREEN_RAM_OFFSET 0x00000
 
+#ifdef __APPLE__
+#define LSHORTCUT_KEY SDLK_LGUI
+#define RSHORTCUT_KEY SDLK_RGUI
+#else
+#define LSHORTCUT_KEY SDLK_LCTRL
+#define RSHORTCUT_KEY SDLK_RCTRL
+#endif
+
 static SDL_Window *window;
 static SDL_Renderer *renderer;
 static SDL_Texture *sdlTexture;
@@ -692,12 +700,14 @@ video_update()
 			return false;
 		}
 		if (event.type == SDL_KEYDOWN) {
-			if (event.key.keysym.sym == SDLK_LGUI) { // Windows/Command
+			if (event.key.keysym.sym == LSHORTCUT_KEY || event.key.keysym.sym == RSHORTCUT_KEY) {
 				cmd_down = true;
 			} else if (cmd_down && event.key.keysym.sym == SDLK_s) {
 				memory_save();
 			} else if (cmd_down && event.key.keysym.sym == SDLK_r) {
 				machine_reset();
+			} else if (cmd_down && event.key.keysym.sym == SDLK_v) {
+				machine_paste(SDL_GetClipboardText());
 			} else if (cmd_down && (event.key.keysym.sym == SDLK_f ||  event.key.keysym.sym == SDLK_RETURN)) {
 				is_fullscreen = !is_fullscreen;
 				SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
@@ -724,7 +734,7 @@ video_update()
 			return true;
 		}
 		if (event.type == SDL_KEYUP) {
-			if (event.key.keysym.sym == SDLK_LGUI) { // Windows/Command
+			if (event.key.keysym.sym == LSHORTCUT_KEY || event.key.keysym.sym == RSHORTCUT_KEY) {
 				cmd_down = false;
 			} else {
 	//			printf("UP   0x%02x\n", event.key.keysym.sym);

@@ -19,5 +19,6 @@ extern uint8_t RAM[];
 extern uint8_t ROM[];
 
 extern void machine_reset();
+extern void machine_paste();
 
 #endif
