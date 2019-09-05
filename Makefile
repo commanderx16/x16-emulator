@@ -69,20 +69,20 @@ package: package_mac package_win package_linux
 	make clean
 
 package_mac:
-	(cd ../x16-kernalbasic/; ./build.sh)
+	(cd ../x16-rom/; ./build.sh)
 	MAC_STATIC=1 make clean all
 	rm -rf ~x16emu-package x16emu_mac.zip
 	mkdir ~x16emu-package
 	cp x16emu ~x16emu-package
-	cp ../x16-kernalbasic/rom.bin ~x16emu-package
+	cp ../x16-rom/rom.bin ~x16emu-package
 	cp -p ~/tmp/chargen ~x16emu-package/chargen.bin
 	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 Emulator" README.md --output ~x16emu-package/README.html
-	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 KERNAL/BASIC/DOS ROM"  ../x16-kernalbasic/README.md --output ~x16emu-package/KERNAL-BASIC.html
+	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 KERNAL/BASIC/DOS ROM"  ../x16-rom/README.md --output ~x16emu-package/KERNAL-BASIC.html
 	(cd ~x16emu-package/; zip "../x16emu_mac.zip" *)
 	rm -rf ~x16emu-package
 
 package_win:
-	(cd ../x16-kernalbasic/; ./build.sh)
+	(cd ../x16-rom/; ./build.sh)
 	CROSS_COMPILE_WINDOWS=1 make clean all
 	rm -rf ~x16emu-package x16emu_win.zip
 	mkdir ~x16emu-package
@@ -90,23 +90,23 @@ package_win:
 	cp $(MINGW32)/lib/libgcc_s_sjlj-1.dll ~x16emu-package/
 	cp $(MINGW32)/bin/libwinpthread-1.dll ~x16emu-package/
 	cp $(WIN_SDL2)/bin/SDL2.dll ~x16emu-package/
-	cp ../x16-kernalbasic/rom.bin ~x16emu-package
+	cp ../x16-rom/rom.bin ~x16emu-package
 	cp -p ~/tmp/chargen ~x16emu-package/chargen.bin
 	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 Emulator" README.md --output ~x16emu-package/README.html
-	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 KERNAL/BASIC/DOS ROM"  ../x16-kernalbasic/README.md --output ~x16emu-package/KERNAL-BASIC.html
+	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 KERNAL/BASIC/DOS ROM"  ../x16-rom/README.md --output ~x16emu-package/KERNAL-BASIC.html
 	(cd ~x16emu-package/; zip "../x16emu_win.zip" *)
 	rm -rf ~x16emu-package
 
 package_linux:
-	(cd ../x16-kernalbasic/; ./build.sh)
+	(cd ../x16-rom/; ./build.sh)
 	ssh $(LINUX_COMPILE_HOST) "cd $(LINUX_BASE_DIR); make clean all"
 	rm -rf ~x16emu-package x16emu_linux.zip
 	mkdir ~x16emu-package
 	cp x16emu ~x16emu-package
-	cp ../x16-kernalbasic/rom.bin ~x16emu-package
+	cp ../x16-rom/rom.bin ~x16emu-package
 	cp -p ~/tmp/chargen ~x16emu-package/chargen.bin
 	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 Emulator" README.md --output ~x16emu-package/README.html
-	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 KERNAL/BASIC/DOS ROM"  ../x16-kernalbasic/README.md --output ~x16emu-package/KERNAL-BASIC.html
+	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 KERNAL/BASIC/DOS ROM"  ../x16-rom/README.md --output ~x16emu-package/KERNAL-BASIC.html
 	(cd ~x16emu-package/; zip "../x16emu_linux.zip" *)
 	rm -rf ~x16emu-package
 
