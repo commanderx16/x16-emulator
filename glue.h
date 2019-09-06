@@ -6,6 +6,7 @@
 #define _GLUE_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define NUM_RAM_BANKS 256
 #define NUM_ROM_BANKS 8
