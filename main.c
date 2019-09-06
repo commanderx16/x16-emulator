@@ -374,7 +374,14 @@ main(int argc, char **argv)
 			if (!video_update()) {
 				break;
 			}
-			usleep(20000);
+
+			static int frames = 0;
+			frames++;
+			int32_t diff_time = 1000 * frames / 60 - SDL_GetTicks();
+			if (diff_time > 0) {
+				usleep(1000 * diff_time);
+			}
+
 			if (!(status & 4)) {
 				irq6502();
 			}
