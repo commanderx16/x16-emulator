@@ -65,50 +65,55 @@ LINUX_COMPILE_HOST = ubuntu.local
 # path to the equivalent of `pwd` on the Mac
 LINUX_BASE_DIR = /mnt/Documents/git/x16emu
 
+TMPDIR_NAME=$$$x16emu-package$$$
+
+define add_extra_files_to_package
+	# ROMs
+	cp ../x16-rom/rom.bin $(TMPDIR_NAME)
+	cp -p ~/tmp/chargen $(TMPDIR_NAME)/chargen.bin
+
+	# Documentation
+	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 Emulator" README.md --output $(TMPDIR_NAME)/README.html
+	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 KERNAL/BASIC/DOS ROM"  ../x16-rom/README.md --output $(TMPDIR_NAME)/KERNAL-BASIC.html
+	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 Programmer's Reference Guide"  ../x16-docs/Programmer\'s\ Reference\ Guide.md --output $(TMPDIR_NAME)/Programmer\'s\ Reference\ Guide.html
+	cp ../x16-docs/vera-module\ v0.7.pdf $(TMPDIR_NAME)
+endef
+
 package: package_mac package_win package_linux
 	make clean
 
 package_mac:
 	(cd ../x16-rom/; ./build.sh)
 	MAC_STATIC=1 make clean all
-	rm -rf ~x16emu-package x16emu_mac.zip
-	mkdir ~x16emu-package
-	cp x16emu ~x16emu-package
-	cp ../x16-rom/rom.bin ~x16emu-package
-	cp -p ~/tmp/chargen ~x16emu-package/chargen.bin
-	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 Emulator" README.md --output ~x16emu-package/README.html
-	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 KERNAL/BASIC/DOS ROM"  ../x16-rom/README.md --output ~x16emu-package/KERNAL-BASIC.html
-	(cd ~x16emu-package/; zip "../x16emu_mac.zip" *)
-	rm -rf ~x16emu-package
+	rm -rf $(TMPDIR_NAME) x16emu_mac.zip
+	mkdir $(TMPDIR_NAME)
+	cp x16emu $(TMPDIR_NAME)
+	$(call add_extra_files_to_package)
+	(cd $(TMPDIR_NAME)/; zip "../x16emu_mac.zip" *)
+	rm -rf $(TMPDIR_NAME)
 
 package_win:
 	(cd ../x16-rom/; ./build.sh)
 	CROSS_COMPILE_WINDOWS=1 make clean all
-	rm -rf ~x16emu-package x16emu_win.zip
-	mkdir ~x16emu-package
-	cp x16emu.exe ~x16emu-package
-	cp $(MINGW32)/lib/libgcc_s_sjlj-1.dll ~x16emu-package/
-	cp $(MINGW32)/bin/libwinpthread-1.dll ~x16emu-package/
-	cp $(WIN_SDL2)/bin/SDL2.dll ~x16emu-package/
-	cp ../x16-rom/rom.bin ~x16emu-package
-	cp -p ~/tmp/chargen ~x16emu-package/chargen.bin
-	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 Emulator" README.md --output ~x16emu-package/README.html
-	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 KERNAL/BASIC/DOS ROM"  ../x16-rom/README.md --output ~x16emu-package/KERNAL-BASIC.html
-	(cd ~x16emu-package/; zip "../x16emu_win.zip" *)
-	rm -rf ~x16emu-package
+	rm -rf $(TMPDIR_NAME) x16emu_win.zip
+	mkdir $(TMPDIR_NAME)
+	cp x16emu.exe $(TMPDIR_NAME)
+	cp $(MINGW32)/lib/libgcc_s_sjlj-1.dll $(TMPDIR_NAME)/
+	cp $(MINGW32)/bin/libwinpthread-1.dll $(TMPDIR_NAME)/
+	cp $(WIN_SDL2)/bin/SDL2.dll $(TMPDIR_NAME)/
+	$(call add_extra_files_to_package)
+	(cd $(TMPDIR_NAME)/; zip "../x16emu_win.zip" *)
+	rm -rf $(TMPDIR_NAME)
 
 package_linux:
 	(cd ../x16-rom/; ./build.sh)
 	ssh $(LINUX_COMPILE_HOST) "cd $(LINUX_BASE_DIR); make clean all"
-	rm -rf ~x16emu-package x16emu_linux.zip
-	mkdir ~x16emu-package
-	cp x16emu ~x16emu-package
-	cp ../x16-rom/rom.bin ~x16emu-package
-	cp -p ~/tmp/chargen ~x16emu-package/chargen.bin
-	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 Emulator" README.md --output ~x16emu-package/README.html
-	pandoc --from gfm --to html --standalone --metadata pagetitle="X16 KERNAL/BASIC/DOS ROM"  ../x16-rom/README.md --output ~x16emu-package/KERNAL-BASIC.html
-	(cd ~x16emu-package/; zip "../x16emu_linux.zip" *)
-	rm -rf ~x16emu-package
+	rm -rf $(TMPDIR_NAME) x16emu_linux.zip
+	mkdir $(TMPDIR_NAME)
+	cp x16emu $(TMPDIR_NAME)
+	$(call add_extra_files_to_package)
+	(cd $(TMPDIR_NAME)/; zip "../x16emu_linux.zip" *)
+	rm -rf $(TMPDIR_NAME)
 
 clean:
 	rm -f *.o cpu/*.o x16emu x16emu.exe
