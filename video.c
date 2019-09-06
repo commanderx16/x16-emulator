@@ -128,214 +128,180 @@ video_init(uint8_t *in_chargen)
 #define EXTENDED_FLAG 0x100
 
 int
-ps2_scancode_from_SDLKey(SDL_Keycode k)
+ps2_scancode_from_SDLKey(SDL_Scancode k)
 {
 	switch (k) {
-		case SDLK_BACKSPACE:
+		case SDL_SCANCODE_BACKSPACE:
 			return 0x66;
-		case SDLK_TAB:
+		case SDL_SCANCODE_TAB:
 			return 0xd;
-		case SDLK_CLEAR:
+		case SDL_SCANCODE_CLEAR:
 			return 0;
-		case SDLK_RETURN:
+		case SDL_SCANCODE_RETURN:
 			return 0x5a;
-		case SDLK_PAUSE:
+		case SDL_SCANCODE_PAUSE:
 			return 0;
-		case SDLK_ESCAPE:
+		case SDL_SCANCODE_ESCAPE:
 #ifdef ESC_IS_BREAK
 			return 0xff;
 #else
 			return 0x76;
 #endif
-		case SDLK_SPACE:
+		case SDL_SCANCODE_SPACE:
 			return 0x29;
-		case SDLK_EXCLAIM:
-			return 0x16;
-		case SDLK_QUOTEDBL:
+		case SDL_SCANCODE_APOSTROPHE:
 			return 0x52;
-		case SDLK_HASH:
-			return 0x26;
-		case SDLK_DOLLAR:
-			return 0x25;
-		case SDLK_AMPERSAND:
-			return 0x3d;
-		case SDLK_QUOTE:
-			return 0x52;
-		case SDLK_LEFTPAREN:
-			return 0x46;
-		case SDLK_RIGHTPAREN:
-			return 0x45;
-		case SDLK_ASTERISK:
-			return 0x3e;
-		case SDLK_PLUS:
-			return 0x55;
-		case SDLK_COMMA:
+		case SDL_SCANCODE_COMMA:
 			return 0x41;
-		case SDLK_MINUS:
+		case SDL_SCANCODE_MINUS:
 			return 0x4e;
-		case SDLK_PERIOD:
+		case SDL_SCANCODE_PERIOD:
 			return 0x49;
-		case SDLK_SLASH:
+		case SDL_SCANCODE_SLASH:
 			return 0x4a;
-		case SDLK_0:
+		case SDL_SCANCODE_0:
 			return 0x45;
-		case SDLK_1:
+		case SDL_SCANCODE_1:
 			return 0x16;
-		case SDLK_2:
+		case SDL_SCANCODE_2:
 			return 0x1e;
-		case SDLK_3:
+		case SDL_SCANCODE_3:
 			return 0x26;
-		case SDLK_4:
+		case SDL_SCANCODE_4:
 			return 0x25;
-		case SDLK_5:
+		case SDL_SCANCODE_5:
 			return 0x2e;
-		case SDLK_6:
+		case SDL_SCANCODE_6:
 			return 0x36;
-		case SDLK_7:
+		case SDL_SCANCODE_7:
 			return 0x3d;
-		case SDLK_8:
+		case SDL_SCANCODE_8:
 			return 0x3e;
-		case SDLK_9:
+		case SDL_SCANCODE_9:
 			return 0x46;
-		case SDLK_COLON:
+		case SDL_SCANCODE_SEMICOLON:
 			return 0x4c;
-		case SDLK_SEMICOLON:
-			return 0x4c;
-		case SDLK_LESS:
-			return 0x41;
-		case SDLK_EQUALS:
+		case SDL_SCANCODE_EQUALS:
 			return 0x55;
-		case SDLK_GREATER:
-			return 0x49;
-		case SDLK_QUESTION:
-			return 0x4a;
-		case SDLK_AT:
-			return 0x1e;
-		case SDLK_LEFTBRACKET:
+		case SDL_SCANCODE_LEFTBRACKET:
 			return 0x54;
-		case SDLK_BACKSLASH:
+		case SDL_SCANCODE_BACKSLASH:
 			return 0x5d;
-		case SDLK_RIGHTBRACKET:
+		case SDL_SCANCODE_RIGHTBRACKET:
 			return 0x5b;
-		case SDLK_CARET:
-			return 0x36;
-		case SDLK_UNDERSCORE:
-			return 0x4e;
-		case SDLK_BACKQUOTE:
-			return 0xe;
-		case SDLK_a:
+		case SDL_SCANCODE_A:
 			return 0x1c;
-		case SDLK_b:
+		case SDL_SCANCODE_B:
 			return 0x32;
-		case SDLK_c:
+		case SDL_SCANCODE_C:
 			return 0x21;
-		case SDLK_d:
+		case SDL_SCANCODE_D:
 			return 0x23;
-		case SDLK_e:
+		case SDL_SCANCODE_E:
 			return 0x24;
-		case SDLK_f:
+		case SDL_SCANCODE_F:
 			return 0x2b;
-		case SDLK_g:
+		case SDL_SCANCODE_G:
 			return 0x34;
-		case SDLK_h:
+		case SDL_SCANCODE_H:
 			return 0x33;
-		case SDLK_i:
+		case SDL_SCANCODE_I:
 			return 0x43;
-		case SDLK_j:
+		case SDL_SCANCODE_J:
 			return 0x3B;
-		case SDLK_k:
+		case SDL_SCANCODE_K:
 			return 0x42;
-		case SDLK_l:
+		case SDL_SCANCODE_L:
 			return 0x4B;
-		case SDLK_m:
+		case SDL_SCANCODE_M:
 			return 0x3A;
-		case SDLK_n:
+		case SDL_SCANCODE_N:
 			return 0x31;
-		case SDLK_o:
+		case SDL_SCANCODE_O:
 			return 0x44;
-		case SDLK_p:
+		case SDL_SCANCODE_P:
 			return 0x4D;
-		case SDLK_q:
+		case SDL_SCANCODE_Q:
 			return 0x15;
-		case SDLK_r:
+		case SDL_SCANCODE_R:
 			return 0x2D;
-		case SDLK_s:
+		case SDL_SCANCODE_S:
 			return 0x1B;
-		case SDLK_t:
+		case SDL_SCANCODE_T:
 			return 0x2C;
-		case SDLK_u:
+		case SDL_SCANCODE_U:
 			return 0x3C;
-		case SDLK_v:
+		case SDL_SCANCODE_V:
 			return 0x2A;
-		case SDLK_w:
+		case SDL_SCANCODE_W:
 			return 0x1D;
-		case SDLK_x:
+		case SDL_SCANCODE_X:
 			return 0x22;
-		case SDLK_y:
+		case SDL_SCANCODE_Y:
 			return 0x35;
-		case SDLK_z:
+		case SDL_SCANCODE_Z:
 			return 0x1A;
-		case SDLK_DELETE:
+		case SDL_SCANCODE_DELETE:
 			return 0;
-		case SDLK_UP:
+		case SDL_SCANCODE_UP:
 			return 0x75 | EXTENDED_FLAG;
-		case SDLK_DOWN:
+		case SDL_SCANCODE_DOWN:
 			return 0x72 | EXTENDED_FLAG;
-		case SDLK_RIGHT:
+		case SDL_SCANCODE_RIGHT:
 			return 0x74 | EXTENDED_FLAG;
-		case SDLK_LEFT:
+		case SDL_SCANCODE_LEFT:
 			return 0x6b | EXTENDED_FLAG;
-		case SDLK_INSERT:
+		case SDL_SCANCODE_INSERT:
 			return 0;
-		case SDLK_HOME:
+		case SDL_SCANCODE_HOME:
 			return 0x6c | EXTENDED_FLAG;
-		case SDLK_END:
+		case SDL_SCANCODE_END:
 			return 0;
-		case SDLK_PAGEUP:
+		case SDL_SCANCODE_PAGEUP:
 			return 0;
-		case SDLK_PAGEDOWN:
+		case SDL_SCANCODE_PAGEDOWN:
 			return 0;
-		case SDLK_F1:
+		case SDL_SCANCODE_F1:
 			return 0x05;
-		case SDLK_F2:
+		case SDL_SCANCODE_F2:
 			return 0x06;
-		case SDLK_F3:
+		case SDL_SCANCODE_F3:
 			return 0x04;
-		case SDLK_F4:
+		case SDL_SCANCODE_F4:
 			return 0x0c;
-		case SDLK_F5:
+		case SDL_SCANCODE_F5:
 			return 0x03;
-		case SDLK_F6:
+		case SDL_SCANCODE_F6:
 			return 0x0b;
-		case SDLK_F7:
+		case SDL_SCANCODE_F7:
 			return 0x83;
-		case SDLK_F8:
+		case SDL_SCANCODE_F8:
 			return 0x0a;
-		case SDLK_F9:
+		case SDL_SCANCODE_F9:
 			return 0;
-		case SDLK_F10:
+		case SDL_SCANCODE_F10:
 			return 0;
-		case SDLK_F11:
+		case SDL_SCANCODE_F11:
 			return 0;
-		case SDLK_F12:
+		case SDL_SCANCODE_F12:
 			return 0;
-		case SDLK_F13:
+		case SDL_SCANCODE_F13:
 			return 0;
-		case SDLK_F14:
+		case SDL_SCANCODE_F14:
 			return 0;
-		case SDLK_F15:
+		case SDL_SCANCODE_F15:
 			return 0;
-		case SDLK_RSHIFT:
+		case SDL_SCANCODE_RSHIFT:
 			return 0x59;
-		case SDLK_LSHIFT:
+		case SDL_SCANCODE_LSHIFT:
 			return 0x12;
-		case SDLK_LCTRL:
+		case SDL_SCANCODE_LCTRL:
 			return 0x14;
-		case SDLK_RCTRL:
+		case SDL_SCANCODE_RCTRL:
 			return 0x14 | EXTENDED_FLAG;
-		case SDLK_LALT:
+		case SDL_SCANCODE_LALT:
 			return 0x11;
-//		case SDLK_LGUI: // Windows/Command
+//		case SDL_SCANCODE_LGUI: // Windows/Command
 //			return 0x5b | EXTENDED_FLAG;
 		default:
 			return 0;
@@ -717,7 +683,7 @@ video_update()
 				SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
 			} else {
 	//			printf("DOWN 0x%02x\n", event.key.keysym.sym);
-				int scancode = ps2_scancode_from_SDLKey(event.key.keysym.sym);
+				int scancode = ps2_scancode_from_SDLKey(event.key.keysym.scancode);
 				if (scancode == 0xff) {
 					// "Pause/Break" sequence
 					kbd_buffer_add(0xe1);
@@ -742,7 +708,7 @@ video_update()
 				cmd_down = false;
 			} else {
 	//			printf("UP   0x%02x\n", event.key.keysym.sym);
-				int scancode = ps2_scancode_from_SDLKey(event.key.keysym.sym);
+				int scancode = ps2_scancode_from_SDLKey(event.key.keysym.scancode);
 				if (scancode & EXTENDED_FLAG) {
 					kbd_buffer_add(0xe0);
 				}
