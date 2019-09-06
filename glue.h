@@ -18,6 +18,8 @@ extern uint16_t pc;
 extern uint8_t RAM[];
 extern uint8_t ROM[];
 
+extern bool debuger_enabled;
+
 extern void machine_reset();
 extern void machine_paste();
 

@@ -689,7 +689,7 @@ video_update()
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, sdlTexture, NULL, NULL);
 
-	if (showDebugOnRender != 0) {
+	if (debuger_enabled && showDebugOnRender != 0) {
 		DEBUGRenderDisplay(SCREEN_WIDTH,SCREEN_HEIGHT,renderer);
 		SDL_RenderPresent(renderer);
 		return true;

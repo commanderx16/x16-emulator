@@ -17,13 +17,17 @@
 #include "sdcard.h"
 #include "loadsave.h"
 #include "glue.h"
-
 #include "debugger.h"
 
 #define MHZ 8
 
 //#define TRACE
 #define LOAD_HYPERCALLS
+
+bool debuger_enabled = false;
+char *paste_text = NULL;
+char paste_text_data[65536];
+bool pasting_bas = false;
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -45,10 +49,6 @@ machine_reset()
 	video_reset();
 	reset6502();
 }
-
-char *paste_text = NULL;
-char paste_text_data[65536];
-bool pasting_bas = false;
 
 void
 machine_paste(char *s)
@@ -102,6 +102,8 @@ usage()
 	printf("\tPrint all KERNAL output to the host's stdout.\n");
 	printf("\tWith the BASIC statement \"LIST\", this can be used\n");
 	printf("\tto detokenize a BASIC program.\n");
+	printf("-debug\n");
+	printf("\tEnable debugger.\n");
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
@@ -213,6 +215,10 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			echo_mode = true;
+		} else if (!strcmp(argv[0], "-debug")) {
+			argc--;
+			argv++;
+			debuger_enabled = true;
 #ifdef TRACE
 
 		} else if (!strcmp(argv[0], "-trace")) {
@@ -296,10 +302,12 @@ main(int argc, char **argv)
 	int instruction_counter = 0;
 	for (;;) {
 
-		int dbgCmd = DEBUGGetCurrentStatus();
-		if (dbgCmd > 0) continue;
-		if (dbgCmd < 0) break;
-		
+		if (debuger_enabled) {
+			int dbgCmd = DEBUGGetCurrentStatus();
+			if (dbgCmd > 0) continue;
+			if (dbgCmd < 0) break;
+		}
+
 #ifdef TRACE
 		if (pc == trace_address && trace_address != 0) {
 			trace_mode = true;
