@@ -371,6 +371,11 @@ main(int argc, char **argv)
 		}
 #endif
 
+		if (pc == 0xffff) {
+			memory_save();
+			break;
+		}
+
 		if (echo_mode && pc == 0xffd2 && is_kernal()) {
 			uint8_t c = a;
 			if (c == 13) {
