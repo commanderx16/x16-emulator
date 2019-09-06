@@ -458,11 +458,14 @@ main(int argc, char **argv)
 				} else {
 					start = start_hi << 8 | start_lo;
 				}
-				int prg_size = fread(RAM + start, 1, 65536-start, prg_file);
-				(void)prg_size; // make compiler happy
+				uint16_t end = start + fread(RAM + start, 1, 65536-start, prg_file);
 				fclose(prg_file);
 				prg_file = NULL;
-
+				if (start == 0x0801) {
+					// set start of variables
+					RAM[0x2d] = end & 0xff;
+					RAM[0x2e] = end >> 8;
+				}
 
 				if (run_after_load) {
 					if (start == 0x0801) {
