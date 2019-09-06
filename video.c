@@ -670,19 +670,29 @@ video_update()
 			return false;
 		}
 		if (event.type == SDL_KEYDOWN) {
-			if (event.key.keysym.scancode == LSHORTCUT_KEY || event.key.keysym.scancode == RSHORTCUT_KEY) {
-				cmd_down = true;
-			} else if (cmd_down && event.key.keysym.scancode == SDL_SCANCODE_S) {
-				memory_save();
-			} else if (cmd_down && event.key.keysym.scancode == SDL_SCANCODE_R) {
-				machine_reset();
-			} else if (cmd_down && event.key.keysym.scancode == SDL_SCANCODE_V) {
-				machine_paste(SDL_GetClipboardText());
-			} else if (cmd_down && (event.key.keysym.scancode == SDL_SCANCODE_F ||  event.key.keysym.scancode == SDL_SCANCODE_RETURN)) {
-				is_fullscreen = !is_fullscreen;
-				SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
-			} else {
-	//			printf("DOWN 0x%02x\n", event.key.keysym.scancode);
+			bool consumed = false;
+			if (cmd_down) {
+				if (event.key.keysym.scancode == SDL_SCANCODE_S) {
+					memory_save();
+					consumed = true;
+				} else if (event.key.keysym.scancode == SDL_SCANCODE_R) {
+					machine_reset();
+					consumed = true;
+				} else if (event.key.keysym.scancode == SDL_SCANCODE_V) {
+					machine_paste(SDL_GetClipboardText());
+					consumed = true;
+				} else if (event.key.keysym.scancode == SDL_SCANCODE_F ||  event.key.keysym.scancode == SDL_SCANCODE_RETURN) {
+					is_fullscreen = !is_fullscreen;
+					SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
+					consumed = true;
+				}
+			}
+			if (!consumed) {
+				//printf("DOWN 0x%02x\n", event.key.keysym.scancode);
+				if (event.key.keysym.scancode == LSHORTCUT_KEY || event.key.keysym.scancode == RSHORTCUT_KEY) {
+					cmd_down = true;
+				}
+
 				int scancode = ps2_scancode_from_SDLKey(event.key.keysym.scancode);
 				if (scancode == 0xff) {
 					// "Pause/Break" sequence
@@ -704,17 +714,17 @@ video_update()
 			return true;
 		}
 		if (event.type == SDL_KEYUP) {
+			//printf("UP   0x%02x\n", event.key.keysym.scancode);
 			if (event.key.keysym.scancode == LSHORTCUT_KEY || event.key.keysym.scancode == RSHORTCUT_KEY) {
 				cmd_down = false;
-			} else {
-	//			printf("UP   0x%02x\n", event.key.keysym.scancode);
-				int scancode = ps2_scancode_from_SDLKey(event.key.keysym.scancode);
-				if (scancode & EXTENDED_FLAG) {
-					kbd_buffer_add(0xe0);
-				}
-				kbd_buffer_add(0xf0); // BREAK
-				kbd_buffer_add(scancode & 0xff);
 			}
+
+			int scancode = ps2_scancode_from_SDLKey(event.key.keysym.scancode);
+			if (scancode & EXTENDED_FLAG) {
+				kbd_buffer_add(0xe0);
+			}
+			kbd_buffer_add(0xf0); // BREAK
+			kbd_buffer_add(scancode & 0xff);
 			return true;
 		}
 		if (event.type == SDL_MOUSEBUTTONDOWN) {
