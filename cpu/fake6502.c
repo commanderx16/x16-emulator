@@ -104,6 +104,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include "../debugger.h"
 
 //6502 defines
 #define UNDOCUMENTED //when this is defined, undocumented opcodes are handled.

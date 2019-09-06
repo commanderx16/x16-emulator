@@ -12,9 +12,12 @@
 #ifndef _DEBUGGER_H
 #define _DEBUGGER_H
 
+#include <SDL.h>
+
 extern int showDebugOnRender;
 
 void DEBUGRenderDisplay(int width,int height,SDL_Renderer *pRenderer);
+void DEBUGBreakToDebugger(void);
 int  DEBUGGetCurrentStatus(void);
 
 #define DBG_WIDTH 		(40)									// Char cells across

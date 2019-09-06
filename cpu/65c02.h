@@ -110,3 +110,13 @@ static void trb() {
     result = value & (a ^ 0xFF); 					// Write back value read, A bits are clear.
     putvalue(result);
 }
+
+// *******************************************************************************************
+//
+//                                     Invoke Debugger
+//
+// *******************************************************************************************
+
+static void dbg() {
+    DEBUGBreakToDebugger();                          // Invoke debugger.
+}
