@@ -239,7 +239,7 @@ main(int argc, char **argv)
 		}
 	}
 
-	FILE *f = fopen(rom_path, "r");
+	FILE *f = fopen(rom_path, "rb");
 	if (!f) {
 		printf("Cannot open %s!\n", rom_path);
 		exit(1);
@@ -248,7 +248,7 @@ main(int argc, char **argv)
 	(void)rom_size;
 	fclose(f);
 
-	f = fopen(char_path, "r");
+	f = fopen(char_path, "rb");
 	if (!f) {
 		printf("Cannot open %s!\n", char_path);
 		exit(1);
@@ -259,7 +259,7 @@ main(int argc, char **argv)
 	fclose(f);
 
 	if (sdcard_path) {
-		sdcard_file = fopen(sdcard_path, "r");
+		sdcard_file = fopen(sdcard_path, "rb");
 		if (!sdcard_file) {
 			printf("Cannot open %s!\n", sdcard_path);
 			exit(1);
@@ -275,7 +275,7 @@ main(int argc, char **argv)
 			*comma = 0;
 		}
 
-		prg_file = fopen(prg_path, "r");
+		prg_file = fopen(prg_path, "rb");
 		if (!prg_file) {
 			printf("Cannot open %s!\n", prg_path);
 			exit(1);
@@ -283,7 +283,7 @@ main(int argc, char **argv)
 	}
 
 	if (bas_path) {
-		FILE *bas_file = fopen(bas_path, "rb");
+		FILE *bas_file = fopen(bas_path, "r");
 		if (!bas_file) {
 			printf("Cannot open %s!\n", bas_path);
 			exit(1);

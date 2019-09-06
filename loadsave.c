@@ -129,7 +129,7 @@ LOAD()
 		RAM[0x90] = 0;
 		a = 0;
 	} else {
-		FILE *f = fopen(filename, "r");
+		FILE *f = fopen(filename, "rb");
 		if (!f) {
 			a = 4; // FNF
 			RAM[0x90] = a;
@@ -173,7 +173,7 @@ SAVE()
 		return;
 	}
 
-	FILE *f = fopen(filename, "w");
+	FILE *f = fopen(filename, "wb");
 	if (!f) {
 		a = 4; // FNF
 		RAM[0x90] = a;

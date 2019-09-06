@@ -119,7 +119,7 @@ memory_save()
 		}
 		index++;
 	}
-	FILE *f = fopen(filename, "w");
+	FILE *f = fopen(filename, "wb");
 	if (!f) {
 		printf("Cannot write to %s!\n", filename);
 		return;
