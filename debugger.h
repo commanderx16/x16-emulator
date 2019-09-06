@@ -25,7 +25,7 @@ int  DEBUGGetCurrentStatus(void);
 #define DBG_DATX		(30)									// Debug data starts here.
 #define DBG_MEMX 		(1)										// Memory Display starts here
 
-#define CHAR_SCALE 		(2)										// Debugger character pixel size.
+#define CHAR_SCALE 		(1)										// Debugger character pixel size.
 
 #define COL_LABEL 		0,255,0									// RGB colours
 #define COL_DATA 		0,255,255

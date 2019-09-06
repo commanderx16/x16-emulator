@@ -17,6 +17,7 @@
 #include "sdcard.h"
 #include "loadsave.h"
 #include "glue.h"
+#include "debugger.h"
 
 #include "debugger.h"
 
@@ -24,6 +25,11 @@
 
 //#define TRACE
 #define LOAD_HYPERCALLS
+
+bool debuger_enabled = false;
+char *paste_text = NULL;
+char paste_text_data[65536];
+bool pasting_bas = false;
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -45,9 +51,6 @@ machine_reset()
 	video_reset();
 	reset6502();
 }
-
-char *paste_text = NULL;
-bool pasting_bas = false;
 
 void
 machine_paste(char *s)
@@ -91,6 +94,9 @@ usage()
 	printf("\tLoad application from the local disk into RAM\n");
 	printf("\t(.PRG file with 2 byte start address header)\n");
 	printf("\tThe override load address is hex without a prefix.\n");
+	printf("-run <app.prg>[,<load_addr>]\n");
+	printf("\tSame as above, but also starts the application\n");
+	printf("\tusing RUN or SYS, depending on the load address.\n");
 	printf("-bas <app.txt>\n");
 	printf("\tInject a BASIC program in ASCII encoding through the\n");
 	printf("\tkeyboard.\n");
@@ -98,6 +104,8 @@ usage()
 	printf("\tPrint all KERNAL output to the host's stdout.\n");
 	printf("\tWith the BASIC statement \"LIST\", this can be used\n");
 	printf("\tto detokenize a BASIC program.\n");
+	printf("-debug\n");
+	printf("\tEnable debugger.\n");
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
@@ -126,6 +134,7 @@ main(int argc, char **argv)
 	char *sdcard_path = NULL;
 
 	bool echo_mode = false;
+	bool run_after_load = false;
 
 #ifdef __APPLE__
 	// on macOS, double clicking runs an executable in the user's
@@ -176,6 +185,16 @@ main(int argc, char **argv)
 			prg_path = argv[0];
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-run")) {
+			argc--;
+			argv++;
+			if (!argc) {
+				usage();
+			}
+			prg_path = argv[0];
+			run_after_load = true;
+			argc--;
+			argv++;
 		} else if (!strcmp(argv[0], "-bas")) {
 			argc--;
 			argv++;
@@ -198,6 +217,10 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			echo_mode = true;
+		} else if (!strcmp(argv[0], "-debug")) {
+			argc--;
+			argv++;
+			debuger_enabled = true;
 #ifdef TRACE
 
 		} else if (!strcmp(argv[0], "-trace")) {
@@ -218,7 +241,7 @@ main(int argc, char **argv)
 		}
 	}
 
-	FILE *f = fopen(rom_path, "r");
+	FILE *f = fopen(rom_path, "rb");
 	if (!f) {
 		printf("Cannot open %s!\n", rom_path);
 		exit(1);
@@ -227,7 +250,7 @@ main(int argc, char **argv)
 	(void)rom_size;
 	fclose(f);
 
-	f = fopen(char_path, "r");
+	f = fopen(char_path, "rb");
 	if (!f) {
 		printf("Cannot open %s!\n", char_path);
 		exit(1);
@@ -238,7 +261,7 @@ main(int argc, char **argv)
 	fclose(f);
 
 	if (sdcard_path) {
-		sdcard_file = fopen(sdcard_path, "r");
+		sdcard_file = fopen(sdcard_path, "rb");
 		if (!sdcard_file) {
 			printf("Cannot open %s!\n", sdcard_path);
 			exit(1);
@@ -254,16 +277,15 @@ main(int argc, char **argv)
 			*comma = 0;
 		}
 
-		prg_file = fopen(prg_path, "r");
+		prg_file = fopen(prg_path, "rb");
 		if (!prg_file) {
 			printf("Cannot open %s!\n", prg_path);
 			exit(1);
 		}
 	}
 
-	char paste_text_data[65536];
 	if (bas_path) {
-		FILE *bas_file = fopen(bas_path, "rb");
+		FILE *bas_file = fopen(bas_path, "r");
 		if (!bas_file) {
 			printf("Cannot open %s!\n", bas_path);
 			exit(1);
@@ -282,10 +304,19 @@ main(int argc, char **argv)
 	int instruction_counter = 0;
 	for (;;) {
 
+<<<<<<< HEAD
 		int dbgCmd = DEBUGGetCurrentStatus();
 		if (dbgCmd > 0) continue;
 		if (dbgCmd < 0) break;
 		
+=======
+		if (debuger_enabled) {
+			int dbgCmd = DEBUGGetCurrentStatus();
+			if (dbgCmd > 0) continue;
+			if (dbgCmd < 0) break;
+		}
+
+>>>>>>> 616c3e699a30db073902e33ace1d3ae057fd7731
 #ifdef TRACE
 		if (pc == trace_address && trace_address != 0) {
 			trace_mode = true;
@@ -364,6 +395,11 @@ main(int argc, char **argv)
 		}
 #endif
 
+		if (pc == 0xffff) {
+			memory_save();
+			break;
+		}
+
 		if (echo_mode && pc == 0xffd2 && is_kernal()) {
 			uint8_t c = a;
 			if (c == 13) {
@@ -388,8 +424,20 @@ main(int argc, char **argv)
 				(void)prg_size; // make compiler happy
 				fclose(prg_file);
 				prg_file = NULL;
-			} else if (paste_text) {
-				// ...paste the BASIC program into the keyboard buffer
+
+
+				if (run_after_load) {
+					if (start == 0x0801) {
+						paste_text = "RUN\r";
+					} else {
+						paste_text = paste_text_data;
+						snprintf(paste_text, sizeof(paste_text_data), "SYS$%04x\r", start);
+					}
+				}
+			}
+
+			if (paste_text) {
+				// ...paste BASIC code into the keyboard buffer
 				pasting_bas = true;
 			}
 		}

@@ -655,7 +655,11 @@ video_update()
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, sdlTexture, NULL, NULL);
 
+<<<<<<< HEAD
 	if (showDebugOnRender != 0) {
+=======
+	if (debuger_enabled && showDebugOnRender != 0) {
+>>>>>>> 616c3e699a30db073902e33ace1d3ae057fd7731
 		DEBUGRenderDisplay(SCREEN_WIDTH,SCREEN_HEIGHT,renderer);
 		SDL_RenderPresent(renderer);
 		return true;
