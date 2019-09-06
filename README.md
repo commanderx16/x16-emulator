@@ -51,19 +51,21 @@ Please see the KERNAL/BASIC documentation.
 
 ## Debugger 
 
-The debugger requires -debug to start. Without it it is effectively disabled. 
+The debugger requires `-debug` to start. Without it it is effectively disabled.
 
 There are 2 panels you can control. The code panel, the top left half, and the data panel, the bottom half of the screen. The displayed address can be changed using keys 0-9 and A-F, in a 'shift and roll' manner (easier to see than explain). To change the data panel address, press the shift key and type 0-9 A-F. The top write panel is fixed.
 
 The debugger keys are similar to the Microsoft Debugger shortcut keys, and work as follows
 
-F1 		resets the shown code position to the current PC
-F2 		resets the 65C02 CPU but not any of the hardware.
-F5 		is used to return to Run mode, the emulator should run as normal.
-F9 		sets the breakpoint to the currently code position.
-F10 	steps 'over' routines - if the next instruction is JSR it will break on return.
-F11 	steps 'into' routines.
-F12 	is used to break back into the debugger. This does not happen if you do not have -debug
+|Key|Description 																			|
+|---|---------------------------------------------------------------------------------------|
+|F1 |resets the shown code position to the current PC										|
+|F2 |resets the 65C02 CPU but not any of the hardware.										|
+|F5 |is used to return to Run mode, the emulator should run as normal.						|
+|F9 |sets the breakpoint to the currently code position.									|
+|F10|steps 'over' routines - if the next instruction is JSR it will break on return.		|
+|F11|steps 'into' routines.																	|
+|F12|is used to break back into the debugger. This does not happen if you do not have -debug|
 
 Effectively keyboard routines only work when the debugger is running normally. Single stepping through keyboard code will not work at present.
 
