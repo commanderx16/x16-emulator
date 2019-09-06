@@ -45,6 +45,7 @@ machine_reset()
 }
 
 char *paste_text = NULL;
+char paste_text_data[65536];
 bool pasting_bas = false;
 
 void
@@ -89,6 +90,9 @@ usage()
 	printf("\tLoad application from the local disk into RAM\n");
 	printf("\t(.PRG file with 2 byte start address header)\n");
 	printf("\tThe override load address is hex without a prefix.\n");
+	printf("-run <app.prg>[,<load_addr>]\n");
+	printf("\tSame as above, but also starts the application\n");
+	printf("\tusing RUN or SYS, depending on the load address.\n");
 	printf("-bas <app.txt>\n");
 	printf("\tInject a BASIC program in ASCII encoding through the\n");
 	printf("\tkeyboard.\n");
@@ -124,6 +128,7 @@ main(int argc, char **argv)
 	char *sdcard_path = NULL;
 
 	bool echo_mode = false;
+	bool run_after_load = false;
 
 #ifdef __APPLE__
 	// on macOS, double clicking runs an executable in the user's
@@ -172,6 +177,16 @@ main(int argc, char **argv)
 				usage();
 			}
 			prg_path = argv[0];
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-run")) {
+			argc--;
+			argv++;
+			if (!argc) {
+				usage();
+			}
+			prg_path = argv[0];
+			run_after_load = true;
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-bas")) {
@@ -259,7 +274,6 @@ main(int argc, char **argv)
 		}
 	}
 
-	char paste_text_data[65536];
 	if (bas_path) {
 		FILE *bas_file = fopen(bas_path, "rb");
 		if (!bas_file) {
@@ -381,8 +395,20 @@ main(int argc, char **argv)
 				(void)prg_size; // make compiler happy
 				fclose(prg_file);
 				prg_file = NULL;
-			} else if (paste_text) {
-				// ...paste the BASIC program into the keyboard buffer
+
+
+				if (run_after_load) {
+					if (start == 0x0801) {
+						paste_text = "RUN\r";
+					} else {
+						paste_text = paste_text_data;
+						snprintf(paste_text, sizeof(paste_text_data), "SYS$%04x\r", start);
+					}
+				}
+			}
+
+			if (paste_text) {
+				// ...paste BASIC code into the keyboard buffer
 				pasting_bas = true;
 			}
 		}
