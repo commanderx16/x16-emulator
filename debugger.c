@@ -71,12 +71,15 @@ static void DEBUGRenderCode(int lines,int initialPC);
 #define DBGKEY_STEPOVER	SDLK_F10 								// F10 is step over.
 
 #define DBGSCANKEY_BRK 	SDL_SCANCODE_F12 						// F12 is break into running code.	
-																// *** MUST BE SCAN CODE ***
+#define DBGSCANKEY_SHOW	SDL_SCANCODE_TAB 						// Show screen key.
+
+																// *** MUST BE SCAN CODES ***
 
 int showDebugOnRender = 0;										// Used to trigger rendering in video.c
+int showFullDisplay = 0; 										// If non-zero show the whole thing.
 int currentPC = -1;												// Current PC value.
 int currentData = 0;											// Current data display address.
-int currentMode = DMODE_STOP;									// Waiting for instruction.
+int currentMode = DMODE_RUN;									// Start running.
 int breakPoint = -1; 											// User Break
 int stepBreakPoint = -1;										// Single step break.
 //
@@ -118,6 +121,8 @@ int  DEBUGGetCurrentStatus(void) {
 	}
 
 	if (currentMode != DMODE_RUN) {								// Not running, we own the keyboard.
+		showFullDisplay = 										// Check showing screen.
+					SDL_GetKeyboardState(NULL)[DBGSCANKEY_SHOW];
 		while (SDL_PollEvent(&event)) { 						// We now poll events here.
 			if (event.type == SDL_QUIT) return -1; 				// Time for exit
 			if (event.type == SDL_KEYDOWN) {					// Handle key presses.	
@@ -194,6 +199,7 @@ static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift) {
 // *******************************************************************************************
 
 void DEBUGRenderDisplay(int width,int height,SDL_Renderer *pRenderer) {
+	if (showFullDisplay) return;								// Not rendering debug.
 	dbgRenderer = pRenderer;									// Save renderer.
 	SDL_Rect rc;
 	rc.w = DBG_WIDTH * 6 * CHAR_SCALE;							// Erase background, set up rect
