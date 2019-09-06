@@ -13,6 +13,10 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-run` same as above, but also executes the application using `RUN` or `SYS`, depending on the load address.
 * `-bas` lets you specify a BASIC program in ASCII format that automatically typed in (and tokenized).
 * `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
+* `-log` enables one or more types of logging (e.g. `-log KS`):
+	* `K`: keyboard (key-up and key-down events)
+	* `S`: speed (CPU load, frame misses)
+	* `V`: video I/O reads and writes
 * `-debug` enables the debugger.
 * When compiled with `#define TRACE`, `-trace` will enable an instruction trace on stdout.
 

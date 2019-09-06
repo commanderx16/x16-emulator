@@ -629,7 +629,6 @@ video_step(float mhz)
 		new_frame = true;
 		int start = (int)floor(start_scan_pixel_pos);
 		int end = SCAN_WIDTH * SCAN_HEIGHT;
-//		printf("SCREEN %d->%d\n", start, end);
 		video_flush_internal(start, end);
 		start_scan_pixel_pos = 0;
 		end_scan_pixel_pos = 0;
@@ -643,7 +642,6 @@ video_flush()
 {
 	int start = (int)floor(start_scan_pixel_pos);
 	int end = (int)floor(end_scan_pixel_pos);
-//	printf("DIRTY  %d->%d\n", start, end);
 	video_flush_internal(start, end);
 	start_scan_pixel_pos = end_scan_pixel_pos;
 }
@@ -688,7 +686,9 @@ video_update()
 				}
 			}
 			if (!consumed) {
-				//printf("DOWN 0x%02x\n", event.key.keysym.scancode);
+				if (log_keyboard) {
+					printf("DOWN 0x%02x\n", event.key.keysym.scancode);
+				}
 				if (event.key.keysym.scancode == LSHORTCUT_KEY || event.key.keysym.scancode == RSHORTCUT_KEY) {
 					cmd_down = true;
 				}
@@ -714,7 +714,9 @@ video_update()
 			return true;
 		}
 		if (event.type == SDL_KEYUP) {
-			//printf("UP   0x%02x\n", event.key.keysym.scancode);
+			if (log_keyboard) {
+				printf("UP   0x%02x\n", event.key.keysym.scancode);
+			}
 			if (event.key.keysym.scancode == LSHORTCUT_KEY || event.key.keysym.scancode == RSHORTCUT_KEY) {
 				cmd_down = false;
 			}
@@ -853,7 +855,9 @@ video_read(uint8_t reg)
 		case 3:
 		case 4: {
 			uint32_t address = get_and_inc_address(reg - 3);
-//			printf("READ  video_ram[$%x] = $%02x\n", address, video_ram[address]);
+			if (log_video) {
+				printf("READ  video_ram[$%x] = $%02x\n", address, video_ram[address]);
+			}
 			return video_ram_read(address);
 		case 5:
 			return io_addrsel;
@@ -881,7 +885,9 @@ video_write(uint8_t reg, uint8_t value)
 		case 3:
 		case 4: {
 			uint32_t address = get_and_inc_address(reg - 3);
-//			printf("WRITE video_ram[$%x] = $%02x\n", address, value);
+			if (log_video) {
+				printf("WRITE video_ram[$%x] = $%02x\n", address, value);
+			}
 			video_ram_write(address, value);
 			break;
 		case 5:

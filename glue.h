@@ -20,6 +20,8 @@ extern uint8_t RAM[];
 extern uint8_t ROM[];
 
 extern bool debuger_enabled;
+extern bool log_video;
+extern bool log_keyboard;
 
 extern void machine_reset();
 extern void machine_paste();

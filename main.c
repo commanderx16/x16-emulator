@@ -29,6 +29,10 @@ char *paste_text = NULL;
 char paste_text_data[65536];
 bool pasting_bas = false;
 
+bool log_video = false;
+bool log_speed = false;
+bool log_keyboard = false;
+
 #ifdef TRACE
 #include "rom_labels.h"
 char *
@@ -102,6 +106,9 @@ usage()
 	printf("\tPrint all KERNAL output to the host's stdout.\n");
 	printf("\tWith the BASIC statement \"LIST\", this can be used\n");
 	printf("\tto detokenize a BASIC program.\n");
+	printf("-log {K|S|V}...\n");
+	printf("\tEnable logging of (K)eyboard, (S)peed, (V)ideo.\n");
+	printf("\tMultiple characters are possible, e.g. -log KS\n");
 	printf("-debug\n");
 	printf("\tEnable debugger.\n");
 #ifdef TRACE
@@ -215,6 +222,29 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			echo_mode = true;
+		} else if (!strcmp(argv[0], "-log")) {
+			argc--;
+			argv++;
+			if (!argc) {
+				usage();
+			}
+			for (char *p = argv[0]; *p; p++) {
+				switch (tolower(*p)) {
+					case 'k':
+						log_keyboard = true;
+						break;
+					case 's':
+						log_speed = true;
+						break;
+					case 'v':
+						log_video = true;
+						break;
+					default:
+						usage();
+				}
+			}
+			argc--;
+			argv++;
 		} else if (!strcmp(argv[0], "-debug")) {
 			argc--;
 			argv++;
@@ -380,6 +410,16 @@ main(int argc, char **argv)
 			int32_t diff_time = 1000 * frames / 60 - SDL_GetTicks();
 			if (diff_time > 0) {
 				usleep(1000 * diff_time);
+			}
+
+			if (log_speed) {
+				float frames_behind = -((float)diff_time / 16.666666);
+				int load = (int)((1 + frames_behind) * 100);
+				printf("Load: %d%%\n", load > 100 ? 100 : load);
+				if ((int)frames_behind > 0) {
+					printf("Rendering is behind %d frames.\n", -(int)frames_behind);
+				} else {
+				}
 			}
 
 			if (!(status & 4)) {
