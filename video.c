@@ -424,9 +424,9 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 		bool bit = (s >> (7 - xx)) & 1;
 		col_index = bit ? fg_color : bg_color;
 	} else if (bits_per_pixel == 2) {
-		col_index = (s >> (6 - (xx << 1))) & 3;
+		col_index = (s >> (6 - ((xx & 3) << 1))) & 3;
 	} else if (bits_per_pixel == 4) {
-		col_index = (s >> (4 - (xx << 2))) & 0xf;
+		col_index = (s >> (4 - ((xx & 1) << 2))) & 0xf;
 	} else if (bits_per_pixel == 8) {
 		col_index = s;
 	}
