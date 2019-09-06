@@ -107,6 +107,20 @@ All rights reserved. License: 2-clause BSD
 
 ## Release Notes
 
+### Release 29
+
+* better keyboard support: if you pretend you have a US keyboard layout when typing, all keys should now be reachable [Paul Robson]
+* -debug will enable the new debugger [Paul Robson]
+* runs at the correct speed (was way too slow on most machines)
+* keyboard shortcuts work on Windows/Linux: Ctrl + F/R/S/V
+* Ctrl + V pastes the clipboard as keypresses
+* -bas file.txt loads a BASIC program in ASCII encoding
+* -echo prints all BASIC/KERNAL output to the terminal, use it with LIST to convert a BASIC program to ASCII
+* -run acts like -prg, but also autostarts the program
+* JMP $FFFF and SYS 65535 exit the emulator and save memory the host's storage
+* the packages now contain the current version of the Programmer's Reference Guide (HTML)
+* fix: on Windows, some file load/saves may be been truncated
+
 ### Release 28
 
 * support for 65C02 opcodes [Paul Robson]
