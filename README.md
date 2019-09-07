@@ -9,17 +9,27 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * When starting `x16emu` without arguments, it will pick up the system ROM (`rom.bin`) and the character ROM (`chargen.bin`) from the executable's directory.
 * The system ROM and character ROM filenames/paths can be overridden with the `-rom` and `-char` command line arguments.
 * `-sdcard` lets you specify an SD card image (partition table + FAT32).
-* `-prg` leys you specify a `.prg` file that gets injected into RAM after start.
+* `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
+* `-run` same as above, but also executes the application using `RUN` or `SYS`, depending on the load address.
+* `-bas` lets you specify a BASIC program in ASCII format that automatically typed in (and tokenized).
+* `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
+* `-log` enables one or more types of logging (e.g. `-log KS`):
+	* `K`: keyboard (key-up and key-down events)
+	* `S`: speed (CPU load, frame misses)
+	* `V`: video I/O reads and writes
+* `-debug` enables the debugger.
 * When compiled with `#define TRACE`, `-trace` will enable an instruction trace on stdout.
 
 Run `x16emu -h` to see all command line options.
 
 ## Functions while running
 
-* Cmd + R will reset the computer.
-* Cmd + S will save a memory dump (40 KB main RAM + 2 MB bankable RAM) to disk.
+* Ctrl + R will reset the computer.
+* Ctrl + V will paste the clipboard by injecting key presses.
+* Ctrl + S will save a memory dump (40 KB main RAM + 2 MB bankable RAM) to disk.
+* Ctrl + Return will toggle full screen mode.
 
-(These shortcuts currently only work on macOS.)
+On the Mac, use the Cmd key instead.
 
 ## Host Filesystem Interface
 
@@ -32,9 +42,39 @@ If the system ROM contains any version of the KERNAL, the LOAD (`$FFD5`) and SAV
 
 will target the host computer's local filesystem.
 
+## Dealing with BASIC Programs
+
+BASIC programs are encoded in a tokenized form, they are not simply ASCII files. If you want to edit BASIC programs on the host's text editor, you need to convert it between tokenized BASIC form and ASCII.
+
+* To convert ASCII to BASIC, reboot the machine and paste the ASCII text using Ctrl + V (Mac: Cmd + V). You can now run the program, or use the `SAVE` BASIC command to write the tokenized version to disk.
+* To convert BASIC to ASCII, start x16emu with the -echo argument, `LOAD` the BASIC file, and type `LIST`. Now copy the ASCII version from the terminal.
+
 ## Using the KERNAL/BASIC environment
 
 Please see the KERNAL/BASIC documentation.
+
+## Debugger 
+
+The debugger requires `-debug` to start. Without it it is effectively disabled.
+
+There are 2 panels you can control. The code panel, the top left half, and the data panel, the bottom half of the screen. The displayed address can be changed using keys 0-9 and A-F, in a 'shift and roll' manner (easier to see than explain). To change the data panel address, press the shift key and type 0-9 A-F. The top write panel is fixed.
+
+The debugger keys are similar to the Microsoft Debugger shortcut keys, and work as follows
+
+|Key|Description 																			|
+|---|---------------------------------------------------------------------------------------|
+|F1 |resets the shown code position to the current PC										|
+|F2 |resets the 65C02 CPU but not any of the hardware.										|
+|F5 |is used to return to Run mode, the emulator should run as normal.						|
+|F9 |sets the breakpoint to the currently code position.									|
+|F10|steps 'over' routines - if the next instruction is JSR it will break on return.		|
+|F11|steps 'into' routines.																	|
+|F12|is used to break back into the debugger. This does not happen if you do not have -debug|
+|TAB|when stopped, or single stepping, hides the debug information when pressed 			|
+
+When -debug is selected the No-Operation $FF will break into the debugger automatically.
+
+Effectively keyboard routines only work when the debugger is running normally. Single stepping through keyboard code will not work at present.
 
 ## Features
 
@@ -70,6 +110,20 @@ Copyright (c) 2019 Michael Steil &lt;mist64@mac.com&gt;, [www.pagetable.com](htt
 All rights reserved. License: 2-clause BSD
 
 ## Release Notes
+
+### Release 29
+
+* better keyboard support: if you pretend you have a US keyboard layout when typing, all keys should now be reachable [Paul Robson]
+* -debug will enable the new debugger [Paul Robson]
+* runs at the correct speed (was way too slow on most machines)
+* keyboard shortcuts work on Windows/Linux: Ctrl + F/R/S/V
+* Ctrl + V pastes the clipboard as keypresses
+* -bas file.txt loads a BASIC program in ASCII encoding
+* -echo prints all BASIC/KERNAL output to the terminal, use it with LIST to convert a BASIC program to ASCII
+* -run acts like -prg, but also autostarts the program
+* JMP $FFFF and SYS 65535 exit the emulator and save memory the host's storage
+* the packages now contain the current version of the Programmer's Reference Guide (HTML)
+* fix: on Windows, some file load/saves may be been truncated
 
 ### Release 28
 

@@ -17,11 +17,23 @@
 #include "sdcard.h"
 #include "loadsave.h"
 #include "glue.h"
+#include "debugger.h"
 
 #define MHZ 8
 
 //#define TRACE
 #define LOAD_HYPERCALLS
+
+bool debuger_enabled = false;
+char *paste_text = NULL;
+char paste_text_data[65536];
+bool pasting_bas = false;
+
+bool log_video = false;
+bool log_speed = false;
+bool log_keyboard = false;
+bool echo_mode = false;
+bool save_on_exit = true;
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -42,6 +54,15 @@ machine_reset()
 {
 	video_reset();
 	reset6502();
+}
+
+void
+machine_paste(char *s)
+{
+	if (s) {
+		paste_text = s;
+		pasting_bas = true;
+	}
 }
 
 static bool
@@ -76,19 +97,35 @@ usage()
 	printf("-prg <app.prg>[,<load_addr>]\n");
 	printf("\tLoad application from the local disk into RAM\n");
 	printf("\t(.PRG file with 2 byte start address header)\n");
-	printf("\tThe override load address is hex without a prefix.\n\n");
+	printf("\tThe override load address is hex without a prefix.\n");
+	printf("-run <app.prg>[,<load_addr>]\n");
+	printf("\tSame as above, but also starts the application\n");
+	printf("\tusing RUN or SYS, depending on the load address.\n");
+	printf("-bas <app.txt>\n");
+	printf("\tInject a BASIC program in ASCII encoding through the\n");
+	printf("\tkeyboard.\n");
+	printf("-echo\n");
+	printf("\tPrint all KERNAL output to the host's stdout.\n");
+	printf("\tWith the BASIC statement \"LIST\", this can be used\n");
+	printf("\tto detokenize a BASIC program.\n");
+	printf("-log {K|S|V}...\n");
+	printf("\tEnable logging of (K)eyboard, (S)peed, (V)ideo.\n");
+	printf("\tMultiple characters are possible, e.g. -log KS\n");
+	printf("-debug\n");
+	printf("\tEnable debugger.\n");
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
 	printf("\tcan be specified.\n");
 #endif
+	printf("\n");
 	exit(1);
 }
 int
 main(int argc, char **argv)
 {
 #ifdef TRACE
-	bool trace = false;
+	bool trace_mode = false;
 	uint16_t trace_address = 0;
 #endif
 
@@ -100,7 +137,10 @@ main(int argc, char **argv)
 	char *rom_path = rom_path_data;
 	char *char_path = char_path_data;
 	char *prg_path = NULL;
+	char *bas_path = NULL;
 	char *sdcard_path = NULL;
+
+	bool run_after_load = false;
 
 #ifdef __APPLE__
 	// on macOS, double clicking runs an executable in the user's
@@ -151,6 +191,25 @@ main(int argc, char **argv)
 			prg_path = argv[0];
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-run")) {
+			argc--;
+			argv++;
+			if (!argc) {
+				usage();
+			}
+			prg_path = argv[0];
+			run_after_load = true;
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-bas")) {
+			argc--;
+			argv++;
+			if (!argc) {
+				usage();
+			}
+			bas_path = argv[0];
+			argc--;
+			argv++;
 		} else if (!strcmp(argv[0], "-sdcard")) {
 			argc--;
 			argv++;
@@ -160,18 +219,49 @@ main(int argc, char **argv)
 			sdcard_path = argv[0];
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-echo")) {
+			argc--;
+			argv++;
+			echo_mode = true;
+		} else if (!strcmp(argv[0], "-log")) {
+			argc--;
+			argv++;
+			if (!argc) {
+				usage();
+			}
+			for (char *p = argv[0]; *p; p++) {
+				switch (tolower(*p)) {
+					case 'k':
+						log_keyboard = true;
+						break;
+					case 's':
+						log_speed = true;
+						break;
+					case 'v':
+						log_video = true;
+						break;
+					default:
+						usage();
+				}
+			}
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-debug")) {
+			argc--;
+			argv++;
+			debuger_enabled = true;
 #ifdef TRACE
 
 		} else if (!strcmp(argv[0], "-trace")) {
 			argc--;
 			argv++;
 			if (argc && argv[0][0] != '-') {
-				trace = false;
+				trace_mode = false;
 				trace_address = (uint16_t)strtol(argv[0], NULL, 16);
 				argc--;
 				argv++;
 			} else {
-				trace = true;
+				trace_mode = true;
 				trace_address = 0;
 			}
 #endif
@@ -180,7 +270,7 @@ main(int argc, char **argv)
 		}
 	}
 
-	FILE *f = fopen(rom_path, "r");
+	FILE *f = fopen(rom_path, "rb");
 	if (!f) {
 		printf("Cannot open %s!\n", rom_path);
 		exit(1);
@@ -189,7 +279,7 @@ main(int argc, char **argv)
 	(void)rom_size;
 	fclose(f);
 
-	f = fopen(char_path, "r");
+	f = fopen(char_path, "rb");
 	if (!f) {
 		printf("Cannot open %s!\n", char_path);
 		exit(1);
@@ -200,7 +290,7 @@ main(int argc, char **argv)
 	fclose(f);
 
 	if (sdcard_path) {
-		sdcard_file = fopen(sdcard_path, "r");
+		sdcard_file = fopen(sdcard_path, "rb");
 		if (!sdcard_file) {
 			printf("Cannot open %s!\n", sdcard_path);
 			exit(1);
@@ -216,11 +306,23 @@ main(int argc, char **argv)
 			*comma = 0;
 		}
 
-		prg_file = fopen(prg_path, "r");
+		prg_file = fopen(prg_path, "rb");
 		if (!prg_file) {
 			printf("Cannot open %s!\n", prg_path);
 			exit(1);
 		}
+	}
+
+	if (bas_path) {
+		FILE *bas_file = fopen(bas_path, "r");
+		if (!bas_file) {
+			printf("Cannot open %s!\n", bas_path);
+			exit(1);
+		}
+		paste_text = paste_text_data;
+		size_t paste_size = fread(paste_text, 1, sizeof(paste_text_data) - 1, bas_file);
+		paste_text[paste_size] = 0;
+		fclose(bas_file);
 	}
 
 	video_init(chargen);
@@ -230,11 +332,18 @@ main(int argc, char **argv)
 
 	int instruction_counter = 0;
 	for (;;) {
+
+		if (debuger_enabled) {
+			int dbgCmd = DEBUGGetCurrentStatus();
+			if (dbgCmd > 0) continue;
+			if (dbgCmd < 0) break;
+		}
+
 #ifdef TRACE
 		if (pc == trace_address && trace_address != 0) {
-			trace = true;
+			trace_mode = true;
 		}
-		if (trace) {
+		if (trace_mode) {
 			printf("\t\t\t\t[%6d] ", instruction_counter);
 
 			char *label = label_for_address(pc);
@@ -296,7 +405,24 @@ main(int argc, char **argv)
 			if (!video_update()) {
 				break;
 			}
-			usleep(20000);
+
+			static int frames = 0;
+			frames++;
+			int32_t diff_time = 1000 * frames / 60 - SDL_GetTicks();
+			if (diff_time > 0) {
+				usleep(1000 * diff_time);
+			}
+
+			if (log_speed) {
+				float frames_behind = -((float)diff_time / 16.666666);
+				int load = (int)((1 + frames_behind) * 100);
+				printf("Load: %d%%\n", load > 100 ? 100 : load);
+				if ((int)frames_behind > 0) {
+					printf("Rendering is behind %d frames.\n", -(int)frames_behind);
+				} else {
+				}
+			}
+
 			if (!(status & 4)) {
 				irq6502();
 			}
@@ -308,21 +434,71 @@ main(int argc, char **argv)
 		}
 #endif
 
-		if (pc == 0xffcf && is_kernal() && prg_file) {
-			// as soon as BASIC starts reading a line,
-			// inject the app
-			uint8_t start_lo = fgetc(prg_file);
-			uint8_t start_hi = fgetc(prg_file);
-			uint16_t start;
-			if (prg_override_start >= 0) {
-				start = prg_override_start;
-			} else {
-				start = start_hi << 8 | start_lo;
+		if (pc == 0xffff) {
+			if (save_on_exit) {
+				memory_save();
 			}
-			int prg_size = fread(RAM + start, 1, 65536-start, prg_file);
-			(void)prg_size; // make compiler happy
-			fclose(prg_file);
-			prg_file = NULL;
+			break;
+		}
+
+		if (echo_mode && pc == 0xffd2 && is_kernal()) {
+			uint8_t c = a;
+			if (c == 13) {
+				c = 10;
+			}
+			printf("%c", c);
+		}
+
+		if (pc == 0xffcf && is_kernal()) {
+			// as soon as BASIC starts reading a line...
+			if (prg_file) {
+				// ...inject the app into RAM
+				uint8_t start_lo = fgetc(prg_file);
+				uint8_t start_hi = fgetc(prg_file);
+				uint16_t start;
+				if (prg_override_start >= 0) {
+					start = prg_override_start;
+				} else {
+					start = start_hi << 8 | start_lo;
+				}
+				uint16_t end = start + fread(RAM + start, 1, 65536-start, prg_file);
+				fclose(prg_file);
+				prg_file = NULL;
+				if (start == 0x0801) {
+					// set start of variables
+					RAM[0x2d] = end & 0xff;
+					RAM[0x2e] = end >> 8;
+				}
+
+				if (run_after_load) {
+					if (start == 0x0801) {
+						paste_text = "RUN\r";
+					} else {
+						paste_text = paste_text_data;
+						snprintf(paste_text, sizeof(paste_text_data), "SYS$%04x\r", start);
+					}
+				}
+			}
+
+			if (paste_text) {
+				// ...paste BASIC code into the keyboard buffer
+				pasting_bas = true;
+			}
+		}
+
+		while (pasting_bas && RAM[0xc6] < 10) {
+			uint8_t c = *paste_text;
+			if (c) {
+				if (c == 10) {
+					c = 13;
+				}
+				RAM[0x0277 + RAM[0xc6]] = c;
+				RAM[0xc6]++;
+				paste_text++;
+			} else {
+				pasting_bas = false;
+				paste_text = NULL;
+			}
 		}
 	}
 
