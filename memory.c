@@ -17,6 +17,8 @@ uint8_t rom_bank = NUM_ROM_BANKS - 1;
 uint8_t RAM[RAM_SIZE];
 uint8_t ROM[ROM_SIZE];
 
+#define DEVICE_EMULATOR (0x9fb0)
+
 // ROM file layout:
 //   0000-1FFF: bank 0       ($C000)
 //   2000-3FFF: fixed KERNAL ($E000)
@@ -52,6 +54,9 @@ read6502(uint16_t address)
 		} else if (address >= 0x9fa0 && address < 0x9fb0) {
 			// fake mouse
 			return mouse_read(address & 0x1f);
+		} else if (address >= 0x9fb0 && address < 0x9fb5) {
+			// emulator state
+			return emu_read(address & 0x07);
 		} else {
 			return 0;
 		}
@@ -89,6 +94,9 @@ write6502(uint16_t address, uint8_t value)
 			via2_write(address & 0xf, value);
 		} else if (address >= 0x9f80 && address < 0x9fa0) {
 			// TODO: RTC
+		} else if (address >= 0x9fb0 && address < 0x9fb5) {
+			// emulator state
+			emu_write(address & 0x07, value);
 		} else {
 			// future expansion
 		}
@@ -143,4 +151,45 @@ void
 memory_set_rom_bank(uint8_t bank)
 {
 	rom_bank = bank & (NUM_ROM_BANKS - 1);;
+}
+
+//
+// read/write emulator state (feature flags)
+//
+// 0: debuger_enabled
+// 1: log_video
+// 2: log_keyboard
+// 3: echo_mode
+// 4: save_on_exit
+// POKE $9FB3,1:PRINT"ECHO MODE IS ON":POKE $9FB3,0
+void
+emu_write(uint8_t reg, uint8_t value)
+{
+	bool v = value != 0;
+	switch (reg) {
+		case 0: debuger_enabled = v; break;
+		case 1: log_video = v; break;
+		case 2: log_keyboard = v; break;
+		case 3: echo_mode = v; break;
+		case 4: save_on_exit = v; break;
+		default: printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
+	}
+}
+
+uint8_t
+emu_read(uint8_t reg)
+{
+	if (reg == 0) {
+		return debuger_enabled ? 1 : 0;
+	} else if (reg == 1) {
+		return log_video ? 1 : 0;
+	} else if (reg == 2) {
+		return log_keyboard ? 1 : 0;
+	} else if (reg == 3) {
+		return echo_mode ? 1 : 0;
+	} else if (reg == 4) {
+		return save_on_exit ? 1 : 0;
+	}
+	printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
+	return -1;
 }
