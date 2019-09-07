@@ -131,6 +131,8 @@ int
 ps2_scancode_from_SDLKey(SDL_Scancode k)
 {
 	switch (k) {
+		case SDL_SCANCODE_GRAVE:
+			return 0x0e;
 		case SDL_SCANCODE_BACKSPACE:
 			return 0x66;
 		case SDL_SCANCODE_TAB:

@@ -22,6 +22,26 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 
 Run `x16emu -h` to see all command line options.
 
+## Keyboard Layout
+
+The X16 uses a PS/2 keyboard, and the ROM currently only supports the US/ANSI layout. The emulator maps key *locations* to their equivalent on a PS/2 keyboard, so in practice, the X16 behaves as if your keymap was set to the US layout.
+
+<pre>
++---+---+---+---+---+---+--++-+-++--+---+---+---+---+-----+
+| π | ! | @ | # | $ | % | ↑ | & | * | ( | ) | | | + | DEL |
+| ← | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0 | - | = |     |
++---+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+---+
+|TAB  | Q | W | E | R | T | Y | U | I | O | P | [ | ] | £ |
+|     |   |   |   |   |   |   |   |   |   |   |   |   |   |
++-----++--++--++--++--++--++--++--++--++--++--++--++--+---+
+|SHIFT | A | S | D | F | G | H | J | K | L | : | " |RETURN|
+|LOCK  |   |   |   |   |   |   |   |   |   | ; | ' |      |
++------+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+------+
+|SHIFT   | Z | X | C | V | B | N | M | < | > | ? |SHIFT   |
+|        |   |   |   |   |   |   |   | , | . | / |        |
++--------+---+---+---+---+---+---+---+---+---+---+--------+
+</pre>
+
 ## Functions while running
 
 * Ctrl + R will reset the computer.
