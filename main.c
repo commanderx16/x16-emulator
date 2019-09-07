@@ -32,6 +32,8 @@ bool pasting_bas = false;
 bool log_video = false;
 bool log_speed = false;
 bool log_keyboard = false;
+bool echo_mode = false;
+bool save_on_exit = true;
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -138,7 +140,6 @@ main(int argc, char **argv)
 	char *bas_path = NULL;
 	char *sdcard_path = NULL;
 
-	bool echo_mode = false;
 	bool run_after_load = false;
 
 #ifdef __APPLE__
@@ -434,7 +435,9 @@ main(int argc, char **argv)
 #endif
 
 		if (pc == 0xffff) {
-			memory_save();
+			if (save_on_exit) {
+				memory_save();
+			}
 			break;
 		}
 

@@ -22,6 +22,8 @@ extern uint8_t ROM[];
 extern bool debuger_enabled;
 extern bool log_video;
 extern bool log_keyboard;
+extern bool echo_mode;
+extern bool save_on_exit;
 
 extern void machine_reset();
 extern void machine_paste();
