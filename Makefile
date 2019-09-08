@@ -11,15 +11,11 @@ else
 endif
 
 CFLAGS=-O3 -Wall -Werror -g $(shell $(SDL2CONFIG) --cflags)
-LDFLAGS=$(shell $(SDL2CONFIG) --libs)
+LDFLAGS=$(shell $(SDL2CONFIG) --libs) -lm
 
 ifeq ($(MAC_STATIC),1)
 	LDFLAGS=/usr/local/lib/libSDL2.a -lm -liconv -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,ForceFeedback -lobjc -Wl,-framework,CoreVideo -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,IOKit -Wl,-weak_framework,QuartzCore -Wl,-weak_framework,Metal
 endif
-
-#ifeq ($(LINUX_STATIC),1)
-#	LDFLAGS+=-Wl,-Bstatic -lSDL2 -L/lib/x86_64-linux-gnu/
-#endif
 
 ifeq ($(CROSS_COMPILE_WINDOWS),1)
 	LDFLAGS+=-L$(MINGW32)/lib
