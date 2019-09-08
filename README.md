@@ -2,6 +2,12 @@
 
 This is an emulator for the Commander X16 computer system. It only depends on SDL2 and should compile on all modern operating systems.
 
+## Binaries & Compiling
+
+Binary releases for macOS, Windows and x86_64 Linux are available on the [releases page](https://github.com/commanderx16/x16-emulator/releases).
+
+For all other systems, make sure the development version of SDL2 is installed and type `make` for build the source.
+
 ## Starting
 
 You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the command line. The latter allows you to specify additional arguments.
@@ -61,6 +67,10 @@ If the system ROM contains any version of the KERNAL, the LOAD (`$FFD5`) and SAV
       SAVE"BAR.PRG
 
 will target the host computer's local filesystem.
+
+The emulator will interpret filesnames relative to the directory it was started in. Note that on macOS, when double-clicking the executable, this is the home directory.
+
+To avoid incompatibility problems between the PETSCII and ASCII encodings, use lower case filenames on the host side, and unshifted filenames on the X16 side.
 
 ## Dealing with BASIC Programs
 
