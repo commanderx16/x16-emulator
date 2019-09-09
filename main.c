@@ -34,6 +34,7 @@ bool log_speed = false;
 bool log_keyboard = false;
 bool echo_mode = false;
 bool save_on_exit = true;
+int window_scale = 1;
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -112,6 +113,8 @@ usage()
 	printf("\tEnable logging of (K)eyboard, (S)peed, (V)ideo.\n");
 	printf("\tMultiple characters are possible, e.g. -log KS\n");
 	printf("-debug\n");
+	printf("-scale {1|2|3|4}\n");
+	printf("\tScale output to an integer multiple of 640x480\n");
 	printf("\tEnable debugger.\n");
 #ifdef TRACE
 	printf("-trace [<address>]\n");
@@ -265,6 +268,32 @@ main(int argc, char **argv)
 				trace_address = 0;
 			}
 #endif
+		} else if (!strcmp(argv[0], "-scale")) {
+			argc--;
+			argv++;
+			if(!argc) {
+				usage();
+			}
+			for(char *p = argv[0]; *p; p++) {
+				switch(tolower(*p)) {
+				case '1':
+					window_scale = 1;
+					break;
+				case '2':
+					window_scale = 2;
+					break;
+				case '3':
+					window_scale = 3;
+					break;
+				case '4':
+					window_scale = 4;
+					break;
+				default:
+					usage();
+				}
+			}
+			argc--;
+			argv++;
 		} else {
 			usage();
 		}
@@ -325,7 +354,7 @@ main(int argc, char **argv)
 		fclose(bas_file);
 	}
 
-	video_init(chargen);
+	video_init(chargen, window_scale);
 	sdcard_init();
 
 	machine_reset();
