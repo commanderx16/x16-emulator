@@ -147,6 +147,11 @@ memory_set_ram_bank(uint8_t bank)
 	ram_bank = bank & (NUM_RAM_BANKS - 1);
 }
 
+uint8_t memory_get_ram_bank()
+{
+	return ram_bank;
+}
+
 void
 memory_set_rom_bank(uint8_t bank)
 {
