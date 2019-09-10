@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <SDL.h>
 
-bool video_init(uint8_t *chargen);
+bool video_init(uint8_t *chargen, int window_scale);
 void video_reset(void);
 bool video_step(float mhz);
 bool video_update(void);

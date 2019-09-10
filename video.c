@@ -105,7 +105,7 @@ video_reset()
 }
 
 bool
-video_init(uint8_t *in_chargen)
+video_init(uint8_t *in_chargen, int window_scale)
 {
 	// copy chargen
 	memcpy(chargen_rom, in_chargen, sizeof(chargen_rom));
@@ -113,7 +113,7 @@ video_init(uint8_t *in_chargen)
 	video_reset();
 
 	SDL_Init(SDL_INIT_VIDEO);
-	SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &window, &renderer);
+	SDL_CreateWindowAndRenderer(SCREEN_WIDTH * window_scale, SCREEN_HEIGHT * window_scale, 0, &window, &renderer);
 	SDL_SetWindowResizable(window, true);
 	SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
