@@ -488,8 +488,8 @@ get_sprite(uint16_t x, uint16_t y)
 		uint8_t col_index = 0;
 		if (!mode) {
 			// 4 bpp
-			uint8_t byte = video_ram[sprite_address + sy * sprite_width + sx / 2];
-			if (x & 1) {
+			uint8_t byte = video_ram[sprite_address +  (sy * sprite_width>>1) + (sx>>1)];
+			if (sx & 1) {
 				col_index = byte & 0xf;
 			} else {
 				col_index = byte >> 4;
