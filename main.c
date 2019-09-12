@@ -246,8 +246,6 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			run_after_load = true;
-			argc--;
-			argv++;
 		} else if (!strcmp(argv[0], "-bas")) {
 			argc--;
 			argv++;
