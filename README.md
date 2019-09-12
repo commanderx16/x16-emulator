@@ -38,14 +38,12 @@ The X16 uses a PS/2 keyboard, and the ROM currently supports 16 different layout
 |en-us|US		       |[`] ⇒ [←], [~] ⇒ [π], [&#92;] ⇒ [£]|
 |en-gb|United Kingdom	       |[`] ⇒ [←], [~] ⇒ [π]|
 |de   |German		       |[§] ⇒ [£], [´] ⇒ [^], [^] ⇒ [←], [°] ⇒ [π]|
-|da-dk|Danish		       |[½] ⇒ [←], [§] ⇒ [π]|
+|da-dk|Danish/Swedish/Norwegian|[½] ⇒ [←], [§] ⇒ [π]|
 |it   |Italian		       |[&#92;] ⇒ [←], [&vert;] ⇒ [π]|
-|sv-se|Swedish		       |[§] ⇒ [←], [½] ⇒ [π]|
 |pl   |Polish (Programmers)    |[`] ⇒ [←], [~] ⇒ [π], [&#92;] ⇒ [£]|
 |hu   |Hungarian	       |[&#92;] ⇒ [←], [&vert;] ⇒ [π], [§] ⇒ [£]|
 |es   |Spanish		       |[&vert;] ⇒ π, &#92; ⇒ [←], Alt + [<] ⇒ [£]|
 |fr   |French		       |[²] ⇒ [←], [§] ⇒ [£]|
-|nb-no|Norwegian	       |[&vert;] ⇒ [←], [§] ⇒ [π]|
 |de-ch|Swiss German	       |[^] ⇒ [←], [°] ⇒ [π]|
 |fr-be|Belgian French	       |[²] ⇒ [←], [³] ⇒ [π]|
 |fi   |Finnish		       |[§] ⇒ [←], [½] ⇒ [π]|
