@@ -497,7 +497,9 @@ main(int argc, char **argv)
 				} else {
 				}
 			}
+		}
 
+		if (video_get_irq_out()) {
 			if (!(status & 4)) {
 				irq6502();
 			}

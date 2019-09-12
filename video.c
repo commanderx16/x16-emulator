@@ -58,6 +58,9 @@ static uint32_t io_addr[2];
 static uint8_t io_inc[2];
 bool io_addrsel;
 
+static uint8_t ien = 0;
+static uint8_t isr = 0;
+
 static uint8_t reg_layer[2][16];
 static uint8_t reg_sprites[16];
 static uint8_t reg_composer[32];
@@ -630,9 +633,18 @@ video_step(float mhz)
 		video_flush_internal(start, end);
 		start_scan_pixel_pos = 0;
 		end_scan_pixel_pos = 0;
+		if (ien & 1) { // VSYNC
+			isr |= 1;
+		}
 	}
 
 	return new_frame;
+}
+
+bool
+video_get_irq_out()
+{
+	return isr > 0;
 }
 
 static void
@@ -859,6 +871,10 @@ video_read(uint8_t reg)
 			return video_ram_read(address);
 		case 5:
 			return io_addrsel;
+		case 6:
+			return ien;
+		case 7:
+			return isr;
 		default:
 			return 0;
 		}
@@ -893,6 +909,12 @@ video_write(uint8_t reg, uint8_t value)
 				video_reset();
 			}
 			io_addrsel = value  & 1;
+			break;
+		case 6:
+			ien = value;
+			break;
+		case 7:
+			isr &= value ^ 0xff;
 			break;
 		}
 	}
