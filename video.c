@@ -299,6 +299,8 @@ ps2_scancode_from_SDLKey(SDL_Scancode k)
 			return 0x11;
 //		case SDL_SCANCODE_LGUI: // Windows/Command
 //			return 0x5b | EXTENDED_FLAG;
+		case SDL_SCANCODE_NONUSBACKSLASH:
+			return 0x61;
 		default:
 			return 0;
 	}
