@@ -161,6 +161,21 @@ All rights reserved. License: 2-clause BSD
 
 ## Release Notes
 
+### Release 30
+
+Emulator:
+* VERA can now generate VSYNC interrupts
+* added -keymap for setting the keyboard layout
+* added -scale for integer scaling of the window [Stephen Horn]
+* added -log to enable various logging features (can also be enabled at runtime (POKE $9FB0+) [Randall Bohn])
+* changed -run to be an option to -prg and -bas
+* emulator detection: read $9FBE/$9FBF, must read 0x31 and 0x36
+* fix: -prg and -run no longer corrupt BASIC programs.
+* fix: LOAD,1 into RAM bank [Stephen Horn]
+* fix: 2bpp and 4bpp drawing [Stephen Horn]
+* fix: 4bpp sprites [MonstersGoBoom]
+* fix: build on Linux/ARM
+
 ### Release 29
 
 * better keyboard support: if you pretend you have a US keyboard layout when typing, all keys should now be reachable [Paul Robson]
