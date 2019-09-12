@@ -2,6 +2,7 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
+#include <stdio.h>
 #include "video.h"
 #include "memory.h"
 #include "ps2.h"
@@ -114,7 +115,9 @@ video_init(uint8_t *in_chargen, int window_scale)
 
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_CreateWindowAndRenderer(SCREEN_WIDTH * window_scale, SCREEN_HEIGHT * window_scale, 0, &window, &renderer);
+#ifndef __MORPHOS__
 	SDL_SetWindowResizable(window, true);
+#endif
 	SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	sdlTexture = SDL_CreateTexture(renderer,
