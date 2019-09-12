@@ -29,7 +29,7 @@ char *keymaps[] = {
 	"en-us",
 	"en-gb",
 	"de",
-	"da-dk",
+	"nordic",
 	"it",
 	"pl",
 	"hu",
@@ -37,7 +37,6 @@ char *keymaps[] = {
 	"fr",
 	"de-ch",
 	"fr-be",
-	"fi",
 	"pt-br",
 };
 

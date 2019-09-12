@@ -33,21 +33,21 @@ Run `x16emu -h` to see all command line options.
 
 The X16 uses a PS/2 keyboard, and the ROM currently supports 16 different layouts. The following table shows their names, and what keys produce different characters than expected:
 
-|Name |Description 	       |Differences|
-|-----|------------------------|-------|
-|en-us|US		       |[`] ⇒ [←], [~] ⇒ [π], [&#92;] ⇒ [£]|
-|en-gb|United Kingdom	       |[`] ⇒ [←], [~] ⇒ [π]|
-|de   |German		       |[§] ⇒ [£], [´] ⇒ [^], [^] ⇒ [←], [°] ⇒ [π]|
-|da-dk|Danish/Swedish/Norwegian|[½] ⇒ [←], [§] ⇒ [π]|
-|it   |Italian		       |[&#92;] ⇒ [←], [&vert;] ⇒ [π]|
-|pl   |Polish (Programmers)    |[`] ⇒ [←], [~] ⇒ [π], [&#92;] ⇒ [£]|
-|hu   |Hungarian	       |[&#92;] ⇒ [←], [&vert;] ⇒ [π], [§] ⇒ [£]|
-|es   |Spanish		       |[&vert;] ⇒ π, &#92; ⇒ [←], Alt + [<] ⇒ [£]|
-|fr   |French		       |[²] ⇒ [←], [§] ⇒ [£]|
-|de-ch|Swiss German	       |[^] ⇒ [←], [°] ⇒ [π]|
-|fr-be|Belgian French	       |[²] ⇒ [←], [³] ⇒ [π]|
-|fi   |Finnish		       |[§] ⇒ [←], [½] ⇒ [π]|
-|pt-br|Portuguese (Brazil ABNT)|[&#92;] ⇒ [←], [&vert;] ⇒ [π]|
+|Name  |Description 	       |Differences|
+|------|------------------------|-------|
+|en-us |US		       |[`] ⇒ [←], [~] ⇒ [π], [&#92;] ⇒ [£]|
+|en-gb |United Kingdom	       |[`] ⇒ [←], [~] ⇒ [π]|
+|de    |German		       |[§] ⇒ [£], [´] ⇒ [^], [^] ⇒ [←], [°] ⇒ [π]|
+|nordic|Nordic                 |key left of [1] ⇒ [←],[π]|
+|it    |Italian		       |[&#92;] ⇒ [←], [&vert;] ⇒ [π]|
+|pl    |Polish (Programmers)   |[`] ⇒ [←], [~] ⇒ [π], [&#92;] ⇒ [£]|
+|hu    |Hungarian	       |[&#92;] ⇒ [←], [&vert;] ⇒ [π], [§] ⇒ [£]|
+|es    |Spanish		       |[&vert;] ⇒ π, &#92; ⇒ [←], Alt + [<] ⇒ [£]|
+|fr    |French		       |[²] ⇒ [←], [§] ⇒ [£]|
+|de-ch |Swiss German	       |[^] ⇒ [←], [°] ⇒ [π]|
+|fr-be |Belgian French	       |[²] ⇒ [←], [³] ⇒ [π]|
+|fi    |Finnish		       |[§] ⇒ [←], [½] ⇒ [π]|
+|pt-br |Portuguese (Brazil ABNT)|[&#92;] ⇒ [←], [&vert;] ⇒ [π]|
 
 Keys that produce international characters (like [ä] or [ç]) will not produce any character.
 
