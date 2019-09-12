@@ -31,7 +31,7 @@ Run `x16emu -h` to see all command line options.
 
 ## Keyboard Layout
 
-The X16 uses a PS/2 keyboard, and the ROM currently supports 16 different layouts. The following table shows their names, and what keys produce different characters than expected:
+The X16 uses a PS/2 keyboard, and the ROM currently supports several different layouts. The following table shows their names, and what keys produce different characters than expected:
 
 |Name  |Description 	       |Differences|
 |------|------------------------|-------|
@@ -54,6 +54,19 @@ Keys that produce international characters (like [ä] or [ç]) will not produce 
 Since the emulator tells the computer the *position* of keys that are pressed, you need to configure the layout for the computer independently of the keyboard layout you have configured on the host.
 
 **Use the F9 key to cycle through the layouts, or set the keyboard layout at startup using the `-keymap` command line argument.**
+
+The following keys can be used for controlling games:
+
+|Keyboard Key  | NES Equivalent |
+|--------------|----------------|
+|Ctrl          | A 		|
+|Alt 	       | B		|
+|Space         | SELECT         |
+|Enter         | START		|
+|Cursor Up     | UP		|
+|Cursor Down   | DOWN		|
+|Cursor Left   | LEFT		|
+|Cursor Right  | RIGHT		|
 
 ## Functions while running
 
