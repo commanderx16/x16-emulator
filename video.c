@@ -58,6 +58,9 @@ static uint32_t io_addr[2];
 static uint8_t io_inc[2];
 bool io_addrsel;
 
+static uint8_t ien = 0;
+static uint8_t isr = 0;
+
 static uint8_t reg_layer[2][16];
 static uint8_t reg_sprites[16];
 static uint8_t reg_composer[32];
@@ -280,19 +283,13 @@ ps2_scancode_from_SDLKey(SDL_Scancode k)
 		case SDL_SCANCODE_F8:
 			return 0x0a;
 		case SDL_SCANCODE_F9:
-			return 0;
+			return 0x01;
 		case SDL_SCANCODE_F10:
-			return 0;
+			return 0x09;
 		case SDL_SCANCODE_F11:
-			return 0;
+			return 0x78;
 		case SDL_SCANCODE_F12:
-			return 0;
-		case SDL_SCANCODE_F13:
-			return 0;
-		case SDL_SCANCODE_F14:
-			return 0;
-		case SDL_SCANCODE_F15:
-			return 0;
+			return 0x07;
 		case SDL_SCANCODE_RSHIFT:
 			return 0x59;
 		case SDL_SCANCODE_LSHIFT:
@@ -305,6 +302,8 @@ ps2_scancode_from_SDLKey(SDL_Scancode k)
 			return 0x11;
 //		case SDL_SCANCODE_LGUI: // Windows/Command
 //			return 0x5b | EXTENDED_FLAG;
+		case SDL_SCANCODE_NONUSBACKSLASH:
+			return 0x61;
 		default:
 			return 0;
 	}
@@ -492,8 +491,8 @@ get_sprite(uint16_t x, uint16_t y)
 		uint8_t col_index = 0;
 		if (!mode) {
 			// 4 bpp
-			uint8_t byte = video_ram[sprite_address + sy * sprite_width + sx / 2];
-			if (x & 1) {
+			uint8_t byte = video_ram[sprite_address +  (sy * sprite_width>>1) + (sx>>1)];
+			if (sx & 1) {
 				col_index = byte & 0xf;
 			} else {
 				col_index = byte >> 4;
@@ -634,9 +633,18 @@ video_step(float mhz)
 		video_flush_internal(start, end);
 		start_scan_pixel_pos = 0;
 		end_scan_pixel_pos = 0;
+		if (ien & 1) { // VSYNC
+			isr |= 1;
+		}
 	}
 
 	return new_frame;
+}
+
+bool
+video_get_irq_out()
+{
+	return isr > 0;
 }
 
 static void
@@ -863,6 +871,10 @@ video_read(uint8_t reg)
 			return video_ram_read(address);
 		case 5:
 			return io_addrsel;
+		case 6:
+			return ien;
+		case 7:
+			return isr;
 		default:
 			return 0;
 		}
@@ -897,6 +909,12 @@ video_write(uint8_t reg, uint8_t value)
 				video_reset();
 			}
 			io_addrsel = value  & 1;
+			break;
+		case 6:
+			ien = value;
+			break;
+		case 7:
+			isr &= value ^ 0xff;
 			break;
 		}
 	}

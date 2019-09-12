@@ -14,6 +14,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 
 * When starting `x16emu` without arguments, it will pick up the system ROM (`rom.bin`) and the character ROM (`chargen.bin`) from the executable's directory.
 * The system ROM and character ROM filenames/paths can be overridden with the `-rom` and `-char` command line arguments.
+* `-keymap` tells the KERNAL to switch to a specific keyboard layout. Use it without an argument to view the supported layouts.
 * `-sdcard` lets you specify an SD card image (partition table + FAT32).
 * `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
 * `-run` same as above, but also executes the application using `RUN` or `SYS`, depending on the load address.
@@ -30,23 +31,42 @@ Run `x16emu -h` to see all command line options.
 
 ## Keyboard Layout
 
-The X16 uses a PS/2 keyboard, and the ROM currently only supports the US/ANSI layout. The emulator maps key *locations* to their equivalent on a PS/2 keyboard, so in practice, the X16 behaves as if your keymap was set to the US layout.
+The X16 uses a PS/2 keyboard, and the ROM currently supports several different layouts. The following table shows their names, and what keys produce different characters than expected:
 
-<pre>
-+---+---+---+---+---+---+--++-+-++--+---+---+---+---+-----+
-| π | ! | @ | # | $ | % | ↑ | & | * | ( | ) | | | + | DEL |
-| ← | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0 | - | = |     |
-+---+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+---+
-|TAB  | Q | W | E | R | T | Y | U | I | O | P | [ | ] | £ |
-|     |   |   |   |   |   |   |   |   |   |   |   |   |   |
-+-----++--++--++--++--++--++--++--++--++--++--++--++--+---+
-|SHIFT | A | S | D | F | G | H | J | K | L | : | " |RETURN|
-|LOCK  |   |   |   |   |   |   |   |   |   | ; | ' |      |
-+------+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+------+
-|SHIFT   | Z | X | C | V | B | N | M | < | > | ? |SHIFT   |
-|        |   |   |   |   |   |   |   | , | . | / |        |
-+--------+---+---+---+---+---+---+---+---+---+---+--------+
-</pre>
+|Name  |Description 	       |Differences|
+|------|------------------------|-------|
+|en-us |US		       |[`] ⇒ [←], [~] ⇒ [π], [&#92;] ⇒ [£]|
+|en-gb |United Kingdom	       |[`] ⇒ [←], [~] ⇒ [π]|
+|de    |German		       |[§] ⇒ [£], [´] ⇒ [^], [^] ⇒ [←], [°] ⇒ [π]|
+|nordic|Nordic                 |key left of [1] ⇒ [←],[π]|
+|it    |Italian		       |[&#92;] ⇒ [←], [&vert;] ⇒ [π]|
+|pl    |Polish (Programmers)   |[`] ⇒ [←], [~] ⇒ [π], [&#92;] ⇒ [£]|
+|hu    |Hungarian	       |[&#92;] ⇒ [←], [&vert;] ⇒ [π], [§] ⇒ [£]|
+|es    |Spanish		       |[&vert;] ⇒ π, &#92; ⇒ [←], Alt + [<] ⇒ [£]|
+|fr    |French		       |[²] ⇒ [←], [§] ⇒ [£]|
+|de-ch |Swiss German	       |[^] ⇒ [←], [°] ⇒ [π]|
+|fr-be |Belgian French	       |[²] ⇒ [←], [³] ⇒ [π]|
+|fi    |Finnish		       |[§] ⇒ [←], [½] ⇒ [π]|
+|pt-br |Portuguese (Brazil ABNT)|[&#92;] ⇒ [←], [&vert;] ⇒ [π]|
+
+Keys that produce international characters (like [ä] or [ç]) will not produce any character.
+
+Since the emulator tells the computer the *position* of keys that are pressed, you need to configure the layout for the computer independently of the keyboard layout you have configured on the host.
+
+**Use the F9 key to cycle through the layouts, or set the keyboard layout at startup using the `-keymap` command line argument.**
+
+The following keys can be used for controlling games:
+
+|Keyboard Key  | NES Equivalent |
+|--------------|----------------|
+|Ctrl          | A 		|
+|Alt 	       | B		|
+|Space         | SELECT         |
+|Enter         | START		|
+|Cursor Up     | UP		|
+|Cursor Down   | DOWN		|
+|Cursor Left   | LEFT		|
+|Cursor Right  | RIGHT		|
 
 ## Functions while running
 
@@ -140,6 +160,21 @@ Copyright (c) 2019 Michael Steil &lt;mist64@mac.com&gt;, [www.pagetable.com](htt
 All rights reserved. License: 2-clause BSD
 
 ## Release Notes
+
+### Release 30
+
+Emulator:
+* VERA can now generate VSYNC interrupts
+* added -keymap for setting the keyboard layout
+* added -scale for integer scaling of the window [Stephen Horn]
+* added -log to enable various logging features (can also be enabled at runtime (POKE $9FB0+) [Randall Bohn])
+* changed -run to be an option to -prg and -bas
+* emulator detection: read $9FBE/$9FBF, must read 0x31 and 0x36
+* fix: -prg and -run no longer corrupt BASIC programs.
+* fix: LOAD,1 into RAM bank [Stephen Horn]
+* fix: 2bpp and 4bpp drawing [Stephen Horn]
+* fix: 4bpp sprites [MonstersGoBoom]
+* fix: build on Linux/ARM
 
 ### Release 29
 

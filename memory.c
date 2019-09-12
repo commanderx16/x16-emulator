@@ -54,9 +54,9 @@ read6502(uint16_t address)
 		} else if (address >= 0x9fa0 && address < 0x9fb0) {
 			// fake mouse
 			return mouse_read(address & 0x1f);
-		} else if (address >= 0x9fb0 && address < 0x9fb5) {
+		} else if (address >= 0x9fb0 && address < 0x9fc0) {
 			// emulator state
-			return emu_read(address & 0x07);
+			return emu_read(address & 0xf);
 		} else {
 			return 0;
 		}
@@ -94,9 +94,9 @@ write6502(uint16_t address, uint8_t value)
 			via2_write(address & 0xf, value);
 		} else if (address >= 0x9f80 && address < 0x9fa0) {
 			// TODO: RTC
-		} else if (address >= 0x9fb0 && address < 0x9fb5) {
+		} else if (address >= 0x9fb0 && address < 0x9fc0) {
 			// emulator state
-			emu_write(address & 0x07, value);
+			emu_write(address & 0xf, value);
 		} else {
 			// future expansion
 		}
@@ -194,6 +194,12 @@ emu_read(uint8_t reg)
 		return echo_mode ? 1 : 0;
 	} else if (reg == 4) {
 		return save_on_exit ? 1 : 0;
+	} else if (reg == 13) {
+		return keymap;
+	} else if (reg == 14) {
+		return '1'; // emulator detection
+	} else if (reg == 15) {
+		return '6'; // emulator detection
 	}
 	printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
 	return -1;

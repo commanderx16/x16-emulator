@@ -14,6 +14,7 @@ void video_reset(void);
 bool video_step(float mhz);
 bool video_update(void);
 void video_end(void);
+bool video_get_irq_out(void);
 
 uint8_t video_read(uint8_t reg);
 void video_write(uint8_t reg, uint8_t value);
