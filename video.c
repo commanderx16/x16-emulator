@@ -280,19 +280,13 @@ ps2_scancode_from_SDLKey(SDL_Scancode k)
 		case SDL_SCANCODE_F8:
 			return 0x0a;
 		case SDL_SCANCODE_F9:
-			return 0;
+			return 0x01;
 		case SDL_SCANCODE_F10:
-			return 0;
+			return 0x09;
 		case SDL_SCANCODE_F11:
-			return 0;
+			return 0x78;
 		case SDL_SCANCODE_F12:
-			return 0;
-		case SDL_SCANCODE_F13:
-			return 0;
-		case SDL_SCANCODE_F14:
-			return 0;
-		case SDL_SCANCODE_F15:
-			return 0;
+			return 0x07;
 		case SDL_SCANCODE_RSHIFT:
 			return 0x59;
 		case SDL_SCANCODE_LSHIFT:
