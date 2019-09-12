@@ -61,7 +61,7 @@ LINUX_COMPILE_HOST = ubuntu.local
 # path to the equivalent of `pwd` on the Mac
 LINUX_BASE_DIR = /mnt/Documents/git/x16emu
 
-TMPDIR_NAME=$$$x16emu-package$$$
+TMPDIR_NAME=TMP-x16emu-package
 
 define add_extra_files_to_package
 	# ROMs
@@ -79,7 +79,7 @@ package: package_mac package_win package_linux
 	make clean
 
 package_mac:
-	(cd ../x16-rom/; ./build.sh)
+	(cd ../x16-rom/; make clean all)
 	MAC_STATIC=1 make clean all
 	rm -rf $(TMPDIR_NAME) x16emu_mac.zip
 	mkdir $(TMPDIR_NAME)
@@ -89,7 +89,7 @@ package_mac:
 	rm -rf $(TMPDIR_NAME)
 
 package_win:
-	(cd ../x16-rom/; ./build.sh)
+	(cd ../x16-rom/; make clean all)
 	CROSS_COMPILE_WINDOWS=1 make clean all
 	rm -rf $(TMPDIR_NAME) x16emu_win.zip
 	mkdir $(TMPDIR_NAME)
@@ -102,7 +102,7 @@ package_win:
 	rm -rf $(TMPDIR_NAME)
 
 package_linux:
-	(cd ../x16-rom/; ./build.sh)
+	(cd ../x16-rom/; make clean all)
 	ssh $(LINUX_COMPILE_HOST) "cd $(LINUX_BASE_DIR); make clean all"
 	rm -rf $(TMPDIR_NAME) x16emu_linux.zip
 	mkdir $(TMPDIR_NAME)
