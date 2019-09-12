@@ -31,23 +31,31 @@ Run `x16emu -h` to see all command line options.
 
 ## Keyboard Layout
 
-The X16 uses a PS/2 keyboard, and the ROM currently only supports the US/ANSI layout. The emulator maps key *locations* to their equivalent on a PS/2 keyboard, so in practice, the X16 behaves as if your keymap was set to the US layout.
+The X16 uses a PS/2 keyboard, and the ROM currently supports 16 different layouts. The following table shows their names, and what keys produce different characters than expected:
 
-<pre>
-+---+---+---+---+---+---+--++-+-++--+---+---+---+---+-----+
-| π | ! | @ | # | $ | % | ↑ | & | * | ( | ) | | | + | DEL |
-| ← | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0 | - | = |     |
-+---+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+---+
-|TAB  | Q | W | E | R | T | Y | U | I | O | P | [ | ] | £ |
-|     |   |   |   |   |   |   |   |   |   |   |   |   |   |
-+-----++--++--++--++--++--++--++--++--++--++--++--++--+---+
-|SHIFT | A | S | D | F | G | H | J | K | L | : | " |RETURN|
-|LOCK  |   |   |   |   |   |   |   |   |   | ; | ' |      |
-+------+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+------+
-|SHIFT   | Z | X | C | V | B | N | M | < | > | ? |SHIFT   |
-|        |   |   |   |   |   |   |   | , | . | / |        |
-+--------+---+---+---+---+---+---+---+---+---+---+--------+
-</pre>
+|Name |Description 	       |Differences|
+|-----|------------------------|-------|
+|en-us|US		       |[`] ⇒ [←], [~] ⇒ [π], [&#92;] ⇒ [£]|
+|en-gb|United Kingdom	       |[`] ⇒ [←], [~] ⇒ [π]|
+|de   |German		       |[§] ⇒ [£], [´] ⇒ [^], [^] ⇒ [←], [°] ⇒ [π]|
+|da-dk|Danish		       |[½] ⇒ [←], [§] ⇒ [π]|
+|it   |Italian		       |[&#92;] ⇒ [←], [&vert;] ⇒ [π]|
+|sv-se|Swedish		       |[§] ⇒ [←], [½] ⇒ [π]|
+|pl   |Polish (Programmers)    |[`] ⇒ [←], [~] ⇒ [π], [&#92;] ⇒ [£]|
+|hu   |Hungarian	       |[&#92;] ⇒ [←], [&vert;] ⇒ [π], [§] ⇒ [£]|
+|es   |Spanish		       |[&vert;] ⇒ π, &#92; ⇒ [←], Alt + [<] ⇒ [£]|
+|fr   |French		       |[²] ⇒ [←], [§] ⇒ [£]|
+|nb-no|Norwegian	       |[&vert;] ⇒ [←], [§] ⇒ [π]|
+|de-ch|Swiss German	       |[^] ⇒ [←], [°] ⇒ [π]|
+|fr-be|Belgian French	       |[²] ⇒ [←], [³] ⇒ [π]|
+|fi   |Finnish		       |[§] ⇒ [←], [½] ⇒ [π]|
+|pt-br|Portuguese (Brazil ABNT)|[&#92;] ⇒ [←], [&vert;] ⇒ [π]|
+
+Keys that produce international characters (like [ä] or [ç]) will not produce any character.
+
+Since the emulator tells the computer the *position* of keys that are pressed, you need to configure the layout for the computer independently of the keyboard layout you have configured on the host.
+
+**Use the F9 key to cycle through the layouts, or set the keyboard layout at startup using the `-keymap` command line argument.**
 
 ## Functions while running
 
