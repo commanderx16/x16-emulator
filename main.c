@@ -21,7 +21,7 @@
 
 #define MHZ 8
 
-#define TRACE
+//#define TRACE
 #define LOAD_HYPERCALLS
 
 // This must match the KERNAL's set!
@@ -118,12 +118,12 @@ usage()
 	printf("\tLoad application from the local disk into RAM\n");
 	printf("\t(.PRG file with 2 byte start address header)\n");
 	printf("\tThe override load address is hex without a prefix.\n");
-	printf("-run <app.prg>[,<load_addr>]\n");
-	printf("\tSame as above, but also starts the application\n");
-	printf("\tusing RUN or SYS, depending on the load address.\n");
 	printf("-bas <app.txt>\n");
 	printf("\tInject a BASIC program in ASCII encoding through the\n");
 	printf("\tkeyboard.\n");
+	printf("-run\n");
+	printf("\tStart the -prg/-bas program using RUN or SYS, depending\n");
+	printf("\ton the load address.\n");
 	printf("-echo\n");
 	printf("\tPrint all KERNAL output to the host's stdout.\n");
 	printf("\tWith the BASIC statement \"LIST\", this can be used\n");
@@ -245,10 +245,6 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-run")) {
 			argc--;
 			argv++;
-			if (!argc || argv[0][0] == '-') {
-				usage();
-			}
-			prg_path = argv[0];
 			run_after_load = true;
 			argc--;
 			argv++;
@@ -398,7 +394,11 @@ main(int argc, char **argv)
 		}
 		paste_text = paste_text_data;
 		size_t paste_size = fread(paste_text, 1, sizeof(paste_text_data) - 1, bas_file);
-		paste_text[paste_size] = 0;
+		if (run_after_load) {
+			strncpy(paste_text + paste_size, "\rRUN\r", sizeof(paste_text_data) - paste_size);
+		} else {
+			paste_text[paste_size] = 0;
+		}
 		fclose(bas_file);
 	}
 
