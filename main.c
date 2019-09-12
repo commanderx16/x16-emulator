@@ -21,8 +21,27 @@
 
 #define MHZ 8
 
-//#define TRACE
+#define TRACE
 #define LOAD_HYPERCALLS
+
+// This must match the KERNAL's set!
+char *keymaps[] = {
+	"en-us",
+	"en-gb",
+	"de",
+	"da-dk",
+	"it",
+	"sv-se",
+	"pl",
+	"hu",
+	"es",
+	"fr",
+	"nb-no",
+	"de-ch",
+	"fr-be",
+	"fi",
+	"pt-br",
+};
 
 bool debuger_enabled = false;
 char *paste_text = NULL;
@@ -34,6 +53,7 @@ bool log_speed = false;
 bool log_keyboard = false;
 bool echo_mode = false;
 bool save_on_exit = true;
+uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
 
 #ifdef TRACE
@@ -93,6 +113,8 @@ usage()
 	printf("\tOverride character ROM file:\n");
 	printf("\t$0000-$07FF upper case/graphics\n");
 	printf("\t$0800-$0FFF lower case\n");
+	printf("-keymap <keymap>\n");
+	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
 	printf("\tSpecify SD card image (partition map + FAT32)\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
@@ -124,6 +146,17 @@ usage()
 	printf("\n");
 	exit(1);
 }
+
+void
+usage_keymap()
+{
+	printf("The following keymaps are supported:\n");
+	for (int i = 0; i < sizeof(keymaps)/sizeof(*keymaps); i++) {
+		printf("\t%s\n", keymaps[i]);
+	}
+	exit(1);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -170,7 +203,7 @@ main(int argc, char **argv)
 		if (!strcmp(argv[0], "-rom")) {
 			argc--;
 			argv++;
-			if (!argc) {
+			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
 			rom_path = argv[0];
@@ -179,16 +212,34 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-char")) {
 			argc--;
 			argv++;
-			if (!argc) {
+			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
 			char_path = argv[0];
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-keymap")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage_keymap();
+			}
+			bool found = false;
+			for (int i = 0; i < sizeof(keymaps)/sizeof(*keymaps); i++) {
+				if (!strcmp(argv[0], keymaps[i])) {
+					found = true;
+					keymap = i;
+				}
+			}
+			if (!found) {
+				usage_keymap();
+			}
+			argc--;
+			argv++;
 		} else if (!strcmp(argv[0], "-prg")) {
 			argc--;
 			argv++;
-			if (!argc) {
+			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
 			prg_path = argv[0];
@@ -197,7 +248,7 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-run")) {
 			argc--;
 			argv++;
-			if (!argc) {
+			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
 			prg_path = argv[0];
@@ -207,7 +258,7 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-bas")) {
 			argc--;
 			argv++;
-			if (!argc) {
+			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
 			bas_path = argv[0];
@@ -216,7 +267,7 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-sdcard")) {
 			argc--;
 			argv++;
-			if (!argc) {
+			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
 			sdcard_path = argv[0];
@@ -229,7 +280,7 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-log")) {
 			argc--;
 			argv++;
-			if (!argc) {
+			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
 			for (char *p = argv[0]; *p; p++) {
@@ -271,7 +322,7 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-scale")) {
 			argc--;
 			argv++;
-			if(!argc) {
+			if(!argc || argv[0][0] == '-') {
 				usage();
 			}
 			for(char *p = argv[0]; *p; p++) {
