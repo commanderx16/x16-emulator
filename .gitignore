@@ -6,3 +6,11 @@ x16emu_win.zip
 rom_labels.h
 rom.bin
 chargen.bin
+.vscode/
+x16emu.data
+x16emu.html
+x16emu.html.mem
+x16emu.js
+x16emu.wasm
+x16emu.worker.js
+

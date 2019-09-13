@@ -13,6 +13,8 @@ endif
 CFLAGS=-O3 -Wall -Werror -g $(shell $(SDL2CONFIG) --cflags)
 LDFLAGS=$(shell $(SDL2CONFIG) --libs) -lm
 
+OUTPUT=x16emu
+
 ifeq ($(MAC_STATIC),1)
 	LDFLAGS=/usr/local/lib/libSDL2.a -lm -liconv -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,ForceFeedback -lobjc -Wl,-framework,CoreVideo -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,IOKit -Wl,-weak_framework,QuartzCore -Wl,-weak_framework,Metal
 endif
@@ -24,6 +26,11 @@ ifeq ($(CROSS_COMPILE_WINDOWS),1)
 	CC=i686-w64-mingw32-gcc
 endif
 
+ifdef EMSCRIPTEN
+	LDFLAGS+=--shell-file webassembly/x16emu-template.html --preload-file rom.bin --preload-file chargen.bin -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 -s USE_PTHREADS=1
+	OUTPUT=x16emu.html
+endif
+
 OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o sdcard.o main.o debugger.o
 HEADERS = disasm.h cpu/fake6502.h glue.h memory.h video.h ps2.h via.h loadsave.h
 
@@ -31,9 +38,9 @@ ifneq ("$(wildcard ./rom_labels.h)","")
 HEADERS+=rom_labels.h
 endif
 
-all: $(OBJS) $(HEADERS)
-	$(CC) -o x16emu $(OBJS) $(LDFLAGS)
 
+all: $(OBJS) $(HEADERS)
+	$(CC) -o $(OUTPUT) $(OBJS) $(LDFLAGS) 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -114,4 +121,4 @@ package_linux:
 	rm -rf $(TMPDIR_NAME)
 
 clean:
-	rm -f *.o cpu/*.o x16emu x16emu.exe
+	rm -f *.o cpu/*.o x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem
