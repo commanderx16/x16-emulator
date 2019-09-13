@@ -77,6 +77,15 @@ The following keys can be used for controlling games:
 
 On the Mac, use the Cmd key instead.
 
+## BASIC and the Screen Editor
+
+On startup, the X16 presents direct mode of BASIC V2. You can enter BASIC statements, or line numbers with BASIC statements and `RUN` the program, just like on Commodore computers.
+
+* To stop execution of a BASIC program, hit the RUN/STOP key (Esc in the emulator), or Ctrl + C.
+* To insert a character, press Shift + Backspace.
+* To clear the screen, press Shift + Home.
+* The X16 does not have a STOP+RESTORE function.
+
 ## Host Filesystem Interface
 
 If the system ROM contains any version of the KERNAL, the LOAD (`$FFD5`) and SAVE (`$FFD8`) KERNAL calls are intercepted by the emulator if the device is 1 (which is the default). So the BASIC statements
