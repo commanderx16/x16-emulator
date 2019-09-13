@@ -13,6 +13,8 @@ endif
 CFLAGS=-std=c99 -O3 -Wall -Werror -g $(shell $(SDL2CONFIG) --cflags)
 LDFLAGS=$(shell $(SDL2CONFIG) --libs) -lm
 
+OUTPUT=x16emu
+
 ifeq ($(MAC_STATIC),1)
 	LDFLAGS=/usr/local/lib/libSDL2.a -lm -liconv -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,ForceFeedback -lobjc -Wl,-framework,CoreVideo -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,IOKit -Wl,-weak_framework,QuartzCore -Wl,-weak_framework,Metal
 endif
@@ -24,7 +26,17 @@ ifeq ($(CROSS_COMPILE_WINDOWS),1)
 	CC=i686-w64-mingw32-gcc
 endif
 
-OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o spi.o vera_spi.o sdcard.o main.o debugger.o
+ifdef EMSCRIPTEN
+	# Todo #--js-library webassembly/helper.js
+	LDFLAGS+=--shell-file webassembly/x16emu-template.html  --preload-file rom.bin --preload-file chargen.bin -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 -s USE_PTHREADS=1 
+	# To the Javascript runtime exported functions
+	LDFLAGS+=-s EXPORTED_FUNCTIONS='["_j2c_reset", "_j2c_paste", _main]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]'
+	
+	OUTPUT=x16emu.html
+endif
+
+OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o spi.o vera_spi.o sdcard.o main.o debugger.o javascript_interface.o
+
 HEADERS = disasm.h cpu/fake6502.h glue.h memory.h video.h ps2.h via.h loadsave.h
 
 ifeq ($(WITH_YM2151),1)
@@ -37,11 +49,18 @@ ifneq ("$(wildcard ./rom_labels.h)","")
 HEADERS+=rom_labels.h
 endif
 
-all: $(OBJS) $(HEADERS)
-	$(CC) -o x16emu $(OBJS) $(LDFLAGS)
 
+all: $(OBJS) $(HEADERS)
+	$(CC) -o $(OUTPUT) $(OBJS) $(LDFLAGS) 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
+
+
+# WebASssembly/emscripten target
+#
+# See webassembly/WebAssembly.md
+wasm:
+	emmake make
 
 #
 # PACKAGING
@@ -118,4 +137,4 @@ package_linux:
 	rm -rf $(TMPDIR_NAME)
 
 clean:
-	rm -f *.o cpu/*.o x16emu x16emu.exe
+	rm -f *.o cpu/*.o x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem

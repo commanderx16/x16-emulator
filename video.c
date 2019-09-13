@@ -11,6 +11,10 @@
 #include "gif.h"
 #include "vera_spi.h"
 
+#ifdef __EMSCRIPTEN__
+#include "emscripten.h"
+#endif
+
 #ifdef VERA_V0_8
 #define ADDR_VRAM_START     0x00000
 #define ADDR_VRAM_END       0x20000
@@ -116,6 +120,7 @@ static const uint16_t default_palette[] = {
 };
 
 static uint8_t video_space_read(uint32_t address);
+
 
 void
 video_reset()

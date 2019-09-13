@@ -31,10 +31,20 @@
 #define AUDIO_SAMPLES 4096
 #define SAMPLERATE 22050
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <pthread.h>
+#endif
+
 #define MHZ 8
 
 //#define TRACE
 #define LOAD_HYPERCALLS
+
+
+void* emulator_loop(void *param);
+void sdl_render_callback(void);
+
 
 // This must match the KERNAL's set!
 char *keymaps[] = {
@@ -66,6 +76,12 @@ bool record_gif = false;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
+
+
+int instruction_counter;
+FILE *prg_file ;
+int prg_override_start = -1;
+bool run_after_load = false;
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -286,8 +302,8 @@ main(int argc, char **argv)
 	char *bas_path = NULL;
 	char *sdcard_path = NULL;
 
-	bool run_after_load = false;
-	
+	run_after_load = false;
+
 #ifdef __APPLE__
 	// on macOS, double clicking runs an executable in the user's
 	// home directory, so we prepend the executable's path to
@@ -504,8 +520,8 @@ main(int argc, char **argv)
 		}
 	}
 
-	FILE *prg_file = NULL;
-	int prg_override_start = -1;
+	
+	prg_override_start = -1;
 	if (prg_path) {
 		char *comma = strchr(prg_path, ',');
 		if (comma) {
@@ -552,7 +568,26 @@ main(int argc, char **argv)
 
 	machine_reset();
 
-	int instruction_counter = 0;
+	instruction_counter = 0;
+
+#ifdef __EMSCRIPTEN__
+	pthread_t tid;
+    pthread_create(&tid, NULL, emulator_loop, NULL);
+	emscripten_set_main_loop(sdl_render_callback, 60, 1);
+#else
+	emulator_loop(NULL);
+#endif
+	return 0;
+}
+
+void 
+sdl_render_callback(void) {
+	video_update();
+}
+
+void* 
+emulator_loop(void *param)
+	{
 	for (;;) {
 
 		if (debuger_enabled) {
@@ -625,9 +660,11 @@ main(int argc, char **argv)
 		instruction_counter++;
 
 		if (new_frame) {
+#ifndef __EMSCRIPTEN__
 			if (!video_update()) {
 				break;
 			}
+#endif
 
 			static int frames = 0;
 			frames++;
@@ -731,3 +768,4 @@ main(int argc, char **argv)
 
 	return 0;
 }
+
