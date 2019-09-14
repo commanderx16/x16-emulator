@@ -24,6 +24,22 @@
 //#define TRACE
 #define LOAD_HYPERCALLS
 
+// This must match the KERNAL's set!
+char *keymaps[] = {
+	"en-us",
+	"en-gb",
+	"de",
+	"nordic",
+	"it",
+	"pl",
+	"hu",
+	"es",
+	"fr",
+	"de-ch",
+	"fr-be",
+	"pt-br",
+};
+
 bool debuger_enabled = false;
 char *paste_text = NULL;
 char paste_text_data[65536];
@@ -34,6 +50,8 @@ bool log_speed = false;
 bool log_keyboard = false;
 bool echo_mode = false;
 bool save_on_exit = true;
+uint8_t keymap = 0; // KERNAL's default
+int window_scale = 1;
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -92,18 +110,20 @@ usage()
 	printf("\tOverride character ROM file:\n");
 	printf("\t$0000-$07FF upper case/graphics\n");
 	printf("\t$0800-$0FFF lower case\n");
+	printf("-keymap <keymap>\n");
+	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
 	printf("\tSpecify SD card image (partition map + FAT32)\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
 	printf("\tLoad application from the local disk into RAM\n");
 	printf("\t(.PRG file with 2 byte start address header)\n");
 	printf("\tThe override load address is hex without a prefix.\n");
-	printf("-run <app.prg>[,<load_addr>]\n");
-	printf("\tSame as above, but also starts the application\n");
-	printf("\tusing RUN or SYS, depending on the load address.\n");
 	printf("-bas <app.txt>\n");
 	printf("\tInject a BASIC program in ASCII encoding through the\n");
 	printf("\tkeyboard.\n");
+	printf("-run\n");
+	printf("\tStart the -prg/-bas program using RUN or SYS, depending\n");
+	printf("\ton the load address.\n");
 	printf("-echo\n");
 	printf("\tPrint all KERNAL output to the host's stdout.\n");
 	printf("\tWith the BASIC statement \"LIST\", this can be used\n");
@@ -112,6 +132,8 @@ usage()
 	printf("\tEnable logging of (K)eyboard, (S)peed, (V)ideo.\n");
 	printf("\tMultiple characters are possible, e.g. -log KS\n");
 	printf("-debug\n");
+	printf("-scale {1|2|3|4}\n");
+	printf("\tScale output to an integer multiple of 640x480\n");
 	printf("\tEnable debugger.\n");
 #ifdef TRACE
 	printf("-trace [<address>]\n");
@@ -121,6 +143,17 @@ usage()
 	printf("\n");
 	exit(1);
 }
+
+void
+usage_keymap()
+{
+	printf("The following keymaps are supported:\n");
+	for (int i = 0; i < sizeof(keymaps)/sizeof(*keymaps); i++) {
+		printf("\t%s\n", keymaps[i]);
+	}
+	exit(1);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -167,7 +200,7 @@ main(int argc, char **argv)
 		if (!strcmp(argv[0], "-rom")) {
 			argc--;
 			argv++;
-			if (!argc) {
+			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
 			rom_path = argv[0];
@@ -176,16 +209,34 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-char")) {
 			argc--;
 			argv++;
-			if (!argc) {
+			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
 			char_path = argv[0];
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-keymap")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage_keymap();
+			}
+			bool found = false;
+			for (int i = 0; i < sizeof(keymaps)/sizeof(*keymaps); i++) {
+				if (!strcmp(argv[0], keymaps[i])) {
+					found = true;
+					keymap = i;
+				}
+			}
+			if (!found) {
+				usage_keymap();
+			}
+			argc--;
+			argv++;
 		} else if (!strcmp(argv[0], "-prg")) {
 			argc--;
 			argv++;
-			if (!argc) {
+			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
 			prg_path = argv[0];
@@ -194,17 +245,11 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-run")) {
 			argc--;
 			argv++;
-			if (!argc) {
-				usage();
-			}
-			prg_path = argv[0];
 			run_after_load = true;
-			argc--;
-			argv++;
 		} else if (!strcmp(argv[0], "-bas")) {
 			argc--;
 			argv++;
-			if (!argc) {
+			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
 			bas_path = argv[0];
@@ -213,7 +258,7 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-sdcard")) {
 			argc--;
 			argv++;
-			if (!argc) {
+			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
 			sdcard_path = argv[0];
@@ -226,7 +271,7 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-log")) {
 			argc--;
 			argv++;
-			if (!argc) {
+			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
 			for (char *p = argv[0]; *p; p++) {
@@ -265,6 +310,32 @@ main(int argc, char **argv)
 				trace_address = 0;
 			}
 #endif
+		} else if (!strcmp(argv[0], "-scale")) {
+			argc--;
+			argv++;
+			if(!argc || argv[0][0] == '-') {
+				usage();
+			}
+			for(char *p = argv[0]; *p; p++) {
+				switch(tolower(*p)) {
+				case '1':
+					window_scale = 1;
+					break;
+				case '2':
+					window_scale = 2;
+					break;
+				case '3':
+					window_scale = 3;
+					break;
+				case '4':
+					window_scale = 4;
+					break;
+				default:
+					usage();
+				}
+			}
+			argc--;
+			argv++;
 		} else {
 			usage();
 		}
@@ -321,11 +392,15 @@ main(int argc, char **argv)
 		}
 		paste_text = paste_text_data;
 		size_t paste_size = fread(paste_text, 1, sizeof(paste_text_data) - 1, bas_file);
-		paste_text[paste_size] = 0;
+		if (run_after_load) {
+			strncpy(paste_text + paste_size, "\rRUN\r", sizeof(paste_text_data) - paste_size);
+		} else {
+			paste_text[paste_size] = 0;
+		}
 		fclose(bas_file);
 	}
 
-	video_init(chargen);
+	video_init(chargen, window_scale);
 	sdcard_init();
 
 	machine_reset();
@@ -422,7 +497,9 @@ main(int argc, char **argv)
 				} else {
 				}
 			}
+		}
 
+		if (video_get_irq_out()) {
 			if (!(status & 4)) {
 				irq6502();
 			}

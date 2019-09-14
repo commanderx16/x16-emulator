@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include "glue.h"
+#include "memory.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -145,7 +146,19 @@ LOAD()
 			start = start_hi << 8 | start_lo;
 		}
 
-		size_t bytes_read = fread(RAM + start, 1, 0x9f00 - start, f);
+		size_t bytes_read = 0;
+		if(start < 0x9f00) {
+			// Fixed RAM
+			bytes_read = fread(RAM + start, 1, 0x9f00 - start, f);
+		} else if(start < 0xa000) {
+			// IO addresses
+		} else if(start < 0xc000) { 
+			// banked RAM
+			bytes_read = fread(RAM + ((uint16_t)memory_get_ram_bank() << 13) + start, 1, 0xc000 - start, f);
+		} else {
+			// ROM
+		}
+
 		fclose(f);
 
 		uint16_t end = start + bytes_read;

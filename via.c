@@ -73,7 +73,8 @@ via2_read(uint8_t reg)
 		// PA
 		uint8_t value =
 			(via2registers[3] & PS2_CLK_MASK ? 0 : ps2_clk_out << 1) |
-			(via2registers[3] & PS2_DATA_MASK ? 0 : ps2_data_out);
+			(via2registers[3] & PS2_DATA_MASK ? 0 : ps2_data_out) |
+			0x50; // short-circuit NES/SNES contoller -> not present
 		return value;
 	} else {
 		return via2registers[reg];

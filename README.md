@@ -2,12 +2,19 @@
 
 This is an emulator for the Commander X16 computer system. It only depends on SDL2 and should compile on all modern operating systems.
 
+## Binaries & Compiling
+
+Binary releases for macOS, Windows and x86_64 Linux are available on the [releases page](https://github.com/commanderx16/x16-emulator/releases).
+
+For all other systems, make sure the development version of SDL2 is installed and type `make` for build the source.
+
 ## Starting
 
 You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the command line. The latter allows you to specify additional arguments.
 
 * When starting `x16emu` without arguments, it will pick up the system ROM (`rom.bin`) and the character ROM (`chargen.bin`) from the executable's directory.
 * The system ROM and character ROM filenames/paths can be overridden with the `-rom` and `-char` command line arguments.
+* `-keymap` tells the KERNAL to switch to a specific keyboard layout. Use it without an argument to view the supported layouts.
 * `-sdcard` lets you specify an SD card image (partition table + FAT32).
 * `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
 * `-run` same as above, but also executes the application using `RUN` or `SYS`, depending on the load address.
@@ -22,6 +29,45 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 
 Run `x16emu -h` to see all command line options.
 
+## Keyboard Layout
+
+The X16 uses a PS/2 keyboard, and the ROM currently supports several different layouts. The following table shows their names, and what keys produce different characters than expected:
+
+|Name  |Description 	       |Differences|
+|------|------------------------|-------|
+|en-us |US		       |[`] ⇒ [←], [~] ⇒ [π], [&#92;] ⇒ [£]|
+|en-gb |United Kingdom	       |[`] ⇒ [←], [~] ⇒ [π]|
+|de    |German		       |[§] ⇒ [£], [´] ⇒ [^], [^] ⇒ [←], [°] ⇒ [π]|
+|nordic|Nordic                 |key left of [1] ⇒ [←],[π]|
+|it    |Italian		       |[&#92;] ⇒ [←], [&vert;] ⇒ [π]|
+|pl    |Polish (Programmers)   |[`] ⇒ [←], [~] ⇒ [π], [&#92;] ⇒ [£]|
+|hu    |Hungarian	       |[&#92;] ⇒ [←], [&vert;] ⇒ [π], [§] ⇒ [£]|
+|es    |Spanish		       |[&vert;] ⇒ π, &#92; ⇒ [←], Alt + [<] ⇒ [£]|
+|fr    |French		       |[²] ⇒ [←], [§] ⇒ [£]|
+|de-ch |Swiss German	       |[^] ⇒ [←], [°] ⇒ [π]|
+|fr-be |Belgian French	       |[²] ⇒ [←], [³] ⇒ [π]|
+|fi    |Finnish		       |[§] ⇒ [←], [½] ⇒ [π]|
+|pt-br |Portuguese (Brazil ABNT)|[&#92;] ⇒ [←], [&vert;] ⇒ [π]|
+
+Keys that produce international characters (like [ä] or [ç]) will not produce any character.
+
+Since the emulator tells the computer the *position* of keys that are pressed, you need to configure the layout for the computer independently of the keyboard layout you have configured on the host.
+
+**Use the F9 key to cycle through the layouts, or set the keyboard layout at startup using the `-keymap` command line argument.**
+
+The following keys can be used for controlling games:
+
+|Keyboard Key  | NES Equivalent |
+|--------------|----------------|
+|Ctrl          | A 		|
+|Alt 	       | B		|
+|Space         | SELECT         |
+|Enter         | START		|
+|Cursor Up     | UP		|
+|Cursor Down   | DOWN		|
+|Cursor Left   | LEFT		|
+|Cursor Right  | RIGHT		|
+
 ## Functions while running
 
 * Ctrl + R will reset the computer.
@@ -30,6 +76,15 @@ Run `x16emu -h` to see all command line options.
 * Ctrl + Return will toggle full screen mode.
 
 On the Mac, use the Cmd key instead.
+
+## BASIC and the Screen Editor
+
+On startup, the X16 presents direct mode of BASIC V2. You can enter BASIC statements, or line numbers with BASIC statements and `RUN` the program, just like on Commodore computers.
+
+* To stop execution of a BASIC program, hit the RUN/STOP key (Esc in the emulator), or Ctrl + C.
+* To insert a character, press Shift + Backspace.
+* To clear the screen, press Shift + Home.
+* The X16 does not have a STOP+RESTORE function.
 
 ## Host Filesystem Interface
 
@@ -41,6 +96,10 @@ If the system ROM contains any version of the KERNAL, the LOAD (`$FFD5`) and SAV
       SAVE"BAR.PRG
 
 will target the host computer's local filesystem.
+
+The emulator will interpret filesnames relative to the directory it was started in. Note that on macOS, when double-clicking the executable, this is the home directory.
+
+To avoid incompatibility problems between the PETSCII and ASCII encodings, use lower case filenames on the host side, and unshifted filenames on the X16 side.
 
 ## Dealing with BASIC Programs
 
@@ -110,6 +169,21 @@ Copyright (c) 2019 Michael Steil &lt;mist64@mac.com&gt;, [www.pagetable.com](htt
 All rights reserved. License: 2-clause BSD
 
 ## Release Notes
+
+### Release 30
+
+Emulator:
+* VERA can now generate VSYNC interrupts
+* added -keymap for setting the keyboard layout
+* added -scale for integer scaling of the window [Stephen Horn]
+* added -log to enable various logging features (can also be enabled at runtime (POKE $9FB0+) [Randall Bohn])
+* changed -run to be an option to -prg and -bas
+* emulator detection: read $9FBE/$9FBF, must read 0x31 and 0x36
+* fix: -prg and -run no longer corrupt BASIC programs.
+* fix: LOAD,1 into RAM bank [Stephen Horn]
+* fix: 2bpp and 4bpp drawing [Stephen Horn]
+* fix: 4bpp sprites [MonstersGoBoom]
+* fix: build on Linux/ARM
 
 ### Release 29
 
