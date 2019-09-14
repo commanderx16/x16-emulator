@@ -162,11 +162,16 @@ Effectively keyboard routines only work when the debugger is running normally. S
 * Sound
 	* No support
 
-
 ## License
 
 Copyright (c) 2019 Michael Steil &lt;mist64@mac.com&gt;, [www.pagetable.com](https://www.pagetable.com/).
 All rights reserved. License: 2-clause BSD
+
+## Known Issues
+
+* Emulator: LOAD"$ (and LOAD"$",1) will show host uppercase filenames as garbage. Use Ctrl+N to switch to the X16 upper/lower character set for a workaround.
+* BASIC: $ and % prefixes don't work for DATA entries
+* RND(0) always returns 0
 
 ## Release Notes
 
