@@ -6,7 +6,7 @@ This is an emulator for the Commander X16 computer system. It only depends on SD
 
 Binary releases for macOS, Windows and x86_64 Linux are available on the [releases page](https://github.com/commanderx16/x16-emulator/releases).
 
-For all other systems, make sure the development version of SDL2 is installed and type `make` for build the source.
+For all other systems, make sure the development version of SDL2 is installed and type `make` for build the source. When building it from source, you will need the system ROM (`rom.bin`) and the character ROM (`chargen.bin`). It is best to take both files from the *latest* binary release. You can also build the system ROM yourself from the [X16 ROM source](https://github.com/commanderx16/x16-rom).
 
 ## Starting
 
@@ -76,6 +76,15 @@ The following keys can be used for controlling games:
 * Ctrl + Return will toggle full screen mode.
 
 On the Mac, use the Cmd key instead.
+
+## BASIC and the Screen Editor
+
+On startup, the X16 presents direct mode of BASIC V2. You can enter BASIC statements, or line numbers with BASIC statements and `RUN` the program, just like on Commodore computers.
+
+* To stop execution of a BASIC program, hit the RUN/STOP key (Esc in the emulator), or Ctrl + C.
+* To insert a character, press Shift + Backspace.
+* To clear the screen, press Shift + Home.
+* The X16 does not have a STOP+RESTORE function.
 
 ## Host Filesystem Interface
 
@@ -153,13 +162,33 @@ Effectively keyboard routines only work when the debugger is running normally. S
 * Sound
 	* No support
 
-
 ## License
 
 Copyright (c) 2019 Michael Steil &lt;mist64@mac.com&gt;, [www.pagetable.com](https://www.pagetable.com/).
 All rights reserved. License: 2-clause BSD
 
+## Known Issues
+
+* Emulator: LOAD"$ (and LOAD"$",1) will show host uppercase filenames as garbage. Use Ctrl+N to switch to the X16 upper/lower character set for a workaround.
+* BASIC: $ and % prefixes don't work for DATA entries
+* RND(0) always returns 0
+
 ## Release Notes
+
+### Release 30
+
+Emulator:
+* VERA can now generate VSYNC interrupts
+* added -keymap for setting the keyboard layout
+* added -scale for integer scaling of the window [Stephen Horn]
+* added -log to enable various logging features (can also be enabled at runtime (POKE $9FB0+) [Randall Bohn])
+* changed -run to be an option to -prg and -bas
+* emulator detection: read $9FBE/$9FBF, must read 0x31 and 0x36
+* fix: -prg and -run no longer corrupt BASIC programs.
+* fix: LOAD,1 into RAM bank [Stephen Horn]
+* fix: 2bpp and 4bpp drawing [Stephen Horn]
+* fix: 4bpp sprites [MonstersGoBoom]
+* fix: build on Linux/ARM
 
 ### Release 29
 

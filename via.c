@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <time.h>
+#include <stdlib.h>
 #include "via.h"
 #include "ps2.h"
 #include "memory.h"
@@ -25,10 +27,22 @@
 
 static uint8_t via1registers[16];
 
+void
+via1_init()
+{
+	srand(time(NULL));
+}
+
 uint8_t
 via1_read(uint8_t reg)
 {
-	return via1registers[reg];
+	if (reg == 4 || reg == 5 || reg == 8 || reg == 9) {
+		// timer A and B: return random numbers for RND(0)
+		// XXX TODO: these should be real timers :)
+		return rand() & 0xff;
+	} else {
+		return via1registers[reg];
+	}
 }
 
 void
@@ -59,6 +73,11 @@ via1_write(uint8_t reg, uint8_t value)
 
 static uint8_t via2registers[16];
 static uint8_t via2pb_in;
+
+void
+via2_init()
+{
+}
 
 uint8_t
 via2_read(uint8_t reg)

@@ -13,6 +13,7 @@
 #include "disasm.h"
 #include "memory.h"
 #include "video.h"
+#include "via.h"
 #include "ps2.h"
 #include "sdcard.h"
 #include "loadsave.h"
@@ -402,6 +403,8 @@ main(int argc, char **argv)
 
 	video_init(chargen, window_scale);
 	sdcard_init();
+	via1_init();
+	via2_init();
 
 	machine_reset();
 
@@ -497,7 +500,9 @@ main(int argc, char **argv)
 				} else {
 				}
 			}
+		}
 
+		if (video_get_irq_out()) {
 			if (!(status & 4)) {
 				irq6502();
 			}
