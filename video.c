@@ -682,16 +682,16 @@ video_update()
 		if (event.type == SDL_KEYDOWN) {
 			bool consumed = false;
 			if (cmd_down) {
-				if (event.key.keysym.scancode == SDL_SCANCODE_S) {
+				if (event.key.keysym.sym == SDLK_s) {
 					memory_save();
 					consumed = true;
-				} else if (event.key.keysym.scancode == SDL_SCANCODE_R) {
+				} else if (event.key.keysym.sym == SDLK_r) {
 					machine_reset();
 					consumed = true;
-				} else if (event.key.keysym.scancode == SDL_SCANCODE_V) {
+				} else if (event.key.keysym.sym == SDLK_v) {
 					machine_paste(SDL_GetClipboardText());
 					consumed = true;
-				} else if (event.key.keysym.scancode == SDL_SCANCODE_F ||  event.key.keysym.scancode == SDL_SCANCODE_RETURN) {
+				} else if (event.key.keysym.sym == SDLK_f ||  event.key.keysym.sym == SDLK_RETURN) {
 					is_fullscreen = !is_fullscreen;
 					SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
 					consumed = true;
