@@ -6,7 +6,7 @@ This is an emulator for the Commander X16 computer system. It only depends on SD
 
 Binary releases for macOS, Windows and x86_64 Linux are available on the [releases page](https://github.com/commanderx16/x16-emulator/releases).
 
-For all other systems, make sure the development version of SDL2 is installed and type `make` for build the source.
+For all other systems, make sure the development version of SDL2 is installed and type `make` for build the source. When building it from source, you will need the system ROM (`rom.bin`) and the character ROM (`chargen.bin`). It is best to take both files from the *latest* binary release. You can also build the system ROM yourself from the [X16 ROM source](https://github.com/commanderx16/x16-rom).
 
 ## Starting
 
@@ -17,8 +17,8 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-keymap` tells the KERNAL to switch to a specific keyboard layout. Use it without an argument to view the supported layouts.
 * `-sdcard` lets you specify an SD card image (partition table + FAT32).
 * `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
-* `-run` same as above, but also executes the application using `RUN` or `SYS`, depending on the load address.
 * `-bas` lets you specify a BASIC program in ASCII format that automatically typed in (and tokenized).
+* `-run` executes the application specified through `-prg` or `-bas` using `RUN` or `SYS`, depending on the load address.
 * `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
 * `-log` enables one or more types of logging (e.g. `-log KS`):
 	* `K`: keyboard (key-up and key-down events)
@@ -76,6 +76,15 @@ The following keys can be used for controlling games:
 * Ctrl + Return will toggle full screen mode.
 
 On the Mac, use the Cmd key instead.
+
+## BASIC and the Screen Editor
+
+On startup, the X16 presents direct mode of BASIC V2. You can enter BASIC statements, or line numbers with BASIC statements and `RUN` the program, just like on Commodore computers.
+
+* To stop execution of a BASIC program, hit the RUN/STOP key (Esc in the emulator), or Ctrl + C.
+* To insert a character, press Shift + Backspace.
+* To clear the screen, press Shift + Home.
+* The X16 does not have a STOP+RESTORE function.
 
 ## Host Filesystem Interface
 
@@ -153,11 +162,16 @@ Effectively keyboard routines only work when the debugger is running normally. S
 * Sound
 	* No support
 
-
 ## License
 
 Copyright (c) 2019 Michael Steil &lt;mist64@mac.com&gt;, [www.pagetable.com](https://www.pagetable.com/).
 All rights reserved. License: 2-clause BSD
+
+## Known Issues
+
+* Emulator: LOAD"$ (and LOAD"$",1) will show host uppercase filenames as garbage. Use Ctrl+N to switch to the X16 upper/lower character set for a workaround.
+* BASIC: $ and % prefixes don't work for DATA entries
+* RND(0) always returns 0
 
 ## Release Notes
 
