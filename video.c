@@ -623,16 +623,16 @@ static uint8_t calculate_line_col_index(uint8_t spr_zindex, uint8_t spr_col_inde
 	uint8_t col_index = 0;
 	switch (spr_zindex) {
 		case 3:
-			col_index = spr_col_index ?: l2_col_index ?: l1_col_index;
+			col_index = spr_col_index ? spr_col_index : l2_col_index ? l2_col_index : l1_col_index;
 			break;
 		case 2:
-			col_index = l2_col_index ?: spr_col_index ?: l1_col_index;
+			col_index = l2_col_index ? l2_col_index : spr_col_index ? spr_col_index : l1_col_index;
 			break;
 		case 1:
-			col_index = l2_col_index ?: l1_col_index ?: spr_col_index;
+			col_index = l2_col_index ? l2_col_index : l1_col_index ? l1_col_index : spr_col_index;
 			break;
 		case 0:
-			col_index = l2_col_index ?: l1_col_index;
+			col_index = l2_col_index ? l2_col_index : l1_col_index;
 			break;
 	}
 	return col_index;
@@ -713,22 +713,22 @@ render_line(uint16_t y)
 				switch (spr_zindex[0]) {
 					case 3:
 						for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-							col_index[i] = spr_col_index[i] ?: l2_col_index[i] ?: l1_col_index[i];
+							col_index[i] = spr_col_index[i] ? spr_col_index[i] : l2_col_index[i] ? l2_col_index[i] : l1_col_index[i];
 						}
 						break;
 					case 2:
 						for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-							col_index[i] = l2_col_index[i] ?: spr_col_index[i] ?: l1_col_index[i];
+							col_index[i] = l2_col_index[i] ? l2_col_index[i] : spr_col_index[i] ? spr_col_index[i] : l1_col_index[i];
 						}
 						break;
 					case 1:
 						for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-							col_index[i] = l2_col_index[i] ?: l1_col_index[i] ?: spr_col_index[i];
+							col_index[i] = l2_col_index[i] ? l2_col_index[i] : l1_col_index[i] ? l1_col_index[i] : spr_col_index[i];
 						}
 						break;
 					case 0:
 						for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-							col_index[i] = l2_col_index[i] ?: l1_col_index[i];
+							col_index[i] = l2_col_index[i] ? l2_col_index[i] : l1_col_index[i];
 						}
 						break;
 				}
@@ -886,7 +886,7 @@ video_update()
 					consumed = true;
 				} else if (event.key.keysym.sym == SDLK_f || event.key.keysym.sym == SDLK_RETURN) {
 					is_fullscreen = !is_fullscreen;
-					SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
+					SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 					consumed = true;
 				}
 			}

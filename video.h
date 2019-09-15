@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <SDL.h>
+#include "SDL.h"
 #include "glue.h"
 
 bool video_init(int window_scale, char *quality);

@@ -2,14 +2,23 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
-#define _XOPEN_SOURCE   600
+#define SDL_MAIN_HANDLED
+#define _XOPEN_SOURCE 600
 #define _POSIX_C_SOURCE 1
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef _MSC_VER
+#include <io.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#define PATH_MAX MAX_PATH
+#define F_OK 0
+#else
 #include <unistd.h>
+#endif
 #include <limits.h>
 #ifdef __MINGW32__
 #include <ctype.h>
@@ -931,7 +940,11 @@ emulator_loop(void *param)
 			int32_t sdlTicks = SDL_GetTicks();
 			int32_t diff_time = 1000 * frames / 60 - sdlTicks;
 			if (diff_time > 0) {
+				#ifdef _MSC_VER
+				Sleep( diff_time );
+				#else
 				usleep(1000 * diff_time);
+				#endif
 			}
 
 			if (sdlTicks - last_perf_update > 5000) {

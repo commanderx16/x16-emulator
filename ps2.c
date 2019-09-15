@@ -62,6 +62,15 @@ ps2_buffer_remove(int i)
 	}
 }
 
+static int
+parity(uint8_t b)
+{
+	b ^= b >> 4;
+	b ^= b >> 2;
+	b ^= b >> 1;
+	return b & 1;
+}
+
 void
 ps2_step(int i)
 {
@@ -89,7 +98,7 @@ ps2_step(int i)
 				state[i].has_byte = true;
 			}
 
-			state[i].data_bits = state[i].current_byte << 1 | (1 - __builtin_parity(state[i].current_byte)) << 9 | (1 << 10);
+			state[i].data_bits = state[i].current_byte << 1 | (1 - parity(state[i].current_byte)) << 9 | (1 << 10);
 //			printf("PS2[%d]: data_bits: %x\n", i, state[i].data_bits);
 			state[i].bit_index = 0;
 			state[i].send_state = 0;
