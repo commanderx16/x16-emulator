@@ -134,7 +134,7 @@ usage()
 	printf("-log {K|S|V}...\n");
 	printf("\tEnable logging of (K)eyboard, (S)peed, (V)ideo.\n");
 	printf("\tMultiple characters are possible, e.g. -log KS\n");
-	printf("-gif <gif.txt>\n");
+	printf("-gif <file.gif>\n");
 	printf("\tRecord a gif for the video output.\n");
 	printf("-debug\n");
 	printf("-scale {1|2|3|4}\n");
