@@ -351,6 +351,38 @@ ps2_scancode_from_SDLKey(SDL_Scancode k)
 //			return 0x5b | EXTENDED_FLAG;
 		case SDL_SCANCODE_NONUSBACKSLASH:
 			return 0x61;
+		case SDL_SCANCODE_KP_ENTER:
+			return 0x5a | EXTENDED_FLAG;
+		case SDL_SCANCODE_KP_0:
+			return 0x70;
+		case SDL_SCANCODE_KP_1:
+			return 0x69;
+		case SDL_SCANCODE_KP_2:
+			return 0x72;
+		case SDL_SCANCODE_KP_3:
+			return 0x7a;
+		case SDL_SCANCODE_KP_4:
+			return 0x6b;
+		case SDL_SCANCODE_KP_5:
+			return 0x73;
+		case SDL_SCANCODE_KP_6:
+			return 0x74;
+		case SDL_SCANCODE_KP_7:
+			return 0x6c;
+		case SDL_SCANCODE_KP_8:
+			return 0x75;
+		case SDL_SCANCODE_KP_9:
+			return 0x7d;
+		case SDL_SCANCODE_KP_PERIOD:
+			return 0x71;
+		case SDL_SCANCODE_KP_PLUS:
+			return 0x79;
+		case SDL_SCANCODE_KP_MINUS:
+			return 0x7b;
+		case SDL_SCANCODE_KP_MULTIPLY:
+			return 0x7c;
+		case SDL_SCANCODE_KP_DIVIDE:
+			return 0x4a | EXTENDED_FLAG;
 		default:
 			return 0;
 	}
