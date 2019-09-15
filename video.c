@@ -13,8 +13,6 @@
 #ifdef VERA_V0_8
 #define ADDR_VRAM_START     0x00000
 #define ADDR_VRAM_END       0x20000
-#define ADDR_CHARSET_START  0x20000
-#define ADDR_CHARSET_END    0x21000
 
 #define ADDR_COMPOSER_START 0xF0000
 #define ADDR_COMPOSER_END   0xF1000
@@ -88,7 +86,9 @@ static SDL_Texture *sdlTexture;
 static bool is_fullscreen = false;
 
 static uint8_t video_ram[0x20000];
+#ifndef VERA_V0_8
 static uint8_t chargen_rom[4096];
+#endif
 static uint8_t palette[256 * 2];
 static uint8_t sprite_data[256][8];
 
@@ -122,10 +122,12 @@ video_reset()
 
 	// init Layer registers
 	memset(reg_layer, 0, sizeof(reg_layer));
+#ifndef VERA_V0_8
 	uint32_t tile_base = ADDR_CHARSET_START; // uppercase PETSCII
 	reg_layer[0][0] = 1; // mode=0, enabled=1
 	reg_layer[0][4] = tile_base >> 2;
 	reg_layer[0][5] = tile_base >> 10;
+#endif
 
 	// init sprite registers
 	memset(reg_sprites, 0, sizeof(reg_sprites));
@@ -149,8 +151,10 @@ video_reset()
 bool
 video_init(uint8_t *in_chargen, int window_scale)
 {
+#ifndef VERA_V0_8
 	// copy chargen
 	memcpy(chargen_rom, in_chargen, sizeof(chargen_rom));
+#endif
 
 	video_reset();
 
@@ -839,8 +843,10 @@ video_space_read(uint32_t address)
 {
 	if (address >= ADDR_VRAM_START && address < ADDR_VRAM_END) {
 		return video_ram[address];
+#ifndef VERA_V0_8
 	} else if (address >= ADDR_CHARSET_START && address < ADDR_CHARSET_END) {
 		return chargen_rom[address & 0xfff];
+#endif
 	} else if (address >= ADDR_LAYER1_START && address < ADDR_LAYER1_END) {
 		return reg_layer[0][address & 0xf];
 	} else if (address >= ADDR_LAYER2_START && address < ADDR_LAYER2_END) {
@@ -864,8 +870,10 @@ video_space_write(uint32_t address, uint8_t value)
 	video_flush();
 	if (address >= ADDR_VRAM_START && address < ADDR_VRAM_END) {
 		video_ram[address] = value;
+#ifndef VERA_V0_8
 	} else if (address >= ADDR_CHARSET_START && address < ADDR_CHARSET_END) {
 		// ROM, do nothing
+#endif
 	} else if (address >= ADDR_LAYER1_START && address < ADDR_LAYER1_END) {
 		reg_layer[0][address & 0xf] = value;
 	} else if (address >= ADDR_LAYER2_START && address < ADDR_LAYER2_END) {
