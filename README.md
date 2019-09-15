@@ -6,14 +6,14 @@ This is an emulator for the Commander X16 computer system. It only depends on SD
 
 Binary releases for macOS, Windows and x86_64 Linux are available on the [releases page](https://github.com/commanderx16/x16-emulator/releases).
 
-For all other systems, make sure the development version of SDL2 is installed and type `make` for build the source. When building it from source, you will need the system ROM (`rom.bin`) and the character ROM (`chargen.bin`). It is best to take both files from the *latest* binary release. You can also build the system ROM yourself from the [X16 ROM source](https://github.com/commanderx16/x16-rom).
+For all other systems, make sure the development version of SDL2 is installed and type `make` to build the source. You will also need the system ROM (`rom.bin`), which you can build from the [X16 ROM source](https://github.com/commanderx16/x16-rom) or take from the *latest* binary release. (It is not always guaranteed though that the latest binary release is compatible with the current state of the emulator source.)
 
 ## Starting
 
 You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the command line. The latter allows you to specify additional arguments.
 
-* When starting `x16emu` without arguments, it will pick up the system ROM (`rom.bin`) and the character ROM (`chargen.bin`) from the executable's directory.
-* The system ROM and character ROM filenames/paths can be overridden with the `-rom` and `-char` command line arguments.
+* When starting `x16emu` without arguments, it will pick up the system ROM (`rom.bin`) from the executable's directory.
+* The system ROM filename/path can be overridden with the `-rom` command line argument.
 * `-keymap` tells the KERNAL to switch to a specific keyboard layout. Use it without an argument to view the supported layouts.
 * `-sdcard` lets you specify an SD card image (partition table + FAT32).
 * `-prg` lets you specify a `.prg` file that gets injected into RAM after start.

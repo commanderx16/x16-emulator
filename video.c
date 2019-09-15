@@ -8,8 +8,6 @@
 #include "glue.h"
 #include "debugger.h"
 
-#define VERA_V0_8
-
 #ifdef VERA_V0_8
 #define ADDR_VRAM_START     0x00000
 #define ADDR_VRAM_END       0x20000
@@ -149,7 +147,11 @@ video_reset()
 }
 
 bool
+#ifdef VERA_V0_8
+video_init(int window_scale)
+#else
 video_init(uint8_t *in_chargen, int window_scale)
+#endif
 {
 #ifndef VERA_V0_8
 	// copy chargen
