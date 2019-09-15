@@ -172,7 +172,7 @@ video_init(uint8_t *in_chargen, int window_scale)
 				       SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	if (record_gif) {
-		record_gif = GifBegin(&gif_writer, gif_path, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 8, false);
+		record_gif = GifBegin(&gif_writer, gif_path, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 8, false);
 	}
 
 	return true;
