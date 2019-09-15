@@ -47,6 +47,18 @@ static int send_state = 0;
 int ps2_clk_out, ps2_data_out;
 int ps2_clk_in, ps2_data_in;
 
+#ifndef __GNUC__
+int parity( uint8_t b )
+{
+    b ^= b >> 4;
+    b ^= b >> 2;
+    b ^= b >> 1;
+    return ( b ) & 1;
+}
+#else
+#define parity( x ) __builtin_parity(x)
+#endif
+
 void
 ps2_step()
 {
@@ -72,8 +84,8 @@ ps2_step()
 //				printf("PS2: current_byte: %x\n", current_byte);
 				has_byte = true;
 			}
-
-			data_bits = current_byte << 1 | (1 - __builtin_parity(current_byte)) << 9 | (1 << 10);
+			
+			data_bits = current_byte << 1 | (1 - parity(current_byte)) << 9 | (1 << 10);
 //			printf("PS2: data_bits: %x\n", data_bits);
 			bit_index = 0;
 			send_state = 0;

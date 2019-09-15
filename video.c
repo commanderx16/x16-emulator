@@ -796,7 +796,7 @@ video_update()
 					consumed = true;
 				} else if (event.key.keysym.sym == SDLK_f ||  event.key.keysym.sym == SDLK_RETURN) {
 					is_fullscreen = !is_fullscreen;
-					SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
+					SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 					consumed = true;
 				}
 			}

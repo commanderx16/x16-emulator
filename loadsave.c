@@ -7,7 +7,9 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 #include "glue.h"
 #include "memory.h"
 

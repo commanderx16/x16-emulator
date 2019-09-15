@@ -7,7 +7,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include "glue.h"
 
 #ifdef VERA_V0_8

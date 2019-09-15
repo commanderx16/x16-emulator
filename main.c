@@ -9,7 +9,14 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef _MSC_VER
+#include <io.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#define PATH_MAX MAX_PATH
+#else
 #include <unistd.h>
+#endif
 #include <limits.h>
 #include "cpu/fake6502.h"
 #include "disasm.h"
@@ -670,7 +677,11 @@ emulator_loop(void *param)
 			frames++;
 			int32_t diff_time = 1000 * frames / 60 - SDL_GetTicks();
 			if (diff_time > 0) {
+                #ifdef _MSC_VER
+                Sleep( diff_time );
+				#else
 				usleep(1000 * diff_time);
+				#endif
 			}
 
 			if (log_speed) {
