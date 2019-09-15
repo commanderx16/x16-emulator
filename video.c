@@ -714,7 +714,7 @@ video_update()
 	SDL_UpdateTexture(sdlTexture, NULL, framebuffer, SCREEN_WIDTH * 4);
 
 	if (record_gif) {
-		record_gif = GifWriteFrame(&gif_writer, framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 8, false);
+		record_gif = GifWriteFrame(&gif_writer, framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT, 2, 8, false);
 		if(!record_gif) {
 			GifEnd(&gif_writer);
 		}
