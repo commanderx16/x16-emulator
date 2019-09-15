@@ -24,6 +24,8 @@ extern bool log_video;
 extern bool log_keyboard;
 extern bool echo_mode;
 extern bool save_on_exit;
+extern bool record_gif;
+extern char* gif_path;
 extern uint8_t keymap;
 
 extern void machine_reset();
