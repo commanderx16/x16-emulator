@@ -9,6 +9,43 @@
 #include "debugger.h"
 #include "gif.h"
 
+#define VERA_V0_8
+
+#ifdef VERA_V0_8
+#define ADDR_VRAM_START     0x00000
+#define ADDR_VRAM_END       0x20000
+
+#define ADDR_COMPOSER_START 0xF0000
+#define ADDR_COMPOSER_END   0xF1000
+#define ADDR_PALETTE_START  0xF1000
+#define ADDR_PALETTE_END    0xF2000
+#define ADDR_LAYER1_START   0xF2000
+#define ADDR_LAYER1_END     0xF3000
+#define ADDR_LAYER2_START   0xF3000
+#define ADDR_LAYER2_END     0xF4000
+#define ADDR_SPRITES_START  0xF4000
+#define ADDR_SPRITES_END    0xF5000
+#define ADDR_SPRDATA_START  0xF5000
+#define ADDR_SPRDATA_END    0xF6000
+#else
+#define ADDR_VRAM_START     0x00000
+#define ADDR_VRAM_END       0x20000
+#define ADDR_CHARSET_START  0x20000
+#define ADDR_CHARSET_END    0x21000
+#define ADDR_LAYER1_START   0x40000
+#define ADDR_LAYER1_END     0x40010
+#define ADDR_LAYER2_START   0x40010
+#define ADDR_LAYER2_END     0x40020
+#define ADDR_SPRITES_START  0x40020
+#define ADDR_SPRITES_END    0x40040
+#define ADDR_COMPOSER_START 0x40040
+#define ADDR_COMPOSER_END   0x40060
+#define ADDR_PALETTE_START  0x40200
+#define ADDR_PALETTE_END    0x40400
+#define ADDR_SPRDATA_START  0x40800
+#define ADDR_SPRDATA_END    0x41000
+#endif
+
 #define ESC_IS_BREAK /* if enabled, Esc sends Break/Pause key instead of Esc */
 
 //#define NUM_SPRITES 128
@@ -50,7 +87,9 @@ static SDL_Texture *sdlTexture;
 static bool is_fullscreen = false;
 
 static uint8_t video_ram[0x20000];
+#ifndef VERA_V0_8
 static uint8_t chargen_rom[4096];
+#endif
 static uint8_t palette[256 * 2];
 static uint8_t sprite_data[256][8];
 
@@ -74,7 +113,7 @@ static const uint16_t default_palette[] = {
 0x0000,0xfff,0x800,0xafe,0xc4c,0x0c5,0x00a,0xee7,0xd85,0x640,0xf77,0x333,0x777,0xaf6,0x08f,0xbbb,0x000,0x111,0x222,0x333,0x444,0x555,0x666,0x777,0x888,0x999,0xaaa,0xbbb,0xccc,0xddd,0xeee,0xfff,0x211,0x433,0x644,0x866,0xa88,0xc99,0xfbb,0x211,0x422,0x633,0x844,0xa55,0xc66,0xf77,0x200,0x411,0x611,0x822,0xa22,0xc33,0xf33,0x200,0x400,0x600,0x800,0xa00,0xc00,0xf00,0x221,0x443,0x664,0x886,0xaa8,0xcc9,0xfeb,0x211,0x432,0x653,0x874,0xa95,0xcb6,0xfd7,0x210,0x431,0x651,0x862,0xa82,0xca3,0xfc3,0x210,0x430,0x640,0x860,0xa80,0xc90,0xfb0,0x121,0x343,0x564,0x786,0x9a8,0xbc9,0xdfb,0x121,0x342,0x463,0x684,0x8a5,0x9c6,0xbf7,0x120,0x241,0x461,0x582,0x6a2,0x8c3,0x9f3,0x120,0x240,0x360,0x480,0x5a0,0x6c0,0x7f0,0x121,0x343,0x465,0x686,0x8a8,0x9ca,0xbfc,0x121,0x242,0x364,0x485,0x5a6,0x6c8,0x7f9,0x020,0x141,0x162,0x283,0x2a4,0x3c5,0x3f6,0x020,0x041,0x061,0x082,0x0a2,0x0c3,0x0f3,0x122,0x344,0x466,0x688,0x8aa,0x9cc,0xbff,0x122,0x244,0x366,0x488,0x5aa,0x6cc,0x7ff,0x022,0x144,0x166,0x288,0x2aa,0x3cc,0x3ff,0x022,0x044,0x066,0x088,0x0aa,0x0cc,0x0ff,0x112,0x334,0x456,0x668,0x88a,0x9ac,0xbcf,0x112,0x224,0x346,0x458,0x56a,0x68c,0x79f,0x002,0x114,0x126,0x238,0x24a,0x35c,0x36f,0x002,0x014,0x016,0x028,0x02a,0x03c,0x03f,0x112,0x334,0x546,0x768,0x98a,0xb9c,0xdbf,0x112,0x324,0x436,0x648,0x85a,0x96c,0xb7f,0x102,0x214,0x416,0x528,0x62a,0x83c,0x93f,0x102,0x204,0x306,0x408,0x50a,0x60c,0x70f,0x212,0x434,0x646,0x868,0xa8a,0xc9c,0xfbe,0x211,0x423,0x635,0x847,0xa59,0xc6b,0xf7d,0x201,0x413,0x615,0x826,0xa28,0xc3a,0xf3c,0x201,0x403,0x604,0x806,0xa08,0xc09,0xf0b
 };
 
-static uint8_t video_ram_read(uint32_t address);
+static uint8_t video_space_read(uint32_t address);
 
 void
 video_reset()
@@ -86,10 +125,12 @@ video_reset()
 
 	// init Layer registers
 	memset(reg_layer, 0, sizeof(reg_layer));
-	uint32_t tile_base = 0x20000; // uppercase PETSCII
+#ifndef VERA_V0_8
+	uint32_t tile_base = ADDR_CHARSET_START; // uppercase PETSCII
 	reg_layer[0][0] = 1; // mode=0, enabled=1
 	reg_layer[0][4] = tile_base >> 2;
 	reg_layer[0][5] = tile_base >> 10;
+#endif
 
 	// init sprite registers
 	memset(reg_sprites, 0, sizeof(reg_sprites));
@@ -113,8 +154,10 @@ video_reset()
 bool
 video_init(uint8_t *in_chargen, int window_scale)
 {
+#ifndef VERA_V0_8
 	// copy chargen
 	memcpy(chargen_rom, in_chargen, sizeof(chargen_rom));
+#endif
 
 	video_reset();
 
@@ -380,8 +423,8 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 		palette_offset = reg_layer[layer][7] & 0xf;
 	} else {
 		uint32_t map_addr = map_base + (y / tileh * mapw + x / tilew) * 2;
-		uint8_t byte0 = video_ram_read(map_addr);
-		uint8_t byte1 = video_ram_read(map_addr + 1);
+		uint8_t byte0 = video_space_read(map_addr);
+		uint8_t byte1 = video_space_read(map_addr + 1);
 		if (text_mode) {
 			tile_index = byte0;
 
@@ -428,7 +471,7 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 	// additional bytes to reach the correct column of the tile
 	uint16_t x_add = (xx * bits_per_pixel) >> 3;
 	uint32_t tile_offset = tile_start + y_add + x_add;
-	uint8_t s = video_ram_read(tile_base + tile_offset);
+	uint8_t s = video_space_read(tile_base + tile_offset);
 
 	// convert tile byte to indexed color
 	uint8_t col_index = 0;
@@ -700,16 +743,16 @@ video_update()
 		if (event.type == SDL_KEYDOWN) {
 			bool consumed = false;
 			if (cmd_down) {
-				if (event.key.keysym.scancode == SDL_SCANCODE_S) {
+				if (event.key.keysym.sym == SDLK_s) {
 					memory_save();
 					consumed = true;
-				} else if (event.key.keysym.scancode == SDL_SCANCODE_R) {
+				} else if (event.key.keysym.sym == SDLK_r) {
 					machine_reset();
 					consumed = true;
-				} else if (event.key.keysym.scancode == SDL_SCANCODE_V) {
+				} else if (event.key.keysym.sym == SDLK_v) {
 					machine_paste(SDL_GetClipboardText());
 					consumed = true;
-				} else if (event.key.keysym.scancode == SDL_SCANCODE_F ||  event.key.keysym.scancode == SDL_SCANCODE_RETURN) {
+				} else if (event.key.keysym.sym == SDLK_f ||  event.key.keysym.sym == SDLK_RETURN) {
 					is_fullscreen = !is_fullscreen;
 					SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
 					consumed = true;
@@ -801,7 +844,13 @@ uint32_t
 get_and_inc_address(uint8_t sel)
 {
 	uint32_t address = io_addr[sel];
+#ifdef VERA_V0_8
+	if (io_inc[sel]) {
+		io_addr[sel] += 1 << (io_inc[sel] - 1);
+	}
+#else
 	io_addr[sel] += io_inc[sel];
+#endif
 //	printf("address = %06x, new = %06x\n", address, io_addr[sel]);
 	return address;
 }
@@ -811,29 +860,25 @@ get_and_inc_address(uint8_t sel)
 //
 
 static uint8_t
-video_ram_read(uint32_t address)
+video_space_read(uint32_t address)
 {
-	if (address < 0x20000) {
+	if (address >= ADDR_VRAM_START && address < ADDR_VRAM_END) {
 		return video_ram[address];
-	} else if (address < 0x21000) {
+#ifndef VERA_V0_8
+	} else if (address >= ADDR_CHARSET_START && address < ADDR_CHARSET_END) {
 		return chargen_rom[address & 0xfff];
-	} else if (address < 0x40000) {
-		return 0xFF; // unassigned
-	} else if (address < 0x40010) {
+#endif
+	} else if (address >= ADDR_LAYER1_START && address < ADDR_LAYER1_END) {
 		return reg_layer[0][address & 0xf];
-	} else if (address < 0x40020) {
+	} else if (address >= ADDR_LAYER2_START && address < ADDR_LAYER2_END) {
 		return reg_layer[1][address & 0xf];
-	} else if (address < 0x40040) {
+	} else if (address >= ADDR_SPRITES_START && address < ADDR_SPRITES_END) {
 		return reg_sprites[address & 0xf];
-	} else if (address < 0x40060) {
+	} else if (address >= ADDR_COMPOSER_START && address < ADDR_COMPOSER_END) {
 		return reg_composer[address & 0x1f];
-	} else if (address < 0x40200) {
-		return 0xFF; // unassigned
-	} else if (address < 0x40400) {
+	} else if (address >= ADDR_PALETTE_START && address < ADDR_PALETTE_END) {
 		return palette[address & 0x1ff];
-	} else if (address < 0x40800) {
-		return 0xFF; // unassigned
-	} else if (address < 0x41000) {
+	} else if (address >= ADDR_SPRDATA_START && address < ADDR_SPRDATA_END) {
 		return sprite_data[(address >> 3) & 0xff][address & 0x7];
 	} else {
 		return 0xFF; // unassigned
@@ -841,30 +886,26 @@ video_ram_read(uint32_t address)
 }
 
 void
-video_ram_write(uint32_t address, uint8_t value)
+video_space_write(uint32_t address, uint8_t value)
 {
 	video_flush();
-	if (address < 0x20000) {
+	if (address >= ADDR_VRAM_START && address < ADDR_VRAM_END) {
 		video_ram[address] = value;
-	} else if (address < 0x21000) {
+#ifndef VERA_V0_8
+	} else if (address >= ADDR_CHARSET_START && address < ADDR_CHARSET_END) {
 		// ROM, do nothing
-	} else if (address < 0x40000) {
-		// unassigned, do nothing
-	} else if (address < 0x40010) {
+#endif
+	} else if (address >= ADDR_LAYER1_START && address < ADDR_LAYER1_END) {
 		reg_layer[0][address & 0xf] = value;
-	} else if (address < 0x40020) {
+	} else if (address >= ADDR_LAYER2_START && address < ADDR_LAYER2_END) {
 		reg_layer[1][address & 0xf] = value;
-	} else if (address < 0x40040) {
+	} else if (address >= ADDR_SPRITES_START && address < ADDR_SPRITES_END) {
 		reg_sprites[address & 0xf] = value;
-	} else if (address < 0x40060) {
+	} else if (address >= ADDR_COMPOSER_START && address < ADDR_COMPOSER_END) {
 		reg_composer[address & 0x1f] = value;
-	} else if (address < 0x40200) {
-		// unassigned, do nothing
-	} else if (address < 0x40400) {
+	} else if (address >= ADDR_PALETTE_START && address < ADDR_PALETTE_END) {
 		palette[address & 0x1ff] = value;
-	} else if (address < 0x40800) {
-		// unassigned, do nothing
-	} else if (address < 0x41000) {
+	} else if (address >= ADDR_SPRDATA_START && address < ADDR_SPRDATA_END) {
 		sprite_data[(address >> 3) & 0xff][address & 0x7] = value;
 	} else {
 		// unassigned, do nothing
@@ -879,19 +920,28 @@ uint8_t
 video_read(uint8_t reg)
 {
 	switch (reg) {
+#ifdef VERA_V0_8
+		case 2:
+#else
 		case 0:
+#endif
 			return (io_addr[io_addrsel] >> 16) | (io_inc[io_addrsel] << 4);
 		case 1:
 			return (io_addr[io_addrsel] >> 8) & 0xff;
+#ifdef VERA_V0_8
+		case 0:
+#else
 		case 2:
+#endif
 			return io_addr[io_addrsel] & 0xff;
 		case 3:
 		case 4: {
 			uint32_t address = get_and_inc_address(reg - 3);
+			uint8_t value = video_space_read(address);
 			if (log_video) {
-				printf("READ  video_ram[$%x] = $%02x\n", address, video_ram[address]);
+				printf("READ  video_space[$%x] = $%02x\n", address, value);
 			}
-			return video_ram_read(address);
+			return value;
 		case 5:
 			return io_addrsel;
 		case 6:
@@ -909,23 +959,31 @@ video_write(uint8_t reg, uint8_t value)
 {
 //	printf("ioregisters[%d] = $%02x\n", reg, value);
 	switch (reg) {
+#ifdef VERA_V0_8
+		case 2:
+#else
 		case 0:
+#endif
 			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x0ffff) | ((value & 0xf) << 16);
 			io_inc[io_addrsel] = value >> 4;
 			break;
 		case 1:
 			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0xf00ff) | (value << 8);
 			break;
+#ifdef VERA_V0_8
+		case 0:
+#else
 		case 2:
+#endif
 			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0xfff00) | value;
 			break;
 		case 3:
 		case 4: {
 			uint32_t address = get_and_inc_address(reg - 3);
 			if (log_video) {
-				printf("WRITE video_ram[$%x] = $%02x\n", address, value);
+				printf("WRITE video_space[$%x] = $%02x\n", address, value);
 			}
-			video_ram_write(address, value);
+			video_space_write(address, value);
 			break;
 		case 5:
 			if (value & 0x80) {
