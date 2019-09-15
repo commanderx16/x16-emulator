@@ -17,8 +17,8 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-keymap` tells the KERNAL to switch to a specific keyboard layout. Use it without an argument to view the supported layouts.
 * `-sdcard` lets you specify an SD card image (partition table + FAT32).
 * `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
-* `-run` same as above, but also executes the application using `RUN` or `SYS`, depending on the load address.
 * `-bas` lets you specify a BASIC program in ASCII format that automatically typed in (and tokenized).
+* `-run` executes the application specified through `-prg` or `-bas` using `RUN` or `SYS`, depending on the load address.
 * `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
 * `-log` enables one or more types of logging (e.g. `-log KS`):
 	* `K`: keyboard (key-up and key-down events)
