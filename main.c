@@ -13,6 +13,7 @@
 #include "disasm.h"
 #include "memory.h"
 #include "video.h"
+#include "via.h"
 #include "ps2.h"
 #include "sdcard.h"
 #include "loadsave.h"
@@ -122,10 +123,12 @@ usage()
 	printf("\t$6000-$7FFF bank #2 of banked ROM\n");
 	printf("\t...\n");
 	printf("\tThe file needs to be at least $4000 bytes in size.\n");
+#ifndef VERA_V0_8
 	printf("-char <chargen.bin>\n");
 	printf("\tOverride character ROM file:\n");
 	printf("\t$0000-$07FF upper case/graphics\n");
 	printf("\t$0800-$0FFF lower case\n");
+#endif
 	printf("-keymap <keymap>\n");
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
@@ -179,12 +182,18 @@ main(int argc, char **argv)
 #endif
 
 	char *rom_filename = "/rom.bin";
+#ifndef VERA_V0_8
 	char *char_filename = "/chargen.bin";
+#endif
 	char rom_path_data[PATH_MAX];
+#ifndef VERA_V0_8
 	char char_path_data[PATH_MAX];
+#endif
 
 	char *rom_path = rom_path_data;
+#ifndef VERA_V0_8
 	char *char_path = char_path_data;
+#endif
 	char *prg_path = NULL;
 	char *bas_path = NULL;
 	char *sdcard_path = NULL;
@@ -200,13 +209,17 @@ main(int argc, char **argv)
 
 		strncpy(rom_path, argv[0], PATH_MAX);
 		strncpy(rom_path + strlen(rom_path), rom_filename, PATH_MAX - strlen(rom_path));
+#ifndef VERA_V0_8
 		strncpy(char_path, argv[0], PATH_MAX);
 		strncpy(char_path + strlen(char_path), char_filename, PATH_MAX - strlen(char_path));
+#endif
 	} else
 #endif
 	{
 		strncpy(rom_path, rom_filename + 1, PATH_MAX);
+#ifndef VERA_V0_8
 		strncpy(char_path, char_filename + 1, PATH_MAX);
+#endif
 	}
 
 	argc--;
@@ -222,6 +235,7 @@ main(int argc, char **argv)
 			rom_path = argv[0];
 			argc--;
 			argv++;
+#ifndef VERA_V0_8
 		} else if (!strcmp(argv[0], "-char")) {
 			argc--;
 			argv++;
@@ -231,6 +245,7 @@ main(int argc, char **argv)
 			char_path = argv[0];
 			argc--;
 			argv++;
+#endif
 		} else if (!strcmp(argv[0], "-keymap")) {
 			argc--;
 			argv++;
@@ -366,6 +381,7 @@ main(int argc, char **argv)
 	(void)rom_size;
 	fclose(f);
 
+#ifndef VERA_V0_8
 	f = fopen(char_path, "rb");
 	if (!f) {
 		printf("Cannot open %s!\n", char_path);
@@ -375,6 +391,7 @@ main(int argc, char **argv)
 	int chargen_size = fread(chargen, 1, sizeof(chargen), f);
 	(void)chargen_size;
 	fclose(f);
+#endif
 
 	if (sdcard_path) {
 		sdcard_file = fopen(sdcard_path, "rb");
@@ -416,8 +433,14 @@ main(int argc, char **argv)
 		fclose(bas_file);
 	}
 
+#ifdef VERA_V0_8
+	video_init(window_scale);
+#else
 	video_init(chargen, window_scale);
+#endif
 	sdcard_init();
+	via1_init();
+	via2_init();
 
 	machine_reset();
 

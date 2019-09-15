@@ -73,7 +73,6 @@ TMPDIR_NAME=TMP-x16emu-package
 define add_extra_files_to_package
 	# ROMs
 	cp ../x16-rom/rom.bin $(TMPDIR_NAME)
-	cp -p ~/tmp/chargen $(TMPDIR_NAME)/chargen.bin
 
 	# Documentation
 	mkdir $(TMPDIR_NAME)/docs

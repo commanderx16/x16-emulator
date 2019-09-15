@@ -8,19 +8,19 @@ Binary releases for macOS, Windows and x86_64 Linux are available on the [releas
 
 Steps for compiling for WebAssembly/HTML5 can be found [here](https://github.com/sebastianvog/x16-emulator/blob/ems/webassembly/WebAssembly.md).
 
-For all other systems, make sure the development version of SDL2 is installed and type `make` for build the source.
+For all other systems, make sure the development version of SDL2 is installed and type `make` to build the source. You will also need the system ROM (`rom.bin`), which you can build from the [X16 ROM source](https://github.com/commanderx16/x16-rom) or take from the *latest* binary release. (It is not always guaranteed though that the latest binary release is compatible with the current state of the emulator source.)
 
 ## Starting
 
 You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the command line. The latter allows you to specify additional arguments.
 
-* When starting `x16emu` without arguments, it will pick up the system ROM (`rom.bin`) and the character ROM (`chargen.bin`) from the executable's directory.
-* The system ROM and character ROM filenames/paths can be overridden with the `-rom` and `-char` command line arguments.
+* When starting `x16emu` without arguments, it will pick up the system ROM (`rom.bin`) from the executable's directory.
+* The system ROM filename/path can be overridden with the `-rom` command line argument.
 * `-keymap` tells the KERNAL to switch to a specific keyboard layout. Use it without an argument to view the supported layouts.
 * `-sdcard` lets you specify an SD card image (partition table + FAT32).
 * `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
-* `-run` same as above, but also executes the application using `RUN` or `SYS`, depending on the load address.
 * `-bas` lets you specify a BASIC program in ASCII format that automatically typed in (and tokenized).
+* `-run` executes the application specified through `-prg` or `-bas` using `RUN` or `SYS`, depending on the load address.
 * `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
 * `-log` enables one or more types of logging (e.g. `-log KS`):
 	* `K`: keyboard (key-up and key-down events)
@@ -164,11 +164,16 @@ Effectively keyboard routines only work when the debugger is running normally. S
 * Sound
 	* No support
 
-
 ## License
 
 Copyright (c) 2019 Michael Steil &lt;mist64@mac.com&gt;, [www.pagetable.com](https://www.pagetable.com/).
 All rights reserved. License: 2-clause BSD
+
+## Known Issues
+
+* Emulator: LOAD"$ (and LOAD"$",1) will show host uppercase filenames as garbage. Use Ctrl+N to switch to the X16 upper/lower character set for a workaround.
+* BASIC: $ and % prefixes don't work for DATA entries
+* RND(0) always returns 0
 
 ## Release Notes
 

@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define VERA_V0_8
+
 #define NUM_RAM_BANKS 256
 #define NUM_ROM_BANKS 8
 
