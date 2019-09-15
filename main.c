@@ -52,7 +52,7 @@ bool log_keyboard = false;
 bool echo_mode = false;
 bool save_on_exit = true;
 bool record_gif = false;
-char* gif_path = NULL;
+char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
 
