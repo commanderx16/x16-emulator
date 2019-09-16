@@ -19,6 +19,7 @@ extern int showDebugOnRender;
 void DEBUGRenderDisplay(int width,int height,SDL_Renderer *pRenderer);
 void DEBUGBreakToDebugger(void);
 int  DEBUGGetCurrentStatus(void);
+void DEBUGSetBreakPoint(int newBreakPoint);
 
 #define DBG_WIDTH 		(40)									// Char cells across
 #define DBG_HEIGHT 		(24)
