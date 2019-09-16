@@ -138,7 +138,8 @@ usage()
 	printf("\tMultiple characters are possible, e.g. -log KS\n");
 	printf("-gif <file.gif>\n");
 	printf("\tRecord a gif for the video output.\n");
-	printf("-debug\n");
+	printf("-debug [<address>]\n");
+	printf("\tEnable debugger. Optionally, set a breakpoint\n");
 	printf("-scale {1|2|3|4}\n");
 	printf("\tScale output to an integer multiple of 640x480\n");
 	printf("\tEnable debugger.\n");
@@ -324,6 +325,11 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			debuger_enabled = true;
+			if (argc && argv[0][0] != '-') {
+				DEBUGSetBreakPoint((uint16_t)strtol(argv[0], NULL, 16));
+				argc--;
+				argv++;
+			}
 #ifdef TRACE
 
 		} else if (!strcmp(argv[0], "-trace")) {
