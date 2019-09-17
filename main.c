@@ -19,6 +19,7 @@
 #include "loadsave.h"
 #include "glue.h"
 #include "debugger.h"
+#include "utf8.h"
 
 #define MHZ 8
 
@@ -84,6 +85,56 @@ machine_paste(char *s)
 		paste_text = s;
 		pasting_bas = true;
 	}
+}
+
+uint8_t
+latin15_from_unicode(uint32_t c)
+{
+	// line feed -> carriage return
+	if (c == '\n') {
+		return '\r';
+	}
+
+	// translate Unicode charaters not part of Latin-1 but part of Latin-15
+	switch (c) {
+		case 0x20ac: // '€'
+			return 0xa4;
+		case 0x160: // 'Š'
+			return 0xa6;
+		case 0x161: // 'š'
+			return 0xa8;
+		case 0x17d: // 'Ž'
+			return 0xb4;
+		case 0x17e: // 'ž'
+			return 0xb8;
+		case 0x152: // 'Œ'
+			return 0xbc;
+		case 0x153: // 'œ'
+			return 0xbd;
+		case 0x178: // 'Ÿ'
+			return 0xbe;
+	}
+
+	// remove Unicode characters part of Latin-1 but not part of Latin-15
+	switch (c) {
+		case 0xa4: // '¤'
+		case 0xa6: // '¦'
+		case 0xa8: // '¨'
+		case 0xb4: // '´'
+		case 0xb8: // '¸'
+		case 0xbc: // '¼'
+		case 0xbd: // '½'
+		case 0xbe: // '¾'
+			return '?';
+	}
+
+	// all  other Unicode characters are also unsupported
+	if (c >= 256) {
+		return '?';
+	}
+
+	// everything else is Latin-15 already
+	return c;
 }
 
 static bool
@@ -607,14 +658,14 @@ main(int argc, char **argv)
 		}
 
 		while (pasting_bas && RAM[0xc6] < 10) {
-			uint8_t c = *paste_text;
-			if (c) {
-				if (c == 10) {
-					c = 13;
-				}
+			uint32_t c;
+			int e = 0;
+			paste_text = utf8_decode(paste_text, &c, &e);
+
+			c = latin15_from_unicode(c);
+			if (c && !e) {
 				RAM[0x0277 + RAM[0xc6]] = c;
 				RAM[0xc6]++;
-				paste_text++;
 			} else {
 				pasting_bas = false;
 				paste_text = NULL;
