@@ -24,7 +24,7 @@ ifeq ($(CROSS_COMPILE_WINDOWS),1)
 	CC=i686-w64-mingw32-gcc
 endif
 
-OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o spi.o sdcard.o main.o debugger.o
+OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o spi.o vera_spi.o sdcard.o main.o debugger.o
 HEADERS = disasm.h cpu/fake6502.h glue.h memory.h video.h ps2.h via.h loadsave.h
 
 ifneq ("$(wildcard ./rom_labels.h)","")

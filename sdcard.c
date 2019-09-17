@@ -8,7 +8,7 @@
 static int cmd_receive_counter;
 
 void
-sdcard_reset()
+sdcard_select()
 {
 	cmd_receive_counter = 0;
 }

@@ -16,6 +16,7 @@
 #include "via.h"
 #include "ps2.h"
 #include "spi.h"
+#include "vera_spi.h"
 #include "sdcard.h"
 #include "loadsave.h"
 #include "glue.h"
@@ -24,7 +25,7 @@
 
 #define MHZ 8
 
-//#define TRACE
+#define TRACE
 #define LOAD_HYPERCALLS
 
 // This must match the KERNAL's set!
@@ -495,6 +496,7 @@ main(int argc, char **argv)
 	video_init(chargen, window_scale);
 #endif
 	spi_init();
+	vera_spi_init();
 	via1_init();
 	via2_init();
 
@@ -566,6 +568,7 @@ main(int argc, char **argv)
 		for (uint8_t i = 0; i < clocks; i++) {
 			ps2_step();
 			spi_step();
+			vera_spi_step();
 			new_frame |= video_step(MHZ);
 		}
 

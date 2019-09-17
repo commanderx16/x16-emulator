@@ -6,5 +6,5 @@
 
 FILE *sdcard_file;
 
-void sdcard_reset();
+void sdcard_select();
 uint8_t sdcard_handle(uint8_t inbyte);

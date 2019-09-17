@@ -9,6 +9,7 @@
 #include "glue.h"
 #include "debugger.h"
 #include "gif.h"
+#include "vera_spi.h"
 
 #ifdef VERA_V0_8
 #define ADDR_VRAM_START     0x00000
@@ -44,6 +45,8 @@
 #define ADDR_SPRDATA_START  0x40800
 #define ADDR_SPRDATA_END    0x41000
 #endif
+#define ADDR_SPI_START      0xF7000
+#define ADDR_SPI_END        0xF8000
 
 #define ESC_IS_BREAK /* if enabled, Esc sends Break/Pause key instead of Esc */
 
@@ -915,6 +918,8 @@ video_space_read(uint32_t address)
 		return palette[address & 0x1ff];
 	} else if (address >= ADDR_SPRDATA_START && address < ADDR_SPRDATA_END) {
 		return sprite_data[(address >> 3) & 0xff][address & 0x7];
+	} else if (address >= ADDR_SPI_START && address < ADDR_SPI_END) {
+		return vera_spi_read(address & 1);
 	} else {
 		return 0xFF; // unassigned
 	}
@@ -942,6 +947,8 @@ video_space_write(uint32_t address, uint8_t value)
 		palette[address & 0x1ff] = value;
 	} else if (address >= ADDR_SPRDATA_START && address < ADDR_SPRDATA_END) {
 		sprite_data[(address >> 3) & 0xff][address & 0x7] = value;
+	} else if (address >= ADDR_SPI_START && address < ADDR_SPI_END) {
+		vera_spi_write(address & 1, value);
 	} else {
 		// unassigned, do nothing
 	}
