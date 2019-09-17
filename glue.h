@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define VERA_V0_8
+
 #define NUM_RAM_BANKS 256
 #define NUM_ROM_BANKS 8
 
@@ -24,6 +26,8 @@ extern bool log_video;
 extern bool log_keyboard;
 extern bool echo_mode;
 extern bool save_on_exit;
+extern bool record_gif;
+extern char *gif_path;
 extern uint8_t keymap;
 
 extern void machine_reset();

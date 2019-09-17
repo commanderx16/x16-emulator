@@ -19,6 +19,7 @@
 #include "loadsave.h"
 #include "glue.h"
 #include "debugger.h"
+#include "utf8.h"
 
 #define MHZ 8
 
@@ -51,6 +52,8 @@ bool log_speed = false;
 bool log_keyboard = false;
 bool echo_mode = false;
 bool save_on_exit = true;
+bool record_gif = false;
+char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
 
@@ -84,6 +87,56 @@ machine_paste(char *s)
 	}
 }
 
+uint8_t
+latin15_from_unicode(uint32_t c)
+{
+	// line feed -> carriage return
+	if (c == '\n') {
+		return '\r';
+	}
+
+	// translate Unicode charaters not part of Latin-1 but part of Latin-15
+	switch (c) {
+		case 0x20ac: // '€'
+			return 0xa4;
+		case 0x160: // 'Š'
+			return 0xa6;
+		case 0x161: // 'š'
+			return 0xa8;
+		case 0x17d: // 'Ž'
+			return 0xb4;
+		case 0x17e: // 'ž'
+			return 0xb8;
+		case 0x152: // 'Œ'
+			return 0xbc;
+		case 0x153: // 'œ'
+			return 0xbd;
+		case 0x178: // 'Ÿ'
+			return 0xbe;
+	}
+
+	// remove Unicode characters part of Latin-1 but not part of Latin-15
+	switch (c) {
+		case 0xa4: // '¤'
+		case 0xa6: // '¦'
+		case 0xa8: // '¨'
+		case 0xb4: // '´'
+		case 0xb8: // '¸'
+		case 0xbc: // '¼'
+		case 0xbd: // '½'
+		case 0xbe: // '¾'
+			return '?';
+	}
+
+	// all  other Unicode characters are also unsupported
+	if (c >= 256) {
+		return '?';
+	}
+
+	// everything else is Latin-15 already
+	return c;
+}
+
 static bool
 is_kernal()
 {
@@ -107,10 +160,12 @@ usage()
 	printf("\t$6000-$7FFF bank #2 of banked ROM\n");
 	printf("\t...\n");
 	printf("\tThe file needs to be at least $4000 bytes in size.\n");
+#ifndef VERA_V0_8
 	printf("-char <chargen.bin>\n");
 	printf("\tOverride character ROM file:\n");
 	printf("\t$0000-$07FF upper case/graphics\n");
 	printf("\t$0800-$0FFF lower case\n");
+#endif
 	printf("-keymap <keymap>\n");
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
@@ -132,7 +187,10 @@ usage()
 	printf("-log {K|S|V}...\n");
 	printf("\tEnable logging of (K)eyboard, (S)peed, (V)ideo.\n");
 	printf("\tMultiple characters are possible, e.g. -log KS\n");
-	printf("-debug\n");
+	printf("-gif <file.gif>\n");
+	printf("\tRecord a gif for the video output.\n");
+	printf("-debug [<address>]\n");
+	printf("\tEnable debugger. Optionally, set a breakpoint\n");
 	printf("-scale {1|2|3|4}\n");
 	printf("\tScale output to an integer multiple of 640x480\n");
 	printf("\tEnable debugger.\n");
@@ -164,12 +222,18 @@ main(int argc, char **argv)
 #endif
 
 	char *rom_filename = "/rom.bin";
+#ifndef VERA_V0_8
 	char *char_filename = "/chargen.bin";
+#endif
 	char rom_path_data[PATH_MAX];
+#ifndef VERA_V0_8
 	char char_path_data[PATH_MAX];
+#endif
 
 	char *rom_path = rom_path_data;
+#ifndef VERA_V0_8
 	char *char_path = char_path_data;
+#endif
 	char *prg_path = NULL;
 	char *bas_path = NULL;
 	char *sdcard_path = NULL;
@@ -185,13 +249,17 @@ main(int argc, char **argv)
 
 		strncpy(rom_path, argv[0], PATH_MAX);
 		strncpy(rom_path + strlen(rom_path), rom_filename, PATH_MAX - strlen(rom_path));
+#ifndef VERA_V0_8
 		strncpy(char_path, argv[0], PATH_MAX);
 		strncpy(char_path + strlen(char_path), char_filename, PATH_MAX - strlen(char_path));
+#endif
 	} else
 #endif
 	{
 		strncpy(rom_path, rom_filename + 1, PATH_MAX);
+#ifndef VERA_V0_8
 		strncpy(char_path, char_filename + 1, PATH_MAX);
+#endif
 	}
 
 	argc--;
@@ -207,6 +275,7 @@ main(int argc, char **argv)
 			rom_path = argv[0];
 			argc--;
 			argv++;
+#ifndef VERA_V0_8
 		} else if (!strcmp(argv[0], "-char")) {
 			argc--;
 			argv++;
@@ -216,6 +285,7 @@ main(int argc, char **argv)
 			char_path = argv[0];
 			argc--;
 			argv++;
+#endif
 		} else if (!strcmp(argv[0], "-keymap")) {
 			argc--;
 			argv++;
@@ -292,10 +362,25 @@ main(int argc, char **argv)
 			}
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-gif")) {
+			argc--;
+			argv++;
+			record_gif = true;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			gif_path = argv[0];
+			argv++;
+			argc--;
 		} else if (!strcmp(argv[0], "-debug")) {
 			argc--;
 			argv++;
 			debuger_enabled = true;
+			if (argc && argv[0][0] != '-') {
+				DEBUGSetBreakPoint((uint16_t)strtol(argv[0], NULL, 16));
+				argc--;
+				argv++;
+			}
 #ifdef TRACE
 
 		} else if (!strcmp(argv[0], "-trace")) {
@@ -351,6 +436,7 @@ main(int argc, char **argv)
 	(void)rom_size;
 	fclose(f);
 
+#ifndef VERA_V0_8
 	f = fopen(char_path, "rb");
 	if (!f) {
 		printf("Cannot open %s!\n", char_path);
@@ -360,6 +446,7 @@ main(int argc, char **argv)
 	int chargen_size = fread(chargen, 1, sizeof(chargen), f);
 	(void)chargen_size;
 	fclose(f);
+#endif
 
 	if (sdcard_path) {
 		sdcard_file = fopen(sdcard_path, "rb");
@@ -401,7 +488,11 @@ main(int argc, char **argv)
 		fclose(bas_file);
 	}
 
+#ifdef VERA_V0_8
+	video_init(window_scale);
+#else
 	video_init(chargen, window_scale);
+#endif
 	sdcard_init();
 	via1_init();
 	via2_init();
@@ -567,14 +658,14 @@ main(int argc, char **argv)
 		}
 
 		while (pasting_bas && RAM[0xc6] < 10) {
-			uint8_t c = *paste_text;
-			if (c) {
-				if (c == 10) {
-					c = 13;
-				}
+			uint32_t c;
+			int e = 0;
+			paste_text = utf8_decode(paste_text, &c, &e);
+
+			c = latin15_from_unicode(c);
+			if (c && !e) {
 				RAM[0x0277 + RAM[0xc6]] = c;
 				RAM[0xc6]++;
-				paste_text++;
 			} else {
 				pasting_bas = false;
 				paste_text = NULL;
