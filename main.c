@@ -15,6 +15,7 @@
 #include "video.h"
 #include "via.h"
 #include "ps2.h"
+#include "spi.h"
 #include "sdcard.h"
 #include "loadsave.h"
 #include "glue.h"
@@ -493,7 +494,7 @@ main(int argc, char **argv)
 #else
 	video_init(chargen, window_scale);
 #endif
-	sdcard_init();
+	spi_init();
 	via1_init();
 	via2_init();
 
@@ -564,7 +565,7 @@ main(int argc, char **argv)
 		bool new_frame = false;
 		for (uint8_t i = 0; i < clocks; i++) {
 			ps2_step();
-			sdcard_step();
+			spi_step();
 			new_frame |= video_step(MHZ);
 		}
 
