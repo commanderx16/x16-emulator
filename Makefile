@@ -27,7 +27,7 @@ ifeq ($(CROSS_COMPILE_WINDOWS),1)
 endif
 
 ifdef EMSCRIPTEN
-	LDFLAGS+=--shell-file webassembly/x16emu-template.html --preload-file rom.bin --preload-file chargen.bin -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 -s USE_PTHREADS=1
+	LDFLAGS+=--shell-file webassembly/x16emu-template.html --js-library webassembly/helper.js --preload-file rom.bin --preload-file chargen.bin -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 -s USE_PTHREADS=1
 	OUTPUT=x16emu.html
 endif
 

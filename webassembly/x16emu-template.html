@@ -74,7 +74,7 @@
       <progress value="0" max="100" id="progress" hidden=1></progress>  
     </div>
     <div class="emscripten_border">
-      <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+      <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="0"></canvas>
     </div>
     <hr/>
     <!-- <div class="emscripten">
@@ -86,11 +86,25 @@
     </div>
     
     <hr/> -->
+    <p>Console output:</p>
     <textarea class="emscripten" id="output" rows="8"></textarea>
+
+    <p>Paste code below using the "Paste Clipboard" button. Then CTRL-V to paste the contents into the emulator
+    </p>
+    <div><input type="button" value="Paste Clipboard" onclick="getClipboard()"></div>
+    <textarea tabindex="2" class="paste" id="paste" name="message" rows="20" cols="80">10 PRINT "HELLO WORLD"&#13;</textarea>
+    
     <hr>
     <p style="padding-bottom: 0pt; padding-top: 0pt; " ></p><a title="https://www.facebook.com/groups/CommanderX16/?ref=bookmarks" href="https://www.facebook.com/groups/CommanderX16/?ref=bookmarks">FB GROUP</a> | <a title="https://murray2.com/forums/commander-x16.9/" href="https://murray2.com/forums/commander-x16.9/">FORUM</a> | <a title="https://www.facebook.com/groups/CommanderX16/permalink/402529400498160/" href="https://www.facebook.com/groups/CommanderX16/permalink/402529400498160/">FAQ</a> | <a title="https://github.com/commanderx16/x16-emulator/releases" href="https://github.com/commanderx16/x16-emulator/releases">EMULATOR</a> | STORE</p>
              
     <script type='text/javascript'>
+
+      function getClipboard()
+      {
+        navigator.clipboard.readText().then(
+        clipText => document.getElementById("paste").value = clipText);
+      }
+
       var statusElement = document.getElementById('status');
       var progressElement = document.getElementById('progress');
       var spinnerElement = document.getElementById('spinner');

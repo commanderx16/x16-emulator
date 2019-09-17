@@ -4,7 +4,7 @@ The Commander X16 emulator supports a HTML/WebAssembly build target using the [E
 ## Demo
 [HTML X16 Emulator Demo](https://sebastianvog.github.io/x16-emulator/x16emu.html)
 ## Installation
-Follow installation steps from [https://emscripten.org/docs/getting_started/downloads.html#platform-notes-installation-instructions-sdk](https://emscripten.org/docs/getting_started/downloads.html#platform-notes-installation-instructions-sdk)
+Follow installation steps from [here](https://emscripten.org/docs/getting_started/downloads.html#)
 
 ## Build
 

@@ -6,7 +6,7 @@ This is an emulator for the Commander X16 computer system. It only depends on SD
 
 Binary releases for macOS, Windows and x86_64 Linux are available on the [releases page](https://github.com/commanderx16/x16-emulator/releases).
 
-Steps for compiling for WebAssembly/HTML5 can be found [here](https://github.com/sebastianvog/x16-emulator/blob/ems/webassembly/WebAssembly.md).
+Steps for compiling WebAssembly/HTML5 can be found [here](https://github.com/sebastianvog/x16-emulator/blob/ems/webassembly/WebAssembly.md).
 
 For all other systems, make sure the development version of SDL2 is installed and type `make` to build the source. You will also need the system ROM (`rom.bin`), which you can build from the [X16 ROM source](https://github.com/commanderx16/x16-rom) or take from the *latest* binary release. (It is not always guaranteed though that the latest binary release is compatible with the current state of the emulator source.)
 
