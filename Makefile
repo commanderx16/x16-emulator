@@ -10,7 +10,7 @@ else
 	SDL2CONFIG=sdl2-config
 endif
 
-CFLAGS=-O3 -Wall -Werror -g $(shell $(SDL2CONFIG) --cflags)
+CFLAGS=-std=c99 -O3 -Wall -Werror -g $(shell $(SDL2CONFIG) --cflags)
 LDFLAGS=$(shell $(SDL2CONFIG) --libs) -lm
 
 ifeq ($(MAC_STATIC),1)
