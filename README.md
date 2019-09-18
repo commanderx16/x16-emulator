@@ -6,7 +6,11 @@ This is an emulator for the Commander X16 computer system. It only depends on SD
 
 Binary releases for macOS, Windows and x86_64 Linux are available on the [releases page](https://github.com/commanderx16/x16-emulator/releases).
 
-For all other systems, make sure the development version of SDL2 is installed and type `make` to build the source. You will also need the system ROM (`rom.bin`), which you can build from the [X16 ROM source](https://github.com/commanderx16/x16-rom) or take from the *latest* binary release. (It is not always guaranteed though that the latest binary release is compatible with the current state of the emulator source.)
+To build the emulator you will need the SDL2 development package along with the [cc65](https://cc65.github.io/) assembler.  On RedHat based nodes these are provided by the SDL2-devel and cc65 packages (yum install SDL2-devel cc65).
+
+You will also need the system ROM (`rom.bin`) which you can build from the [X16 ROM source](https://github.com/commanderx16/x16-rom) or take from the *latest* binary release. (It is not always guaranteed though that the latest binary release is compatible with the current state of the emulator source.)
+
+Type `make` to build the source.
 
 ## Starting
 
