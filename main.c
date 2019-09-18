@@ -25,7 +25,7 @@
 
 #define MHZ 8
 
-#define TRACE
+//#define TRACE
 #define LOAD_HYPERCALLS
 
 // This must match the KERNAL's set!
