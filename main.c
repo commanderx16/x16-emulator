@@ -22,6 +22,10 @@
 #include "glue.h"
 #include "debugger.h"
 #include "utf8.h"
+#include "ym2151.h"
+
+#define AUDIO_SAMPLES 4096
+#define SAMPLERATE 22050
 
 #define MHZ 8
 
@@ -215,6 +219,42 @@ usage_keymap()
 	exit(1);
 }
 
+void audioCallback(void* userdata, Uint8 *stream, int len)
+{
+	YM_stream_update((uint16_t*) stream, len / 4);
+}
+
+void testAudio()
+{
+	SDL_AudioSpec want;
+	SDL_AudioSpec have;
+
+	// init YM2151 emulation. 4 MHz clock
+	YM_Create(1.0f, 4000000);
+	YM_init(SAMPLERATE, 60);
+
+	// setup SDL audio
+	want.freq = SAMPLERATE;
+	want.format = AUDIO_S16;
+	want.channels = 2;
+	want.samples = AUDIO_SAMPLES;
+	want.callback = audioCallback;
+	want.userdata = NULL;
+	if ( SDL_OpenAudio(&want, &have) < 0 ){
+		fprintf(stderr, "SDL_OpenAudio failed: %s\n", SDL_GetError());
+		exit(-1);
+	}
+	if (want.format != have.format || want.channels != have.channels) {
+		// TODO: most soundcard should support signed 16 bit, but maybe add conversion functions
+		printf("channels: %i, format: %i\n", have.format, have.channels);
+		fprintf(stderr, "audio init failed\n");
+		exit(-1);
+	}
+
+	// start playback
+	SDL_PauseAudio(0);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -241,7 +281,7 @@ main(int argc, char **argv)
 	char *sdcard_path = NULL;
 
 	bool run_after_load = false;
-
+	
 #ifdef __APPLE__
 	// on macOS, double clicking runs an executable in the user's
 	// home directory, so we prepend the executable's path to
@@ -490,6 +530,8 @@ main(int argc, char **argv)
 		fclose(bas_file);
 	}
 
+	testAudio();
+	
 #ifdef VERA_V0_8
 	video_init(window_scale);
 #else
