@@ -22,7 +22,9 @@
 #include "glue.h"
 #include "debugger.h"
 #include "utf8.h"
+#ifdef WITH_YM2151
 #include "ym2151.h"
+#endif
 
 #define AUDIO_SAMPLES 4096
 #define SAMPLERATE 22050
@@ -219,12 +221,13 @@ usage_keymap()
 	exit(1);
 }
 
+#ifdef WITH_YM2151
 void audioCallback(void* userdata, Uint8 *stream, int len)
 {
 	YM_stream_update((uint16_t*) stream, len / 4);
 }
 
-void testAudio()
+void initAudio()
 {
 	SDL_AudioSpec want;
 	SDL_AudioSpec have;
@@ -254,6 +257,7 @@ void testAudio()
 	// start playback
 	SDL_PauseAudio(0);
 }
+#endif
 
 int
 main(int argc, char **argv)
@@ -530,7 +534,9 @@ main(int argc, char **argv)
 		fclose(bas_file);
 	}
 
-	testAudio();
+#ifdef WITH_YM2151
+	initAudio();
+#endif
 	
 #ifdef VERA_V0_8
 	video_init(window_scale);
