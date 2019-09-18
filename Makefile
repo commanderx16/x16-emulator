@@ -25,13 +25,13 @@ ifeq ($(CROSS_COMPILE_WINDOWS),1)
 	LDFLAGS+=-Wl,--subsystem,console 
 	CC=i686-w64-mingw32-gcc
 endif
-
+#--js-library webassembly/helper.js
 ifdef EMSCRIPTEN
-	LDFLAGS+=--shell-file webassembly/x16emu-template.html --js-library webassembly/helper.js --preload-file rom.bin --preload-file chargen.bin -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 -s USE_PTHREADS=1
+	LDFLAGS+=--shell-file webassembly/x16emu-template.html  --preload-file rom.bin --preload-file chargen.bin -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 -s USE_PTHREADS=1 -s EXPORTED_FUNCTIONS='["_int_sqrt", _main]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]'
 	OUTPUT=x16emu.html
 endif
 
-OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o sdcard.o main.o debugger.o
+OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o sdcard.o main.o debugger.o javascript_interface.o
 HEADERS = disasm.h cpu/fake6502.h glue.h memory.h video.h ps2.h via.h loadsave.h
 
 ifneq ("$(wildcard ./rom_labels.h)","")

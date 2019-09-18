@@ -96,11 +96,15 @@
     
     <hr>
     <p style="padding-bottom: 0pt; padding-top: 0pt; " ></p><a title="https://www.facebook.com/groups/CommanderX16/?ref=bookmarks" href="https://www.facebook.com/groups/CommanderX16/?ref=bookmarks">FB GROUP</a> | <a title="https://murray2.com/forums/commander-x16.9/" href="https://murray2.com/forums/commander-x16.9/">FORUM</a> | <a title="https://www.facebook.com/groups/CommanderX16/permalink/402529400498160/" href="https://www.facebook.com/groups/CommanderX16/permalink/402529400498160/">FAQ</a> | <a title="https://github.com/commanderx16/x16-emulator/releases" href="https://github.com/commanderx16/x16-emulator/releases">EMULATOR</a> | STORE</p>
-             
+  
     <script type='text/javascript'>
+
+   
 
       function getClipboard()
       {
+        int_sqrt = Module.cwrap("int_sqrt", "number", ["number"]);
+        console.log(int_sqrt(16));
         navigator.clipboard.readText().then(
         clipText => document.getElementById("paste").value = clipText);
       }
@@ -181,6 +185,7 @@
         };
       };
     </script>
+    <!-- <script src="webassembly/helper.js"></script>          -->
     {{{ SCRIPT }}}
   </body>
 </html>
