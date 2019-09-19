@@ -13,9 +13,6 @@
 
 import re
 
-#
-#							Load in a source file with opcode descriptors
-#
 ############# CONSTANTS ##############
 ######################################
 ########### KEY CONSTANTS ############
@@ -23,6 +20,7 @@ ACTN_KEY_STR = "action"
 CYCLES_KEY_STR = "cycles"
 MODE_KEY_STR = "mode"
 OPCODE_KEY_STR = "opcode"
+
 ######################################
 ########### REGEX CONSTANTS ##########
 OPCODE_REGEX_STR = "^(?P<{actnCode}>\\w+)\\s+(?P<{addrMode}>\\w+)\\s+(?P<{mchnCycles}>\\d)\\s+\\$(?P<{opCode}>[0-9a-fA-F]+)$".format(
@@ -31,70 +29,99 @@ OPCODE_REGEX_STR = "^(?P<{actnCode}>\\w+)\\s+(?P<{addrMode}>\\w+)\\s+(?P<{mchnCy
     mchnCycles=CYCLES_KEY_STR,
     opCode=OPCODE_KEY_STR
 )
+
 #####################################
 ########## HEADER CONSTANTS #########
 ADDR_MODE_HEADER = "static void (*addrtable[256])() = {"
 ACTN_CODE_HEADER = "static void (*optable[256])() = {"
 MCHN_CYCLES_HEADER = "static const uint32_t ticktable[256] = {"
+MNEMONICS_DISASSEM_HEADER = "static char *mnemonics[256] = {{ {0} }};\n"
+TABLE_MAP = "/*{0:8}|  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  A  |  B  |  C  |  D  |  E  |  F  |{0:5}*/\n"
+
+#####################################
+######### OPCODE CONSTANTS ##########
+EMPTY_NOP_ACTN = "nop"
+EMPTY_NOP_CYCLS = "2"
+EMPTY_NOP_MOD = "imp"
+OPCODE_ROW_LEN = 16
+TOTAL_NUMBER_OPCODES = 2 ** 8
+
+#####################################
+############# FILENAMES #############
+TABLES_HEADER_FNAME = "tables.h"
+MNEMONICS_DISASSEM_HEADER_FNAME = "mnemonics.h"
+OPCODES_6502_FNAME = "6502.opcodes"
+OPCODES_65c02_FNAME = "65c02.opcodes"
+
+
 #####################################
 #####################################
 
+
+#######################################################################################################################
+####################################  Load in a source file with opcode descriptors  ##################################
+#######################################################################################################################
 def loadSource(srcFile):
-    #########################
-    #		Load file		#
-    #########################
-    src = [opcodeLine.strip() for opcodeLine in open(srcFile).readlines() if opcodeLine.strip() != ""]
-    src = [opcodeLine for opcodeLine in src if not opcodeLine.startswith(";")]
-    ##############################
-    #		Import opcodes		 #
-    ##############################
-    for l in src:
-        m = re.match(OPCODE_REGEX_STR, l)
-        assert m is not None, "Format " + l
-        opcode = int(m.group(OPCODE_KEY_STR), 16)
+    # Read file line by line and omit committed
+    fileLinesObject = open(srcFile).readlines()
+    strippedOpcodeLines = [opcodeLine.strip() for opcodeLine in fileLinesObject if
+                           opcodeLine.strip() != "" and not opcodeLine.startswith(";")]
+
+    # Import Opcodes
+    for opcodeLine in strippedOpcodeLines:
+        matchLine = re.match(OPCODE_REGEX_STR, opcodeLine)
+        assert matchLine is not None, "Format {}".format(opcodeLine)
+
+        opcode = int(matchLine.group(OPCODE_KEY_STR), 16)
         assert opcodesList[opcode] is None, "Duplicate {0:02x}".format(opcode)
+
         opcodesList[opcode] = {
-            MODE_KEY_STR: m.group(MODE_KEY_STR),
-            ACTN_KEY_STR: m.group(ACTN_KEY_STR),
-            CYCLES_KEY_STR: m.group(CYCLES_KEY_STR),
+            MODE_KEY_STR: matchLine.group(MODE_KEY_STR),
+            ACTN_KEY_STR: matchLine.group(ACTN_KEY_STR),
+            CYCLES_KEY_STR: matchLine.group(CYCLES_KEY_STR),
             OPCODE_KEY_STR: opcode
         }
 
 
-#################################################################################################
-#									Fill unused slots with NOPs									#
-#################################################################################################
+#######################################################################################################################
+#############################################  Fill unused slots with NOPs  ###########################################
+#######################################################################################################################
 def fillNop():
-    for i in range(0, 256):
+    for i in range(0, TOTAL_NUMBER_OPCODES):
         if opcodesList[i] is None:
             opcodesList[i] = {
-                MODE_KEY_STR: "imp",
-                ACTN_KEY_STR: "nop",
-                CYCLES_KEY_STR: "2",
+                MODE_KEY_STR: EMPTY_NOP_MOD,
+                ACTN_KEY_STR: EMPTY_NOP_ACTN,
+                CYCLES_KEY_STR: EMPTY_NOP_CYCLS,
                 OPCODE_KEY_STR: i
             }
 
 
-#
-#										  Output a table
-#
-def generateTable(h, header, element):
+#######################################################################################################################
+###################################################  Output a table  ##################################################
+#######################################################################################################################
+def generateTable(hFileName, header, element):
     spacing = 5
-    h.write("{}{}{}".format("\n", header, "\n"))
-    h.write(
-        "/*{0:8}|  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  A  |  B  |  C  |  D  |  E  |  F  |{0:5}*/\n".format(
-            "", ""))
-    for row in range(0, 16):
-        elements = ",".join([("         " + opcodesList[opcodeItem][element])[-spacing:] for opcodeItem in
-                             range(row * 16, row * 16 + 16)])
-        h.write("/* {0:X} */ {3}  {1}{2} /* {0:X} */\n".format(row, elements, " " if row == 15 else ",",
-                                                               " " if element == ACTN_KEY_STR else ""))
-    h.write("};\n")
+    hFileName.write("{}{}{}".format("\n", header, "\n"))
+    hFileName.write(TABLE_MAP.format("", ""))
+    for row in range(0, OPCODE_ROW_LEN):
+        formattedOpcodeLine = "{0:>9}".format(opcodesList[opcodeItem][element])[-spacing:]
+
+        elements = ",".join(
+            [formattedOpcodeLine for opcodeItem in range(row * OPCODE_ROW_LEN, OPCODE_ROW_LEN * (row + 1))])
+
+        hFileName.write("/* {0:X} */ {3}  {1}{2} /* {0:X} */\n".format(
+            row,
+            elements,
+            " " if row == OPCODE_ROW_LEN - 1 else ",",
+            " " if element == ACTN_KEY_STR else "")
+        )
+    hFileName.write("};\n")
 
 
-#
-#							Convert opcode structure to mnemonic
-#	
+#######################################################################################################################
+########################################  Convert opcode structure to mnemonic  #######################################
+#######################################################################################################################
 def convertMnemonic(opInfo):
     modeStr = {
         "imp": "",
@@ -113,31 +140,31 @@ def convertMnemonic(opInfo):
         "ind0": "($%02x)",
         "acc": "a"
     }
-    return opInfo[ACTN_KEY_STR] + " " + modeStr[opInfo[MODE_KEY_STR]]
+    return "{} {}".format(opInfo[ACTN_KEY_STR], modeStr[opInfo[MODE_KEY_STR]])
 
 
-#
-#										Load in opcodes
-#
+#######################################################################################################################
+##################################################  Load in opcodes  ##################################################
+#######################################################################################################################
 if __name__ == '__main__':
-    opcodesList = [None] * 256
-    loadSource("6502.opcodes")
-    loadSource("65c02.opcodes")
+    opcodesList = [None] * TOTAL_NUMBER_OPCODES
+    # Load 6502 opcodes list
+    loadSource(OPCODES_6502_FNAME)
+    # Load 65C02 opcodes list
+    loadSource(OPCODES_65c02_FNAME)
+    # Fill opcodes list with NOP instructions
     fillNop()
-    #
-    #										Create tables.h
-    #
-    with open("tables.h", "w") as output_h_file:
+
+    # Create "TABLES_HEADER_FNAME" header file
+    with open(TABLES_HEADER_FNAME, "w") as output_h_file:
         output_h_file.write("/* Generated by buildtables.py */\n")
         generateTable(output_h_file, ADDR_MODE_HEADER, MODE_KEY_STR)
         generateTable(output_h_file, ACTN_CODE_HEADER, ACTN_KEY_STR)
         generateTable(output_h_file, MCHN_CYCLES_HEADER, CYCLES_KEY_STR)
-    #
-    #										Create disassembly file.
-    #
-    mnemonics = [convertMnemonic(opcodesList[x]) for x in range(0, 256)]
-    mnemonics = ",".join(['"' + x + '"' for x in mnemonics])
-    with open("mnemonics.h", "w") as output_h_file:
-        # output_h_file = open("mnemonics.h", "w")
+
+    # Create disassembly "MNEMONICS_DISASSEM_HEADER_FNAME" header file.
+    mnemonics = [convertMnemonic(opcodesList[x]) for x in range(0, TOTAL_NUMBER_OPCODES)]
+    mnemonics = ",".join(['"{}"'.format(x) for x in mnemonics])
+    with open(MNEMONICS_DISASSEM_HEADER_FNAME, "w") as output_h_file:
         output_h_file.write("/* Generated by buildtables.py */\n")
-        output_h_file.write("static char *mnemonics[256] = {{ {0} }};\n".format(mnemonics))
+        output_h_file.write(MNEMONICS_DISASSEM_HEADER.format(mnemonics))
