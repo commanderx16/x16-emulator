@@ -15,10 +15,13 @@
 #include "video.h"
 #include "via.h"
 #include "ps2.h"
+#include "spi.h"
+#include "vera_spi.h"
 #include "sdcard.h"
 #include "loadsave.h"
 #include "glue.h"
 #include "debugger.h"
+#include "utf8.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -61,6 +64,8 @@ bool log_speed = false;
 bool log_keyboard = false;
 bool echo_mode = false;
 bool save_on_exit = true;
+bool record_gif = false;
+char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
 
@@ -98,6 +103,56 @@ machine_paste(char *s)
 		paste_text = s;
 		pasting_bas = true;
 	}
+}
+
+uint8_t
+latin15_from_unicode(uint32_t c)
+{
+	// line feed -> carriage return
+	if (c == '\n') {
+		return '\r';
+	}
+
+	// translate Unicode charaters not part of Latin-1 but part of Latin-15
+	switch (c) {
+		case 0x20ac: // '€'
+			return 0xa4;
+		case 0x160: // 'Š'
+			return 0xa6;
+		case 0x161: // 'š'
+			return 0xa8;
+		case 0x17d: // 'Ž'
+			return 0xb4;
+		case 0x17e: // 'ž'
+			return 0xb8;
+		case 0x152: // 'Œ'
+			return 0xbc;
+		case 0x153: // 'œ'
+			return 0xbd;
+		case 0x178: // 'Ÿ'
+			return 0xbe;
+	}
+
+	// remove Unicode characters part of Latin-1 but not part of Latin-15
+	switch (c) {
+		case 0xa4: // '¤'
+		case 0xa6: // '¦'
+		case 0xa8: // '¨'
+		case 0xb4: // '´'
+		case 0xb8: // '¸'
+		case 0xbc: // '¼'
+		case 0xbd: // '½'
+		case 0xbe: // '¾'
+			return '?';
+	}
+
+	// all  other Unicode characters are also unsupported
+	if (c >= 256) {
+		return '?';
+	}
+
+	// everything else is Latin-15 already
+	return c;
 }
 
 static bool
@@ -150,7 +205,10 @@ usage()
 	printf("-log {K|S|V}...\n");
 	printf("\tEnable logging of (K)eyboard, (S)peed, (V)ideo.\n");
 	printf("\tMultiple characters are possible, e.g. -log KS\n");
-	printf("-debug\n");
+	printf("-gif <file.gif>\n");
+	printf("\tRecord a gif for the video output.\n");
+	printf("-debug [<address>]\n");
+	printf("\tEnable debugger. Optionally, set a breakpoint\n");
 	printf("-scale {1|2|3|4}\n");
 	printf("\tScale output to an integer multiple of 640x480\n");
 	printf("\tEnable debugger.\n");
@@ -322,10 +380,25 @@ main(int argc, char **argv)
 			}
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-gif")) {
+			argc--;
+			argv++;
+			record_gif = true;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			gif_path = argv[0];
+			argv++;
+			argc--;
 		} else if (!strcmp(argv[0], "-debug")) {
 			argc--;
 			argv++;
 			debuger_enabled = true;
+			if (argc && argv[0][0] != '-') {
+				DEBUGSetBreakPoint((uint16_t)strtol(argv[0], NULL, 16));
+				argc--;
+				argv++;
+			}
 #ifdef TRACE
 
 		} else if (!strcmp(argv[0], "-trace")) {
@@ -438,7 +511,8 @@ main(int argc, char **argv)
 #else
 	video_init(chargen, window_scale);
 #endif
-	sdcard_init();
+	spi_init();
+	vera_spi_init();
 	via1_init();
 	via2_init();
 
@@ -527,7 +601,8 @@ emulator_loop(void *param)
 		bool new_frame = false;
 		for (uint8_t i = 0; i < clocks; i++) {
 			ps2_step();
-			sdcard_step();
+			spi_step();
+			vera_spi_step();
 			new_frame |= video_step(MHZ);
 		}
 
@@ -623,14 +698,14 @@ emulator_loop(void *param)
 		}
 
 		while (pasting_bas && RAM[0xc6] < 10) {
-			uint8_t c = *paste_text;
-			if (c) {
-				if (c == 10) {
-					c = 13;
-				}
+			uint32_t c;
+			int e = 0;
+			paste_text = utf8_decode(paste_text, &c, &e);
+
+			c = latin15_from_unicode(c);
+			if (c && !e) {
 				RAM[0x0277 + RAM[0xc6]] = c;
 				RAM[0xc6]++;
-				paste_text++;
 			} else {
 				pasting_bas = false;
 				paste_text = NULL;

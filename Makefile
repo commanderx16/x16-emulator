@@ -35,7 +35,8 @@ ifdef EMSCRIPTEN
 	OUTPUT=x16emu.html
 endif
 
-OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o sdcard.o main.o debugger.o javascript_interface.o
+OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o spi.o vera_spi.o sdcard.o main.o debugger.o javascript_interface.o
+
 HEADERS = disasm.h cpu/fake6502.h glue.h memory.h video.h ps2.h via.h loadsave.h
 
 ifneq ("$(wildcard ./rom_labels.h)","")

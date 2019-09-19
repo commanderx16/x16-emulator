@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdio.h>
 #include "glue.h"
 #include "via.h"
 #include "memory.h"
