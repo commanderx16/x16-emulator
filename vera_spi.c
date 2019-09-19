@@ -26,7 +26,11 @@ vera_spi_step()
 		outcounter++;
 		if (outcounter == 8) {
 			busy = false;
-			received_byte = sdcard_handle(sending_byte);
+			if (sdcard_file) {
+				received_byte = sdcard_handle(sending_byte);
+			} else {
+				received_byte = 0xff;
+			}
 		}
 	}
 }
