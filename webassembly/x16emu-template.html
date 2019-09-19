@@ -47,11 +47,11 @@
         }
 
         function getClipboard() {
-            j2c_paste = Module.cwrap("j2c_paste", "void", ["string"]);
+            //j2c_paste = Module.ccall("j2c_paste", "void", ["string"]);
+            //j2c_paste(buffer);
             navigator.clipboard.readText().then(
                 clipText => {
-                    //document.getElementById("paste").value = clipText.toUpperCase();
-                    j2c_paste(clipText.toUpperCase());
+                    Module.ccall("j2c_paste", "void", ["string"], [clipText]);
                 });
         }
 

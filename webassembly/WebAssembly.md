@@ -8,7 +8,7 @@ Follow installation steps from [here](https://emscripten.org/docs/getting_starte
 
 ## Build
 
-    emmake make
+    make wasm
 
 This outputs the following artifacts in the build directory, which can be uploaded to any web server.
 
