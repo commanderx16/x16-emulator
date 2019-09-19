@@ -75,11 +75,10 @@ define add_extra_files_to_package
 
 	# Documentation
 	mkdir $(TMPDIR_NAME)/docs
-	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="X16 Emulator" README.md --output $(TMPDIR_NAME)/docs/README.html
-	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="X16 KERNAL/BASIC/DOS ROM"  ../x16-rom/README.md --output $(TMPDIR_NAME)/docs/KERNAL-BASIC.html
-	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="X16 Programmer's Reference Guide"  ../x16-docs/Programmer\'s\ Reference\ Guide.md --output $(TMPDIR_NAME)/docs/Programmer\'s\ Reference\ Guide.html
-	cp ../x16-docs/vera-module\ v0.7.pdf $(TMPDIR_NAME)/docs
-	cp github-pandoc.css $(TMPDIR_NAME)/docs
+	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="Commander X16 Emulator" README.md --output $(TMPDIR_NAME)/docs/README.html
+	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="Commander X16 KERNAL/BASIC/DOS ROM"  ../x16-rom/README.md --output $(TMPDIR_NAME)/docs/KERNAL-BASIC.html
+	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="Commander X16 Programmer's Reference Guide"  ../x16-docs/Commander\ X16\ Programmer\'s\ Reference\ Guide.md --output $(TMPDIR_NAME)/docs/Programmer\'s\ Reference\ Guide.html
+	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="VERA Programmer's Reference.md"  ../x16-docs/VERA\ Programmer\'s\ Reference.md --output $(TMPDIR_NAME)/docs/Programmer\'s\ Reference\ Guide.html
 endef
 
 package: package_mac package_win package_linux
