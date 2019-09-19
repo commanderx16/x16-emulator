@@ -11,15 +11,22 @@ matrix:
           packages:
             - libsdl2-dev
       compiler: gcc
-      script: make clean all
+      script:
+        - mkdir build && cd build
+        - cmake .. -DWITH_YM2151=ON
+        - make
     - name: macOS
       os: osx
       osx_image: xcode11
       addons:
         homebrew:
           packages:
+            - cmake
             - sdl2
-      script: make clean all
+      script:
+        - mkdir build && cd build
+        - cmake .. -DWITH_YM2151=ON
+        - make
     - name: Windows (macOS cross-compilation)
       os: osx
       osx_image: xcode11
@@ -31,16 +38,17 @@ matrix:
         - mkdir -p /tmp/sdl2
         - wget https://www.libsdl.org/release/SDL2-devel-2.0.10-mingw.tar.gz
         - tar -xf SDL2-devel-2.0.10-mingw.tar.gz -C /tmp/sdl2
-        - sudo mkdir -p /opt/local
-        - sudo chmod 777 /opt/local
-        - cp -r /tmp/sdl2/SDL2-2.0.10/* /opt/local/
-      script: CROSS_COMPILE_WINDOWS=1 make WIN_SDL2=/opt/local/i686-w64-mingw32 clean all
+      script:
+        - mkdir build && cd build
+        - x86_64-w64-mingw32-gcc -print-search-dirs
+        - CC=x86_64-w64-mingw32-gcc cmake .. -DWITH_YM2151=ON -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/mingw.cmake -DSDL2_PATH=/tmp/sdl2/SDL2-2.0.10/x86_64-w64-mingw32 -DOVERRIDE_FIND_ROOT_PATH_MODE=1
+        - make
     - name: Check editorconfig style
       language: python
       script:
         - python -m pip install editorconfig-checker
         - editorconfig-checker
-    - name: WebAssembly
+    - name: WebAssembly (linux/docker)
       os: linux
       addons:
         apt:
@@ -53,4 +61,18 @@ matrix:
         - unzip x16emu_linux-r32.zip
         - docker run -dit --name emscripten -v $(pwd):/src trzeci/emscripten:sdk-incoming-64bit bash
       script:
-        - docker exec -it emscripten make wasm
+        - docker exec -it emscripten sh -c "cd /src && mkdir build && cd build && emcmake cmake .. -DWITH_YM2151=ON -DX16ROM_PATH=.. && make"
+    - name: WebAssembly (linux/conan)
+      os: linux
+      before_install:
+        - python -m pip install --user conan
+        - conan user
+        - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
+        - mkdir x16-docs  # git clone https://github.com/commanderx16/x16-docs.git --depth 1
+        - mkdir x16-rom  # git clone https://github.com/commanderx16/x16-rom.git --depth 1
+        - wget https://github.com/commanderx16/x16-emulator/releases/download/r32/x16emu_linux-r32.zip
+        - unzip x16emu_linux-r32.zip -d x16-rom
+      script:
+        - mkdir build && cd build
+        - conan install .. -o x16docs_path=../x16-docs -o x16rom_path=../x16-rom -pr ../conan_profiles/emsdk --build missing
+        - conan build ..
