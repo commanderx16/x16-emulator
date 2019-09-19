@@ -308,7 +308,7 @@ main(int argc, char **argv)
 
 	// This causes the emulator to load ROM data from the executable's directory when
 	// no ROM file is specified on the command line.
-	strncpy(rom_path, base_path, PATH_MAX);
+	memcpy(rom_path, base_path, strlen(base_path));
 	strncpy(rom_path + strlen(rom_path), rom_filename, PATH_MAX - strlen(rom_path));
 #ifndef VERA_V0_8
 	strncpy(char_path, base_path, PATH_MAX);
