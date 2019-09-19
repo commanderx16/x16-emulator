@@ -38,6 +38,8 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR
 		# CMake 3.13 added add_link_options
 		set(CMAKE_EXE_LINKER_FLAGS "-Wl,--subsystem,console")
 	endif()
+elseif(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
