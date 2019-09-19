@@ -25,9 +25,13 @@ ifeq ($(CROSS_COMPILE_WINDOWS),1)
 	LDFLAGS+=-Wl,--subsystem,console 
 	CC=i686-w64-mingw32-gcc
 endif
-#--js-library webassembly/helper.js
+
 ifdef EMSCRIPTEN
-	LDFLAGS+=--shell-file webassembly/x16emu-template.html  --preload-file rom.bin --preload-file chargen.bin -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 -s USE_PTHREADS=1 -s EXPORTED_FUNCTIONS='["_int_sqrt", _main]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]'
+	# Todo #--js-library webassembly/helper.js
+	LDFLAGS+=--shell-file webassembly/x16emu-template.html  --preload-file rom.bin --preload-file chargen.bin -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 -s USE_PTHREADS=1 
+	# To the Javascript runtime exported functions
+	LDFLAGS+=-s EXPORTED_FUNCTIONS='["_j2c_reset", "_j2c_paste", _main]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]'
+	
 	OUTPUT=x16emu.html
 endif
 
@@ -43,6 +47,13 @@ all: $(OBJS) $(HEADERS)
 	$(CC) -o $(OUTPUT) $(OBJS) $(LDFLAGS) 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
+
+
+# WebASssembly/emscripten target
+#
+# See webassembly/WebAssembly.md
+wasm:
+	emmake make
 
 #
 # PACKAGING

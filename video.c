@@ -739,15 +739,7 @@ video_update()
 					machine_reset();
 					consumed = true;
 				} else if (event.key.keysym.sym == SDLK_v) {
-#ifdef __EMSCRIPTEN__
-					// SDL_GetClipboardText returns NULL from the emscripten runtime
-					// As a workaround we read text from the HTML textarea, representing a clipboard
-					char * inputString= emscripten_run_script_string("document.getElementById('paste').value");
-					if (inputString) 
-						machine_paste(inputString);
-#else
 					machine_paste(SDL_GetClipboardText());
-#endif
 					consumed = true;
 				} else if (event.key.keysym.sym == SDLK_f ||  event.key.keysym.sym == SDLK_RETURN) {
 					is_fullscreen = !is_fullscreen;
