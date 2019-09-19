@@ -29,6 +29,11 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-run` executes the application specified through `-prg` or `-bas` using `RUN` or `SYS`, depending on the load address.
 * `-scale` scales video output to an integer multiple of 640x480
 * `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
+* `-scale` scales video output to an integer multiple of 640x480
+* `-quality` change image scaling algorithm quality
+	* `nearest`: nearest pixel sampling
+	* `linear`: linear filtering
+	* `best`: (default) anisotropic filtering
 * `-log` enables one or more types of logging (e.g. `-log KS`):
 	* `K`: keyboard (key-up and key-down events)
 	* `S`: speed (CPU load, frame misses)
