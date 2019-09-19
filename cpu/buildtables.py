@@ -105,10 +105,9 @@ def generateTable(hFileName, header, element):
     hFileName.write("{}{}{}".format("\n", header, "\n"))
     hFileName.write(TABLE_MAP.format("", ""))
     for row in range(0, OPCODE_ROW_LEN):
-        formattedOpcodeLine = "{0:>9}".format(opcodesList[opcodeItem][element])[-spacing:]
-
         elements = ",".join(
-            [formattedOpcodeLine for opcodeItem in range(row * OPCODE_ROW_LEN, OPCODE_ROW_LEN * (row + 1))])
+            ["{0:>9}".format(opcodesList[opcodeItem][element])[-spacing:] for opcodeItem in
+             range(row * OPCODE_ROW_LEN, OPCODE_ROW_LEN * (row + 1))])
 
         hFileName.write("/* {0:X} */ {3}  {1}{2} /* {0:X} */\n".format(
             row,
