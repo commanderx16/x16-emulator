@@ -1,0 +1,5 @@
+include(./emsdk)
+[build_requires]
+msys2/20161025
+[env]
+CONAN_CMAKE_GENERATOR=Unix Makefiles
