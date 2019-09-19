@@ -1,0 +1,20 @@
+dist: bionic
+sudo: required
+language: c
+
+matrix:
+  include:
+    - os: linux
+      addons:
+        apt:
+          packages:
+            - libsdl2-dev
+      compiler: gcc
+      script: make
+    - os: osx
+      osx_image: xcode11
+      addons:
+        homebrew:
+          packages:
+            - sdl2 
+      script: make 
