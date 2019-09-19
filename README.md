@@ -10,7 +10,7 @@ Binary releases for macOS, Windows and x86_64 Linux are available on the [releas
 
 To build the emulator you will need the SDL2 development package along with the [cc65](https://cc65.github.io/) assembler.  On RedHat based nodes these are provided by the SDL2-devel and cc65 packages (yum install SDL2-devel cc65).
 
-Steps for compiling WebAssembly/HTML5 can be found [here](https://github.com/commanderx16/x16-emulator/blob/master/webassembly/WebAssembly.md).
+Steps for compiling WebAssembly/HTML5 can be found [here](webassembly/WebAssembly.md).
 
 You will also need the system ROM (`rom.bin`) which you can build from the [X16 ROM source](https://github.com/commanderx16/x16-rom) or take from the *latest* binary release. (It is not always guaranteed though that the latest binary release is compatible with the current state of the emulator source.)
 
