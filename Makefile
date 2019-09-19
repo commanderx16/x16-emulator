@@ -91,6 +91,7 @@ TMPDIR_NAME=TMP-x16emu-package
 define add_extra_files_to_package
 	# ROMs
 	cp ../x16-rom/rom.bin $(TMPDIR_NAME)
+	cp ../x16-rom/rom.txt $(TMPDIR_NAME)
 
 	# Documentation
 	mkdir $(TMPDIR_NAME)/docs
