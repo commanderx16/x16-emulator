@@ -1,0 +1,59 @@
+image:
+  - Visual Studio 2019
+
+clone_depth: 1
+
+cache:
+  - C:\Users\appveyor\.conan -> conanfile.py
+  - C:\.conan -> conanfile.py
+
+environment:
+  PYTHON: "C:\\Python37-x64"
+  matrix:
+    - ARCH: x86
+      CONAN_PROFILE: default
+      ARTIFACT: x16emu-Windows-x86.tar.xz
+    - ARCH: x86_64
+      CONAN_PROFILE: default
+      ARTIFACT: x16emu-Windows-x86_64.tar.xz
+    - ARCH: wasm
+      CONAN_PROFILE: ../conan_profiles/emsdk_win
+      ARTIFACT: x16emu-Emscripten.tar.xz
+    - ARCH: x86_64
+      CONAN_PROFILE: ../conan_profiles/mingw8_win
+      ARTIFACT: x16emu-Windows-x86_64.tar.xz
+
+configuration:
+  - Release
+
+matrix:
+  fast_finish: false
+
+init:
+  - set PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
+  - python --version
+  - cmake --version
+  - msbuild /version
+
+install:
+  - python -m pip install conan
+  - conan user
+  - conan remote add -f bincrafters https://api.bintray.com/conan/bincrafters/public-conan
+
+build_script:
+  - git clone https://github.com/commanderx16/x16-docs.git --depth 1
+  - git clone https://github.com/commanderx16/x16-rom.git --depth 1
+  - curl -fLsS -o x16emu_release.zip https://github.com/commanderx16/x16-emulator/releases/download/r32/x16emu_linux-r32.zip
+  - 7z x x16emu_release.zip -orelease
+  - copy release\rom.bin x16-rom
+  - copy release\rom.sym x16-rom
+  - mkdir build && cd build
+  - conan install .. -pr %CONAN_PROFILE% -s arch=%ARCH% -s build_type=%CONFIGURATION% -o x16docs_path=../x16-docs -o x16rom_path=../x16-rom --build missing
+  - conan build ..
+
+after_build:
+  - cpack -C %CONFIGURATION% -G TXZ
+  - conan remove -b -s -f "*"
+
+artifacts:
+  - path: build/%ARTIFACT%
