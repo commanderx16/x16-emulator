@@ -184,6 +184,8 @@ video_init(uint8_t *in_chargen, int window_scale)
 				       SDL_TEXTUREACCESS_STREAMING,
 				       SCREEN_WIDTH, SCREEN_HEIGHT);
 
+	SDL_SetWindowTitle(window, "Commander X16");
+
 	if (record_gif) {
 		record_gif = GifBegin(&gif_writer, gif_path, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 8, false);
 	}
