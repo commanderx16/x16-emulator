@@ -285,9 +285,9 @@ main(int argc, char **argv)
 	uint16_t trace_address = 0;
 #endif
 
-	char *rom_filename = "/rom.bin";
+	char *rom_filename = "rom.bin";
 #ifndef VERA_V0_8
-	char *char_filename = "/chargen.bin";
+	char *char_filename = "chargen.bin";
 #endif
 	char rom_path_data[PATH_MAX];
 #ifndef VERA_V0_8
@@ -304,27 +304,16 @@ main(int argc, char **argv)
 
 	run_after_load = false;
 
-#ifdef __APPLE__
-	// on macOS, double clicking runs an executable in the user's
-	// home directory, so we prepend the executable's path to
-	// the rom filenames
-	if (argv[0][0] == '/') {
-		*strrchr(argv[0], '/') = 0;
+	char *base_path = SDL_GetBasePath();
 
-		strncpy(rom_path, argv[0], PATH_MAX);
-		strncpy(rom_path + strlen(rom_path), rom_filename, PATH_MAX - strlen(rom_path));
+	// This causes the emulator to load ROM data from the executable's directory when
+	// no ROM file is specified on the command line.
+	strncpy(rom_path, base_path, PATH_MAX);
+	strncpy(rom_path + strlen(rom_path), rom_filename, PATH_MAX - strlen(rom_path));
 #ifndef VERA_V0_8
-		strncpy(char_path, argv[0], PATH_MAX);
-		strncpy(char_path + strlen(char_path), char_filename, PATH_MAX - strlen(char_path));
+	strncpy(char_path, base_path, PATH_MAX);
+	strncpy(char_path + strlen(char_path), char_filename, PATH_MAX - strlen(char_path));
 #endif
-	} else
-#endif
-	{
-		strncpy(rom_path, rom_filename + 1, PATH_MAX);
-#ifndef VERA_V0_8
-		strncpy(char_path, char_filename + 1, PATH_MAX);
-#endif
-	}
 
 	argc--;
 	argv++;
