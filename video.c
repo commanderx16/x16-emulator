@@ -2,6 +2,10 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
+#define _XOPEN_SOURCE   600
+#define _POSIX_C_SOURCE 1
+#include <stdio.h>
+#include <limits.h>
 #include "video.h"
 #include "memory.h"
 #include "ps2.h"
@@ -13,6 +17,7 @@
 #include "vera_uart.h"
 
 #include <limits.h>
+#include "icon.h"
 
 #ifdef __EMSCRIPTEN__
 #include "emscripten.h"
@@ -168,6 +173,9 @@ video_init(int window_scale, char *quality)
 									SDL_TEXTUREACCESS_STREAMING,
 									SCREEN_WIDTH, SCREEN_HEIGHT);
 
+	SDL_RWops *rw = SDL_RWFromConstMem(icondata, sizeof(icondata));
+	SDL_Surface *icon = SDL_LoadBMP_RW(rw, 1);
+
 	SDL_SetWindowTitle(window, "Commander X16");
 
 	SDL_ShowCursor(SDL_DISABLE);
@@ -190,6 +198,9 @@ video_init(int window_scale, char *quality)
 	if (debugger_enabled) {
 		DEBUGInitUI(renderer);
 	}
+
+	// The icon is attached to the window pointer
+	SDL_SetWindowIcon(window, icon);
 
 	return true;
 }
