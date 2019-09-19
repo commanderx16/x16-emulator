@@ -67,6 +67,28 @@
 
 # message("<FindSDL2.cmake>")
 
+if(EMSCRIPTEN)
+	execute_process(COMMAND sdl2-config --cflags
+		OUTPUT_VARIABLE _SDL2_CFLAGS
+		ERROR_VARIABLE _SDL2_ERR)
+	if("${_SDL2_ERR}" MATCHES ".*emscripten.*")
+		separate_arguments(_SDL2_CFLAGS NATIVE_COMMAND "${_SDL2_CFLAGS}")
+		execute_process(COMMAND sdl2-config --libs
+			OUTPUT_VARIABLE _SDL2_LIBS)
+		separate_arguments(_SDL2_LIBS NATIVE_COMMAND "${_SDL2_LIBS}")
+
+		if(NOT TARGET SDL2::SDL2)
+			cmake_minimum_required(VERSION 3.13)
+			add_library(SDL2::SDL2 INTERFACE IMPORTED)
+			set_property(TARGET SDL2::SDL2
+				PROPERTY INTERFACE_COMPILE_OPTIONS ${_SDL2_CFLAGS})
+			set_property(TARGET SDL2::SDL2
+				PROPERTY INTERFACE_LINK_OPTIONS ${_SDL2_LIBS})
+		endif()
+		return()
+	endif()
+endif()
+
 SET(SDL2_SEARCH_PATHS
 	~/Library/Frameworks
 	/Library/Frameworks
@@ -79,10 +101,11 @@ SET(SDL2_SEARCH_PATHS
 	${SDL2_PATH}
 )
 
+
 FIND_PATH(SDL2_INCLUDE_DIR SDL.h
 	HINTS
 	$ENV{SDL2DIR}
-	PATH_SUFFIXES include/SDL2 include
+	PATH_SUFFIXES SDL2 include/SDL2 include
 	PATHS ${SDL2_SEARCH_PATHS}
 )
 
@@ -155,9 +178,18 @@ IF(SDL2_LIBRARY_TEMP)
 		SET(SDL2_LIBRARY_TEMP ${SDL2_LIBRARY_TEMP} ${CMAKE_THREAD_LIBS_INIT})
 	ENDIF(NOT APPLE)
 
+	# SDL_dynapi needs the dlopen and dlclose symbol to open dynamic libraries
+	IF(UNIX)
+		SET(SDL2_LIBRARY_TEMP ${SDL2_LIBRARY_TEMP} ${CMAKE_DL_LIBS})
+	ENDIF(UNIX)
+
+	IF(MSVC)
+		SET(SDL2_LIBRARY_TEMP ${SDL2_LIBRARY_TEMP} imm32 setupapi version winmm)
+	ENDIF()
+
 	# For MinGW library
 	IF(MINGW)
-		SET(SDL2_LIBRARY_TEMP ${MINGW32_LIBRARY} ${SDL2_LIBRARY_TEMP})
+		SET(SDL2_LIBRARY_TEMP ${MINGW32_LIBRARY} ${SDL2_LIBRARY_TEMP} imm32 setupapi version winmm)
 	ENDIF(MINGW)
 
 	# Set the final string here so the GUI reflects the final state.
@@ -172,7 +204,7 @@ INCLUDE(FindPackageHandleStandardArgs)
 
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(SDL2 REQUIRED_VARS SDL2_LIBRARY SDL2_INCLUDE_DIR)
 
-if(SDL2_FOUND)
+if(SDL2_FOUND AND NOT TARGET SDL2::SDL2)
 	add_library(SDL2::SDL2 INTERFACE IMPORTED)
 	set_property(TARGET SDL2::SDL2
 		PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${SDL2_INCLUDE_DIR})
