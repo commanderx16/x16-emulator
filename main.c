@@ -77,6 +77,10 @@ char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
 
+#ifdef TRACE
+bool trace_mode = false;
+uint16_t trace_address = 0;
+#endif
 
 int instruction_counter;
 FILE *prg_file ;
@@ -280,11 +284,6 @@ void initAudio()
 int
 main(int argc, char **argv)
 {
-#ifdef TRACE
-	bool trace_mode = false;
-	uint16_t trace_address = 0;
-#endif
-
 	char *rom_filename = "rom.bin";
 #ifndef VERA_V0_8
 	char *char_filename = "chargen.bin";
