@@ -12,7 +12,7 @@
 #ifndef _DEBUGGER_H
 #define _DEBUGGER_H
 
-#include <SDL2/SDL.h>
+#include "SDL.h"
 
 extern int showDebugOnRender;
 

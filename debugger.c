@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
-#include <SDL2/SDL.h>
+#include "SDL.h"
 #include "glue.h"
 #include "disasm.h"
 #include "memory.h"
