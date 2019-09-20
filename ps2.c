@@ -47,7 +47,7 @@ static int send_state = 0;
 int ps2_clk_out, ps2_data_out;
 int ps2_clk_in, ps2_data_in;
 
-int
+static int
 parity(uint8_t b)
 {
 	b ^= b >> 4;

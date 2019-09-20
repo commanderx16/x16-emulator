@@ -1,10 +1,10 @@
 project(x16emu)
 cmake_minimum_required(VERSION 3.0)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 find_package(SDL2 REQUIRED)
-if(WIN32)
-	include_directories("${CMAKE_CURRENT_LIST_DIR}/windows")
+if(MSVC)
+	include_directories("${CMAKE_CURRENT_LIST_DIR}/support/msvc/include")
 endif()
 
 set(SOURCES 
@@ -42,6 +42,6 @@ if(ROM_LABELS)
 endif()
 add_executable(x16emu ${SOURCES} ${HEADERS})
 if(NOT MSVC)
-	target_link_libraries(x16emu m)
+	target_link_libraries(x16emu PRIVATE m)
 endif()
-target_link_libraries(x16emu PUBLIC SDL2::SDL2)
+target_link_libraries(x16emu PRIVATE SDL2::SDL2)
