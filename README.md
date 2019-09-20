@@ -39,6 +39,11 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 	* `S`: speed (CPU load, frame misses)
 	* `V`: video I/O reads and writes
 * `-debug` enables the debugger.
+* `-dump` configure system dump (e.g. `-dump CB`):
+	* `C`: CPU registers (7 B: A,X,Y,SP,STATUS,PC)
+	* `R`: RAM (40 KiB)
+	* `B`: Banked RAM (2 MiB)
+	* `V`: Video RAM and registers (128 KiB VRAM, 32 B composer registers, 512 B pallete, 16 B layer0 registers, 16 B layer1 registers, 16 B sprite registers, 2 KiB sprite attributes)
 * When compiled with `#define TRACE`, `-trace` will enable an instruction trace on stdout.
 
 Run `x16emu -h` to see all command line options.
@@ -86,7 +91,7 @@ The following keys can be used for controlling games:
 
 * Ctrl + R will reset the computer.
 * Ctrl + V will paste the clipboard by injecting key presses.
-* Ctrl + S will save a memory dump (40 KB main RAM + 2 MB bankable RAM) to disk.
+* Ctrl + S will save a system dump (configurable with `-dump`) to disk.
 * Ctrl + Return will toggle full screen mode.
 
 On the Mac, use the Cmd key instead.

@@ -7,6 +7,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <SDL.h>
 #include "glue.h"
 
@@ -20,6 +21,7 @@ bool video_step(float mhz);
 bool video_update(void);
 void video_end(void);
 bool video_get_irq_out(void);
+void video_save(FILE *f);
 
 uint8_t video_read(uint8_t reg);
 void video_write(uint8_t reg, uint8_t value);
