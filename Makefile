@@ -91,14 +91,14 @@ TMPDIR_NAME=TMP-x16emu-package
 define add_extra_files_to_package
 	# ROMs
 	cp ../x16-rom/rom.bin $(TMPDIR_NAME)
-	cp ../x16-rom/rom.txt $(TMPDIR_NAME)
+	cp ../x16-rom/rom.txt $(TMPDIR_NAME)/rom.sym
 
 	# Documentation
 	mkdir $(TMPDIR_NAME)/docs
 	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="Commander X16 Emulator" README.md --output $(TMPDIR_NAME)/docs/README.html
 	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="Commander X16 KERNAL/BASIC/DOS ROM"  ../x16-rom/README.md --output $(TMPDIR_NAME)/docs/KERNAL-BASIC.html
 	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="Commander X16 Programmer's Reference Guide"  ../x16-docs/Commander\ X16\ Programmer\'s\ Reference\ Guide.md --output $(TMPDIR_NAME)/docs/Programmer\'s\ Reference\ Guide.html
-	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="VERA Programmer's Reference.md"  ../x16-docs/VERA\ Programmer\'s\ Reference.md --output $(TMPDIR_NAME)/docs/Programmer\'s\ Reference\ Guide.html
+	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="VERA Programmer's Reference.md"  ../x16-docs/VERA\ Programmer\'s\ Reference.md --output $(TMPDIR_NAME)/docs/VERA\ Programmer\'s\ Reference.html
 endef
 
 package: package_mac package_win package_linux
