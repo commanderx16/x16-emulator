@@ -27,6 +27,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
 * `-bas` lets you specify a BASIC program in ASCII format that automatically typed in (and tokenized).
 * `-run` executes the application specified through `-prg` or `-bas` using `RUN` or `SYS`, depending on the load address.
+* `-scale` scales video output to an integer multiple of 640x480
 * `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
 * `-log` enables one or more types of logging (e.g. `-log KS`):
 	* `K`: keyboard (key-up and key-down events)
@@ -182,6 +183,19 @@ All rights reserved. License: 2-clause BSD
 * RND(0) always returns 0
 
 ## Release Notes
+
+### Release 31
+
+* VERA 0.8 register layout
+* removed "-char" (character ROM is now part of rom.bin)
+* GIF recording using -gif [Neil Forbes-Richardson]
+* numpad support [Maurizio Porrato]
+* fake support of VIA timers to work around BASIC RND(0)
+* default ROM is taken from executable's directory [Michael Watters]
+* emulator window has a title [Michael Watters]
+* -debug allows specifying a breakpoint [Frank Buss]
+* package contains the ROM symbols in rom.txt
+* support for VERA SPI
 
 ### Release 30
 
