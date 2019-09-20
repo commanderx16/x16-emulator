@@ -144,6 +144,10 @@ When -debug is selected the No-Operation $FF will break into the debugger automa
 
 Effectively keyboard routines only work when the debugger is running normally. Single stepping through keyboard code will not work at present.
 
+## Wiki
+
+https://github.com/commanderx16/x16-emulator/wiki
+
 ## Features
 
 * CPU: Full 65C02 instruction set (improved "fake6502")
