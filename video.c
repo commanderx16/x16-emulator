@@ -180,9 +180,9 @@ video_init(uint8_t *in_chargen, int window_scale)
 	SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	sdlTexture = SDL_CreateTexture(renderer,
-								   SDL_PIXELFORMAT_RGB888,
-								   SDL_TEXTUREACCESS_STREAMING,
-								   SCREEN_WIDTH, SCREEN_HEIGHT);
+	                               SDL_PIXELFORMAT_RGB888,
+	                               SDL_TEXTUREACCESS_STREAMING,
+	                               SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	SDL_SetWindowTitle(window, "Commander X16");
 
@@ -212,11 +212,11 @@ ps2_scancode_from_SDLKey(SDL_Scancode k)
 		case SDL_SCANCODE_PAUSE:
 			return 0;
 		case SDL_SCANCODE_ESCAPE:
-	#ifdef ESC_IS_BREAK
+#ifdef ESC_IS_BREAK
 			return 0xff;
-	#else
+#else
 			return 0x76;
-	#endif
+#endif
 		case SDL_SCANCODE_SPACE:
 			return 0x29;
 		case SDL_SCANCODE_APOSTROPHE:
@@ -367,8 +367,8 @@ ps2_scancode_from_SDLKey(SDL_Scancode k)
 			return 0x11;
 		case SDL_SCANCODE_RALT:
 			return 0x11 | EXTENDED_FLAG;
-			//		case SDL_SCANCODE_LGUI: // Windows/Command
-			//			return 0x5b | EXTENDED_FLAG;
+//		case SDL_SCANCODE_LGUI: // Windows/Command
+//			return 0x5b | EXTENDED_FLAG;
 		case SDL_SCANCODE_NONUSBACKSLASH:
 			return 0x61;
 		case SDL_SCANCODE_KP_ENTER:
@@ -788,9 +788,9 @@ video_flush_internal(int start, int end)
 			// NTSC overscan
 			if (out_mode == 2) {
 				if (x < SCREEN_WIDTH * TITLE_SAFE_X ||
-					x > SCREEN_WIDTH * (1 - TITLE_SAFE_X) ||
-					y < SCREEN_HEIGHT * TITLE_SAFE_Y ||
-					y > SCREEN_HEIGHT * (1 - TITLE_SAFE_Y)) {
+				    x > SCREEN_WIDTH * (1 - TITLE_SAFE_X) ||
+				    y < SCREEN_HEIGHT * TITLE_SAFE_Y ||
+				    y > SCREEN_HEIGHT * (1 - TITLE_SAFE_Y)) {
 #if 1
 					r /= 3;
 					g /= 3;
@@ -945,22 +945,22 @@ video_update()
 		}
 		if (event.type == SDL_MOUSEBUTTONDOWN) {
 			switch (event.button.button) {
-			case SDL_BUTTON_LEFT:
-				mouse_button_down(0);
-				break;
-			case SDL_BUTTON_RIGHT:
-				mouse_button_down(1);
-				break;
+				case SDL_BUTTON_LEFT:
+					mouse_button_down(0);
+					break;
+				case SDL_BUTTON_RIGHT:
+					mouse_button_down(1);
+					break;
 			}
 		}
 		if (event.type == SDL_MOUSEBUTTONUP) {
 			switch (event.button.button) {
-			case SDL_BUTTON_LEFT:
-				mouse_button_up(0);
-				break;
-			case SDL_BUTTON_RIGHT:
-				mouse_button_up(1);
-				break;
+				case SDL_BUTTON_LEFT:
+					mouse_button_up(0);
+					break;
+				case SDL_BUTTON_RIGHT:
+					mouse_button_up(1);
+					break;
 			}
 		}
 		if (event.type == SDL_MOUSEMOTION) {
@@ -993,7 +993,7 @@ get_and_inc_address(uint8_t sel)
 #else
 	io_addr[sel] += io_inc[sel];
 #endif
-	//	printf("address = %06x, new = %06x\n", address, io_addr[sel]);
+//	printf("address = %06x, new = %06x\n", address, io_addr[sel]);
 	return address;
 }
 
@@ -1070,36 +1070,36 @@ video_read(uint8_t reg)
 {
 	switch (reg) {
 #ifdef VERA_V0_8
-	case 2:
+		case 2:
 #else
-	case 0:
+		case 0:
 #endif
-		return (io_addr[io_addrsel] >> 16) | (io_inc[io_addrsel] << 4);
-	case 1:
-		return (io_addr[io_addrsel] >> 8) & 0xff;
+			return (io_addr[io_addrsel] >> 16) | (io_inc[io_addrsel] << 4);
+		case 1:
+			return (io_addr[io_addrsel] >> 8) & 0xff;
 #ifdef VERA_V0_8
-	case 0:
+		case 0:
 #else
-	case 2:
+		case 2:
 #endif
-		return io_addr[io_addrsel] & 0xff;
-	case 3:
-	case 4: {
-		uint32_t address = get_and_inc_address(reg - 3);
-		uint8_t value = video_space_read(address);
-		if (log_video) {
-			printf("READ  video_space[$%x] = $%02x\n", address, value);
+			return io_addr[io_addrsel] & 0xff;
+		case 3:
+		case 4: {
+			uint32_t address = get_and_inc_address(reg - 3);
+			uint8_t value = video_space_read(address);
+			if (log_video) {
+				printf("READ  video_space[$%x] = $%02x\n", address, value);
+			}
+			return value;
 		}
-		return value;
-	case 5:
-		return io_addrsel;
-	case 6:
-		return ien;
-	case 7:
-		return isr;
-	default:
-		return 0;
-	}
+		case 5:
+			return io_addrsel;
+		case 6:
+			return ien;
+		case 7:
+			return isr;
+		default:
+			return 0;
 	}
 }
 
@@ -1109,43 +1109,43 @@ video_write(uint8_t reg, uint8_t value)
 	//	printf("ioregisters[%d] = $%02x\n", reg, value);
 	switch (reg) {
 #ifdef VERA_V0_8
-	case 2:
+		case 2:
 #else
-	case 0:
+		case 0:
 #endif
-		io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x0ffff) | ((value & 0xf) << 16);
-		io_inc[io_addrsel] = value >> 4;
-		break;
-	case 1:
-		io_addr[io_addrsel] = (io_addr[io_addrsel] & 0xf00ff) | (value << 8);
-		break;
+			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x0ffff) | ((value & 0xf) << 16);
+			io_inc[io_addrsel] = value >> 4;
+			break;
+		case 1:
+			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0xf00ff) | (value << 8);
+			break;
 #ifdef VERA_V0_8
-	case 0:
+		case 0:
 #else
-	case 2:
+		case 2:
 #endif
-		io_addr[io_addrsel] = (io_addr[io_addrsel] & 0xfff00) | value;
-		break;
-	case 3:
-	case 4: {
-		uint32_t address = get_and_inc_address(reg - 3);
-		if (log_video) {
-			printf("WRITE video_space[$%x] = $%02x\n", address, value);
+			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0xfff00) | value;
+			break;
+		case 3:
+		case 4: {
+			uint32_t address = get_and_inc_address(reg - 3);
+			if (log_video) {
+				printf("WRITE video_space[$%x] = $%02x\n", address, value);
+			}
+			video_space_write(address, value);
+			break;
 		}
-		video_space_write(address, value);
-		break;
-	case 5:
-		if (value & 0x80) {
-			video_reset();
-		}
-		io_addrsel = value & 1;
-		break;
-	case 6:
-		ien = value;
-		break;
-	case 7:
-		isr &= value ^ 0xff;
-		break;
-	}
+		case 5:
+			if (value & 0x80) {
+				video_reset();
+			}
+			io_addrsel = value & 1;
+			break;
+		case 6:
+			ien = value;
+			break;
+		case 7:
+			isr &= value ^ 0xff;
+			break;
 	}
 }
