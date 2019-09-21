@@ -12,7 +12,7 @@ Follow installation steps from [here](https://emscripten.org/docs/getting_starte
 
 This outputs the following artifacts in the build directory, which can be uploaded to any web server.
 
-	ex16mu.data x16emu.html x16emu.js x16mu.wasm x16emuworker.js
+	ex16mu.data x16emu.html x16emu.js x16mu.wasm x16emuworker.js webassembly/styles.css webassembly/heper.js
 
 ### Testing
 To run a test webserver:
@@ -22,8 +22,13 @@ To run a test webserver:
 And start [http://localhost:8080/x16emu.html](http://localhost:8080/x16emu.html)
 
 ### Supported Browsers
-Currently supported Browser is Google Chrome only.
+Working Browsers are Chrome, Safari, FireFox, Opera and Microsoft Edge (Beta)
 
-FireFox will work if SharedMemory is enabled from preferences (but comes with Security implications).
-
-Safari is not supported.
+### Known Issues
+* Speed of the webassembly emulation is lacking, compared to the native version
+* Copy Clipboard button only works on Chrome
+* Ctrl-V is not working
+* Resizing doesn't work all that well
+* No support to load PRGs
+* General keyboard input support on Mobile browsers
+   

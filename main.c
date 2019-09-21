@@ -43,7 +43,7 @@
 
 
 void* emulator_loop(void *param);
-void sdl_render_callback(void);
+void emscripten_main_loop(void);
 
 
 // This must match the KERNAL's set!
@@ -559,9 +559,7 @@ main(int argc, char **argv)
 	instruction_counter = 0;
 
 #ifdef __EMSCRIPTEN__
-	pthread_t tid;
-    pthread_create(&tid, NULL, emulator_loop, NULL);
-	emscripten_set_main_loop(sdl_render_callback, 60, 1);
+	emscripten_set_main_loop(emscripten_main_loop, 0, 1);
 #else
 	emulator_loop(NULL);
 #endif
@@ -569,13 +567,14 @@ main(int argc, char **argv)
 }
 
 void 
-sdl_render_callback(void) {
-	video_update();
+emscripten_main_loop(void) {
+	emulator_loop(NULL);
 }
+
 
 void* 
 emulator_loop(void *param)
-	{
+{
 	for (;;) {
 
 		if (debuger_enabled) {
@@ -648,11 +647,9 @@ emulator_loop(void *param)
 		instruction_counter++;
 
 		if (new_frame) {
-#ifndef __EMSCRIPTEN__
 			if (!video_update()) {
 				break;
 			}
-#endif
 
 			static int frames = 0;
 			frames++;
@@ -670,6 +667,10 @@ emulator_loop(void *param)
 				} else {
 				}
 			}
+#ifdef __EMSCRIPTEN__
+			// After completing a frame we yield back control to the browser to stay responsive
+			return 0;
+#endif
 		}
 
 		if (video_get_irq_out()) {
