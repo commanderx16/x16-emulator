@@ -87,6 +87,10 @@ FILE *prg_file ;
 int prg_override_start = -1;
 bool run_after_load = false;
 
+#ifdef WITH_YM2151
+int audio_float = 0;
+#endif
+
 #ifdef TRACE
 #include "rom_labels.h"
 char *
@@ -246,7 +250,9 @@ usage_keymap()
 #ifdef WITH_YM2151
 void audioCallback(void* userdata, Uint8 *stream, int len)
 {
-	YM_stream_update((uint16_t*) stream, len / 4);
+	len /= 4;
+	if (audio_float) len /= 2;
+	YM_stream_update(stream, len, audio_float);
 }
 
 void initAudio()
@@ -255,7 +261,7 @@ void initAudio()
 	SDL_AudioSpec have;
 
 	// init YM2151 emulation. 4 MHz clock
-	YM_Create(1.0f, 4000000);
+	YM_Create(4000000);
 	YM_init(SAMPLERATE, 60);
 
 	// setup SDL audio
@@ -265,15 +271,27 @@ void initAudio()
 	want.samples = AUDIO_SAMPLES;
 	want.callback = audioCallback;
 	want.userdata = NULL;
-	if ( SDL_OpenAudio(&want, &have) < 0 ){
-		fprintf(stderr, "SDL_OpenAudio failed: %s\n", SDL_GetError());
-		exit(-1);
+	if (SDL_OpenAudio(&want, &have) < 0) {
+		printf("SDL_OpenAudio failed: %s\n", SDL_GetError());
+		return;
 	}
 	if (want.format != have.format || want.channels != have.channels) {
-		// TODO: most soundcard should support signed 16 bit, but maybe add conversion functions
-		printf("channels: %i, format: %i\n", have.format, have.channels);
-		fprintf(stderr, "audio init failed\n");
-		exit(-1);
+		// TODO: most soundcard should support signed 16 bit, but maybe add more conversion functions
+		if (want.channels != have.channels) {
+			printf("required channels: %i, available channels: %i\n", want.channels, have.channels);
+			return;
+		}
+		if (have.format != AUDIO_F32) {
+			printf("audio init failed\n");
+			if (want.format != have.format) {
+				printf("required format: %i, available format: %i\n", want.format, have.format);
+			}
+			return;
+		}
+	}
+	if (have.format == AUDIO_F32) {
+		// the wasm target suppports only 32 bit floating point
+		audio_float = 1;
 	}
 
 	// start playback
