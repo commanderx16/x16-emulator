@@ -345,7 +345,7 @@ void initAudio()
 	}
 
 	// init YM2151 emulation. 4 MHz clock
-	YM_Create(1.0f, 4000000);
+	YM_Create(4000000);
 	YM_init(have.freq, 60);
 
 	// start playback
