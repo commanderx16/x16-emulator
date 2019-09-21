@@ -2,6 +2,8 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
+#define _XOPEN_SOURCE   600
+#define _POSIX_C_SOURCE 1
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -15,16 +17,34 @@
 #include "video.h"
 #include "via.h"
 #include "ps2.h"
+#include "spi.h"
+#include "vera_spi.h"
 #include "sdcard.h"
 #include "loadsave.h"
 #include "glue.h"
 #include "debugger.h"
 #include "utf8.h"
+#ifdef WITH_YM2151
+#include "ym2151.h"
+#endif
+
+#define AUDIO_SAMPLES 4096
+#define SAMPLERATE 22050
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <pthread.h>
+#endif
 
 #define MHZ 8
 
 //#define TRACE
 #define LOAD_HYPERCALLS
+
+
+void* emulator_loop(void *param);
+void sdl_render_callback(void);
+
 
 // This must match the KERNAL's set!
 char *keymaps[] = {
@@ -56,6 +76,16 @@ bool record_gif = false;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
+
+#ifdef TRACE
+bool trace_mode = false;
+uint16_t trace_address = 0;
+#endif
+
+int instruction_counter;
+FILE *prg_file ;
+int prg_override_start = -1;
+bool run_after_load = false;
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -213,17 +243,50 @@ usage_keymap()
 	exit(1);
 }
 
+#ifdef WITH_YM2151
+void audioCallback(void* userdata, Uint8 *stream, int len)
+{
+	YM_stream_update((uint16_t*) stream, len / 4);
+}
+
+void initAudio()
+{
+	SDL_AudioSpec want;
+	SDL_AudioSpec have;
+
+	// init YM2151 emulation. 4 MHz clock
+	YM_Create(1.0f, 4000000);
+	YM_init(SAMPLERATE, 60);
+
+	// setup SDL audio
+	want.freq = SAMPLERATE;
+	want.format = AUDIO_S16;
+	want.channels = 2;
+	want.samples = AUDIO_SAMPLES;
+	want.callback = audioCallback;
+	want.userdata = NULL;
+	if ( SDL_OpenAudio(&want, &have) < 0 ){
+		fprintf(stderr, "SDL_OpenAudio failed: %s\n", SDL_GetError());
+		exit(-1);
+	}
+	if (want.format != have.format || want.channels != have.channels) {
+		// TODO: most soundcard should support signed 16 bit, but maybe add conversion functions
+		printf("channels: %i, format: %i\n", have.format, have.channels);
+		fprintf(stderr, "audio init failed\n");
+		exit(-1);
+	}
+
+	// start playback
+	SDL_PauseAudio(0);
+}
+#endif
+
 int
 main(int argc, char **argv)
 {
-#ifdef TRACE
-	bool trace_mode = false;
-	uint16_t trace_address = 0;
-#endif
-
-	char *rom_filename = "/rom.bin";
+	char *rom_filename = "rom.bin";
 #ifndef VERA_V0_8
-	char *char_filename = "/chargen.bin";
+	char *char_filename = "chargen.bin";
 #endif
 	char rom_path_data[PATH_MAX];
 #ifndef VERA_V0_8
@@ -238,29 +301,18 @@ main(int argc, char **argv)
 	char *bas_path = NULL;
 	char *sdcard_path = NULL;
 
-	bool run_after_load = false;
+	run_after_load = false;
 
-#ifdef __APPLE__
-	// on macOS, double clicking runs an executable in the user's
-	// home directory, so we prepend the executable's path to
-	// the rom filenames
-	if (argv[0][0] == '/') {
-		*strrchr(argv[0], '/') = 0;
+	char *base_path = SDL_GetBasePath();
 
-		strncpy(rom_path, argv[0], PATH_MAX);
-		strncpy(rom_path + strlen(rom_path), rom_filename, PATH_MAX - strlen(rom_path));
+	// This causes the emulator to load ROM data from the executable's directory when
+	// no ROM file is specified on the command line.
+	memcpy(rom_path, base_path, strlen(base_path) + 1);
+	strncpy(rom_path + strlen(rom_path), rom_filename, PATH_MAX - strlen(rom_path));
 #ifndef VERA_V0_8
-		strncpy(char_path, argv[0], PATH_MAX);
-		strncpy(char_path + strlen(char_path), char_filename, PATH_MAX - strlen(char_path));
+	strncpy(char_path, base_path, PATH_MAX);
+	strncpy(char_path + strlen(char_path), char_filename, PATH_MAX - strlen(char_path));
 #endif
-	} else
-#endif
-	{
-		strncpy(rom_path, rom_filename + 1, PATH_MAX);
-#ifndef VERA_V0_8
-		strncpy(char_path, char_filename + 1, PATH_MAX);
-#endif
-	}
 
 	argc--;
 	argv++;
@@ -456,8 +508,8 @@ main(int argc, char **argv)
 		}
 	}
 
-	FILE *prg_file = NULL;
-	int prg_override_start = -1;
+	
+	prg_override_start = -1;
 	if (prg_path) {
 		char *comma = strchr(prg_path, ',');
 		if (comma) {
@@ -488,18 +540,42 @@ main(int argc, char **argv)
 		fclose(bas_file);
 	}
 
+#ifdef WITH_YM2151
+	initAudio();
+#endif
+	
 #ifdef VERA_V0_8
 	video_init(window_scale);
 #else
 	video_init(chargen, window_scale);
 #endif
-	sdcard_init();
+	spi_init();
+	vera_spi_init();
 	via1_init();
 	via2_init();
 
 	machine_reset();
 
-	int instruction_counter = 0;
+	instruction_counter = 0;
+
+#ifdef __EMSCRIPTEN__
+	pthread_t tid;
+    pthread_create(&tid, NULL, emulator_loop, NULL);
+	emscripten_set_main_loop(sdl_render_callback, 60, 1);
+#else
+	emulator_loop(NULL);
+#endif
+	return 0;
+}
+
+void 
+sdl_render_callback(void) {
+	video_update();
+}
+
+void* 
+emulator_loop(void *param)
+	{
 	for (;;) {
 
 		if (debuger_enabled) {
@@ -564,16 +640,19 @@ main(int argc, char **argv)
 		bool new_frame = false;
 		for (uint8_t i = 0; i < clocks; i++) {
 			ps2_step();
-			sdcard_step();
+			spi_step();
+			vera_spi_step();
 			new_frame |= video_step(MHZ);
 		}
 
 		instruction_counter++;
 
 		if (new_frame) {
+#ifndef __EMSCRIPTEN__
 			if (!video_update()) {
 				break;
 			}
+#endif
 
 			static int frames = 0;
 			frames++;
@@ -677,3 +756,4 @@ main(int argc, char **argv)
 
 	return 0;
 }
+

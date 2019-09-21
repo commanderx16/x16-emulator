@@ -1,0 +1,131 @@
+body {
+    background-color: #131111;
+    color: rgb(88, 77, 77);
+    font-family: 'ArialMT', 'Arial', sans-serif;
+    font-size: 15px;
+    font-stretch: normal;
+    font-style: normal;
+    font-variant: normal;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-align: center;
+}
+
+hr {
+    border: 3px solid #471a47;
+    border-radius: 4px;
+}
+
+.emscripten {
+    background-color: #131111;
+    color: mediumslateblue;
+    border-color: blue;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
+textarea.emscripten {
+    font-family: monospace;
+    width: 80%;
+}
+
+div.emscripten {
+    text-align: center;
+}
+
+div.emscripten_border {
+    border: 1px solid black;
+}
+
+
+/* the canvas *must not* have any border or padding, or mouse coords will be wrong */
+
+canvas.emscripten {
+    border: 0px none;
+    background-color: black;
+}
+
+.spinner {
+    height: 50px;
+    width: 50px;
+    margin: 0px auto;
+    -webkit-animation: rotation .8s linear infinite;
+    -moz-animation: rotation .8s linear infinite;
+    -o-animation: rotation .8s linear infinite;
+    animation: rotation 0.8s linear infinite;
+    border-left: 10px solid rgb(0, 150, 240);
+    border-right: 10px solid rgb(0, 150, 240);
+    border-bottom: 10px solid rgb(0, 150, 240);
+    border-top: 10px solid rgb(100, 0, 200);
+    border-radius: 100%;
+    background-color: rgb(200, 100, 250);
+}
+
+@-webkit-keyframes rotation {
+    from {
+        -webkit-transform: rotate(0deg);
+    }
+    to {
+        -webkit-transform: rotate(360deg);
+    }
+}
+
+@-moz-keyframes rotation {
+    from {
+        -moz-transform: rotate(0deg);
+    }
+    to {
+        -moz-transform: rotate(360deg);
+    }
+}
+
+@-o-keyframes rotation {
+    from {
+        -o-transform: rotate(0deg);
+    }
+    to {
+        -o-transform: rotate(360deg);
+    }
+}
+
+@keyframes rotation {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+button {
+    display: inline-block;
+    margin: 5px;
+    border: none;
+    padding: 1rem 2rem;
+    text-decoration: none;
+    background: #0069ed;
+    color: #ffffff;
+    font-family: sans-serif;
+    font-size: 1rem;
+    cursor: pointer;
+    text-align: center;
+    transition: background 250ms ease-in-out, transform 150ms ease;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+button:hover,
+button:focus {
+    background: #0053ba;
+}
+
+button:focus {
+    outline: 1px solid #fff;
+    outline-offset: -4px;
+}
+
+button:active {
+    transform: scale(0.99);
+}

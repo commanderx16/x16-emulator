@@ -2,11 +2,19 @@
 
 This is an emulator for the Commander X16 computer system. It only depends on SDL2 and should compile on all modern operating systems.
 
-## Binaries & Compiling
+## Binaries & Compiling 
+
+<a href="https://travis-ci.org/commanderx16/x16-emulator"><img alt="Travis (.org)" src="https://img.shields.io/travis/commanderx16/x16-emulator.svg?label=CI&logo=travis&logoColor=white&style=for-the-badge"></a>
 
 Binary releases for macOS, Windows and x86_64 Linux are available on the [releases page](https://github.com/commanderx16/x16-emulator/releases).
 
-For all other systems, make sure the development version of SDL2 is installed and type `make` to build the source. You will also need the system ROM (`rom.bin`), which you can build from the [X16 ROM source](https://github.com/commanderx16/x16-rom) or take from the *latest* binary release. (It is not always guaranteed though that the latest binary release is compatible with the current state of the emulator source.)
+To build the emulator you will need the SDL2 development package along with the [cc65](https://cc65.github.io/) assembler.  On RedHat based nodes these are provided by the SDL2-devel and cc65 packages (yum install SDL2-devel cc65).
+
+Steps for compiling WebAssembly/HTML5 can be found [here](webassembly/WebAssembly.md).
+
+You will also need the system ROM (`rom.bin`) which you can build from the [X16 ROM source](https://github.com/commanderx16/x16-rom) or take from the *latest* binary release. (It is not always guaranteed though that the latest binary release is compatible with the current state of the emulator source.)
+
+Type `make` to build the source.
 
 ## Starting
 
@@ -19,6 +27,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
 * `-bas` lets you specify a BASIC program in ASCII format that automatically typed in (and tokenized).
 * `-run` executes the application specified through `-prg` or `-bas` using `RUN` or `SYS`, depending on the load address.
+* `-scale` scales video output to an integer multiple of 640x480
 * `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
 * `-log` enables one or more types of logging (e.g. `-log KS`):
 	* `K`: keyboard (key-up and key-down events)
@@ -135,6 +144,10 @@ When -debug is selected the No-Operation $FF will break into the debugger automa
 
 Effectively keyboard routines only work when the debugger is running normally. Single stepping through keyboard code will not work at present.
 
+## Wiki
+
+https://github.com/commanderx16/x16-emulator/wiki
+
 ## Features
 
 * CPU: Full 65C02 instruction set (improved "fake6502")
@@ -174,6 +187,19 @@ All rights reserved. License: 2-clause BSD
 * RND(0) always returns 0
 
 ## Release Notes
+
+### Release 31
+
+* VERA 0.8 register layout
+* removed "-char" (character ROM is now part of rom.bin)
+* GIF recording using -gif [Neil Forbes-Richardson]
+* numpad support [Maurizio Porrato]
+* fake support of VIA timers to work around BASIC RND(0)
+* default ROM is taken from executable's directory [Michael Watters]
+* emulator window has a title [Michael Watters]
+* -debug allows specifying a breakpoint [Frank Buss]
+* package contains the ROM symbols in rom.txt
+* support for VERA SPI
 
 ### Release 30
 

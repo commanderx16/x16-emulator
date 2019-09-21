@@ -10,6 +10,9 @@
 #include "via.h"
 #include "memory.h"
 #include "video.h"
+#ifdef WITH_YM2151
+#include "ym2151.h"
+#endif
 #include "ps2.h"
 
 uint8_t ram_bank = NUM_RAM_BANKS - 1;
@@ -80,6 +83,9 @@ read6502(uint16_t address)
 void
 write6502(uint16_t address, uint8_t value)
 {
+#ifdef WITH_YM2151
+    static uint8_t lastAudioAdr = 0;
+#endif
 	if (address < 0x9f00) { // RAM
 		RAM[address] = value;
 	} else if (address < 0xa000) { // I/O
@@ -98,6 +104,12 @@ write6502(uint16_t address, uint8_t value)
 		} else if (address >= 0x9fb0 && address < 0x9fc0) {
 			// emulator state
 			emu_write(address & 0xf, value);
+#ifdef WITH_YM2151
+		} else if (address == 0x9fe0) {
+			YM_write_reg(lastAudioAdr, value);
+		} else if (address == 0x9fe1) {
+			lastAudioAdr = value;
+#endif
 		} else {
 			// future expansion
 		}
