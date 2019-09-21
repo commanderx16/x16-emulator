@@ -171,7 +171,6 @@ video_init(uint8_t *in_chargen, int window_scale, char *quality)
 
 	video_reset();
 
-	SDL_Init(SDL_INIT_VIDEO);
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, quality);
 	SDL_CreateWindowAndRenderer(SCREEN_WIDTH * window_scale, SCREEN_HEIGHT * window_scale, 0, &window, &renderer);
 #ifndef __MORPHOS__
@@ -897,7 +896,6 @@ video_end()
 
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
-	SDL_Quit();
 }
 
 

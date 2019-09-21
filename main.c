@@ -92,6 +92,11 @@ FILE *prg_file ;
 int prg_override_start = -1;
 bool run_after_load = false;
 
+#ifdef WITH_YM2151
+const char *audio_dev_name = NULL;
+SDL_AudioDeviceID audio_dev;
+#endif
+
 #ifdef TRACE
 #include "rom_labels.h"
 char *
@@ -273,7 +278,10 @@ usage()
 	printf("-dump {C|R|B|V}...\n");
 	printf("\tConfigure system dump: (C)PU, (R)AM, (B)anked-RAM, (V)RAM\n");
 	printf("\tMultiple characters are possible, e.g. -dump CV ; Default: RB\n");
-
+#ifdef WITH_YM2151
+	printf("-sound <output device>\n");
+	printf("\tSet the output device used for audio emulation");
+#endif
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
@@ -299,35 +307,54 @@ void audioCallback(void* userdata, Uint8 *stream, int len)
 	YM_stream_update((uint16_t*) stream, len / 4);
 }
 
+void usageSound()
+{
+	// SDL_GetAudioDeviceName doesn't work if audio isn't initialized.
+	// Since argument parsing happens before initializing SDL, ensure the
+	// audio subsystem is initialized before printing audio device names.
+	SDL_InitSubSystem(SDL_INIT_AUDIO);
+
+	// List all available sound devices
+	printf("The following sound output devices are available:\n");
+	const int sounds = SDL_GetNumAudioDevices(0);
+	for (int i=0; i < sounds; ++i) {
+		printf("\t%s\n", SDL_GetAudioDeviceName(i, 0));
+	}
+
+	SDL_Quit();
+	exit(1);
+}
+
 void initAudio()
 {
 	SDL_AudioSpec want;
 	SDL_AudioSpec have;
 
-	// init YM2151 emulation. 4 MHz clock
-	YM_Create(1.0f, 4000000);
-	YM_init(SAMPLERATE, 60);
-
 	// setup SDL audio
 	want.freq = SAMPLERATE;
-	want.format = AUDIO_S16;
+	want.format = AUDIO_S16SYS;
 	want.channels = 2;
 	want.samples = AUDIO_SAMPLES;
 	want.callback = audioCallback;
 	want.userdata = NULL;
-	if ( SDL_OpenAudio(&want, &have) < 0 ){
-		fprintf(stderr, "SDL_OpenAudio failed: %s\n", SDL_GetError());
-		exit(-1);
-	}
-	if (want.format != have.format || want.channels != have.channels) {
-		// TODO: most soundcard should support signed 16 bit, but maybe add conversion functions
-		printf("channels: %i, format: %i\n", have.format, have.channels);
-		fprintf(stderr, "audio init failed\n");
+	audio_dev = SDL_OpenAudioDevice(audio_dev_name, 0, &want, &have, 9 /* freq | samples */);
+	if ( audio_dev <= 0 ){
+		fprintf(stderr, "SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
+		if (audio_dev_name != NULL) usageSound();
 		exit(-1);
 	}
 
+	// init YM2151 emulation. 4 MHz clock
+	YM_Create(1.0f, 4000000);
+	YM_init(have.freq, 60);
+
 	// start playback
-	SDL_PauseAudio(0);
+	SDL_PauseAudioDevice(audio_dev, 0);
+}
+
+void closeAudio()
+{
+	SDL_CloseAudioDevice(audio_dev);
 }
 #endif
 
@@ -514,7 +541,6 @@ main(int argc, char **argv)
 				argv++;
 			}
 #ifdef TRACE
-
 		} else if (!strcmp(argv[0], "-trace")) {
 			argc--;
 			argv++;
@@ -569,6 +595,17 @@ main(int argc, char **argv)
 			}
 			argc--;
 			argv++;
+#ifdef WITH_YM2151
+		} else if (!strcmp(argv[0], "-sound")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usageSound();
+			}
+			audio_dev_name = argv[0];
+			argc--;
+			argv++;
+#endif
 		} else {
 			usage();
 		}
@@ -635,10 +672,16 @@ main(int argc, char **argv)
 		fclose(bas_file);
 	}
 
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS
+#ifdef WITH_YM2151
+		| SDL_INIT_AUDIO
+#endif
+		);
+
 #ifdef WITH_YM2151
 	initAudio();
 #endif
-	
+
 #ifdef VERA_V0_8
 	video_init(window_scale, scale_quality);
 #else
@@ -658,6 +701,12 @@ main(int argc, char **argv)
 #else
 	emulator_loop(NULL);
 #endif
+
+#ifdef WITH_YM2151
+	closeAudio();
+#endif
+	video_end();
+	SDL_Quit();
 	return 0;
 }
 
@@ -847,8 +896,6 @@ emulator_loop(void *param)
 			}
 		}
 	}
-
-	video_end();
 
 	return 0;
 }
