@@ -1106,7 +1106,7 @@ video_read(uint8_t reg)
 void
 video_write(uint8_t reg, uint8_t value)
 {
-	//	printf("ioregisters[%d] = $%02x\n", reg, value);
+//	printf("ioregisters[%d] = $%02x\n", reg, value);
 	switch (reg) {
 #ifdef VERA_V0_8
 		case 2:
