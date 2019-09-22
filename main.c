@@ -24,6 +24,7 @@
 #include "glue.h"
 #include "debugger.h"
 #include "utf8.h"
+#include "echochar.h"
 #ifdef WITH_YM2151
 #include "ym2151.h"
 #endif
@@ -788,11 +789,7 @@ emulator_loop(void *param)
 		}
 
 		if (echo_mode && pc == 0xffd2 && is_kernal()) {
-			uint8_t c = a;
-			if (c == 13) {
-				c = 10;
-			}
-			printf("%c", c);
+			echochar(a);
 		}
 
 		if (pc == 0xffcf && is_kernal()) {
