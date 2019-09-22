@@ -70,6 +70,10 @@ bool pasting_bas = false;
 bool log_video = false;
 bool log_speed = false;
 bool log_keyboard = false;
+bool dump_cpu = false;
+bool dump_ram = true;
+bool dump_bank = true;
+bool dump_vram = false;
 bool echo_mode = false;
 bool save_on_exit = true;
 bool record_gif = false;
@@ -101,6 +105,46 @@ label_for_address(uint16_t address)
 	return NULL;
 }
 #endif
+
+void
+machine_dump()
+{
+	int index = 0;
+	char filename[22];
+	for (;;) {
+		if (!index) {
+			strcpy(filename, "dump.bin");
+		} else {
+			sprintf(filename, "dump-%i.bin", index);
+		}
+		if (access(filename, F_OK) == -1) {
+			break;
+		}
+		index++;
+	}
+	FILE *f = fopen(filename, "wb");
+	if (!f) {
+		printf("Cannot write to %s!\n", filename);
+		return;
+	}
+
+    if (dump_cpu) {
+        fwrite(&a, sizeof(uint8_t), 1, f);
+        fwrite(&x, sizeof(uint8_t), 1, f);
+        fwrite(&y, sizeof(uint8_t), 1, f);
+        fwrite(&sp, sizeof(uint8_t), 1, f);
+        fwrite(&status, sizeof(uint8_t), 1, f);
+        fwrite(&pc, sizeof(uint16_t), 1, f);
+    }
+    memory_save(f, dump_ram, dump_bank);
+
+	if (dump_vram) {
+		video_save(f);
+	}
+
+	fclose(f);
+	printf("Dumped system to %s.\n", filename);
+}
 
 void
 machine_reset()
@@ -220,12 +264,16 @@ usage()
 	printf("\tMultiple characters are possible, e.g. -log KS\n");
 	printf("-gif <file.gif>\n");
 	printf("\tRecord a gif for the video output.\n");
-	printf("-debug [<address>]\n");
-	printf("\tEnable debugger. Optionally, set a breakpoint\n");
 	printf("-scale {1|2|3|4}\n");
 	printf("\tScale output to an integer multiple of 640x480\n");
 	printf("-quality {nearest|linear|best}\n");
 	printf("\tScaling algorithm quality\n");
+	printf("-debug [<address>]\n");
+	printf("\tEnable debugger. Optionally, set a breakpoint\n");
+	printf("-dump {C|R|B|V}...\n");
+	printf("\tConfigure system dump: (C)PU, (R)AM, (B)anked-RAM, (V)RAM\n");
+	printf("\tMultiple characters are possible, e.g. -dump CV ; Default: RB\n");
+
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
@@ -409,6 +457,36 @@ main(int argc, char **argv)
 						break;
 					case 'v':
 						log_video = true;
+						break;
+					default:
+						usage();
+				}
+			}
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-dump")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			dump_cpu = false;
+			dump_ram = false;
+			dump_bank = false;
+			dump_vram = false;
+			for (char *p = argv[0]; *p; p++) {
+				switch (tolower(*p)) {
+					case 'c':
+						dump_cpu = true;
+						break;
+					case 'r':
+						dump_ram = true;
+						break;
+					case 'b':
+						dump_bank = true;
+						break;
+					case 'v':
+						dump_vram = true;
 						break;
 					default:
 						usage();
@@ -704,7 +782,7 @@ emulator_loop(void *param)
 
 		if (pc == 0xffff) {
 			if (save_on_exit) {
-				memory_save();
+				machine_dump();
 			}
 			break;
 		}
