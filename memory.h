@@ -5,11 +5,13 @@
 #ifndef _MEMORY_H_
 #define _MEMORY_H_
 
+#include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 uint8_t read6502(uint16_t address);
 
-void memory_save();
+void memory_save(FILE *f, bool dump_ram, bool dump_bank);
 
 void memory_set_ram_bank(uint8_t bank);
 void memory_set_rom_bank(uint8_t bank);

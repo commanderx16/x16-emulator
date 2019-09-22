@@ -30,6 +30,7 @@ extern bool record_gif;
 extern char *gif_path;
 extern uint8_t keymap;
 
+extern void machine_dump();
 extern void machine_reset();
 extern void machine_paste();
 

@@ -5,7 +5,6 @@
 #include <sys/types.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdio.h>
 #include "glue.h"
 #include "via.h"
 #include "memory.h"
@@ -121,38 +120,24 @@ write6502(uint16_t address, uint8_t value)
 }
 
 //
-//
+// saves the memory content into a file
 //
 
 void
-memory_save()
+memory_save(FILE *f, bool dump_ram, bool dump_bank)
 {
-	int index = 0;
-	char filename[22];
-	for (;;) {
-		if (!index) {
-			strcpy(filename, "memory.bin");
-		} else {
-			sprintf(filename, "memory-%i.bin", index);
-		}
-		if (access(filename, F_OK) == -1) {
-			break;
-		}
-		index++;
+	if (dump_ram) {
+		fwrite(&RAM[0], sizeof(uint8_t), 0xa000, f);
 	}
-	FILE *f = fopen(filename, "wb");
-	if (!f) {
-		printf("Cannot write to %s!\n", filename);
-		return;
+	if (dump_bank) {
+		fwrite(&RAM[0xa000], sizeof(uint8_t), (NUM_RAM_BANKS * 8192), f);
 	}
-	fwrite(RAM, RAM_SIZE, 1, f);
-	fclose(f);
-	printf("Saved memory contents to %s.\n", filename);
 }
 
-//
-//
-//
+
+///
+///
+///
 
 void
 memory_set_ram_bank(uint8_t bank)
