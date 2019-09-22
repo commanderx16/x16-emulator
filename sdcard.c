@@ -6,6 +6,7 @@
 #include "sdcard.h"
 
 static int cmd_receive_counter;
+FILE *sdcard_file = NULL;
 
 void
 sdcard_select()
