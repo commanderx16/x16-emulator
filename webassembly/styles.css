@@ -157,18 +157,20 @@ body {
 .output-container {
     flex-grow: 100;
     margin-top: 30px;
+    overflow-x: auto;
+    overflow-y: auto;
+    background: #000;
+    color: #999;
+    width: 640px;
 
 }
 #output {
 
-    background: #000;
-    color: #999;
+
     margin: 0;
-    height: 100%;
-    width: 640px;
-    overflow: hidden;
-    overflow-x: auto;
-    overflow-y: auto;
+    min-height: 100%;
+
+
 
 
 }
