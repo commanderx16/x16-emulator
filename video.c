@@ -160,9 +160,9 @@ video_reset()
 
 bool
 #ifdef VERA_V0_8
-video_init(int window_scale)
+video_init(int window_scale, char *quality)
 #else
-video_init(uint8_t *in_chargen, int window_scale)
+video_init(uint8_t *in_chargen, int window_scale, char *quality)
 #endif
 {
 #ifndef VERA_V0_8
@@ -173,6 +173,7 @@ video_init(uint8_t *in_chargen, int window_scale)
 	video_reset();
 
 	SDL_Init(SDL_INIT_VIDEO);
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, quality);
 	SDL_CreateWindowAndRenderer(SCREEN_WIDTH * window_scale, SCREEN_HEIGHT * window_scale, 0, &window, &renderer);
 #ifndef __MORPHOS__
 	SDL_SetWindowResizable(window, true);

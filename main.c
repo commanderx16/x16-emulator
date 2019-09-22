@@ -76,6 +76,7 @@ bool record_gif = false;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
+char *scale_quality = "best";
 
 #ifdef TRACE
 bool trace_mode = false;
@@ -223,7 +224,8 @@ usage()
 	printf("\tEnable debugger. Optionally, set a breakpoint\n");
 	printf("-scale {1|2|3|4}\n");
 	printf("\tScale output to an integer multiple of 640x480\n");
-	printf("\tEnable debugger.\n");
+	printf("-quality {nearest|linear|best}\n");
+	printf("\tScaling algorithm quality\n");
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
@@ -474,6 +476,21 @@ main(int argc, char **argv)
 			}
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-quality")) {
+			argc--;
+			argv++;
+			if(!argc || argv[0][0] == '-') {
+				usage();
+			}
+			if (!strcmp(argv[0], "nearest") ||
+			    !strcmp(argv[0], "linear") ||
+			    !strcmp(argv[0], "best")) {
+				scale_quality = argv[0];
+			} else {
+				usage();
+			}
+			argc--;
+			argv++;
 		} else {
 			usage();
 		}
@@ -545,9 +562,9 @@ main(int argc, char **argv)
 #endif
 	
 #ifdef VERA_V0_8
-	video_init(window_scale);
+	video_init(window_scale, scale_quality);
 #else
-	video_init(chargen, window_scale);
+	video_init(chargen, window_scale, scale_quality);
 #endif
 	spi_init();
 	vera_spi_init();
