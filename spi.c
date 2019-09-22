@@ -18,7 +18,6 @@
 // CB1 SPICLK (=PB0)
 // CB2 MISO
 
-FILE *sdcard_file = NULL;
 
 static bool initialized;
 
