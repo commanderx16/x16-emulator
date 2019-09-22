@@ -51,7 +51,7 @@
 
 
 void* emulator_loop(void *param);
-void sdl_render_callback(void);
+void emscripten_main_loop(void);
 
 
 // This must match the KERNAL's set!
@@ -78,13 +78,22 @@ bool pasting_bas = false;
 bool log_video = false;
 bool log_speed = false;
 bool log_keyboard = false;
+bool dump_cpu = false;
+bool dump_ram = true;
+bool dump_bank = true;
+bool dump_vram = false;
 bool echo_mode = false;
 bool save_on_exit = true;
 bool record_gif = false;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
+char *scale_quality = "best";
 
+#ifdef TRACE
+bool trace_mode = false;
+uint16_t trace_address = 0;
+#endif
 
 int instruction_counter;
 FILE *prg_file ;
@@ -104,6 +113,46 @@ label_for_address(uint16_t address)
 	return NULL;
 }
 #endif
+
+void
+machine_dump()
+{
+	int index = 0;
+	char filename[22];
+	for (;;) {
+		if (!index) {
+			strcpy(filename, "dump.bin");
+		} else {
+			sprintf(filename, "dump-%i.bin", index);
+		}
+		if (access(filename, F_OK) == -1) {
+			break;
+		}
+		index++;
+	}
+	FILE *f = fopen(filename, "wb");
+	if (!f) {
+		printf("Cannot write to %s!\n", filename);
+		return;
+	}
+
+    if (dump_cpu) {
+        fwrite(&a, sizeof(uint8_t), 1, f);
+        fwrite(&x, sizeof(uint8_t), 1, f);
+        fwrite(&y, sizeof(uint8_t), 1, f);
+        fwrite(&sp, sizeof(uint8_t), 1, f);
+        fwrite(&status, sizeof(uint8_t), 1, f);
+        fwrite(&pc, sizeof(uint16_t), 1, f);
+    }
+    memory_save(f, dump_ram, dump_bank);
+
+	if (dump_vram) {
+		video_save(f);
+	}
+
+	fclose(f);
+	printf("Dumped system to %s.\n", filename);
+}
 
 void
 machine_reset()
@@ -223,11 +272,16 @@ usage()
 	printf("\tMultiple characters are possible, e.g. -log KS\n");
 	printf("-gif <file.gif>\n");
 	printf("\tRecord a gif for the video output.\n");
-	printf("-debug [<address>]\n");
-	printf("\tEnable debugger. Optionally, set a breakpoint\n");
 	printf("-scale {1|2|3|4}\n");
 	printf("\tScale output to an integer multiple of 640x480\n");
-	printf("\tEnable debugger.\n");
+	printf("-quality {nearest|linear|best}\n");
+	printf("\tScaling algorithm quality\n");
+	printf("-debug [<address>]\n");
+	printf("\tEnable debugger. Optionally, set a breakpoint\n");
+	printf("-dump {C|R|B|V}...\n");
+	printf("\tConfigure system dump: (C)PU, (R)AM, (B)anked-RAM, (V)RAM\n");
+	printf("\tMultiple characters are possible, e.g. -dump CV ; Default: RB\n");
+
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
@@ -288,14 +342,9 @@ void initAudio()
 int
 main(int argc, char **argv)
 {
-#ifdef TRACE
-	bool trace_mode = false;
-	uint16_t trace_address = 0;
-#endif
-
-	char *rom_filename = "/rom.bin";
+	char *rom_filename = "rom.bin";
 #ifndef VERA_V0_8
-	char *char_filename = "/chargen.bin";
+	char *char_filename = "chargen.bin";
 #endif
 	char rom_path_data[PATH_MAX];
 #ifndef VERA_V0_8
@@ -312,27 +361,16 @@ main(int argc, char **argv)
 
 	run_after_load = false;
 
-#ifdef __APPLE__
-	// on macOS, double clicking runs an executable in the user's
-	// home directory, so we prepend the executable's path to
-	// the rom filenames
-	if (argv[0][0] == '/') {
-		*strrchr(argv[0], '/') = 0;
+	char *base_path = SDL_GetBasePath();
 
-		strncpy(rom_path, argv[0], PATH_MAX);
-		strncpy(rom_path + strlen(rom_path), rom_filename, PATH_MAX - strlen(rom_path));
+	// This causes the emulator to load ROM data from the executable's directory when
+	// no ROM file is specified on the command line.
+	memcpy(rom_path, base_path, strlen(base_path) + 1);
+	strncpy(rom_path + strlen(rom_path), rom_filename, PATH_MAX - strlen(rom_path));
 #ifndef VERA_V0_8
-		strncpy(char_path, argv[0], PATH_MAX);
-		strncpy(char_path + strlen(char_path), char_filename, PATH_MAX - strlen(char_path));
+	strncpy(char_path, base_path, PATH_MAX);
+	strncpy(char_path + strlen(char_path), char_filename, PATH_MAX - strlen(char_path));
 #endif
-	} else
-#endif
-	{
-		strncpy(rom_path, rom_filename + 1, PATH_MAX);
-#ifndef VERA_V0_8
-		strncpy(char_path, char_filename + 1, PATH_MAX);
-#endif
-	}
 
 	argc--;
 	argv++;
@@ -434,6 +472,36 @@ main(int argc, char **argv)
 			}
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-dump")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			dump_cpu = false;
+			dump_ram = false;
+			dump_bank = false;
+			dump_vram = false;
+			for (char *p = argv[0]; *p; p++) {
+				switch (tolower(*p)) {
+					case 'c':
+						dump_cpu = true;
+						break;
+					case 'r':
+						dump_ram = true;
+						break;
+					case 'b':
+						dump_bank = true;
+						break;
+					case 'v':
+						dump_vram = true;
+						break;
+					default:
+						usage();
+				}
+			}
+			argc--;
+			argv++;
 		} else if (!strcmp(argv[0], "-gif")) {
 			argc--;
 			argv++;
@@ -491,6 +559,21 @@ main(int argc, char **argv)
 				default:
 					usage();
 				}
+			}
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-quality")) {
+			argc--;
+			argv++;
+			if(!argc || argv[0][0] == '-') {
+				usage();
+			}
+			if (!strcmp(argv[0], "nearest") ||
+			    !strcmp(argv[0], "linear") ||
+			    !strcmp(argv[0], "best")) {
+				scale_quality = argv[0];
+			} else {
+				usage();
 			}
 			argc--;
 			argv++;
@@ -565,9 +648,9 @@ main(int argc, char **argv)
 #endif
 	
 #ifdef VERA_V0_8
-	video_init(window_scale);
+	video_init(window_scale, scale_quality);
 #else
-	video_init(chargen, window_scale);
+	video_init(chargen, window_scale, scale_quality);
 #endif
 	spi_init();
 	vera_spi_init();
@@ -579,9 +662,7 @@ main(int argc, char **argv)
 	instruction_counter = 0;
 
 #ifdef __EMSCRIPTEN__
-	pthread_t tid;
-    pthread_create(&tid, NULL, emulator_loop, NULL);
-	emscripten_set_main_loop(sdl_render_callback, 60, 1);
+	emscripten_set_main_loop(emscripten_main_loop, 0, 1);
 #else
 	emulator_loop(NULL);
 #endif
@@ -589,13 +670,14 @@ main(int argc, char **argv)
 }
 
 void 
-sdl_render_callback(void) {
-	video_update();
+emscripten_main_loop(void) {
+	emulator_loop(NULL);
 }
+
 
 void* 
 emulator_loop(void *param)
-	{
+{
 	for (;;) {
 
 		if (debuger_enabled) {
@@ -668,11 +750,9 @@ emulator_loop(void *param)
 		instruction_counter++;
 
 		if (new_frame) {
-#ifndef __EMSCRIPTEN__
 			if (!video_update()) {
 				break;
 			}
-#endif
 
 			static int frames = 0;
 			frames++;
@@ -694,6 +774,10 @@ emulator_loop(void *param)
 				} else {
 				}
 			}
+#ifdef __EMSCRIPTEN__
+			// After completing a frame we yield back control to the browser to stay responsive
+			return 0;
+#endif
 		}
 
 		if (video_get_irq_out()) {
@@ -710,7 +794,7 @@ emulator_loop(void *param)
 
 		if (pc == 0xffff) {
 			if (save_on_exit) {
-				memory_save();
+				machine_dump();
 			}
 			break;
 		}

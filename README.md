@@ -27,12 +27,23 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
 * `-bas` lets you specify a BASIC program in ASCII format that automatically typed in (and tokenized).
 * `-run` executes the application specified through `-prg` or `-bas` using `RUN` or `SYS`, depending on the load address.
+* `-scale` scales video output to an integer multiple of 640x480
 * `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
+* `-scale` scales video output to an integer multiple of 640x480
+* `-quality` change image scaling algorithm quality
+	* `nearest`: nearest pixel sampling
+	* `linear`: linear filtering
+	* `best`: (default) anisotropic filtering
 * `-log` enables one or more types of logging (e.g. `-log KS`):
 	* `K`: keyboard (key-up and key-down events)
 	* `S`: speed (CPU load, frame misses)
 	* `V`: video I/O reads and writes
 * `-debug` enables the debugger.
+* `-dump` configure system dump (e.g. `-dump CB`):
+	* `C`: CPU registers (7 B: A,X,Y,SP,STATUS,PC)
+	* `R`: RAM (40 KiB)
+	* `B`: Banked RAM (2 MiB)
+	* `V`: Video RAM and registers (128 KiB VRAM, 32 B composer registers, 512 B pallete, 16 B layer0 registers, 16 B layer1 registers, 16 B sprite registers, 2 KiB sprite attributes)
 * When compiled with `#define TRACE`, `-trace` will enable an instruction trace on stdout.
 
 Run `x16emu -h` to see all command line options.
@@ -80,7 +91,7 @@ The following keys can be used for controlling games:
 
 * Ctrl + R will reset the computer.
 * Ctrl + V will paste the clipboard by injecting key presses.
-* Ctrl + S will save a memory dump (40 KB main RAM + 2 MB bankable RAM) to disk.
+* Ctrl + S will save a system dump (configurable with `-dump`) to disk.
 * Ctrl + Return will toggle full screen mode.
 
 On the Mac, use the Cmd key instead.
@@ -143,6 +154,10 @@ When -debug is selected the No-Operation $FF will break into the debugger automa
 
 Effectively keyboard routines only work when the debugger is running normally. Single stepping through keyboard code will not work at present.
 
+## Wiki
+
+https://github.com/commanderx16/x16-emulator/wiki
+
 ## Features
 
 * CPU: Full 65C02 instruction set (improved "fake6502")
@@ -182,6 +197,19 @@ All rights reserved. License: 2-clause BSD
 * RND(0) always returns 0
 
 ## Release Notes
+
+### Release 31
+
+* VERA 0.8 register layout
+* removed "-char" (character ROM is now part of rom.bin)
+* GIF recording using -gif [Neil Forbes-Richardson]
+* numpad support [Maurizio Porrato]
+* fake support of VIA timers to work around BASIC RND(0)
+* default ROM is taken from executable's directory [Michael Watters]
+* emulator window has a title [Michael Watters]
+* -debug allows specifying a breakpoint [Frank Buss]
+* package contains the ROM symbols in rom.txt
+* support for VERA SPI
 
 ### Release 30
 

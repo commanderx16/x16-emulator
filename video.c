@@ -2,7 +2,6 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
-#include <stdio.h>
 #include "video.h"
 #include "memory.h"
 #include "ps2.h"
@@ -160,9 +159,9 @@ video_reset()
 
 bool
 #ifdef VERA_V0_8
-video_init(int window_scale)
+video_init(int window_scale, char *quality)
 #else
-video_init(uint8_t *in_chargen, int window_scale)
+video_init(uint8_t *in_chargen, int window_scale, char *quality)
 #endif
 {
 #ifndef VERA_V0_8
@@ -173,6 +172,7 @@ video_init(uint8_t *in_chargen, int window_scale)
 	video_reset();
 
 	SDL_Init(SDL_INIT_VIDEO);
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, quality);
 	SDL_CreateWindowAndRenderer(SCREEN_WIDTH * window_scale, SCREEN_HEIGHT * window_scale, 0, &window, &renderer);
 #ifndef __MORPHOS__
 	SDL_SetWindowResizable(window, true);
@@ -183,6 +183,8 @@ video_init(uint8_t *in_chargen, int window_scale)
 				       SDL_PIXELFORMAT_RGB888,
 				       SDL_TEXTUREACCESS_STREAMING,
 				       SCREEN_WIDTH, SCREEN_HEIGHT);
+
+	SDL_SetWindowTitle(window, "Commander X16");
 
 	if (record_gif) {
 		record_gif = GifBegin(&gif_writer, gif_path, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 8, false);
@@ -744,6 +746,21 @@ video_get_irq_out()
 	return isr > 0;
 }
 
+//
+// saves the video memory and register content into a file
+//
+
+void
+video_save(FILE *f)
+{
+	fwrite(&video_ram[0], sizeof(uint8_t), sizeof(video_ram), f);
+	fwrite(&reg_composer[0], sizeof(uint8_t), sizeof(reg_composer), f);
+	fwrite(&palette[0], sizeof(uint8_t), sizeof(palette), f);
+	fwrite(&reg_layer[0][0], sizeof(uint8_t), sizeof(reg_layer), f);
+	fwrite(&reg_sprites[0], sizeof(uint8_t), sizeof(reg_sprites), f);
+	fwrite(&sprite_data[0], sizeof(uint8_t), sizeof(sprite_data), f);
+}
+
 static void
 video_flush()
 {
@@ -786,7 +803,7 @@ video_update()
 			bool consumed = false;
 			if (cmd_down) {
 				if (event.key.keysym.sym == SDLK_s) {
-					memory_save();
+					machine_dump();
 					consumed = true;
 				} else if (event.key.keysym.sym == SDLK_r) {
 					machine_reset();
@@ -882,6 +899,7 @@ video_end()
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 }
+
 
 uint32_t
 get_and_inc_address(uint8_t sel)
