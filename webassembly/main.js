@@ -133,7 +133,7 @@ function resetEmulator() {
 
 function runCode() {
 
-    Module.ccall("j2c_paste", "void", ["string"], [code.value + '\nRUN\n']);
+    Module.ccall("j2c_paste", "void", ["string"], ['\nNEW\n'+ code.value + '\nRUN\n']);
     canvas.focus();
 
 }
