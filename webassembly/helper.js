@@ -15,7 +15,7 @@ mergeInto(LibraryManager.library, {
 
 
 /********** Javascript -> C **********/
-// Functions exposed by the native emulator that can be calle from Javascript
+// Functions exposed by the native emulator that can be called from Javascript
 
 
 // Paste the current clipboard to the emulator

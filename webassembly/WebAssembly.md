@@ -12,7 +12,7 @@ Follow installation steps from [here](https://emscripten.org/docs/getting_starte
 
 This outputs the following artifacts in the build directory, which can be uploaded to any web server.
 
-	ex16mu.data x16emu.html x16emu.js x16mu.wasm x16emuworker.js webassembly/styles.css webassembly/heper.js
+	ex16mu.data x16emu.html x16emu.js x16mu.wasm x16emuworker.js
 
 ### Testing
 To run a test webserver:
@@ -21,14 +21,13 @@ To run a test webserver:
 
 And start [http://localhost:8080/x16emu.html](http://localhost:8080/x16emu.html)
 
-### Supported Browsers
-Working Browsers are Chrome, Safari, FireFox, Opera and Microsoft Edge (Beta)
+Note: You will get the error `wasm streaming compile failed: TypeError: Failed to execute 'compile' on 'WebAssembly'...` 
+This is because SimpleHTTPServer does not serve .wasm files with the correct mime type. don't worry, everything will still work fine though.
 
-### Known Issues
-* Speed of the webassembly emulation is lacking, compared to the native version
-* Copy Clipboard button only works on Chrome
-* Ctrl-V is not working
-* Resizing doesn't work all that well
-* No support to load PRGs
-* General keyboard input support on Mobile browsers
-   
+### Supported Browsers
+Working on the latest versions of:
+* Chrome (including Android)
+* Edge
+* Firefox
+
+IE and Safari are not supported.
