@@ -146,7 +146,7 @@ int32_t        dt1_freq[8*32];      /* 8 DT1 levels, 32 KC values */
 uint32_t       noise_tab[32];       /* 17bit Noise Generator periods */
 
 
-#define M_PI             3.14159265358979323846
+#define PI               3.14159265358979323846
 
 #define FREQ_SH          16  /* 16.16 fixed point (frequency calculations) */
 #define EG_SH            16  /* 16.16 fixed point (envelope generator timing) */
@@ -505,7 +505,7 @@ void YM_init_tables()
     for (i=0; i<SIN_LEN; i++)
     {
         /* non-standard sinus */
-        m = sin( ((i*2)+1) * M_PI / SIN_LEN ); /* verified on the real chip */
+        m = sin( ((i*2)+1) * PI / SIN_LEN ); /* verified on the real chip */
 
         /* we never reach zero here due to ((i*2)+1) */
 
