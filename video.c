@@ -1044,7 +1044,7 @@ video_space_write(uint32_t address, uint8_t value)
 		refresh_layer_properties(0);
 	} else if (address >= ADDR_LAYER2_START && address < ADDR_LAYER2_END) {
 		reg_layer[1][address & 0xf] = value;
-		refresh_layer_properties(0);
+		refresh_layer_properties(1);
 	} else if (address >= ADDR_SPRITES_START && address < ADDR_SPRITES_END) {
 		reg_sprites[address & 0xf] = value;
 	} else if (address >= ADDR_COMPOSER_START && address < ADDR_COMPOSER_END) {
