@@ -6,13 +6,13 @@ void echochar(uint8_t c) {
 	static int shifted = 0; /* 0: Unshifted, 1: Shifted */
 	if ((0x00 <= c && c <= 0x1F) || (0x80 <= c && c <= 0x9F)) {
 		switch (c) { 
-			case 0x0C: printf("\x0A"); break;
+			case 0x0C: printf("\n\n"); break;
 			case 0x0E: shifted = 1; break;
 			case 0x0F: mode = 1; shifted = 1; break;
 			case 0x13: printf("\e[H"); break;
 			case 0x8E: shifted = 0; break;
 			case 0x8F: mode = 0; shifted = 0; break;
-			case 0x93: /*printf("\e[2J")*/; break;
+			case 0x93: printf("\e[2J"); break;
 			default: printf("%c", c);
 		}
 	} else {
