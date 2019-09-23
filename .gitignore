@@ -7,6 +7,7 @@ rom_labels.h
 rom.bin
 chargen.bin
 .vscode/
+.idea/
 x16emu.data
 x16emu.html
 x16emu.html.mem
