@@ -11,28 +11,28 @@ void echochar(uint8_t c) {
         static int color = 37;
 	if ((0x00 <= c && c <= 0x1F) || (0x80 <= c && c <= 0x9F)) {
 		switch (c) {
-                        case 0x05: prtflush("\e[37m"); color = 37; break; /* white */
+			case 0x05: prtflush("\e[37m"); color = 37; break; /* white */
 			case 0x0A: prtflush("\e[0m"); color = 37; break; /* This might be compensation due to bug in emulator */
 			case 0x0D: prtflush("\n\e[0m"); color = 37; break; /* This might be compensation due to bug in emulator */
 			case 0x0E: shifted = 1; break;    /* lower case */
 			case 0x0F: mode = 1; shifted = 1; break;
 			case 0x11: prtflush("\e[B"); break; /* down */
-                        case 0x12: prtflush("\e[7m"); break; /* reverse on */
+			case 0x12: prtflush("\e[7m"); break; /* reverse on */
 			case 0x13: prtflush("\e[H"); break; /* home */
-                        case 0x1C: prtflush("\e[31m"); color = 31; break; /* red */
+			case 0x1C: prtflush("\e[31m"); color = 31; break; /* red */
 			case 0x1D: prtflush("\e[C"); break; /* forward */
-                        case 0x1E: prtflush("\e[32m"); color = 32; break; /* green */
-                        case 0x81: prtflush("\e[33m"); color = 33; break; /* orange */
+			case 0x1E: prtflush("\e[32m"); color = 32; break; /* green */
+			case 0x81: prtflush("\e[33m"); color = 33; break; /* orange */
 			case 0x8E: shifted = 0; break;    /* upper case */
 			case 0x8F: mode = 0; shifted = 0; break;
 			case 0x91: prtflush("\e[A"); break; /* up */
-                        case 0x92:
+			case 0x92:
 				prtflush("\e[0;");
 				prtnumflush("%d", color);
 				prtflush("m");
 				break; /* reverse off */
 			case 0x93: prtflush("\e[2J\e[H"); break; /* clr */
-                        case 0x9A: prtflush("\e[34m"); color = 34; break; /* blue */
+			case 0x9A: prtflush("\e[34m"); color = 34; break; /* blue */
 			case 0x9C: prtflush("\e[35m"); color = 35; break; /* purple */
 			case 0x9D: prtflush("\e[D"); break; /* backward */
 			case 0x9E: prtflush("\e[93m"); color = 93; break; /* yellow */
