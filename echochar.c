@@ -22,7 +22,7 @@ void echochar(uint8_t c) {
 					case 0:
 						switch (c) {
 							case 126: printf("π"); break;
-							case 127: /*printf("◥")*/; break;
+							case 127: printf("◥"); break;
 							default: printf("%c", c);
 						}
 						break;
