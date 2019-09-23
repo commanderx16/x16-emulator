@@ -36,7 +36,7 @@ if(layouts.includes(lang)) {
 
 
 
-Module = {
+var Module = {
     preRun: [
         function() {         //Set the keyboard handling element (it's document by default). Keystrokes are stopped from propagating by emscripten, maybe there's an option to disable this?
             ENV.SDL_EMSCRIPTEN_KEYBOARD_ELEMENT = "#canvas";
