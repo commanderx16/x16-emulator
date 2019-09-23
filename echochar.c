@@ -23,6 +23,7 @@ void echochar(uint8_t c) {
 						switch (c) {
 							case 126: printf("π"); break;
 							case 127: printf("◥"); break;
+							case 255: printf("π"); break;
 							default: printf("%c", c);
 						}
 						break;
@@ -30,6 +31,7 @@ void echochar(uint8_t c) {
 						switch (c) {
 							case 126: printf("▒"); break;
 							case 127: printf("?"); break;
+							case 255: printf("▒"); break;
 							default: printf("%c", c);
 						}
 						break;
