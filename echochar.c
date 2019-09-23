@@ -9,10 +9,10 @@ void echochar(uint8_t c) {
 			case 0x0C: printf("\n"); break;
 			case 0x0E: shifted = 1; break;
 			case 0x0F: mode = 1; shifted = 1; break;
-			case 0x13: printf("\e[H"); break;
+			case 0x13: /*printf("\e[H")*/; break;
 			case 0x8E: shifted = 0; break;
 			case 0x8F: mode = 0; shifted = 0; break;
-			case 0x93: printf("\e[2J"); break;
+			case 0x93: /*printf("\e[2J")*/; break;
 		}
 	} else {
 		switch (mode) {
@@ -21,7 +21,7 @@ void echochar(uint8_t c) {
 					case 0:
 						switch (c) {
 							case 126: printf("π"); break;
-							case 127: printf("◥"); break;
+							case 127: /*printf("◥")*/; break;
 							default: printf("%c", c);
 						}
 						break;
