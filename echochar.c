@@ -8,7 +8,7 @@ void prtnumflush(const char *s, uint8_t c);
 void echochar(uint8_t c) {
 	static int mode = 0; /* 0: PETSCII, 1: ISO8859-15 */
 	static int shifted = 0; /* 0: Unshifted, 1: Shifted */
-        static int color = 37;
+	static int color = 37;
 	if ((0x00 <= c && c <= 0x1F) || (0x80 <= c && c <= 0x9F)) {
 		switch (c) {
 			case 0x05: prtflush("\e[37m"); color = 37; break; /* white */
