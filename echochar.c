@@ -136,6 +136,11 @@ void echochar(uint8_t c) {
 						}
 						break;
 					case 1:
+						if ('\xC0' <= c && c <= '\xDF') {
+							c -= '\xC0' - '\x60';
+						} else if ('\xE0' <= c && c <= '\xFE') {
+							c -= '\xE0' - '\xA0';
+						}
 						switch (c) {
 							case 0x5C: prtflush("\xC2\xA3"); break; // 0xA3, £
 							case 0x5E: prtflush("\xE2\x86\x91"); break; // 0x2191, ↑
@@ -144,6 +149,7 @@ void echochar(uint8_t c) {
 							case 0x7B: prtflush("\xE2\x94\xBC"); break; // 0x253C, ┼
 							case 0x7D: prtflush("\xE2\x94\x82"); break; // 0x2502, │
 							case 0x7E: prtflush("\xE2\x96\x92"); break; // 0x2592, ▒
+							case 0x7F: prtflush("\xE2\x96\x92"); break; // 0x2592, ▒
 							case 0xA0: prtflush("\xC2\xA0"); break; // 0xA0,  
 							case 0xA1: prtflush("\xE2\x96\x8C"); break; // 0x258C, ▌
 							case 0xA2: prtflush("\xE2\x96\x84"); break; // 0x2584, ▄
@@ -165,31 +171,6 @@ void echochar(uint8_t c) {
 							case 0xB9: prtflush("\xE2\x96\x83"); break; // 0x2583, ▃
 							case 0xBA: prtflush("\xE2\x9C\x93"); break; // 0x2713, ✓
 							case 0xBD: prtflush("\xE2\x94\x98"); break; // 0x2518, ┘
-							case 0xC0: prtflush("\xE2\x94\x81"); break; // 0x2501, ━
-							case 0xDB: prtflush("\xE2\x94\xBC"); break; // 0x253C, ┼
-							case 0xDD: prtflush("\xE2\x94\x82"); break; // 0x2502, │
-							case 0xDE: prtflush("\xE2\x96\x92"); break; // 0x2592, ▒
-							case 0xE0: prtflush("\xC2\xA0"); break; // 0xA0,  
-							case 0xE1: prtflush("\xE2\x96\x8C"); break; // 0x258C, ▌
-							case 0xE2: prtflush("\xE2\x96\x84"); break; // 0x2584, ▄
-							case 0xE3: prtflush("\xE2\x96\x94"); break; // 0x2594, ▔
-							case 0xE4: prtflush("\xE2\x96\x81"); break; // 0x2581, ▁
-							case 0xE5: prtflush("\xE2\x96\x8F"); break; // 0x258F, ▏
-							case 0xE6: prtflush("\xE2\x96\x92"); break; // 0x2592, ▒
-							case 0xE7: prtflush("\xE2\x96\x95"); break; // 0x2595, ▕
-							case 0xEB: prtflush("\xE2\x94\x9C"); break; // 0x251C, ├
-							case 0xED: prtflush("\xE2\x94\x94"); break; // 0x2514, └
-							case 0xEE: prtflush("\xE2\x94\x90"); break; // 0x2510, ┐
-							case 0xEF: prtflush("\xE2\x96\x82"); break; // 0x2582, ▂
-							case 0xF0: prtflush("\xE2\x94\x8C"); break; // 0x250C, ┌
-							case 0xF1: prtflush("\xE2\x94\xB4"); break; // 0x2534, ┴
-							case 0xF2: prtflush("\xE2\x94\xAC"); break; // 0x252C, ┬
-							case 0xF3: prtflush("\xE2\x94\xA4"); break; // 0x2524, ┤
-							case 0xF4: prtflush("\xE2\x96\x8E"); break; // 0x258E, ▎
-							case 0xF5: prtflush("\xE2\x96\x8D"); break; // 0x258D, ▍
-							case 0xF9: prtflush("\xE2\x96\x83"); break; // 0x2583, ▃
-							case 0xFA: prtflush("\xE2\x9C\x93"); break; // 0x2713, ✓
-							case 0xFD: prtflush("\xE2\x94\x98"); break; // 0x2518, ┘
 							case 0xFF: prtflush("\xE2\x96\x92"); break; // 0x2592, ▒
 							default:
 								if ('A' <=  c && c <= 'Z') {
@@ -197,7 +178,7 @@ void echochar(uint8_t c) {
 								} else if ('a' <=  c && c <= 'z') {
 									c -= 'a' - 'A';
 								}
-								prtnumflush("%c", c);
+								prtchflush(c);
 						}
 						break;
 				}
@@ -225,7 +206,7 @@ void prtchflush(uint8_t c) {
 		case 0xBD: prtflush("\xC2\xBD"); break; // 0xBD, œ
 		case 0xBE: prtflush("\xC2\xBE"); break; // 0xBE, Ÿ
 		default:
-			if (c < 128) {
+			if (c < 0x80) {
 				putchar(c);
 			} else {
 				putchar(0xC2+(c > 0xBF));
@@ -234,42 +215,6 @@ void prtchflush(uint8_t c) {
 	}
 	fflush(stdout);
 }
-/* Test in X16 BASIC V2:
-001 REM SHOW ISO8859-15 TABLE SHIFTED ON X16
-010 GOTO 370
-020 REM MODULO
-030 MOD%=INT((X/Y-INT(X/Y))*Y+.5):RETURN
-040 REM PRINT HEADING AND CHARACTER
-050 X=I:Y=16:GOSUB 30
-060 IF MOD%<>0 THEN GOTO 90
-070 IF I<>$20 THEN ?:? "  ";V$;
-080 ?:? CHR$(I/16+N);"0";V$;
-090 ? CHR$(I);" ";
-100 RETURN
-200 REM PRINT TABLE
-210 N=ASC("0")
-220 B$="-":V$=CHR$($7C)
-230 ?:?:?:? "  ";V$;
-240 FOR I=ASC("0") TO ASC("9"):? CHR$(I);" ";:NEXT
-250 FOR I=ASC("A") TO ASC("F"):? CHR$(I);" ";:NEXT
-260 ?:? B$;B$;"+";:FOR I=1 TO 31:? B$;:NEXT
-270 FOR I=$20 TO $7F
-280 GOSUB 50
-290 NEXT
-300 N=ASC("7")
-310 FOR I=$A0 TO $FF
-320 GOSUB 50
-330 NEXT
-340 ? CHR$($13);
-350 RETURN
-360 REM MAIN
-370 IF PEEK($D9)<>40 THEN SYS $FF5F
-375 ? CHR$($0F);CHR$($93);
-380 GOSUB 210
-385 REM LOOP
-390 ? CHR$($0E);CHR$($13):? "ISO8859-15   (SHIFTED)";
-430 GOTO 390
-*/
 
 void prtflush(const char *s) {
 	printf(s);
@@ -280,3 +225,5 @@ void prtnumflush(const char *s, uint8_t c) {
 	printf(s, c);
 	fflush(stdout);
 }
+
+/* Test program: https://github.com/mobluse/chargen-maker/blob/master/petsciiiso.bas */
