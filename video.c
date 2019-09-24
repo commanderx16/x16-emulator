@@ -14,10 +14,8 @@
 #include "emscripten.h"
 #endif
 
-#ifdef VERA_V0_8
 #define ADDR_VRAM_START     0x00000
 #define ADDR_VRAM_END       0x20000
-
 #define ADDR_COMPOSER_START 0xF0000
 #define ADDR_COMPOSER_END   0xF1000
 #define ADDR_PALETTE_START  0xF1000
@@ -30,24 +28,6 @@
 #define ADDR_SPRITES_END    0xF5000
 #define ADDR_SPRDATA_START  0xF5000
 #define ADDR_SPRDATA_END    0xF6000
-#else
-#define ADDR_VRAM_START     0x00000
-#define ADDR_VRAM_END       0x20000
-#define ADDR_CHARSET_START  0x20000
-#define ADDR_CHARSET_END    0x21000
-#define ADDR_LAYER1_START   0x40000
-#define ADDR_LAYER1_END     0x40010
-#define ADDR_LAYER2_START   0x40010
-#define ADDR_LAYER2_END     0x40020
-#define ADDR_SPRITES_START  0x40020
-#define ADDR_SPRITES_END    0x40040
-#define ADDR_COMPOSER_START 0x40040
-#define ADDR_COMPOSER_END   0x40060
-#define ADDR_PALETTE_START  0x40200
-#define ADDR_PALETTE_END    0x40400
-#define ADDR_SPRDATA_START  0x40800
-#define ADDR_SPRDATA_END    0x41000
-#endif
 #define ADDR_SPI_START      0xF7000
 #define ADDR_SPI_END        0xF8000
 
@@ -92,9 +72,6 @@ static SDL_Texture *sdlTexture;
 static bool is_fullscreen = false;
 
 static uint8_t video_ram[0x20000];
-#ifndef VERA_V0_8
-static uint8_t chargen_rom[4096];
-#endif
 static uint8_t palette[256 * 2];
 static uint8_t sprite_data[256][8];
 
@@ -131,12 +108,6 @@ video_reset()
 
 	// init Layer registers
 	memset(reg_layer, 0, sizeof(reg_layer));
-#ifndef VERA_V0_8
-	uint32_t tile_base = ADDR_CHARSET_START; // uppercase PETSCII
-	reg_layer[0][0] = 1; // mode=0, enabled=1
-	reg_layer[0][4] = tile_base >> 2;
-	reg_layer[0][5] = tile_base >> 10;
-#endif
 
 	// init sprite registers
 	memset(reg_sprites, 0, sizeof(reg_sprites));
@@ -158,17 +129,8 @@ video_reset()
 }
 
 bool
-#ifdef VERA_V0_8
 video_init(int window_scale, char *quality)
-#else
-video_init(uint8_t *in_chargen, int window_scale, char *quality)
-#endif
 {
-#ifndef VERA_V0_8
-	// copy chargen
-	memcpy(chargen_rom, in_chargen, sizeof(chargen_rom));
-#endif
-
 	video_reset();
 
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, quality);
@@ -1000,13 +962,9 @@ uint32_t
 get_and_inc_address(uint8_t sel)
 {
 	uint32_t address = io_addr[sel];
-#ifdef VERA_V0_8
 	if (io_inc[sel]) {
 		io_addr[sel] += 1 << (io_inc[sel] - 1);
 	}
-#else
-	io_addr[sel] += io_inc[sel];
-#endif
 //	printf("address = %06x, new = %06x\n", address, io_addr[sel]);
 	return address;
 }
@@ -1020,10 +978,6 @@ video_space_read(uint32_t address)
 {
 	if (address >= ADDR_VRAM_START && address < ADDR_VRAM_END) {
 		return video_ram[address];
-#ifndef VERA_V0_8
-	} else if (address >= ADDR_CHARSET_START && address < ADDR_CHARSET_END) {
-		return chargen_rom[address & 0xfff];
-#endif
 	} else if (address >= ADDR_LAYER1_START && address < ADDR_LAYER1_END) {
 		return reg_layer[0][address & 0xf];
 	} else if (address >= ADDR_LAYER2_START && address < ADDR_LAYER2_END) {
@@ -1049,10 +1003,6 @@ video_space_write(uint32_t address, uint8_t value)
 	video_flush();
 	if (address >= ADDR_VRAM_START && address < ADDR_VRAM_END) {
 		video_ram[address] = value;
-#ifndef VERA_V0_8
-	} else if (address >= ADDR_CHARSET_START && address < ADDR_CHARSET_END) {
-		// ROM, do nothing
-#endif
 	} else if (address >= ADDR_LAYER1_START && address < ADDR_LAYER1_END) {
 		reg_layer[0][address & 0xf] = value;
 		refresh_layer_properties(0);
@@ -1083,20 +1033,12 @@ uint8_t
 video_read(uint8_t reg)
 {
 	switch (reg) {
-#ifdef VERA_V0_8
-		case 2:
-#else
 		case 0:
-#endif
-			return (io_addr[io_addrsel] >> 16) | (io_inc[io_addrsel] << 4);
+			return io_addr[io_addrsel] & 0xff;
 		case 1:
 			return (io_addr[io_addrsel] >> 8) & 0xff;
-#ifdef VERA_V0_8
-		case 0:
-#else
 		case 2:
-#endif
-			return io_addr[io_addrsel] & 0xff;
+			return (io_addr[io_addrsel] >> 16) | (io_inc[io_addrsel] << 4);
 		case 3:
 		case 4: {
 			uint32_t address = get_and_inc_address(reg - 3);
@@ -1122,23 +1064,15 @@ video_write(uint8_t reg, uint8_t value)
 {
 //	printf("ioregisters[%d] = $%02x\n", reg, value);
 	switch (reg) {
-#ifdef VERA_V0_8
-		case 2:
-#else
 		case 0:
-#endif
+			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0xfff00) | value;
+			break;
+		case 2:
 			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x0ffff) | ((value & 0xf) << 16);
 			io_inc[io_addrsel] = value >> 4;
 			break;
 		case 1:
 			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0xf00ff) | (value << 8);
-			break;
-#ifdef VERA_V0_8
-		case 0:
-#else
-		case 2:
-#endif
-			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0xfff00) | value;
 			break;
 		case 3:
 		case 4: {

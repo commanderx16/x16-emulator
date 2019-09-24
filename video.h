@@ -11,11 +11,7 @@
 #include <SDL.h>
 #include "glue.h"
 
-#ifdef VERA_V0_8
 bool video_init(int window_scale, char *quality);
-#else
-bool video_init(uint8_t *chargen, int window_scale, char *quality);
-#endif
 void video_reset(void);
 bool video_step(float mhz);
 bool video_update(void);
