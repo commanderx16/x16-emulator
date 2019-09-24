@@ -82,9 +82,9 @@ wasm:
 #
 
 # hostname of the Linux VM
-LINUX_COMPILE_HOST = ubuntu.local
+LINUX_COMPILE_HOST = aeblapi9.local
 # path to the equivalent of `pwd` on the Mac
-LINUX_BASE_DIR = /mnt/Documents/git/x16emu
+LINUX_BASE_DIR = ~/Downloads/x16-emulator-mobluse
 
 TMPDIR_NAME=TMP-x16emu-package
 

@@ -1,11 +1,16 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "utf8_encode.h"
+
 void prtchflush(uint8_t c);
+void prtuptflush(uint32_t utf);
 void prtflush(const char *s);
 void prtnumflush(const char *s, uint8_t c);
 
-void echochar(uint8_t c) {
+void
+echochar(uint8_t c)
+{
 	static int mode = 0; /* 0: PETSCII, 1: ISO8859-15 */
 	static int shifted = 0; /* 0: Unshifted, 1: Shifted */
 	static int color = 37;
@@ -43,135 +48,100 @@ void echochar(uint8_t c) {
 	} else {
 		switch (mode) {
 			case 0:
+				if ('\xC0' <= c && c <= '\xDF') {
+					c -= '\xC0' - '\x60';
+				} else if ('\xE0' <= c && c <= '\xFE') {
+					c -= '\xE0' - '\xA0';
+				}
 				switch (shifted) {
 					case 0:
 						switch (c) {
-							case 0x5C: prtflush("\xC2\xA3"); break; // 0xA3, £
-							case 0x5E: prtflush("\xE2\x86\x91"); break; // 0x2191, ↑
-							case 0x5F: prtflush("\xE2\x86\x90"); break; // 0x2190, ←
-							case 0x60: prtflush("\xE2\x94\x81"); break; // 0x2501, ━
-							case 0x61: prtflush("\xE2\x99\xA0"); break; // 0x2660, ♠
-							case 0x62: prtflush("\xE2\x94\x82"); break; // 0x2502, │
-							case 0x63: prtflush("\xE2\x94\x81"); break; // 0x2501, ━
-							case 0x69: prtflush("\xE2\x95\xAE"); break; // 0x256E, ╮
-							case 0x6A: prtflush("\xE2\x95\xB0"); break; // 0x2570, ╰
-							case 0x6B: prtflush("\xE2\x95\xAF"); break; // 0x256F, ╯
-							case 0x6D: prtflush("\xE2\x95\xB2"); break; // 0x2572, ╲
-							case 0x6E: prtflush("\xE2\x95\xB1"); break; // 0x2571, ╱
-							case 0x71: prtflush("\xE2\x97\x8F"); break; // 0x25CF, ●
-							case 0x73: prtflush("\xE2\x99\xA5"); break; // 0x2665, ♥
-							case 0x75: prtflush("\xE2\x95\xAD"); break; // 0x256D, ╭
-							case 0x76: prtflush("\xE2\x95\xB3"); break; // 0x2573, ╳
-							case 0x77: prtflush("\xE2\x97\x8B"); break; // 0x25CB, ○
-							case 0x78: prtflush("\xE2\x99\xA3"); break; // 0x2663, ♣
-							case 0x7A: prtflush("\xE2\x99\xA6"); break; // 0x2666, ♦
-							case 0x7B: prtflush("\xE2\x94\xBC"); break; // 0x253C, ┼
-							case 0x7D: prtflush("\xE2\x94\x82"); break; // 0x2502, │
-							case 0x7E: prtflush("\xCF\x80"); break; // 0x3C0, π
-							case 0x7F: prtflush("\xE2\x97\xA5"); break; // 0x25E5, ◥
-							case 0xA0: prtflush("\xC2\xA0"); break; // 0xA0,  
-							case 0xA1: prtflush("\xE2\x96\x8C"); break; // 0x258C, ▌
-							case 0xA2: prtflush("\xE2\x96\x84"); break; // 0x2584, ▄
-							case 0xA3: prtflush("\xE2\x96\x94"); break; // 0x2594, ▔
-							case 0xA4: prtflush("\xE2\x96\x81"); break; // 0x2581, ▁
-							case 0xA5: prtflush("\xE2\x96\x8F"); break; // 0x258F, ▏
-							case 0xA6: prtflush("\xE2\x96\x92"); break; // 0x2592, ▒
-							case 0xA7: prtflush("\xE2\x96\x95"); break; // 0x2595, ▕
-							case 0xA9: prtflush("\xE2\x97\xA4"); break; // 0x25E4, ◤
-							case 0xAB: prtflush("\xE2\x94\x9C"); break; // 0x251C, ├
-							case 0xAD: prtflush("\xE2\x94\x94"); break; // 0x2514, └
-							case 0xAE: prtflush("\xE2\x94\x90"); break; // 0x2510, ┐
-							case 0xAF: prtflush("\xE2\x96\x82"); break; // 0x2582, ▂
-							case 0xB0: prtflush("\xE2\x94\x8C"); break; // 0x250C, ┌
-							case 0xB1: prtflush("\xE2\x94\xB4"); break; // 0x2534, ┴
-							case 0xB2: prtflush("\xE2\x94\xAC"); break; // 0x252C, ┬
-							case 0xB3: prtflush("\xE2\x94\xA4"); break; // 0x2524, ┤
-							case 0xB4: prtflush("\xE2\x96\x8E"); break; // 0x258E, ▎
-							case 0xB5: prtflush("\xE2\x96\x8D"); break; // 0x258D, ▍
-							case 0xB9: prtflush("\xE2\x96\x83"); break; // 0x2583, ▃
-							case 0xBD: prtflush("\xE2\x94\x98"); break; // 0x2518, ┘
-							case 0xC0: prtflush("\xE2\x94\x81"); break; // 0x2501, ━
-							case 0xC1: prtflush("\xE2\x99\xA0"); break; // 0x2660, ♠
-							case 0xC2: prtflush("\xE2\x94\x82"); break; // 0x2502, │
-							case 0xC3: prtflush("\xE2\x94\x81"); break; // 0x2501, ━
-							case 0xC9: prtflush("\xE2\x95\xAE"); break; // 0x256E, ╮
-							case 0xCA: prtflush("\xE2\x95\xB0"); break; // 0x2570, ╰
-							case 0xCB: prtflush("\xE2\x95\xAF"); break; // 0x256F, ╯
-							case 0xCD: prtflush("\xE2\x95\xB2"); break; // 0x2572, ╲
-							case 0xCE: prtflush("\xE2\x95\xB1"); break; // 0x2571, ╱
-							case 0xD1: prtflush("\xE2\x97\x8F"); break; // 0x25CF, ●
-							case 0xD3: prtflush("\xE2\x99\xA5"); break; // 0x2665, ♥
-							case 0xD5: prtflush("\xE2\x95\xAD"); break; // 0x256D, ╭
-							case 0xD6: prtflush("\xE2\x95\xB3"); break; // 0x2573, ╳
-							case 0xD7: prtflush("\xE2\x97\x8B"); break; // 0x25CB, ○
-							case 0xD8: prtflush("\xE2\x99\xA3"); break; // 0x2663, ♣
-							case 0xDA: prtflush("\xE2\x99\xA6"); break; // 0x2666, ♦
-							case 0xDB: prtflush("\xE2\x94\xBC"); break; // 0x253C, ┼
-							case 0xDD: prtflush("\xE2\x94\x82"); break; // 0x2502, │
-							case 0xDE: prtflush("\xCF\x80"); break; // 0x3C0, π
-							case 0xDF: prtflush("\xE2\x97\xA5"); break; // 0x25E5, ◥
-							case 0xE0: prtflush("\xC2\xA0"); break; // 0xA0,  
-							case 0xE1: prtflush("\xE2\x96\x8C"); break; // 0x258C, ▌
-							case 0xE2: prtflush("\xE2\x96\x84"); break; // 0x2584, ▄
-							case 0xE3: prtflush("\xE2\x96\x94"); break; // 0x2594, ▔
-							case 0xE4: prtflush("\xE2\x96\x81"); break; // 0x2581, ▁
-							case 0xE5: prtflush("\xE2\x96\x8F"); break; // 0x258F, ▏
-							case 0xE6: prtflush("\xE2\x96\x92"); break; // 0x2592, ▒
-							case 0xE7: prtflush("\xE2\x96\x95"); break; // 0x2595, ▕
-							case 0xE9: prtflush("\xE2\x97\xA4"); break; // 0x25E4, ◤
-							case 0xEB: prtflush("\xE2\x94\x9C"); break; // 0x251C, ├
-							case 0xED: prtflush("\xE2\x94\x94"); break; // 0x2514, └
-							case 0xEE: prtflush("\xE2\x94\x90"); break; // 0x2510, ┐
-							case 0xEF: prtflush("\xE2\x96\x82"); break; // 0x2582, ▂
-							case 0xF0: prtflush("\xE2\x94\x8C"); break; // 0x250C, ┌
-							case 0xF1: prtflush("\xE2\x94\xB4"); break; // 0x2534, ┴
-							case 0xF2: prtflush("\xE2\x94\xAC"); break; // 0x252C, ┬
-							case 0xF3: prtflush("\xE2\x94\xA4"); break; // 0x2524, ┤
-							case 0xF4: prtflush("\xE2\x96\x8E"); break; // 0x258E, ▎
-							case 0xF5: prtflush("\xE2\x96\x8D"); break; // 0x258D, ▍
-							case 0xF9: prtflush("\xE2\x96\x83"); break; // 0x2583, ▃
-							case 0xFD: prtflush("\xE2\x94\x98"); break; // 0x2518, ┘
-							case 0xFF: prtflush("\xCF\x80"); break; // 0x3C0, π
-							default: prtnumflush("%c", c);
+							case 0x5C: prtuptflush(0x00A3); break; // £
+							case 0x5E: prtuptflush(0x2191); break; // ↑
+							case 0x5F: prtuptflush(0x2190); break; // ←
+							case 0x60: prtuptflush(0x2501); break; // ━
+							case 0x61: prtuptflush(0x2660); break; // ♠
+							case 0x62: prtuptflush(0x2502); break; // │
+							case 0x63: prtuptflush(0x2501); break; // ━
+							case 0x69: prtuptflush(0x256E); break; // ╮
+							case 0x6A: prtuptflush(0x2570); break; // ╰
+							case 0x6B: prtuptflush(0x256F); break; // ╯
+							case 0x6D: prtuptflush(0x2572); break; // ╲
+							case 0x6E: prtuptflush(0x2571); break; // ╱
+							case 0x71: prtuptflush(0x25CF); break; // ●
+							case 0x73: prtuptflush(0x2665); break; // ♥
+							case 0x75: prtuptflush(0x256D); break; // ╭
+							case 0x76: prtuptflush(0x2573); break; // ╳
+							case 0x77: prtuptflush(0x25CB); break; // ○
+							case 0x78: prtuptflush(0x2663); break; // ♣
+							case 0x7A: prtuptflush(0x2666); break; // ♦
+							case 0x7B: prtuptflush(0x253C); break; // ┼
+							case 0x7D: prtuptflush(0x2502); break; // │
+							case 0x7E: prtuptflush(0x03C0); break; // π
+							case 0x7F: prtuptflush(0x25E5); break; // ◥
+
+							case 0xA0: prtuptflush(0x00A0); break; // nbsp
+							case 0xA1: prtuptflush(0x258C); break; // ▌
+							case 0xA2: prtuptflush(0x2584); break; // ▄
+							case 0xA3: prtuptflush(0x2594); break; // ▔
+							case 0xA4: prtuptflush(0x2581); break; // ▁
+							case 0xA5: prtuptflush(0x258F); break; // ▏
+							case 0xA6: prtuptflush(0x2592); break; // ▒
+							case 0xA7: prtuptflush(0x2595); break; // ▕
+							case 0xA9: prtuptflush(0x25E4); break; // ◤
+							case 0xAB: prtuptflush(0x251C); break; // ├
+							case 0xAD: prtuptflush(0x2514); break; // └
+							case 0xAE: prtuptflush(0x2510); break; // ┐
+							case 0xAF: prtuptflush(0x2582); break; // ▂
+							case 0xB0: prtuptflush(0x250C); break; // ┌
+							case 0xB1: prtuptflush(0x2534); break; // ┴
+							case 0xB2: prtuptflush(0x252C); break; // ┬
+							case 0xB3: prtuptflush(0x2524); break; // ┤
+							case 0xB4: prtuptflush(0x258E); break; // ▎
+							case 0xB5: prtuptflush(0x258D); break; // ▍
+							case 0xB9: prtuptflush(0x2583); break; // ▃
+							case 0xBD: prtuptflush(0x2518); break; // ┘
+
+							case 0xFF: prtuptflush(0x03C0); break; // π
+
+							default: prtchflush(c);
 						}
 						break;
 					case 1:
-						if ('\xC0' <= c && c <= '\xDF') {
-							c -= '\xC0' - '\x60';
-						} else if ('\xE0' <= c && c <= '\xFE') {
-							c -= '\xE0' - '\xA0';
-						}
 						switch (c) {
-							case 0x5C: prtflush("\xC2\xA3"); break; // 0xA3, £
-							case 0x5E: prtflush("\xE2\x86\x91"); break; // 0x2191, ↑
-							case 0x5F: prtflush("\xE2\x86\x90"); break; // 0x2190, ←
-							case 0x60: prtflush("\xE2\x94\x81"); break; // 0x2501, ━
-							case 0x7B: prtflush("\xE2\x94\xBC"); break; // 0x253C, ┼
-							case 0x7D: prtflush("\xE2\x94\x82"); break; // 0x2502, │
-							case 0x7E: prtflush("\xE2\x96\x92"); break; // 0x2592, ▒
-							case 0x7F: prtflush("\xE2\x96\x92"); break; // 0x2592, ▒
-							case 0xA0: prtflush("\xC2\xA0"); break; // 0xA0,  
-							case 0xA1: prtflush("\xE2\x96\x8C"); break; // 0x258C, ▌
-							case 0xA2: prtflush("\xE2\x96\x84"); break; // 0x2584, ▄
-							case 0xA3: prtflush("\xE2\x96\x94"); break; // 0x2594, ▔
-							case 0xA4: prtflush("\xE2\x96\x81"); break; // 0x2581, ▁
-							case 0xA5: prtflush("\xE2\x96\x8F"); break; // 0x258F, ▏
-							case 0xA6: prtflush("\xE2\x96\x92"); break; // 0x2592, ▒
-							case 0xA7: prtflush("\xE2\x96\x95"); break; // 0x2595, ▕
-							case 0xAB: prtflush("\xE2\x94\x9C"); break; // 0x251C, ├
-							case 0xAD: prtflush("\xE2\x94\x94"); break; // 0x2514, └
-							case 0xAE: prtflush("\xE2\x94\x90"); break; // 0x2510, ┐
-							case 0xAF: prtflush("\xE2\x96\x82"); break; // 0x2582, ▂
-							case 0xB0: prtflush("\xE2\x94\x8C"); break; // 0x250C, ┌
-							case 0xB1: prtflush("\xE2\x94\xB4"); break; // 0x2534, ┴
-							case 0xB2: prtflush("\xE2\x94\xAC"); break; // 0x252C, ┬
-							case 0xB3: prtflush("\xE2\x94\xA4"); break; // 0x2524, ┤
-							case 0xB4: prtflush("\xE2\x96\x8E"); break; // 0x258E, ▎
-							case 0xB5: prtflush("\xE2\x96\x8D"); break; // 0x258D, ▍
-							case 0xB9: prtflush("\xE2\x96\x83"); break; // 0x2583, ▃
-							case 0xBA: prtflush("\xE2\x9C\x93"); break; // 0x2713, ✓
-							case 0xBD: prtflush("\xE2\x94\x98"); break; // 0x2518, ┘
-							case 0xFF: prtflush("\xE2\x96\x92"); break; // 0x2592, ▒
+							case 0x5C: prtuptflush(0x00A3); break; // £
+							case 0x5E: prtuptflush(0x2191); break; // ↑
+							case 0x5F: prtuptflush(0x2190); break; // ←
+							case 0x60: prtuptflush(0x2501); break; // ━
+							case 0x7B: prtuptflush(0x253C); break; // ┼
+							case 0x7D: prtuptflush(0x2502); break; // │
+							case 0x7E: prtuptflush(0x2592); break; // ▒
+							case 0x7F: prtuptflush(0x2592); break; // ▒
+
+							case 0xA0: prtuptflush(0x00A0); break; // nbsp
+							case 0xA1: prtuptflush(0x258C); break; // ▌
+							case 0xA2: prtuptflush(0x2584); break; // ▄
+							case 0xA3: prtuptflush(0x2594); break; // ▔
+							case 0xA4: prtuptflush(0x2581); break; // ▁
+							case 0xA5: prtuptflush(0x258F); break; // ▏
+							case 0xA6: prtuptflush(0x2592); break; // ▒
+							case 0xA7: prtuptflush(0x2595); break; // ▕
+							case 0xAB: prtuptflush(0x251C); break; // ├
+							case 0xAD: prtuptflush(0x2514); break; // └
+							case 0xAE: prtuptflush(0x2510); break; // ┐
+							case 0xAF: prtuptflush(0x2582); break; // ▂
+							case 0xB0: prtuptflush(0x250C); break; // ┌
+							case 0xB1: prtuptflush(0x2534); break; // ┴
+							case 0xB2: prtuptflush(0x252C); break; // ┬
+							case 0xB3: prtuptflush(0x2524); break; // ┤
+							case 0xB4: prtuptflush(0x258E); break; // ▎
+							case 0xB5: prtuptflush(0x258D); break; // ▍
+							case 0xB9: prtuptflush(0x2583); break; // ▃
+							case 0xBA: prtuptflush(0x2713); break; // ✓
+							case 0xBD: prtuptflush(0x2518); break; // ┘
+
+							case 0xFF: prtuptflush(0x2592); break; // ▒
+
 							default:
 								if ('A' <=  c && c <= 'Z') {
 									c += 'a' - 'A';
@@ -194,17 +164,19 @@ void echochar(uint8_t c) {
 	}
 }
 
-void prtchflush(uint8_t c) {
-	/* ISO8859-15 */
+void
+prtchflush(uint8_t c)
+{
+	/* ISO8859-15 to UTF-8 */
         switch (c) {
-		case 0xA4: prtflush("\xC2\xA4"); break; // 0xA4, €
-		case 0xA6: prtflush("\xC2\xA6"); break; // 0xA6, Š
-		case 0xA8: prtflush("\xC2\xA8"); break; // 0xA8, š
-		case 0xB4: prtflush("\xC2\xB4"); break; // 0xB4, Ž
-		case 0xB8: prtflush("\xC2\xB8"); break; // 0xB8, ž
-		case 0xBC: prtflush("\xC2\xBC"); break; // 0xBC, Œ
-		case 0xBD: prtflush("\xC2\xBD"); break; // 0xBD, œ
-		case 0xBE: prtflush("\xC2\xBE"); break; // 0xBE, Ÿ
+		case 0xA4: prtuptflush(0x20AC); break; // €
+		case 0xA6: prtuptflush(0x160); break; // Š
+		case 0xA8: prtuptflush(0x161); break; // š
+		case 0xB4: prtuptflush(0x17D); break; // Ž
+		case 0xB8: prtuptflush(0x17E); break; // ž
+		case 0xBC: prtuptflush(0x152); break; // Œ
+		case 0xBD: prtuptflush(0x153); break; // œ
+		case 0xBE: prtuptflush(0x178); break; // Ÿ
 		default:
 			if (c < 0x80) {
 				putchar(c);
@@ -216,12 +188,24 @@ void prtchflush(uint8_t c) {
 	fflush(stdout);
 }
 
-void prtflush(const char *s) {
+void
+prtuptflush(uint32_t utf)
+{
+	static char out[5];
+	utf8_encode(out, utf);
+	prtflush(out);
+}
+
+void
+prtflush(const char *s)
+{
 	printf(s);
 	fflush(stdout);
 }
 
-void prtnumflush(const char *s, uint8_t c) {
+void
+prtnumflush(const char *s, uint8_t c)
+{
 	printf(s, c);
 	fflush(stdout);
 }
