@@ -65,6 +65,7 @@ read6502(uint16_t address)
 		}
 	} else if (address < 0xc000) { // banked RAM
 		return RAM[0xa000 + (ram_bank << 13) + address - 0xa000];
+#ifdef FIXED_KERNAL
 	} else if (address < 0xe000) { // banked ROM
 		if (rom_bank == 0) {
 			// BASIC is at offset 0 * 8192 in ROM
@@ -76,6 +77,12 @@ read6502(uint16_t address)
 	} else { // fixed ROM
 		// KERNAL is at offset 1 * 8192 in ROM
 		return ROM[address - 0xe000 + 0x2000];
+#else
+
+	} else { // banked ROM
+		return ROM[(rom_bank << 14) + address - 0xc000];
+#endif
+
 	}
 }
 
