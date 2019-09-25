@@ -10,15 +10,13 @@ void prtnumflush(const char *s, uint8_t c);
 
 void
 echochar(uint8_t c)
-{
+{   // TODO: Handle quote mode
 	static int mode = 0; /* 0: PETSCII, 1: ISO8859-15 */
 	static int shifted = 0; /* 0: Unshifted, 1: Shifted */
 	static int color = 37;
 	if ((0x00 <= c && c <= 0x1F) || (0x80 <= c && c <= 0x9F)) {
 		switch (c) {
 			case 0x05: prtflush("\e[37m"); color = 37; break; /* white */
-			case 0x0A: prtflush("\e[0m"); color = 37; break; /* This might be compensation due to bug in emulator */
-			case 0x0D: prtflush("\n\e[0m"); color = 37; break; /* This might be compensation due to bug in emulator */
 			case 0x0E: shifted = 1; break;    /* lower case */
 			case 0x0F: mode = 1; shifted = 1; break;
 			case 0x11: prtflush("\e[B"); break; /* down */
@@ -32,6 +30,8 @@ echochar(uint8_t c)
 			case 0x8E: shifted = 0; break;    /* upper case */
 			case 0x8F: mode = 0; shifted = 0; break;
 			case 0x91: prtflush("\e[A"); break; /* up */
+			case 0x0A: prtuptflush(0xFFFD); /* Intentional fall through */
+			case 0x0D: prtflush("\n");
 			case 0x92:
 				prtflush("\e[0;");
 				prtnumflush("%d", color);
