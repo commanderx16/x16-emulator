@@ -777,9 +777,9 @@ video_flush_internal(int start, int end)
 			}
 
 			uint16_t entry = palette[col_index * 2] | palette[col_index * 2 + 1] << 8;
-			r = ((entry >> 8) & 0xf) << 4;
-			g = ((entry >> 4) & 0xf) << 4;
-			b = (entry & 0xf) << 4;
+			r = ((entry >> 8) & 0xf) << 4 | ((entry >> 8) & 0xf);
+			g = ((entry >> 4) & 0xf) << 4 | ((entry >> 4) & 0xf);
+			b = (entry & 0xf) << 4 | (entry & 0xf);
 			if (chroma_disable) {
 				r = g = b = (r + b + g) / 3;
 			}
