@@ -10,7 +10,7 @@ else
 	SDL2CONFIG=sdl2-config
 endif
 
-CFLAGS=-std=c99 -O3 -Wall -Werror -g $(shell $(SDL2CONFIG) --cflags)
+CFLAGS=-std=c99 -O3 -Wall -Werror -g $(shell $(SDL2CONFIG) --cflags) -Iextern/include -Iextern/src
 LDFLAGS=$(shell $(SDL2CONFIG) --libs) -lm
 
 OUTPUT=x16emu
@@ -39,8 +39,8 @@ OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o spi.o ver
 HEADERS = disasm.h cpu/fake6502.h glue.h memory.h video.h ps2.h via.h loadsave.h
 
 ifeq ($(WITH_YM2151),1)
-OBJS += ym2151.o
-HEADERS += ym2151.h
+OBJS += extern/src/ym2151.o
+HEADERS += extern/src/ym2151.h
 CFLAGS += -DWITH_YM2151
 endif
 
@@ -137,4 +137,4 @@ package_linux:
 	rm -rf $(TMPDIR_NAME)
 
 clean:
-	rm -f *.o cpu/*.o x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem
+	rm -f *.o cpu/*.o extern/src/*.o x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem
