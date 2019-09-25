@@ -38,13 +38,8 @@
 
 #define MHZ 8
 
-//#define TRACE
-#define LOAD_HYPERCALLS
-
-
-void* emulator_loop(void *param);
+void *emulator_loop(void *param);
 void emscripten_main_loop(void);
-
 
 // This must match the KERNAL's set!
 char *keymaps[] = {
