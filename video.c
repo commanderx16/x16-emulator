@@ -152,9 +152,9 @@ video_init(int window_scale, char *quality)
 	SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	sdlTexture = SDL_CreateTexture(renderer,
-	                               SDL_PIXELFORMAT_RGB888,
-	                               SDL_TEXTUREACCESS_STREAMING,
-	                               SCREEN_WIDTH, SCREEN_HEIGHT);
+									SDL_PIXELFORMAT_RGB888,
+									SDL_TEXTUREACCESS_STREAMING,
+									SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	SDL_SetWindowTitle(window, "Commander X16");
 
@@ -780,9 +780,9 @@ render_line(uint16_t y)
 		// NTSC overscan
 		if (out_mode == 2) {
 			if (x < SCREEN_WIDTH * TITLE_SAFE_X ||
-			    x > SCREEN_WIDTH * (1 - TITLE_SAFE_X) ||
-			    y < SCREEN_HEIGHT * TITLE_SAFE_Y ||
-			    y > SCREEN_HEIGHT * (1 - TITLE_SAFE_Y)) {
+				x > SCREEN_WIDTH * (1 - TITLE_SAFE_X) ||
+				y < SCREEN_HEIGHT * TITLE_SAFE_Y ||
+				y > SCREEN_HEIGHT * (1 - TITLE_SAFE_Y)) {
 #if 1
 				r /= 3;
 				g /= 3;
@@ -1130,5 +1130,5 @@ video_write(uint8_t reg, uint8_t value)
 void
 video_update_title(const char* window_title)
 {
-    SDL_SetWindowTitle(window, window_title);
+	SDL_SetWindowTitle(window, window_title);
 }

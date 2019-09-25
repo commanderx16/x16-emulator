@@ -2,7 +2,7 @@
 
 This is an emulator for the Commander X16 computer system. It only depends on SDL2 and should compile on all modern operating systems.
 
-## Binaries & Compiling 
+## Binaries & Compiling
 
 <a href="https://travis-ci.org/commanderx16/x16-emulator"><img alt="Travis (.org)" src="https://img.shields.io/travis/commanderx16/x16-emulator.svg?label=CI&logo=travis&logoColor=white&style=for-the-badge"></a>
 
@@ -132,7 +132,7 @@ BASIC programs are encoded in a tokenized form, they are not simply ASCII files.
 
 Please see the KERNAL/BASIC documentation.
 
-## Debugger 
+## Debugger
 
 The debugger requires `-debug` to start. Without it it is effectively disabled.
 
@@ -319,7 +319,7 @@ F4: &lt;switch 40/80&gt;
 F5: LOAD
 F6: SAVE"
 F7: DOS"$ &lt;doesn't work yet&gt;
-F8: DOS &lt;doesn't work yet&gt; 
+F8: DOS &lt;doesn't work yet&gt;
 
 ### Release 18
 
@@ -361,7 +361,7 @@ rom.bin is now 3*8 KB:
 
 ### Release 11
 
-* The emulator and the KERNAL now speak the bit-level PS/2 protocol over VIA#2 PA0/PA1. The system behaves the same, but keyboard input in the ROM should work on a real device. 
+* The emulator and the KERNAL now speak the bit-level PS/2 protocol over VIA#2 PA0/PA1. The system behaves the same, but keyboard input in the ROM should work on a real device.
 
 ### Release 10
 

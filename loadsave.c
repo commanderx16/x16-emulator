@@ -152,7 +152,7 @@ LOAD()
 			bytes_read = fread(RAM + start, 1, 0x9f00 - start, f);
 		} else if(start < 0xa000) {
 			// IO addresses
-		} else if(start < 0xc000) { 
+		} else if(start < 0xc000) {
 			// banked RAM
 			bytes_read = fread(RAM + ((uint16_t)memory_get_ram_bank() << 13) + start, 1, 0xc000 - start, f);
 		} else {
