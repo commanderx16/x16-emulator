@@ -105,9 +105,9 @@ write6502(uint16_t address, uint8_t value)
 			emu_write(address & 0xf, value);
 #ifdef WITH_YM2151
 		} else if (address == 0x9fe0) {
-			YM_write_reg(lastAudioAdr, value);
-		} else if (address == 0x9fe1) {
 			lastAudioAdr = value;
+		} else if (address == 0x9fe1) {
+			YM_write_reg(lastAudioAdr, value);
 #endif
 		} else {
 			// future expansion
