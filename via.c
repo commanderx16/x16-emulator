@@ -31,6 +31,8 @@ void
 via1_init()
 {
 	srand(time(NULL));
+	via1registers[0] = memory_get_rom_bank(); // PB: ROM bank, IEC
+	via1registers[1] = memory_get_ram_bank(); // PA: RAM bank
 }
 
 uint8_t
