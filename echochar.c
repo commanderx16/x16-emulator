@@ -14,13 +14,14 @@ echochar(uint8_t c)
 	static int mode = 0; /* 0: PETSCII, 1: ISO8859-15 */
 	static int shifted = 0; /* 0: Unshifted, 1: Shifted */
 	static int color = 97;
+	static int backcolor = 44;
 	if ((0x00 <= c && c <= 0x1F) || (0x80 <= c && c <= 0x9F)) {
 		switch (c) {
 			case 0x05: prtnumflush("\e[%dm", color = 97); break; /* white */
-			case 0x0A: prtuptflush(0xFFFD); /* intentional fall through */
+			case 0x0A: prtuptflush(0x24B6); /* Ⓐ intentional fall through */
 			case 0x0D: /* CR, but acts like NL */
 			case 0x8D: prtflush("\n"); /* LF, but acts like NL */
-			case 0x92: prtnumflush("\e[0;%dm", color); break; /* reverse off */
+			case 0x92: prtnumflush("\e[0;%dm", backcolor); prtnumflush("\e[%dm", color); break; /* reverse off */
 			case 0x0E: shifted = 1; break;    /* lower case, text mode */
 			case 0x0F: mode = 1; shifted = 1; break; /* ISO mode */
 			case 0x11: prtflush("\e[B"); break; /* down */
@@ -39,7 +40,7 @@ echochar(uint8_t c)
 			case 0x90: prtnumflush("\e[%dm", color = 30); break; /* black */
 			case 0x91: prtflush("\e[A"); break; /* up */
 			/*   0x92 see above */
-			case 0x93: prtflush("\e[2J\e[H"); break; /* clr */
+			case 0x93: prtnumflush("\e[%dm\e[2J\e[H", backcolor); break; /* clr */
 			case 0x94: prtflush("\e[1@"); break; /* insert */
 			case 0x95: prtnumflush("\e[%dm", color = 33); break; /* brown, same as orange now */
 			case 0x96: prtnumflush("\e[%dm", color = 91); break; /* light red */
@@ -57,9 +58,9 @@ echochar(uint8_t c)
 	} else {
 		switch (mode) {
 			case 0: /* PETSCII - when no PETSCII character exists a ISO8859-15 character is shown */
-				if ('\xC0' <= c && c <= '\xDF') {
+				if (0xC0 <= c && c <= 0xDF) {
 					c -= '\xC0' - '\x60';
-				} else if ('\xE0' <= c && c <= '\xFE') {
+				} else if (0xE0 <= c && c <= 0xFE) {
 					c -= '\xE0' - '\xA0';
 				}
 				switch (c) {
@@ -186,7 +187,7 @@ prtuptflush(uint32_t utf)
 void
 prtflush(const char *s)
 {
-	printf(s);
+	printf("%s", s);
 	fflush(stdout);
 }
 
