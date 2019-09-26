@@ -1104,3 +1104,9 @@ video_write(uint8_t reg, uint8_t value)
 			break;
 	}
 }
+
+void
+video_update_title(const char* window_title)
+{
+    SDL_SetWindowTitle(window, window_title);
+}
