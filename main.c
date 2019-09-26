@@ -149,6 +149,10 @@ machine_dump()
 void
 machine_reset()
 {
+	spi_init();
+	vera_spi_init();
+	via1_init();
+	via2_init();
 	video_reset();
 	reset6502();
 }
@@ -636,10 +640,6 @@ main(int argc, char **argv)
 #endif
 
 	video_init(window_scale, scale_quality);
-	spi_init();
-	vera_spi_init();
-	via1_init();
-	via2_init();
 
 	machine_reset();
 

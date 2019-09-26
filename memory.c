@@ -14,8 +14,8 @@
 #endif
 #include "ps2.h"
 
-uint8_t ram_bank = NUM_RAM_BANKS - 1;
-uint8_t rom_bank = NUM_ROM_BANKS - 1;
+uint8_t ram_bank;
+uint8_t rom_bank;
 
 uint8_t RAM[RAM_SIZE];
 uint8_t ROM[ROM_SIZE];
