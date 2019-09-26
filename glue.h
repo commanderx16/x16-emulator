@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define FIXED_KERNAL
+//#define FIXED_KERNAL
 //#define TRACE
 #define LOAD_HYPERCALLS
 
