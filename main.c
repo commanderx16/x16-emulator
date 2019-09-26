@@ -811,6 +811,7 @@ emulator_loop(void *param)
 				c = 10;
 			}
 			printf("%c", c);
+			fflush(stdout);
 		}
 
 		if (pc == 0xffcf && is_kernal()) {
