@@ -215,10 +215,10 @@ latin15_from_unicode(uint32_t c)
 static bool
 is_kernal()
 {
-	return ROM[0x3ff6] == 'M' && // only for KERNAL
-	       ROM[0x3ff7] == 'I' &&
-	       ROM[0x3ff8] == 'S' &&
-	       ROM[0x3ff9] == 'T';
+	return read6502(0xfff6) == 'M' && // only for KERNAL
+	       read6502(0xfff7) == 'I' &&
+	       read6502(0xfff8) == 'S' &&
+	       read6502(0xfff9) == 'T';
 }
 
 static void
