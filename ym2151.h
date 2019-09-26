@@ -68,11 +68,10 @@ typedef struct
 } YM2151Operator;
 
 
-void YM_Create(float volume, uint32_t clock);
+void YM_Create(uint32_t clock);
 
 void YM_init(int rate, int fps);
 void YM_stream_update(uint16_t* stream, int samples);
-void YM_set_volume(uint8_t);
 
 void YM_write_reg(int r, int v);
 uint32_t YM_read_status();
