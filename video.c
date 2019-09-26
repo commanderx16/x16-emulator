@@ -490,8 +490,15 @@ get_pixel(uint8_t layer, uint16_t x, uint16_t y)
 		y = (y + props->vscroll) & (props->layerh_max);
 	}
 
-	int xx = x & props->tilew_max;
-	int yy = y & props->tileh_max;
+	int xx;
+	int yy;
+	if (props->bitmap_mode) {
+		xx = x % props->tilew;
+		yy = y % props->tileh;
+	} else {
+		xx = x & props->tilew_max;
+		yy = y & props->tileh_max;
+	}
 
 	uint16_t tile_index = 0;
 	uint8_t fg_color = 0;
