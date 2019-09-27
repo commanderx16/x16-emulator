@@ -444,6 +444,7 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-echoraw")) {
 			argc--;
 			argv++;
+			echo_mode = true;
 			echo_raw = true;
 		} else if (!strcmp(argv[0], "-log")) {
 			argc--;
@@ -810,18 +811,15 @@ emulator_loop(void *param)
 			break;
 		}
 
-		if (pc == 0xffd2 && is_kernal()) {
+		if (echo_mode && pc == 0xffd2 && is_kernal()) {
 			uint8_t c = a;
-			if (echo_raw) {
-				printf("%c", c);
-				fflush(stdout);
-			} else if (echo_mode) {
+			if (!echo_raw) {
 				if (c == 0x0d) {
 					c = 0x0a;
 				}
-				printf("%c", c);
-				fflush(stdout);
 			}
+			printf("%c", c);
+			fflush(stdout);
 		}
 
 		if (pc == 0xffcf && is_kernal()) {
