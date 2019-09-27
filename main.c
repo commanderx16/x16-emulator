@@ -15,6 +15,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #define PATH_MAX MAX_PATH
+#define F_OK 0
 #else
 #include <unistd.h>
 #endif
