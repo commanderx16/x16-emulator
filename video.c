@@ -33,8 +33,7 @@
 
 #define ESC_IS_BREAK /* if enabled, Esc sends Break/Pause key instead of Esc */
 
-//#define NUM_SPRITES 128
-#define NUM_SPRITES 16 /* XXX speedup */
+#define NUM_SPRITES 128
 
 // both VGA and NTSC
 #define SCAN_WIDTH 800
@@ -87,12 +86,16 @@ static uint8_t reg_layer[2][16];
 static uint8_t reg_sprites[16];
 static uint8_t reg_composer[32];
 
+static uint8_t sprite_line_col[SCREEN_WIDTH];
+static uint8_t sprite_line_z[SCREEN_WIDTH];
+static uint8_t layer_line[2][SCREEN_WIDTH];
+
 static uint8_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT * 4];
 
 static GifWriter gif_writer;
 
 static const uint16_t default_palette[] = {
-0x0000,0xfff,0x800,0xafe,0xc4c,0x0c5,0x00a,0xee7,0xd85,0x640,0xf77,0x333,0x777,0xaf6,0x08f,0xbbb,0x000,0x111,0x222,0x333,0x444,0x555,0x666,0x777,0x888,0x999,0xaaa,0xbbb,0xccc,0xddd,0xeee,0xfff,0x211,0x433,0x644,0x866,0xa88,0xc99,0xfbb,0x211,0x422,0x633,0x844,0xa55,0xc66,0xf77,0x200,0x411,0x611,0x822,0xa22,0xc33,0xf33,0x200,0x400,0x600,0x800,0xa00,0xc00,0xf00,0x221,0x443,0x664,0x886,0xaa8,0xcc9,0xfeb,0x211,0x432,0x653,0x874,0xa95,0xcb6,0xfd7,0x210,0x431,0x651,0x862,0xa82,0xca3,0xfc3,0x210,0x430,0x640,0x860,0xa80,0xc90,0xfb0,0x121,0x343,0x564,0x786,0x9a8,0xbc9,0xdfb,0x121,0x342,0x463,0x684,0x8a5,0x9c6,0xbf7,0x120,0x241,0x461,0x582,0x6a2,0x8c3,0x9f3,0x120,0x240,0x360,0x480,0x5a0,0x6c0,0x7f0,0x121,0x343,0x465,0x686,0x8a8,0x9ca,0xbfc,0x121,0x242,0x364,0x485,0x5a6,0x6c8,0x7f9,0x020,0x141,0x162,0x283,0x2a4,0x3c5,0x3f6,0x020,0x041,0x061,0x082,0x0a2,0x0c3,0x0f3,0x122,0x344,0x466,0x688,0x8aa,0x9cc,0xbff,0x122,0x244,0x366,0x488,0x5aa,0x6cc,0x7ff,0x022,0x144,0x166,0x288,0x2aa,0x3cc,0x3ff,0x022,0x044,0x066,0x088,0x0aa,0x0cc,0x0ff,0x112,0x334,0x456,0x668,0x88a,0x9ac,0xbcf,0x112,0x224,0x346,0x458,0x56a,0x68c,0x79f,0x002,0x114,0x126,0x238,0x24a,0x35c,0x36f,0x002,0x014,0x016,0x028,0x02a,0x03c,0x03f,0x112,0x334,0x546,0x768,0x98a,0xb9c,0xdbf,0x112,0x324,0x436,0x648,0x85a,0x96c,0xb7f,0x102,0x214,0x416,0x528,0x62a,0x83c,0x93f,0x102,0x204,0x306,0x408,0x50a,0x60c,0x70f,0x212,0x434,0x646,0x868,0xa8a,0xc9c,0xfbe,0x211,0x423,0x635,0x847,0xa59,0xc6b,0xf7d,0x201,0x413,0x615,0x826,0xa28,0xc3a,0xf3c,0x201,0x403,0x604,0x806,0xa08,0xc09,0xf0b
+0x000,0xfff,0x800,0xafe,0xc4c,0x0c5,0x00a,0xee7,0xd85,0x640,0xf77,0x333,0x777,0xaf6,0x08f,0xbbb,0x000,0x111,0x222,0x333,0x444,0x555,0x666,0x777,0x888,0x999,0xaaa,0xbbb,0xccc,0xddd,0xeee,0xfff,0x211,0x433,0x644,0x866,0xa88,0xc99,0xfbb,0x211,0x422,0x633,0x844,0xa55,0xc66,0xf77,0x200,0x411,0x611,0x822,0xa22,0xc33,0xf33,0x200,0x400,0x600,0x800,0xa00,0xc00,0xf00,0x221,0x443,0x664,0x886,0xaa8,0xcc9,0xfeb,0x211,0x432,0x653,0x874,0xa95,0xcb6,0xfd7,0x210,0x431,0x651,0x862,0xa82,0xca3,0xfc3,0x210,0x430,0x640,0x860,0xa80,0xc90,0xfb0,0x121,0x343,0x564,0x786,0x9a8,0xbc9,0xdfb,0x121,0x342,0x463,0x684,0x8a5,0x9c6,0xbf7,0x120,0x241,0x461,0x582,0x6a2,0x8c3,0x9f3,0x120,0x240,0x360,0x480,0x5a0,0x6c0,0x7f0,0x121,0x343,0x465,0x686,0x8a8,0x9ca,0xbfc,0x121,0x242,0x364,0x485,0x5a6,0x6c8,0x7f9,0x020,0x141,0x162,0x283,0x2a4,0x3c5,0x3f6,0x020,0x041,0x061,0x082,0x0a2,0x0c3,0x0f3,0x122,0x344,0x466,0x688,0x8aa,0x9cc,0xbff,0x122,0x244,0x366,0x488,0x5aa,0x6cc,0x7ff,0x022,0x144,0x166,0x288,0x2aa,0x3cc,0x3ff,0x022,0x044,0x066,0x088,0x0aa,0x0cc,0x0ff,0x112,0x334,0x456,0x668,0x88a,0x9ac,0xbcf,0x112,0x224,0x346,0x458,0x56a,0x68c,0x79f,0x002,0x114,0x126,0x238,0x24a,0x35c,0x36f,0x002,0x014,0x016,0x028,0x02a,0x03c,0x03f,0x112,0x334,0x546,0x768,0x98a,0xb9c,0xdbf,0x112,0x324,0x436,0x648,0x85a,0x96c,0xb7f,0x102,0x214,0x416,0x528,0x62a,0x83c,0x93f,0x102,0x204,0x306,0x408,0x50a,0x60c,0x70f,0x212,0x434,0x646,0x868,0xa8a,0xc9c,0xfbe,0x211,0x423,0x635,0x847,0xa59,0xc6b,0xf7d,0x201,0x413,0x615,0x826,0xa28,0xc3a,0xf3c,0x201,0x403,0x604,0x806,0xa08,0xc09,0xf0b
 };
 
 static uint8_t video_space_read(uint32_t address);
@@ -475,101 +478,6 @@ void refresh_layer_properties(uint8_t layer)
 	props->tile_size = (props->tilew * props->bits_per_pixel * props->tileh) >> 3;
 }
 
-static uint8_t
-get_pixel(uint8_t layer, uint16_t x, uint16_t y)
-{
-	struct video_layer_properties* props = &layer_properties[layer];
-
-	if (!props->enabled) {
-		return 0; // transparent
-	}
-
-	// Scrolling
-	if (!props->bitmap_mode) {
-		x = (x + props->hscroll) & (props->layerw_max);
-		y = (y + props->vscroll) & (props->layerh_max);
-	}
-
-	int xx;
-	int yy;
-	if (props->bitmap_mode) {
-		xx = x % props->tilew;
-		yy = y % props->tileh;
-	} else {
-		xx = x & props->tilew_max;
-		yy = y & props->tileh_max;
-	}
-
-	uint16_t tile_index = 0;
-	uint8_t fg_color = 0;
-	uint8_t bg_color = 0;
-	uint8_t palette_offset = 0;
-
-	// extract all information from the map
-	if (props->bitmap_mode) {
-		tile_index = 0;
-		palette_offset = reg_layer[layer][7] & 0xf;
-	} else {
-		uint32_t map_addr = props->map_base + (y / props->tileh * props->mapw + x / props->tilew) * 2;
-		uint8_t byte0 = video_space_read(map_addr);
-		uint8_t byte1 = video_space_read(map_addr + 1);
-		if (props->text_mode) {
-			tile_index = byte0;
-
-			if (props->mode == 0) {
-				fg_color = byte1 & 15;
-				bg_color = byte1 >> 4;
-			} else {
-				fg_color = byte1;
-				bg_color = 0;
-			}
-		} else if (props->tile_mode) {
-			tile_index = byte0 | ((byte1 & 3) << 8);
-
-			// Tile Flipping
-			bool vflip = (byte1 >> 3) & 1;
-			bool hflip = (byte1 >> 2) & 1;
-			if (vflip) {
-				yy = yy ^ (props->tileh - 1);
-			}
-			if (hflip) {
-				xx = xx ^ (props->tilew - 1);
-			}
-
-			palette_offset = byte1 >> 4;
-		}
-	}
-
-	// offset within tilemap of the current tile
-	uint32_t tile_start = tile_index * props->tile_size;
-	// additional bytes to reach the correct line of the tile
-	uint32_t y_add = (yy * props->tilew * props->bits_per_pixel) >> 3;
-	// additional bytes to reach the correct column of the tile
-	uint16_t x_add = (xx * props->bits_per_pixel) >> 3;
-	uint32_t tile_offset = tile_start + y_add + x_add;
-	uint8_t s = video_space_read(props->tile_base + tile_offset);
-
-	// convert tile byte to indexed color
-	uint8_t col_index = 0;
-	if (props->bits_per_pixel == 1) {
-		bool bit = (s >> (7 - xx)) & 1;
-		col_index = bit ? fg_color : bg_color;
-	} else if (props->bits_per_pixel == 2) {
-		col_index = (s >> (6 - ((xx & 3) << 1))) & 3;
-	} else if (props->bits_per_pixel == 4) {
-		col_index = (s >> (4 - ((xx & 1) << 2))) & 0xf;
-	} else if (props->bits_per_pixel == 8) {
-		col_index = s;
-	}
-
-	// Apply Palette Offset
-	if (palette_offset && col_index > 0 && col_index < 16) {
-		col_index += palette_offset << 4;
-	}
-
-	return col_index;
-}
-
 struct video_sprite_properties
 {
 	int8_t sprite_zdepth;
@@ -618,60 +526,177 @@ void refresh_sprite_properties(uint16_t sprite)
 	props->palette_offset = (sprite_data[sprite][7] & 0x0f) << 4;
 }
 
-uint8_t
-get_sprite(uint16_t x, uint16_t y)
+static void
+render_sprite_line(uint16_t y)
 {
+	for (int i = 0; i < SCREEN_WIDTH; i++) {
+		sprite_line_col[i] = 0;
+		sprite_line_z[i] = 0;
+	}
 	if (!(reg_sprites[0] & 1)) {
 		// sprites disabled
-		return 0;
+		return;
 	}
+	uint16_t sprite_budget = 800 + 1;
 	for (int i = 0; i < NUM_SPRITES; i++) {
-		struct video_sprite_properties* props = &sprite_properties[i];
+		// one clock per lookup
+		sprite_budget--; if (sprite_budget == 0) break;
+		struct video_sprite_properties *props = &sprite_properties[i];
 
 		if (props->sprite_zdepth == 0) {
 			continue;
 		}
 
-		// check whether this pixel falls within the sprite
-		if (x < props->sprite_x || x >= props->sprite_x + props->sprite_width) {
-			continue;
-		}
+		// check whether this line falls within the sprite
 		if (y < props->sprite_y || y >= props->sprite_y + props->sprite_height) {
 			continue;
 		}
 
-		// relative position within the sprite
-		uint16_t sx = x - props->sprite_x;
-		uint16_t sy = y - props->sprite_y;
+		for (uint16_t sx = 0; sx < props->sprite_width; sx++) {
+			uint16_t eff_sx = sx;
+			uint16_t eff_sy = y - props->sprite_y;
 
-		// flip
-		if (props->hflip) {
-			sx = (props->sprite_width - 1) - sx;
-		}
-		if (props->vflip) {
-			sy = (props->sprite_height - 1) - sy;
-		}
-
-		uint8_t col_index = 0;
-		if (!props->mode) {
-			// 4 bpp
-			uint8_t byte = video_ram[props->sprite_address + (sy * props->sprite_width >> 1) + (sx >> 1)];
-			if (sx & 1) {
-				col_index = byte & 0xf;
-			} else {
-				col_index = byte >> 4;
+			// flip
+			if (props->hflip) {
+				eff_sx = (props->sprite_width - 1) - eff_sx;
 			}
-		} else {
-			// 8 bpp
-			col_index = video_ram[props->sprite_address + sy * props->sprite_width + sx];
-		}
-		// palette offset
-		if (col_index > 0) {
-			col_index += props->palette_offset;
-			return col_index;
+			if (props->vflip) {
+				eff_sy = (props->sprite_height - 1) - eff_sy;
+			}
+
+			uint8_t col_index = 0;
+			uint32_t vaddr;
+			if (props->mode == 0) {
+				// 4 bpp
+				vaddr = props->sprite_address + (eff_sy * props->sprite_width >> 1) + (eff_sx >> 1);
+				uint8_t byte = video_ram[vaddr];
+				if (eff_sx & 1) {
+					col_index = byte & 0xf;
+				} else {
+					col_index = byte >> 4;
+				}
+			} else {
+				// 8 bpp
+				vaddr = props->sprite_address + eff_sy * props->sprite_width + eff_sx;
+				col_index = video_ram[vaddr];
+			}
+
+			// one clock per fetched 32 bits
+			if (!(vaddr & 3)) {
+				sprite_budget--; if (sprite_budget == 0) break;
+			}
+			// one clock per rendered pixel
+			sprite_budget--; if (sprite_budget == 0) break;
+			// palette offset
+			if (col_index > 0) {
+				col_index += props->palette_offset;
+				if (props->sprite_zdepth > sprite_line_z[props->sprite_x + sx]) {
+					sprite_line_col[props->sprite_x + sx] = col_index;
+					sprite_line_z[props->sprite_x + sx] = props->sprite_zdepth;
+				}
+			}
 		}
 	}
-	return 0;
+}
+
+static void
+render_layer_line(uint8_t layer, uint16_t y)
+{
+	struct video_layer_properties *props = &layer_properties[layer];
+
+	if (!props->enabled) {
+		for (int x = 0; x < SCREEN_WIDTH; x++) {
+			layer_line[layer][x] = 0;
+		}
+	} else {
+		for (int x = 0; x < SCREEN_WIDTH; x++) {
+			uint8_t col_index = 0;
+
+			int xx = x;
+			int yy = y;
+
+			// Scrolling
+			if (!props->bitmap_mode) {
+				xx = (xx + props->hscroll) & (props->layerw_max);
+				yy = (yy + props->vscroll) & (props->layerh_max);
+			}
+
+			if (props->bitmap_mode) {
+				xx = x % props->tilew;
+				yy = y % props->tileh;
+			} else {
+				xx = x & props->tilew_max;
+				yy = y & props->tileh_max;
+			}
+
+			uint16_t tile_index = 0;
+			uint8_t fg_color = 0;
+			uint8_t bg_color = 0;
+			uint8_t palette_offset = 0;
+
+			// extract all information from the map
+			if (props->bitmap_mode) {
+				tile_index = 0;
+				palette_offset = reg_layer[layer][7] & 0xf;
+			} else {
+				uint32_t map_addr = props->map_base + (y / props->tileh * props->mapw + x / props->tilew) * 2;
+				uint8_t byte0 = video_space_read(map_addr);
+				uint8_t byte1 = video_space_read(map_addr + 1);
+				if (props->text_mode) {
+					tile_index = byte0;
+
+					if (props->mode == 0) {
+						fg_color = byte1 & 15;
+						bg_color = byte1 >> 4;
+					} else {
+						fg_color = byte1;
+						bg_color = 0;
+					}
+				} else if (props->tile_mode) {
+					tile_index = byte0 | ((byte1 & 3) << 8);
+
+					// Tile Flipping
+					bool vflip = (byte1 >> 3) & 1;
+					bool hflip = (byte1 >> 2) & 1;
+					if (vflip) {
+						yy = yy ^ (props->tileh - 1);
+					}
+					if (hflip) {
+						xx = xx ^ (props->tilew - 1);
+					}
+
+					palette_offset = byte1 >> 4;
+				}
+			}
+
+			// offset within tilemap of the current tile
+			uint32_t tile_start = tile_index * props->tile_size;
+			// additional bytes to reach the correct line of the tile
+			uint32_t y_add = (yy * props->tilew * props->bits_per_pixel) >> 3;
+			// additional bytes to reach the correct column of the tile
+			uint16_t x_add = (xx * props->bits_per_pixel) >> 3;
+			uint32_t tile_offset = tile_start + y_add + x_add;
+			uint8_t s = video_space_read(props->tile_base + tile_offset);
+
+			// convert tile byte to indexed color
+			if (props->bits_per_pixel == 1) {
+				bool bit = (s >> (7 - xx)) & 1;
+				col_index = bit ? fg_color : bg_color;
+			} else if (props->bits_per_pixel == 2) {
+				col_index = (s >> (6 - ((xx & 3) << 1))) & 3;
+			} else if (props->bits_per_pixel == 4) {
+				col_index = (s >> (4 - ((xx & 1) << 2))) & 0xf;
+			} else if (props->bits_per_pixel == 8) {
+				col_index = s;
+			}
+
+			// Apply Palette Offset
+			if (palette_offset && col_index > 0 && col_index < 16) {
+				col_index += palette_offset << 4;
+			}
+			layer_line[layer][x] = col_index;
+		}
+	}
 }
 
 float start_scan_pixel_pos, end_scan_pixel_pos;
@@ -717,13 +742,17 @@ video_flush_internal(int start, int end)
 			continue;
 		}
 
-		int eff_x = 1.0 / hscale * (x - hstart);
 		int eff_y = 1.0 / vscale * (y - vstart);
+
+		if (x == 0) {
+			render_sprite_line(eff_y);
+			render_layer_line(0, eff_y);
+			render_layer_line(1, eff_y);
+		}
 
 		uint8_t r;
 		uint8_t g;
 		uint8_t b;
-
 		if (out_mode == 0) {
 			// video generation off
 			// -> show blue screen
@@ -731,20 +760,31 @@ video_flush_internal(int start, int end)
 			g = 0;
 			b = 255;
 		} else {
-			uint8_t col_index;
+			uint8_t col_index = 0;
 			if (x < hstart || x > hstop || y < vstart || y > vstop) {
 				col_index = border_color;
 			} else {
-				col_index = get_pixel(1, eff_x, eff_y);
-				if (col_index == 0) { // Layer 2 is transparent
-					col_index = get_pixel(0, eff_x, eff_y);
-				}
-				uint8_t spr_col_index = get_sprite(eff_x, eff_y);
-				if (spr_col_index) {
-					col_index = spr_col_index;
+				int eff_x = 1.0 / hscale * (x - hstart);
+				uint8_t spr_col_index = sprite_line_col[eff_x];
+				uint8_t spr_zindex = sprite_line_z[eff_x];
+				uint8_t l1_col_index = layer_line[0][eff_x];
+				uint8_t l2_col_index = layer_line[1][eff_x];
+				switch (spr_zindex) {
+					case 3:
+						col_index = spr_col_index ?: l2_col_index ?: l1_col_index;
+						break;
+					case 2:
+						col_index = l2_col_index ?: spr_col_index ?: l1_col_index;
+						break;
+					case 1:
+						col_index = l2_col_index ?: l1_col_index ?: spr_col_index;
+						break;
+					case 0:
+						col_index = l2_col_index ?: l1_col_index;
+						break;
 				}
 			}
-
+			// palette lookup
 			uint16_t entry = palette[col_index * 2] | palette[col_index * 2 + 1] << 8;
 			r = ((entry >> 8) & 0xf) << 4 | ((entry >> 8) & 0xf);
 			g = ((entry >> 4) & 0xf) << 4 | ((entry >> 4) & 0xf);
@@ -752,24 +792,24 @@ video_flush_internal(int start, int end)
 			if (chroma_disable) {
 				r = g = b = (r + b + g) / 3;
 			}
+		}
 
-			// NTSC overscan
-			if (out_mode == 2) {
-				if (x < SCREEN_WIDTH * TITLE_SAFE_X ||
-				    x > SCREEN_WIDTH * (1 - TITLE_SAFE_X) ||
-				    y < SCREEN_HEIGHT * TITLE_SAFE_Y ||
-				    y > SCREEN_HEIGHT * (1 - TITLE_SAFE_Y)) {
+		// NTSC overscan
+		if (out_mode == 2) {
+			if (x < SCREEN_WIDTH * TITLE_SAFE_X ||
+			    x > SCREEN_WIDTH * (1 - TITLE_SAFE_X) ||
+			    y < SCREEN_HEIGHT * TITLE_SAFE_Y ||
+			    y > SCREEN_HEIGHT * (1 - TITLE_SAFE_Y)) {
 #if 1
-					r /= 3;
-					g /= 3;
-					b /= 3;
+				r /= 3;
+				g /= 3;
+				b /= 3;
 #else
-					r ^= 128;
-					g ^= 128;
-					b ^= 128;
+				r ^= 128;
+				g ^= 128;
+				b ^= 128;
 #endif
 
-				}
 			}
 		}
 		int fbi = (y * SCREEN_WIDTH + x) * 4;
