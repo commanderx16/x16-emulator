@@ -199,6 +199,18 @@ All rights reserved. License: 2-clause BSD
 
 ## Release Notes
 
+### Release 32
+
+* correct ROM banking
+* VERA emulation optimizations [Stephen Horn]
+* added `-dump` option to allow writing RAM, CPU state or VERA state to disk [Nils Hasenbanck]
+* added `-quality` option to change scaling algorithm; now defaults to "best" [Maurizio Porrato]
+* output of `-echo` can now be fed into UNIX pipes [Anonymous Maarten]
+* relative speed of emulator is shown in the title if host can't keep up [Rien]
+* fix: 6502 BCD arithmetic [Rien]
+* fix: colors (white is now white) [Rien[
+* fix: sprite flipping [jjbliss]
+
 ### Release 31
 
 * VERA 0.8 register layout
