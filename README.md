@@ -169,13 +169,11 @@ https://github.com/commanderx16/x16-emulator/wiki
 	* ROM/RAM banking
 	* PS/2 keyboard
 	* SD card (SPI)
-* A 60 Hz interrupt is injected independently of the VIA settings.
-
 
 ## Missing Features
 
 * VERA
-	* Does not support IRQs
+	* Does not support raster IRQs (does support VSYNC though)
 	* Does not support the "CURRENT_FIELD" bit
 	* Does not sprite z-depth, collisions or limitations
 	* Only supports the first 16 sprites
@@ -194,8 +192,6 @@ All rights reserved. License: 2-clause BSD
 ## Known Issues
 
 * Emulator: LOAD"$ (and LOAD"$",1) will show host uppercase filenames as garbage. Use Ctrl+N to switch to the X16 upper/lower character set for a workaround.
-* BASIC: $ and % prefixes don't work for DATA entries
-* RND(0) always returns 0
 
 ## Release Notes
 
@@ -208,7 +204,7 @@ All rights reserved. License: 2-clause BSD
 * output of `-echo` can now be fed into UNIX pipes [Anonymous Maarten]
 * relative speed of emulator is shown in the title if host can't keep up [Rien]
 * fix: 6502 BCD arithmetic [Rien]
-* fix: colors (white is now white) [Rien[
+* fix: colors (white is now white) [Rien]
 * fix: sprite flipping [jjbliss]
 
 ### Release 31
