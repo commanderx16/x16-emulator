@@ -1,7 +1,8 @@
-// Commander X16 Emulator
-// Copyright (c) 2019 John Bliss
-// All rights reserved. License: 2-clause BSD
-
+/**********************************************/
+// File     :     controller.c
+// Author   :     John Bliss
+// Date     :     September 27th 2019
+/**********************************************/
 
 #include "controller.h"
 
@@ -23,29 +24,14 @@ bool controller_latch, controller_clock;
 bool controller_data1, controller_data2;
 
 bool controller_init(){
-  printf("Number of Controllers: %d\n", SDL_NumJoysticks());
-  printf("Initializing Controller\n");
   int controller1_number = 0;
+  //Try to get first controller, if it is not set to 1
   if(joy1_mode != NONE){
     for (int i = 0; i < SDL_NumJoysticks(); ++i) {
-        if (SDL_IsGameController(i)) {
-            controller1 = SDL_GameControllerOpen(i);
-            if (controller1) {
-              printf("Got Controller 1  %i!\n", i);
-              controller1_number = i;
-              break;
-            } else {
-              fprintf(stderr, "Could not open gamecontroller %i: %s\n", i, SDL_GetError());
-            }
-        }
-    }
-  }
-  if(joy2_mode != NONE){
-    for (int i=0; i < SDL_NumJoysticks(); ++i) {
-      if (SDL_IsGameController(i) && controller1_number != i) {
-        controller2 = SDL_GameControllerOpen(i);
-        if (controller2) {
-          printf("Got Controller 2! %i\n",i);
+      if (SDL_IsGameController(i)) {
+        controller1 = SDL_GameControllerOpen(i);
+        if (controller1) {
+          controller1_number = i;
           break;
         } else {
           fprintf(stderr, "Could not open gamecontroller %i: %s\n", i, SDL_GetError());
@@ -53,16 +39,20 @@ bool controller_init(){
       }
     }
   }
-  if (controller1) {
-      printf("Got Controller 1!\n");
-      //joy1_mode = NES;
-      return true;
-  } else {
-      fprintf(stderr, "No Controller opened\n");
-      joy1_mode = NONE;
-      return false;
+  if(joy2_mode != NONE){
+    for (int i=0; i < SDL_NumJoysticks(); ++i) {
+      if (SDL_IsGameController(i) && controller1_number != i) {
+        controller2 = SDL_GameControllerOpen(i);
+        if (controller2) {
+          break;
+        } else {
+          fprintf(stderr, "Could not open gamecontroller %i: %s\n", i, SDL_GetError());
+        }
+      }
+    }
   }
   writing = false;
+  return true;
 }
 
 void controller_step(){

@@ -1,6 +1,8 @@
-// Commander X16 Emulator
-// Copyright (c) 2019 John Bliss
-// All rights reserved. License: 2-clause BSD
+/**********************************************/
+// File     :     controller.h
+// Author   :     John Bliss
+// Date     :     September 27th 2019
+/**********************************************/
 
 #ifndef _CONTROLLER_H_
 #define _CONTROLLER_H_
