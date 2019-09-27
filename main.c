@@ -47,13 +47,8 @@
 
 #define MHZ 8
 
-//#define TRACE
-#define LOAD_HYPERCALLS
-
-
-void* emulator_loop(void *param);
+void *emulator_loop(void *param);
 void emscripten_main_loop(void);
-
 
 // This must match the KERNAL's set!
 char *keymaps[] = {
@@ -90,6 +85,9 @@ char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
 char *scale_quality = "best";
+char window_title[30];
+int32_t last_perf_update = 0;
+int32_t perf_frame_count = 0;
 
 #ifdef TRACE
 bool trace_mode = false;
@@ -100,6 +98,11 @@ int instruction_counter;
 FILE *prg_file ;
 int prg_override_start = -1;
 bool run_after_load = false;
+
+#ifdef WITH_YM2151
+const char *audio_dev_name = NULL;
+SDL_AudioDeviceID audio_dev;
+#endif
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -158,6 +161,10 @@ machine_dump()
 void
 machine_reset()
 {
+	spi_init();
+	vera_spi_init();
+	via1_init();
+	via2_init();
 	video_reset();
 	reset6502();
 }
@@ -224,10 +231,10 @@ latin15_from_unicode(uint32_t c)
 static bool
 is_kernal()
 {
-	return ROM[0x3ff6] == 'M' && // only for KERNAL
-	       ROM[0x3ff7] == 'I' &&
-	       ROM[0x3ff8] == 'S' &&
-	       ROM[0x3ff9] == 'T';
+	return read6502(0xfff6) == 'M' && // only for KERNAL
+	       read6502(0xfff7) == 'I' &&
+	       read6502(0xfff8) == 'S' &&
+	       read6502(0xfff9) == 'T';
 }
 
 static void
@@ -244,12 +251,6 @@ usage()
 	printf("\t$6000-$7FFF bank #2 of banked ROM\n");
 	printf("\t...\n");
 	printf("\tThe file needs to be at least $4000 bytes in size.\n");
-#ifndef VERA_V0_8
-	printf("-char <chargen.bin>\n");
-	printf("\tOverride character ROM file:\n");
-	printf("\t$0000-$07FF upper case/graphics\n");
-	printf("\t$0800-$0FFF lower case\n");
-#endif
 	printf("-keymap <keymap>\n");
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
@@ -282,7 +283,10 @@ usage()
 	printf("-dump {C|R|B|V}...\n");
 	printf("\tConfigure system dump: (C)PU, (R)AM, (B)anked-RAM, (V)RAM\n");
 	printf("\tMultiple characters are possible, e.g. -dump CV ; Default: RB\n");
-
+#ifdef WITH_YM2151
+	printf("-sound <output device>\n");
+	printf("\tSet the output device used for audio emulation");
+#endif
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
@@ -308,35 +312,54 @@ void audioCallback(void* userdata, Uint8 *stream, int len)
 	YM_stream_update((uint16_t*) stream, len / 4);
 }
 
+void usageSound()
+{
+	// SDL_GetAudioDeviceName doesn't work if audio isn't initialized.
+	// Since argument parsing happens before initializing SDL, ensure the
+	// audio subsystem is initialized before printing audio device names.
+	SDL_InitSubSystem(SDL_INIT_AUDIO);
+
+	// List all available sound devices
+	printf("The following sound output devices are available:\n");
+	const int sounds = SDL_GetNumAudioDevices(0);
+	for (int i=0; i < sounds; ++i) {
+		printf("\t%s\n", SDL_GetAudioDeviceName(i, 0));
+	}
+
+	SDL_Quit();
+	exit(1);
+}
+
 void initAudio()
 {
 	SDL_AudioSpec want;
 	SDL_AudioSpec have;
 
-	// init YM2151 emulation. 4 MHz clock
-	YM_Create(1.0f, 4000000);
-	YM_init(SAMPLERATE, 60);
-
 	// setup SDL audio
 	want.freq = SAMPLERATE;
-	want.format = AUDIO_S16;
+	want.format = AUDIO_S16SYS;
 	want.channels = 2;
 	want.samples = AUDIO_SAMPLES;
 	want.callback = audioCallback;
 	want.userdata = NULL;
-	if ( SDL_OpenAudio(&want, &have) < 0 ){
-		fprintf(stderr, "SDL_OpenAudio failed: %s\n", SDL_GetError());
-		exit(-1);
-	}
-	if (want.format != have.format || want.channels != have.channels) {
-		// TODO: most soundcard should support signed 16 bit, but maybe add conversion functions
-		printf("channels: %i, format: %i\n", have.format, have.channels);
-		fprintf(stderr, "audio init failed\n");
+	audio_dev = SDL_OpenAudioDevice(audio_dev_name, 0, &want, &have, 9 /* freq | samples */);
+	if ( audio_dev <= 0 ){
+		fprintf(stderr, "SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
+		if (audio_dev_name != NULL) usageSound();
 		exit(-1);
 	}
 
+	// init YM2151 emulation. 4 MHz clock
+	YM_Create(4000000);
+	YM_init(have.freq, 60);
+
 	// start playback
-	SDL_PauseAudio(0);
+	SDL_PauseAudioDevice(audio_dev, 0);
+}
+
+void closeAudio()
+{
+	SDL_CloseAudioDevice(audio_dev);
 }
 #endif
 
@@ -344,18 +367,9 @@ int
 main(int argc, char **argv)
 {
 	char *rom_filename = "rom.bin";
-#ifndef VERA_V0_8
-	char *char_filename = "chargen.bin";
-#endif
 	char rom_path_data[PATH_MAX];
-#ifndef VERA_V0_8
-	char char_path_data[PATH_MAX];
-#endif
 
 	char *rom_path = rom_path_data;
-#ifndef VERA_V0_8
-	char *char_path = char_path_data;
-#endif
 	char *prg_path = NULL;
 	char *bas_path = NULL;
 	char *sdcard_path = NULL;
@@ -368,10 +382,6 @@ main(int argc, char **argv)
 	// no ROM file is specified on the command line.
 	memcpy(rom_path, base_path, strlen(base_path) + 1);
 	strncpy(rom_path + strlen(rom_path), rom_filename, PATH_MAX - strlen(rom_path));
-#ifndef VERA_V0_8
-	strncpy(char_path, base_path, PATH_MAX);
-	strncpy(char_path + strlen(char_path), char_filename, PATH_MAX - strlen(char_path));
-#endif
 
 	argc--;
 	argv++;
@@ -386,17 +396,6 @@ main(int argc, char **argv)
 			rom_path = argv[0];
 			argc--;
 			argv++;
-#ifndef VERA_V0_8
-		} else if (!strcmp(argv[0], "-char")) {
-			argc--;
-			argv++;
-			if (!argc || argv[0][0] == '-') {
-				usage();
-			}
-			char_path = argv[0];
-			argc--;
-			argv++;
-#endif
 		} else if (!strcmp(argv[0], "-keymap")) {
 			argc--;
 			argv++;
@@ -523,7 +522,6 @@ main(int argc, char **argv)
 				argv++;
 			}
 #ifdef TRACE
-
 		} else if (!strcmp(argv[0], "-trace")) {
 			argc--;
 			argv++;
@@ -578,6 +576,17 @@ main(int argc, char **argv)
 			}
 			argc--;
 			argv++;
+#ifdef WITH_YM2151
+		} else if (!strcmp(argv[0], "-sound")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usageSound();
+			}
+			audio_dev_name = argv[0];
+			argc--;
+			argv++;
+#endif
 		} else {
 			usage();
 		}
@@ -591,18 +600,6 @@ main(int argc, char **argv)
 	int rom_size = fread(ROM, 1, ROM_SIZE, f);
 	(void)rom_size;
 	fclose(f);
-
-#ifndef VERA_V0_8
-	f = fopen(char_path, "rb");
-	if (!f) {
-		printf("Cannot open %s!\n", char_path);
-		exit(1);
-	}
-	uint8_t chargen[4096];
-	int chargen_size = fread(chargen, 1, sizeof(chargen), f);
-	(void)chargen_size;
-	fclose(f);
-#endif
 
 	if (sdcard_path) {
 		sdcard_file = fopen(sdcard_path, "rb");
@@ -644,19 +641,17 @@ main(int argc, char **argv)
 		fclose(bas_file);
 	}
 
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS
+#ifdef WITH_YM2151
+		| SDL_INIT_AUDIO
+#endif
+		);
+
 #ifdef WITH_YM2151
 	initAudio();
 #endif
-	
-#ifdef VERA_V0_8
+
 	video_init(window_scale, scale_quality);
-#else
-	video_init(chargen, window_scale, scale_quality);
-#endif
-	spi_init();
-	vera_spi_init();
-	via1_init();
-	via2_init();
 
 	machine_reset();
 
@@ -667,6 +662,12 @@ main(int argc, char **argv)
 #else
 	emulator_loop(NULL);
 #endif
+
+#ifdef WITH_YM2151
+	closeAudio();
+#endif
+	video_end();
+	SDL_Quit();
 	return 0;
 }
 
@@ -757,7 +758,8 @@ emulator_loop(void *param)
 
 			static int frames = 0;
 			frames++;
-			int32_t diff_time = 1000 * frames / 60 - SDL_GetTicks();
+			int32_t sdlTicks = SDL_GetTicks();
+			int32_t diff_time = 1000 * frames / 60 - sdlTicks;
 			if (diff_time > 0) {
                 #ifdef _MSC_VER
                 Sleep( diff_time );
@@ -766,10 +768,26 @@ emulator_loop(void *param)
 				#endif
 			}
 
+			if (sdlTicks - last_perf_update > 5000) {
+			    int32_t frameCount = frames - perf_frame_count;
+			    int perf = frameCount / 3;
+
+                if (perf < 100) {
+                    sprintf(window_title, "Commander X16 (%d%%)", perf);
+                    video_update_title(window_title);
+                } else {
+                    video_update_title("Commander X16");
+                }
+
+                perf_frame_count = frames;
+                last_perf_update = sdlTicks;
+			}
+
 			if (log_speed) {
 				float frames_behind = -((float)diff_time / 16.666666);
 				int load = (int)((1 + frames_behind) * 100);
 				printf("Load: %d%%\n", load > 100 ? 100 : load);
+
 				if ((int)frames_behind > 0) {
 					printf("Rendering is behind %d frames.\n", -(int)frames_behind);
 				} else {
@@ -806,6 +824,7 @@ emulator_loop(void *param)
 				c = 10;
 			}
 			printf("%c", c);
+			fflush(stdout);
 		}
 
 		if (pc == 0xffcf && is_kernal()) {
@@ -860,8 +879,6 @@ emulator_loop(void *param)
 			}
 		}
 	}
-
-	video_end();
 
 	return 0;
 }

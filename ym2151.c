@@ -33,9 +33,6 @@ uint8_t YM_channels;
 
 int YM_irq;
 
-// Volume of sound chip
-float YM_volume;
-
 void YM_clear_buffer();
 void YM_write_buffer(const uint8_t, uint32_t, int16_t);
 int16_t YM_read_buffer(const uint8_t, uint32_t);
@@ -453,12 +450,9 @@ static const uint8_t lfo_noise_waveform[256] = {
 static FILE *sample[9];
 #endif
 
-void YM_Create(float volume, uint32_t clock)
+void YM_Create(uint32_t clock)
 {
-    YM_volume     = 1.0;
     YM_initalized = 0;
-
-    YM_volume = volume;  
     YM_clock = clock;
 }
 
@@ -2127,8 +2121,8 @@ void YM_stream_update(uint16_t* stream, int samples)
         if (outr > MAXOUT) outr = MAXOUT;
             else if (outr < MINOUT) outr = MINOUT;
         
-        stream[2 * i] = (int16_t) (outl * YM_volume);
-        stream[2 * i + 1] = (int16_t) (outr * YM_volume);
+        stream[2 * i] = (int16_t) outl;
+        stream[2 * i + 1] = (int16_t) outr;
 
 #ifdef USE_MAME_TIMERS
         /* ASG 980324 - handled by real timers now */
@@ -2154,13 +2148,4 @@ void YM_stream_update(uint16_t* stream, int samples)
 #endif
         YM_advance();
     }
-}
-
-// Set soundchip volume (0 = Off, 10 = Loudest)
-void YM_set_volume(uint8_t v)
-{
-    if (v > 10) 
-        return;
-    
-    YM_volume = (float) (v / 10.0);
 }

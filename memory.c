@@ -19,8 +19,8 @@
 #endif
 #include "ps2.h"
 
-uint8_t ram_bank = NUM_RAM_BANKS - 1;
-uint8_t rom_bank = NUM_ROM_BANKS - 1;
+uint8_t ram_bank;
+uint8_t rom_bank;
 
 uint8_t RAM[RAM_SIZE];
 uint8_t ROM[ROM_SIZE];
@@ -70,6 +70,7 @@ read6502(uint16_t address)
 		}
 	} else if (address < 0xc000) { // banked RAM
 		return RAM[0xa000 + (ram_bank << 13) + address - 0xa000];
+#ifdef FIXED_KERNAL
 	} else if (address < 0xe000) { // banked ROM
 		if (rom_bank == 0) {
 			// BASIC is at offset 0 * 8192 in ROM
@@ -81,6 +82,12 @@ read6502(uint16_t address)
 	} else { // fixed ROM
 		// KERNAL is at offset 1 * 8192 in ROM
 		return ROM[address - 0xe000 + 0x2000];
+#else
+
+	} else { // banked ROM
+		return ROM[(rom_bank << 14) + address - 0xc000];
+#endif
+
 	}
 }
 
@@ -110,9 +117,9 @@ write6502(uint16_t address, uint8_t value)
 			emu_write(address & 0xf, value);
 #ifdef WITH_YM2151
 		} else if (address == 0x9fe0) {
-			YM_write_reg(lastAudioAdr, value);
-		} else if (address == 0x9fe1) {
 			lastAudioAdr = value;
+		} else if (address == 0x9fe1) {
+			YM_write_reg(lastAudioAdr, value);
 #endif
 		} else {
 			// future expansion
@@ -150,7 +157,8 @@ memory_set_ram_bank(uint8_t bank)
 	ram_bank = bank & (NUM_RAM_BANKS - 1);
 }
 
-uint8_t memory_get_ram_bank()
+uint8_t
+memory_get_ram_bank()
 {
 	return ram_bank;
 }
@@ -159,6 +167,12 @@ void
 memory_set_rom_bank(uint8_t bank)
 {
 	rom_bank = bank & (NUM_ROM_BANKS - 1);;
+}
+
+uint8_t
+memory_get_rom_bank()
+{
+	return rom_bank;
 }
 
 //

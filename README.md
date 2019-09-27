@@ -44,6 +44,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 	* `R`: RAM (40 KiB)
 	* `B`: Banked RAM (2 MiB)
 	* `V`: Video RAM and registers (128 KiB VRAM, 32 B composer registers, 512 B pallete, 16 B layer0 registers, 16 B layer1 registers, 16 B sprite registers, 2 KiB sprite attributes)
+* When compiled with `WITH_YM2151`, `-sound` can be used to specify the output sound device.
 * When compiled with `#define TRACE`, `-trace` will enable an instruction trace on stdout.
 
 Run `x16emu -h` to see all command line options.
@@ -168,13 +169,11 @@ https://github.com/commanderx16/x16-emulator/wiki
 	* ROM/RAM banking
 	* PS/2 keyboard
 	* SD card (SPI)
-* A 60 Hz interrupt is injected independently of the VIA settings.
-
 
 ## Missing Features
 
 * VERA
-	* Does not support IRQs
+	* Does not support raster IRQs (does support VSYNC though)
 	* Does not support the "CURRENT_FIELD" bit
 	* Does not sprite z-depth, collisions or limitations
 	* Only supports the first 16 sprites
@@ -193,10 +192,20 @@ All rights reserved. License: 2-clause BSD
 ## Known Issues
 
 * Emulator: LOAD"$ (and LOAD"$",1) will show host uppercase filenames as garbage. Use Ctrl+N to switch to the X16 upper/lower character set for a workaround.
-* BASIC: $ and % prefixes don't work for DATA entries
-* RND(0) always returns 0
 
 ## Release Notes
+
+### Release 32
+
+* correct ROM banking
+* VERA emulation optimizations [Stephen Horn]
+* added `-dump` option to allow writing RAM, CPU state or VERA state to disk [Nils Hasenbanck]
+* added `-quality` option to change scaling algorithm; now defaults to "best" [Maurizio Porrato]
+* output of `-echo` can now be fed into UNIX pipes [Anonymous Maarten]
+* relative speed of emulator is shown in the title if host can't keep up [Rien]
+* fix: 6502 BCD arithmetic [Rien]
+* fix: colors (white is now white) [Rien]
+* fix: sprite flipping [jjbliss]
 
 ### Release 31
 
