@@ -22,22 +22,22 @@ endif
 ifeq ($(CROSS_COMPILE_WINDOWS),1)
 	LDFLAGS+=-L$(MINGW32)/lib
 	# this enables printf() to show, but also forces a console window
-	LDFLAGS+=-Wl,--subsystem,console 
+	LDFLAGS+=-Wl,--subsystem,console
 	CC=i686-w64-mingw32-gcc
 endif
 
 ifdef EMSCRIPTEN
 	# Todo #--js-library webassembly/helper.js
-	LDFLAGS+=--shell-file webassembly/x16emu-template.html  --preload-file rom.bin -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 
+	LDFLAGS+=--shell-file webassembly/x16emu-template.html  --preload-file rom.bin -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1
 	# To the Javascript runtime exported functions
 	LDFLAGS+=-s EXPORTED_FUNCTIONS='["_j2c_reset", "_j2c_paste", _main]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]'
-	
+
 	OUTPUT=x16emu.html
 endif
 
-OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o spi.o vera_spi.o sdcard.o main.o debugger.o javascript_interface.o
+OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o spi.o vera_spi.o sdcard.o main.o debugger.o javascript_interface.o controller.o
 
-HEADERS = disasm.h cpu/fake6502.h glue.h memory.h video.h ps2.h via.h loadsave.h
+HEADERS = disasm.h cpu/fake6502.h glue.h memory.h video.h ps2.h via.h loadsave.h controller.h
 
 ifeq ($(WITH_YM2151),1)
 OBJS += ym2151.o
@@ -51,7 +51,7 @@ endif
 
 
 all: $(OBJS) $(HEADERS)
-	$(CC) -o $(OUTPUT) $(OBJS) $(LDFLAGS) 
+	$(CC) -o $(OUTPUT) $(OBJS) $(LDFLAGS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 

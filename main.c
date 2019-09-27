@@ -24,6 +24,7 @@
 #include "glue.h"
 #include "debugger.h"
 #include "utf8.h"
+#include "controller.h"
 #ifdef WITH_YM2151
 #include "ym2151.h"
 #endif
@@ -274,6 +275,10 @@ usage()
 	printf("-dump {C|R|B|V}...\n");
 	printf("\tConfigure system dump: (C)PU, (R)AM, (B)anked-RAM, (V)RAM\n");
 	printf("\tMultiple characters are possible, e.g. -dump CV ; Default: RB\n");
+	printf("-joy1 {NES | SNES | NONE}\n");
+	printf("\tChoose what type of controller to use, eg. -joy1 SNES\n");
+	printf("-joy2 {NES | SNES | NONE}\n");
+	printf("\tChoose what type of controller to use, eg. -joy2 SNES\n");
 #ifdef WITH_YM2151
 	printf("-sound <output device>\n");
 	printf("\tSet the output device used for audio emulation");
@@ -512,6 +517,41 @@ main(int argc, char **argv)
 				argc--;
 				argv++;
 			}
+		} else if (!strcmp(argv[0], "-joy1")){
+			argc--;
+			argv++;
+			printf("JOY1!  argc: %d    argv: %s\n",argc,*argv);
+			if(!strcmp(argv[0], "NES")){
+				joy1_mode = NES;
+				argc--;
+				argv++;
+			}else if(!strcmp(argv[0], "SNES")){
+				joy1_mode = SNES;
+				argc--;
+				argv++;
+			}else if(!strcmp(argv[0], "NONE")){
+				joy1_mode = NONE;
+				argc--;
+				argv++;
+			}
+
+		} else if (!strcmp(argv[0], "-joy2")){
+			argc--;
+			argv++;
+			printf("JOY2!  argc: %d    argv: %s\n",argc,*argv);
+			if(!strcmp(argv[0], "NES")){
+				joy2_mode = NES;
+				argc--;
+				argv++;
+			}else if(!strcmp(argv[0], "SNES")){
+				joy2_mode = SNES;
+				argc--;
+				argv++;
+			}else if(!strcmp(argv[0], "NONE")){
+				joy2_mode = NONE;
+				argc--;
+				argv++;
+			}
 #ifdef TRACE
 		} else if (!strcmp(argv[0], "-trace")) {
 			argc--;
@@ -600,7 +640,7 @@ main(int argc, char **argv)
 		}
 	}
 
-	
+
 	prg_override_start = -1;
 	if (prg_path) {
 		char *comma = strchr(prg_path, ',');
@@ -632,7 +672,7 @@ main(int argc, char **argv)
 		fclose(bas_file);
 	}
 
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER
 #ifdef WITH_YM2151
 		| SDL_INIT_AUDIO
 #endif
@@ -643,6 +683,8 @@ main(int argc, char **argv)
 #endif
 
 	video_init(window_scale, scale_quality);
+
+	controller_init();
 
 	machine_reset();
 
@@ -662,13 +704,13 @@ main(int argc, char **argv)
 	return 0;
 }
 
-void 
+void
 emscripten_main_loop(void) {
 	emulator_loop(NULL);
 }
 
 
-void* 
+void*
 emulator_loop(void *param)
 {
 	for (;;) {
@@ -678,6 +720,8 @@ emulator_loop(void *param)
 			if (dbgCmd > 0) continue;
 			if (dbgCmd < 0) break;
 		}
+
+
 
 #ifdef TRACE
 		if (pc == trace_address && trace_address != 0) {
@@ -736,6 +780,7 @@ emulator_loop(void *param)
 		for (uint8_t i = 0; i < clocks; i++) {
 			ps2_step();
 			spi_step();
+			controller_step();
 			vera_spi_step();
 			new_frame |= video_step(MHZ);
 		}
@@ -869,4 +914,3 @@ emulator_loop(void *param)
 
 	return 0;
 }
-
