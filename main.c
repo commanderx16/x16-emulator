@@ -276,9 +276,9 @@ usage()
 	printf("\tConfigure system dump: (C)PU, (R)AM, (B)anked-RAM, (V)RAM\n");
 	printf("\tMultiple characters are possible, e.g. -dump CV ; Default: RB\n");
 	printf("-joy1 {NES | SNES | NONE}\n");
-	printf("\tChoose what type of controller to use, eg. -joy1 SNES\n");
+	printf("\tChoose what type of controller to use, e.g. -joy1 SNES\n");
 	printf("-joy2 {NES | SNES | NONE}\n");
-	printf("\tChoose what type of controller to use, eg. -joy2 SNES\n");
+	printf("\tChoose what type of controller to use, e.g. -joy2 SNES\n");
 #ifdef WITH_YM2151
 	printf("-sound <output device>\n");
 	printf("\tSet the output device used for audio emulation");
@@ -720,8 +720,6 @@ emulator_loop(void *param)
 			if (dbgCmd > 0) continue;
 			if (dbgCmd < 0) break;
 		}
-
-
 
 #ifdef TRACE
 		if (pc == trace_address && trace_address != 0) {
