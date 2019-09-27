@@ -101,7 +101,7 @@ via2_read(uint8_t reg)
 			value = value | 0x50; // short-circuit NES/SNES contoller -> not present
 		}else{
 			value = value | (controller_data1 ? JOY_DATA1_MASK : 0) |
-			 								(controller_data2 ? JOY_DATA2_MASK : 0);
+							(controller_data2 ? JOY_DATA2_MASK : 0);
 		}
 		return value;
 	} else {
