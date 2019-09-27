@@ -33,8 +33,7 @@
 
 #define ESC_IS_BREAK /* if enabled, Esc sends Break/Pause key instead of Esc */
 
-//#define NUM_SPRITES 128
-#define NUM_SPRITES 16 /* XXX speedup */
+#define NUM_SPRITES 128
 
 // both VGA and NTSC
 #define SCAN_WIDTH 800
@@ -86,6 +85,9 @@ static uint8_t isr = 0;
 static uint8_t reg_layer[2][16];
 static uint8_t reg_sprites[16];
 static uint8_t reg_composer[32];
+
+static uint8_t sprite_line_col[SCREEN_WIDTH];
+static uint8_t sprite_line_z[SCREEN_WIDTH];
 
 static uint8_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT * 4];
 
@@ -618,60 +620,77 @@ void refresh_sprite_properties(uint16_t sprite)
 	props->palette_offset = (sprite_data[sprite][7] & 0x0f) << 4;
 }
 
-uint8_t
-get_sprite(uint16_t x, uint16_t y)
+static void
+render_sprite_line(uint16_t y)
 {
+	for (int i = 0; i < SCREEN_WIDTH; i++) {
+		sprite_line_col[i] = 0;
+		sprite_line_z[i] = 0;
+	}
 	if (!(reg_sprites[0] & 1)) {
 		// sprites disabled
-		return 0;
+		return;
 	}
+	uint16_t sprite_budget = 800 + 1;
 	for (int i = 0; i < NUM_SPRITES; i++) {
-		struct video_sprite_properties* props = &sprite_properties[i];
+		// one clock per lookup
+		sprite_budget--; if (sprite_budget == 0) break;
+		struct video_sprite_properties *props = &sprite_properties[i];
 
 		if (props->sprite_zdepth == 0) {
 			continue;
 		}
 
-		// check whether this pixel falls within the sprite
-		if (x < props->sprite_x || x >= props->sprite_x + props->sprite_width) {
-			continue;
-		}
+		// check whether this line falls within the sprite
 		if (y < props->sprite_y || y >= props->sprite_y + props->sprite_height) {
 			continue;
 		}
 
-		// relative position within the sprite
-		uint16_t sx = x - props->sprite_x;
-		uint16_t sy = y - props->sprite_y;
+		for (uint16_t sx = 0; sx < props->sprite_width; sx++) {
+			uint16_t eff_sx = sx;
+			uint16_t eff_sy = y - props->sprite_y;
 
-		// flip
-		if (props->hflip) {
-			sx = (props->sprite_width - 1) - sx;
-		}
-		if (props->vflip) {
-			sy = (props->sprite_height - 1) - sy;
-		}
-
-		uint8_t col_index = 0;
-		if (!props->mode) {
-			// 4 bpp
-			uint8_t byte = video_ram[props->sprite_address + (sy * props->sprite_width >> 1) + (sx >> 1)];
-			if (sx & 1) {
-				col_index = byte & 0xf;
-			} else {
-				col_index = byte >> 4;
+			// flip
+			if (props->hflip) {
+				eff_sx = (props->sprite_width - 1) - eff_sx;
 			}
-		} else {
-			// 8 bpp
-			col_index = video_ram[props->sprite_address + sy * props->sprite_width + sx];
-		}
-		// palette offset
-		if (col_index > 0) {
-			col_index += props->palette_offset;
-			return col_index;
+			if (props->vflip) {
+				eff_sy = (props->sprite_height - 1) - eff_sy;
+			}
+
+			uint8_t col_index = 0;
+			uint32_t vaddr;
+			if (props->mode == 0) {
+				// 4 bpp
+				vaddr = props->sprite_address + (eff_sy * props->sprite_width >> 1) + (eff_sx >> 1);
+				uint8_t byte = video_ram[vaddr];
+				if (eff_sx & 1) {
+					col_index = byte & 0xf;
+				} else {
+					col_index = byte >> 4;
+				}
+			} else {
+				// 8 bpp
+				vaddr = props->sprite_address + eff_sy * props->sprite_width + eff_sx;
+				col_index = video_ram[vaddr];
+			}
+
+			// one clock per fetched 32 bits
+			if (!(vaddr & 3)) {
+				sprite_budget--; if (sprite_budget == 0) break;
+			}
+			// one clock per rendered pixel
+			sprite_budget--; if (sprite_budget == 0) break;
+			// palette offset
+			if (col_index > 0) {
+				col_index += props->palette_offset;
+				if (props->sprite_zdepth > sprite_line_z[props->sprite_x + sx]) {
+					sprite_line_col[props->sprite_x + sx] = col_index;
+					sprite_line_z[props->sprite_x + sx] = props->sprite_zdepth;
+				}
+			}
 		}
 	}
-	return 0;
 }
 
 float start_scan_pixel_pos, end_scan_pixel_pos;
@@ -717,6 +736,10 @@ video_flush_internal(int start, int end)
 			continue;
 		}
 
+		if (x == 0) {
+			render_sprite_line(y);
+		}
+
 		int eff_x = 1.0 / hscale * (x - hstart);
 		int eff_y = 1.0 / vscale * (y - vstart);
 
@@ -735,11 +758,14 @@ video_flush_internal(int start, int end)
 			if (x < hstart || x > hstop || y < vstart || y > vstop) {
 				col_index = border_color;
 			} else {
+				// sprite data
+				uint8_t spr_col_index = sprite_line_col[eff_x];
+				//uint8_t spr_zindex = sprite_line_z[eff_x];
+
 				col_index = get_pixel(1, eff_x, eff_y);
 				if (col_index == 0) { // Layer 2 is transparent
 					col_index = get_pixel(0, eff_x, eff_y);
 				}
-				uint8_t spr_col_index = get_sprite(eff_x, eff_y);
 				if (spr_col_index) {
 					col_index = spr_col_index;
 				}
