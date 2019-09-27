@@ -129,14 +129,14 @@ uint16_t get_controller_state(SDL_GameController *control){
         bool right_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
 
         return
-        !a_pressed |
-        !b_pressed << 1 |
-        !select_pressed << 2 |
-        !start_pressed << 3 |
-        !up_pressed << 4 |
-        !down_pressed << 5 |
-        !left_pressed << 6 |
-        !right_pressed << 7 |
+        (!a_pressed) |
+        (!b_pressed) << 1 |
+        (!select_pressed) << 2 |
+        (!start_pressed) << 3 |
+        (!up_pressed) << 4 |
+        (!down_pressed) << 5 |
+        (!left_pressed) << 6 |
+        (!right_pressed) << 7 |
         0x0000;
     }
     if(joy1_mode == SNES){
@@ -155,18 +155,18 @@ uint16_t get_controller_state(SDL_GameController *control){
 
 
         return
-        !b_pressed |
-        !y_pressed << 1 |
-        !select_pressed << 2 |
-        !start_pressed << 3 |
-        !up_pressed << 4 |
-        !down_pressed << 5 |
-        !left_pressed << 6 |
-        !right_pressed << 7 |
-        !a_pressed << 8 |
-        !x_pressed << 9 |
-        !l_pressed << 10 |
-        !r_pressed << 11 |
+        (!b_pressed) |
+        (!y_pressed) << 1 |
+        (!select_pressed) << 2 |
+        (!start_pressed) << 3 |
+        (!up_pressed) << 4 |
+        (!down_pressed) << 5 |
+        (!left_pressed) << 6 |
+        (!right_pressed) << 7 |
+        (!a_pressed) << 8 |
+        (!x_pressed) << 9 |
+        (!l_pressed) << 10 |
+        (!r_pressed) << 11 |
         0xF000;
     }
 

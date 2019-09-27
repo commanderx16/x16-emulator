@@ -520,7 +520,6 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-joy1")){
 			argc--;
 			argv++;
-			printf("JOY1!  argc: %d    argv: %s\n",argc,*argv);
 			if(!strcmp(argv[0], "NES")){
 				joy1_mode = NES;
 				argc--;
@@ -538,7 +537,6 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-joy2")){
 			argc--;
 			argv++;
-			printf("JOY2!  argc: %d    argv: %s\n",argc,*argv);
 			if(!strcmp(argv[0], "NES")){
 				joy2_mode = NES;
 				argc--;
