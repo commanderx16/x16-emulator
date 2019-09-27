@@ -70,6 +70,7 @@ bool dump_ram = true;
 bool dump_bank = true;
 bool dump_vram = false;
 bool echo_mode = false;
+bool echo_raw = false;
 bool save_on_exit = true;
 bool record_gif = false;
 char *gif_path = NULL;
@@ -440,6 +441,10 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			echo_mode = true;
+		} else if (!strcmp(argv[0], "-echoraw")) {
+			argc--;
+			argv++;
+			echo_raw = true;
 		} else if (!strcmp(argv[0], "-log")) {
 			argc--;
 			argv++;
@@ -805,13 +810,18 @@ emulator_loop(void *param)
 			break;
 		}
 
-		if (echo_mode && pc == 0xffd2 && is_kernal()) {
+		if (pc == 0xffd2 && is_kernal()) {
 			uint8_t c = a;
-			if (c == 13) {
-				c = 10;
+			if (echo_raw) {
+				printf("%c", c);
+				fflush(stdout);
+			} else if (echo_mode) {
+				if (c == 0x0d) {
+					c = 0x0a;
+				}
+				printf("%c", c);
+				fflush(stdout);
 			}
-			printf("%c", c);
-			fflush(stdout);
 		}
 
 		if (pc == 0xffcf && is_kernal()) {
