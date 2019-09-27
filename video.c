@@ -646,10 +646,10 @@ get_sprite(uint16_t x, uint16_t y)
 
 		// flip
 		if (props->hflip) {
-			sx = props->sprite_width - sx;
+			sx = (props->sprite_width - 1) - sx;
 		}
 		if (props->vflip) {
-			sy = props->sprite_height - sy;
+			sy = (props->sprite_height - 1) - sy;
 		}
 
 		uint8_t col_index = 0;
