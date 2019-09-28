@@ -86,9 +86,14 @@ static uint8_t reg_layer[2][16];
 static uint8_t reg_sprites[16];
 static uint8_t reg_composer[32];
 
+static uint8_t layer_line[2][SCREEN_WIDTH];
 static uint8_t sprite_line_col[SCREEN_WIDTH];
 static uint8_t sprite_line_z[SCREEN_WIDTH];
-static uint8_t layer_line[2][SCREEN_WIDTH];
+static bool layer_line_empty[2];
+static bool sprite_line_empty;
+
+float scan_pos_x;
+uint16_t scan_pos_y;
 
 static uint8_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT * 4];
 
@@ -129,6 +134,9 @@ video_reset()
 		palette[i * 2 + 0] = default_palette[i] & 0xff;
 		palette[i * 2 + 1] = default_palette[i] >> 8;
 	}
+
+	scan_pos_x = 0;
+	scan_pos_y = 0;
 }
 
 bool
@@ -529,13 +537,15 @@ void refresh_sprite_properties(uint16_t sprite)
 static void
 render_sprite_line(uint16_t y)
 {
+	if (!(reg_sprites[0] & 1)) {
+		// sprites disabled
+		sprite_line_empty = true;
+		return;
+	}
+	sprite_line_empty = false;
 	for (int i = 0; i < SCREEN_WIDTH; i++) {
 		sprite_line_col[i] = 0;
 		sprite_line_z[i] = 0;
-	}
-	if (!(reg_sprites[0] & 1)) {
-		// sprites disabled
-		return;
 	}
 	uint16_t sprite_budget = 800 + 1;
 	for (int i = 0; i < NUM_SPRITES; i++) {
@@ -553,6 +563,10 @@ render_sprite_line(uint16_t y)
 		}
 
 		for (uint16_t sx = 0; sx < props->sprite_width; sx++) {
+			uint16_t line_x = props->sprite_x + sx;
+			if (line_x >= SCREEN_WIDTH) {
+				continue;
+			}
 			uint16_t eff_sx = sx;
 			uint16_t eff_sy = y - props->sprite_y;
 
@@ -590,9 +604,9 @@ render_sprite_line(uint16_t y)
 			// palette offset
 			if (col_index > 0) {
 				col_index += props->palette_offset;
-				if (props->sprite_zdepth > sprite_line_z[props->sprite_x + sx]) {
-					sprite_line_col[props->sprite_x + sx] = col_index;
-					sprite_line_z[props->sprite_x + sx] = props->sprite_zdepth;
+				if (props->sprite_zdepth > sprite_line_z[line_x]) {
+					sprite_line_col[line_x] = col_index;
+					sprite_line_z[line_x] = props->sprite_zdepth;
 				}
 			}
 		}
@@ -605,10 +619,9 @@ render_layer_line(uint8_t layer, uint16_t y)
 	struct video_layer_properties *props = &layer_properties[layer];
 
 	if (!props->enabled) {
-		for (int x = 0; x < SCREEN_WIDTH; x++) {
-			layer_line[layer][x] = 0;
-		}
+		layer_line_empty[layer] = true;
 	} else {
+		layer_line_empty[layer] = false;
 		for (int x = 0; x < SCREEN_WIDTH; x++) {
 			uint8_t col_index = 0;
 
@@ -699,10 +712,8 @@ render_layer_line(uint8_t layer, uint16_t y)
 	}
 }
 
-float start_scan_pixel_pos, end_scan_pixel_pos;
-
 static void
-video_flush_internal(int start, int end)
+render_line(uint16_t y)
 {
 	uint8_t out_mode = reg_composer[0] & 3;
 	bool chroma_disable = (reg_composer[0] >> 2) & 1;
@@ -716,40 +727,12 @@ video_flush_internal(int start, int end)
 	uint16_t vstart = reg_composer[6] | ((reg_composer[8] >> 4) & 1) << 8;
 	uint16_t vstop = reg_composer[7] | ((reg_composer[8] >> 5) & 1) << 8;
 
-	for (int pp = start; pp < end; pp++) {
-		int x;
-		int y;
-		if (out_mode == 0 || out_mode == 1) {
-			// VGA
-			x = pp % SCAN_WIDTH;
-			y = pp / SCAN_WIDTH;
-			x -= VGA_FRONT_PORCH_X;
-			y -= VGA_FRONT_PORCH_Y;
-		} else {
-			// NTSC
-			int pp2 = pp;
-			int field = pp2 > SCAN_WIDTH * SCAN_HEIGHT / 2;
-			if (field == 1) {
-				pp2 -= SCAN_WIDTH * SCAN_HEIGHT / 2;
-			}
-			x = pp2 % SCAN_WIDTH;
-			y = pp2 / SCAN_WIDTH * 2 + (1 - field);
-			x -= NTSC_FRONT_PORCH_X;
-			y -= NTSC_FRONT_PORCH_Y;
-		}
+	int eff_y = 1.0 / vscale * (y - vstart);
+	render_sprite_line(eff_y);
+	render_layer_line(0, eff_y);
+	render_layer_line(1, eff_y);
 
-		if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT) {
-			continue;
-		}
-
-		int eff_y = 1.0 / vscale * (y - vstart);
-
-		if (x == 0) {
-			render_sprite_line(eff_y);
-			render_layer_line(0, eff_y);
-			render_layer_line(1, eff_y);
-		}
-
+	for (uint16_t x = 0; x < SCREEN_WIDTH; x++) {
 		uint8_t r;
 		uint8_t g;
 		uint8_t b;
@@ -765,10 +748,10 @@ video_flush_internal(int start, int end)
 				col_index = border_color;
 			} else {
 				int eff_x = 1.0 / hscale * (x - hstart);
-				uint8_t spr_col_index = sprite_line_col[eff_x];
+				uint8_t spr_col_index = sprite_line_empty ? 0 : sprite_line_col[eff_x];
 				uint8_t spr_zindex = sprite_line_z[eff_x];
-				uint8_t l1_col_index = layer_line[0][eff_x];
-				uint8_t l2_col_index = layer_line[1][eff_x];
+				uint8_t l1_col_index = layer_line_empty[0] ? 0 : layer_line[0][eff_x];
+				uint8_t l2_col_index = layer_line_empty[0] ? 1 : layer_line[1][eff_x];
 				switch (spr_zindex) {
 					case 3:
 						col_index = spr_col_index ?: l2_col_index ?: l1_col_index;
@@ -825,20 +808,29 @@ video_step(float mhz)
 	uint8_t out_mode = reg_composer[0] & 3;
 
 	bool new_frame = false;
-	if (out_mode == 0 || out_mode == 1) {
-		end_scan_pixel_pos += VGA_PIXEL_FREQ / mhz;
-	} else {
-		end_scan_pixel_pos += NTSC_PIXEL_FREQ / mhz;
-	}
-	if (end_scan_pixel_pos >= SCAN_WIDTH * SCAN_HEIGHT) {
-		new_frame = true;
-		int start = (int)floor(start_scan_pixel_pos);
-		int end = SCAN_WIDTH * SCAN_HEIGHT;
-		video_flush_internal(start, end);
-		start_scan_pixel_pos = 0;
-		end_scan_pixel_pos = 0;
-		if (ien & 1) { // VSYNC
-			isr |= 1;
+	float advance = ((out_mode & 2) ? NTSC_PIXEL_FREQ :  VGA_PIXEL_FREQ) / mhz;
+	scan_pos_x += advance;
+	if (scan_pos_x > SCAN_WIDTH) {
+		scan_pos_x -= SCAN_WIDTH;
+		uint16_t front_porch = (out_mode & 2) ? NTSC_FRONT_PORCH_Y : VGA_FRONT_PORCH_Y;
+		uint16_t y = scan_pos_y - front_porch;
+		if (y < SCREEN_HEIGHT) {
+			render_line(y);
+		}
+		scan_pos_y++;
+		if (scan_pos_y == SCAN_HEIGHT) {
+			scan_pos_y = 0;
+			new_frame = true;
+			if (ien & 1) { // VSYNC IRQ
+				isr |= 1;
+			}
+		}
+		if (ien & 2) { // LINE IRQ
+			y = scan_pos_y - front_porch;
+			uint16_t irq_line = reg_composer[9] | (reg_composer[10] & 1) << 8;
+			if (y < SCREEN_HEIGHT && y == irq_line) {
+				isr |= 2;
+			}
 		}
 	}
 
@@ -864,15 +856,6 @@ video_save(FILE *f)
 	fwrite(&reg_layer[0][0], sizeof(uint8_t), sizeof(reg_layer), f);
 	fwrite(&reg_sprites[0], sizeof(uint8_t), sizeof(reg_sprites), f);
 	fwrite(&sprite_data[0], sizeof(uint8_t), sizeof(sprite_data), f);
-}
-
-static void
-video_flush()
-{
-	int start = (int)floor(start_scan_pixel_pos);
-	int end = (int)floor(end_scan_pixel_pos);
-	video_flush_internal(start, end);
-	start_scan_pixel_pos = end_scan_pixel_pos;
 }
 
 bool
@@ -1047,7 +1030,6 @@ video_space_read(uint32_t address)
 void
 video_space_write(uint32_t address, uint8_t value)
 {
-	video_flush();
 	if (address >= ADDR_VRAM_START && address < ADDR_VRAM_END) {
 		video_ram[address] = value;
 	} else if (address >= ADDR_LAYER1_START && address < ADDR_LAYER1_END) {
