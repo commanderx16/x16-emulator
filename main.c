@@ -339,12 +339,12 @@ init_audio()
 	want.samples = AUDIO_SAMPLES;
 	want.callback = audioCallback;
 	want.userdata = NULL;
-	
+
 	if (audio_dev > 0)
 	{
 		SDL_CloseAudioDevice(audio_dev);
 	}
-	
+
 	audio_dev = SDL_OpenAudioDevice(audio_dev_name, 0, &want, &have, 9 /* freq | samples */);
 	if ( audio_dev <= 0 ){
 		fprintf(stderr, "SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
@@ -524,18 +524,18 @@ main(int argc, char **argv)
 				argc--;
 				argv++;
 			}
-		} else if (!strcmp(argv[0], "-joy1")){
+		} else if (!strcmp(argv[0], "-joy1")) {
 			argc--;
 			argv++;
-			if(!strcmp(argv[0], "NES")){
+			if (!strcmp(argv[0], "NES")) {
 				joy1_mode = NES;
 				argc--;
 				argv++;
-			}else if(!strcmp(argv[0], "SNES")){
+			} else if (!strcmp(argv[0], "SNES")) {
 				joy1_mode = SNES;
 				argc--;
 				argv++;
-			}else if(!strcmp(argv[0], "NONE")){
+			} else if (!strcmp(argv[0], "NONE")) {
 				joy1_mode = NONE;
 				argc--;
 				argv++;
