@@ -97,7 +97,7 @@ via2_read(uint8_t reg)
 		uint8_t value =
 			(via2registers[3] & PS2_CLK_MASK ? 0 : ps2_clk_out << 1) |
 			(via2registers[3] & PS2_DATA_MASK ? 0 : ps2_data_out);
-		if(joy1_mode == NONE) {
+		if (joy1_mode == NONE) {
 			value = value | 0x50; // short-circuit NES/SNES contoller -> not present
 		} else {
 			value = value | (joystick1_data ? JOY_DATA1_MASK : 0) |

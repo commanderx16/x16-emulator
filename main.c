@@ -535,20 +535,16 @@ main(int argc, char **argv)
 				joy1_mode = SNES;
 				argc--;
 				argv++;
-			} else if (!strcmp(argv[0], "NONE")) {
-				joy1_mode = NONE;
-				argc--;
-				argv++;
 			}
 
 		} else if (!strcmp(argv[0], "-joy2")){
 			argc--;
 			argv++;
-			if(!strcmp(argv[0], "NES")){
+			if (!strcmp(argv[0], "NES")){
 				joy2_mode = NES;
 				argc--;
 				argv++;
-			}else if(!strcmp(argv[0], "SNES")){
+			} else if (!strcmp(argv[0], "SNES")){
 				joy2_mode = SNES;
 				argc--;
 				argv++;
