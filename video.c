@@ -728,7 +728,7 @@ render_line(uint16_t y)
 	render_layer_line(0, eff_y);
 	render_layer_line(1, eff_y);
 
-	for (uint16_t x = 0; x < SCAN_WIDTH; x++) {
+	for (uint16_t x = 0; x < SCREEN_WIDTH; x++) {
 		uint8_t r;
 		uint8_t g;
 		uint8_t b;
@@ -804,21 +804,12 @@ video_step(float mhz)
 	uint8_t out_mode = reg_composer[0] & 3;
 
 	bool new_frame = false;
-	float advance;
-	if (out_mode == 0 || out_mode == 1) {
-		advance = VGA_PIXEL_FREQ / mhz;
-	} else {
-		advance = NTSC_PIXEL_FREQ / mhz;
-	}
+	float advance = ((out_mode & 2) ? NTSC_PIXEL_FREQ :  VGA_PIXEL_FREQ) / mhz;
 	scan_pos_x += advance;
 	if (scan_pos_x > SCAN_WIDTH) {
 		scan_pos_x -= SCAN_WIDTH;
-		uint16_t y;
-		if (out_mode == 0 || out_mode == 1) {
-			y = scan_pos_y - VGA_FRONT_PORCH_Y;
-		} else {
-			y = scan_pos_y - NTSC_FRONT_PORCH_Y;
-		}
+		uint16_t front_porch = (out_mode & 2) ? NTSC_FRONT_PORCH_Y : VGA_FRONT_PORCH_Y;
+		uint16_t y = scan_pos_y - front_porch;
 		if (y < SCREEN_HEIGHT) {
 			render_line(y);
 		}
@@ -826,8 +817,15 @@ video_step(float mhz)
 		if (scan_pos_y == SCAN_HEIGHT) {
 			scan_pos_y = 0;
 			new_frame = true;
-			if (ien & 1) { // VSYNC
+			if (ien & 1) { // VSYNC IRQ
 				isr |= 1;
+			}
+		}
+		if (ien & 2) { // LINE IRQ
+			y = scan_pos_y - front_porch;
+			uint16_t irq_line = reg_composer[9] | (reg_composer[10] & 1) << 8;
+			if (y < SCREEN_HEIGHT && y == irq_line) {
+				isr |= 2;
 			}
 		}
 	}
