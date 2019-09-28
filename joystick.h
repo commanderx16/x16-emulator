@@ -19,7 +19,7 @@
 #define JOY_CLK_MASK 0x20
 #define JOY_DATA2_MASK 0x40
 
-enum joy_status{NES=0, NONE=1, SNES=0xF};
+enum joy_status { NES=0, NONE=1, SNES=0xF };
 extern enum joy_status joy1_mode;
 extern enum joy_status joy2_mode;
 extern bool joystick_latch, joystick_clock;
@@ -31,9 +31,9 @@ bool joystick_init(); //initialize SDL controllers
 void joystick_step(); //do next step for handling joysticks
 
 bool handle_latch(bool latch, bool clock);  //used internally to check when to
-                                            //  write to VIA
+											//  write to VIA
 
-                              //Used to get the 16-bit data needed to send
+					//Used to get the 16-bit data needed to send
 uint16_t get_joystick_state(SDL_GameController *control);
 
 #endif
