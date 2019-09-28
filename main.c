@@ -275,9 +275,9 @@ usage()
 	printf("-dump {C|R|B|V}...\n");
 	printf("\tConfigure system dump: (C)PU, (R)AM, (B)anked-RAM, (V)RAM\n");
 	printf("\tMultiple characters are possible, e.g. -dump CV ; Default: RB\n");
-	printf("-joy1 {NES | SNES | NONE}\n");
+	printf("-joy1 {NES | SNES}\n");
 	printf("\tChoose what type of controller to use, e.g. -joy1 SNES\n");
-	printf("-joy2 {NES | SNES | NONE}\n");
+	printf("-joy2 {NES | SNES}\n");
 	printf("\tChoose what type of controller to use, e.g. -joy2 SNES\n");
 #ifdef WITH_YM2151
 	printf("-sound <output device>\n");
@@ -543,10 +543,6 @@ main(int argc, char **argv)
 				argv++;
 			}else if(!strcmp(argv[0], "SNES")){
 				joy2_mode = SNES;
-				argc--;
-				argv++;
-			}else if(!strcmp(argv[0], "NONE")){
-				joy2_mode = NONE;
 				argc--;
 				argv++;
 			}
