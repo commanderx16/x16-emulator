@@ -131,15 +131,15 @@ machine_dump()
 		return;
 	}
 
-    if (dump_cpu) {
-        fwrite(&a, sizeof(uint8_t), 1, f);
-        fwrite(&x, sizeof(uint8_t), 1, f);
-        fwrite(&y, sizeof(uint8_t), 1, f);
-        fwrite(&sp, sizeof(uint8_t), 1, f);
-        fwrite(&status, sizeof(uint8_t), 1, f);
-        fwrite(&pc, sizeof(uint16_t), 1, f);
-    }
-    memory_save(f, dump_ram, dump_bank);
+	if (dump_cpu) {
+		fwrite(&a, sizeof(uint8_t), 1, f);
+		fwrite(&x, sizeof(uint8_t), 1, f);
+		fwrite(&y, sizeof(uint8_t), 1, f);
+		fwrite(&sp, sizeof(uint8_t), 1, f);
+		fwrite(&status, sizeof(uint8_t), 1, f);
+		fwrite(&pc, sizeof(uint16_t), 1, f);
+	}
+	memory_save(f, dump_ram, dump_bank);
 
 	if (dump_vram) {
 		video_save(f);
@@ -210,7 +210,7 @@ latin15_from_unicode(uint32_t c)
 			return '?';
 	}
 
-	// all  other Unicode characters are also unsupported
+	// all other Unicode characters are also unsupported
 	if (c >= 256) {
 		return '?';
 	}
@@ -223,9 +223,9 @@ static bool
 is_kernal()
 {
 	return read6502(0xfff6) == 'M' && // only for KERNAL
-	       read6502(0xfff7) == 'I' &&
-	       read6502(0xfff8) == 'S' &&
-	       read6502(0xfff9) == 'T';
+			read6502(0xfff7) == 'I' &&
+			read6502(0xfff8) == 'S' &&
+			read6502(0xfff9) == 'T';
 }
 
 static void
@@ -334,12 +334,12 @@ init_audio()
 	want.samples = AUDIO_SAMPLES;
 	want.callback = audioCallback;
 	want.userdata = NULL;
-	
+
 	if (audio_dev > 0)
 	{
 		SDL_CloseAudioDevice(audio_dev);
 	}
-	
+
 	audio_dev = SDL_OpenAudioDevice(audio_dev_name, 0, &want, &have, 9 /* freq | samples */);
 	if ( audio_dev <= 0 ){
 		fprintf(stderr, "SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
@@ -566,8 +566,8 @@ main(int argc, char **argv)
 				usage();
 			}
 			if (!strcmp(argv[0], "nearest") ||
-			    !strcmp(argv[0], "linear") ||
-			    !strcmp(argv[0], "best")) {
+				!strcmp(argv[0], "linear") ||
+				!strcmp(argv[0], "best")) {
 				scale_quality = argv[0];
 			} else {
 				usage();
@@ -607,7 +607,6 @@ main(int argc, char **argv)
 		}
 	}
 
-	
 	prg_override_start = -1;
 	if (prg_path) {
 		char *comma = strchr(prg_path, ',');
@@ -669,13 +668,13 @@ main(int argc, char **argv)
 	return 0;
 }
 
-void 
+void
 emscripten_main_loop(void) {
 	emulator_loop(NULL);
 }
 
 
-void* 
+void*
 emulator_loop(void *param)
 {
 	for (;;) {
@@ -763,18 +762,18 @@ emulator_loop(void *param)
 			}
 
 			if (sdlTicks - last_perf_update > 5000) {
-			    int32_t frameCount = frames - perf_frame_count;
-			    int perf = frameCount / 3;
+				int32_t frameCount = frames - perf_frame_count;
+				int perf = frameCount / 3;
 
-                if (perf < 100) {
-                    sprintf(window_title, "Commander X16 (%d%%)", perf);
-                    video_update_title(window_title);
-                } else {
-                    video_update_title("Commander X16");
-                }
+				if (perf < 100) {
+					sprintf(window_title, "Commander X16 (%d%%)", perf);
+					video_update_title(window_title);
+				} else {
+					video_update_title("Commander X16");
+				}
 
-                perf_frame_count = frames;
-                last_perf_update = sdlTicks;
+				perf_frame_count = frames;
+				last_perf_update = sdlTicks;
 			}
 
 			if (log_speed) {
