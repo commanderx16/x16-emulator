@@ -563,6 +563,10 @@ render_sprite_line(uint16_t y)
 		}
 
 		for (uint16_t sx = 0; sx < props->sprite_width; sx++) {
+			uint16_t line_x = props->sprite_x + sx;
+			if (line_x >= SCREEN_WIDTH) {
+				continue;
+			}
 			uint16_t eff_sx = sx;
 			uint16_t eff_sy = y - props->sprite_y;
 
@@ -600,9 +604,9 @@ render_sprite_line(uint16_t y)
 			// palette offset
 			if (col_index > 0) {
 				col_index += props->palette_offset;
-				if (props->sprite_zdepth > sprite_line_z[props->sprite_x + sx]) {
-					sprite_line_col[props->sprite_x + sx] = col_index;
-					sprite_line_z[props->sprite_x + sx] = props->sprite_zdepth;
+				if (props->sprite_zdepth > sprite_line_z[line_x]) {
+					sprite_line_col[line_x] = col_index;
+					sprite_line_z[line_x] = props->sprite_zdepth;
 				}
 			}
 		}
