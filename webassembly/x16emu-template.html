@@ -10,44 +10,44 @@
 
 <body>
 
-<div class="container">
-    <section id="emulator">
+    <div class="container">
+        <section id="emulator">
 
-        <div class="emu-layout">
+            <div class="emu-layout">
 
-            <div class="emu-container">
-                <figure id="spinner">
-                    <div class="spinner"></div>
-                    <strong>emscripten</strong>
-                </figure>
-                <div class="emscripten" id="status">Downloading...</div>
-                <div class="emscripten">
-                    <progress value="0" max="100" id="progress" hidden=1></progress>
+                <div class="emu-container">
+                    <figure id="spinner">
+                        <div class="spinner"></div>
+                        <strong>emscripten</strong>
+                    </figure>
+                    <div class="emscripten" id="status">Downloading...</div>
+                    <div class="emscripten">
+                        <progress value="0" max="100" id="progress" hidden=1></progress>
+                    </div>
+                    <canvas onclick="this.focus();" tabindex="1" id="canvas" class="" oncontextmenu="event.preventDefault()"></canvas>
+                    <div class="close-fullscreen"><a href="javascript:closeFs();" title="Exit fullscreen">&times;</a></div>
+
                 </div>
-                <canvas onclick="this.focus();" tabindex="1" id="canvas" class="" oncontextmenu="event.preventDefault()" ></canvas>
-                <div class="close-fullscreen"><a href="javascript:closeFs();" title="Exit fullscreen">&times;</a></div>
 
+
+                <div class="output-container">
+                    <pre id="output"></pre>
+                </div>
             </div>
 
+        </section>
+        <section id="editor">
+            <div class="editor-layout">
 
-            <div class="output-container">
-                <pre id="output"></pre>
-            </div>
-        </div>
+                <div class="editor-top">
+                    <h1>Commander X16 Web Emulator <a href="http://commanderx16.com" target="_blank">visit commanderx16.com</a> </h1>
+                    <button type="button" onclick="openFs();">Fullscreen</button>
+                    <button type="button" onclick="runCode();">Run Code</button>
+                    <button type="button" onclick="resetEmulator();">Reset Emulator</button>
+                </div>
+                <div class="editor-middle">
 
-    </section>
-    <section id="editor">
-        <div class="editor-layout">
-
-            <div class="editor-top">
-                <h1>Commander X16 Web Emulator <a href="http://commanderx16.com" target="_blank">visit commanderx16.com</a> </h1>
-                <button type="button" onclick="openFs();">Fullscreen</button>
-                <button type="button" onclick="runCode();">Run Code</button>
-                <button type="button" onclick="resetEmulator();">Reset Emulator</button>
-            </div>
-            <div class="editor-middle">
-
-                <textarea id="code">100 REM SEE HTTPS://10PRINT.ORG/
+                    <textarea id="code">100 REM SEE HTTPS://10PRINT.ORG/
 105 REM ADAPTED BY GIOVANNI GIORGI
 106 REM V 1.1
 110 PRINT CHR$(147); "OLD SCHOOL MAZE DEMO"
@@ -63,18 +63,17 @@
 600 NEXT ROW
 700 NEXT MC</textarea>
 
+                </div>
+
+
             </div>
 
+        </section>
+    </div>
 
-        </div>
-
-    </section>
-</div>
-
-<script src="webassembly/main.js"></script>
-{{{ SCRIPT }}}
+    <script src="webassembly/main.js"></script>
+    {{{ SCRIPT }}}
 
 </body>
 
 </html>
-

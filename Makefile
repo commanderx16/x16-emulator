@@ -27,10 +27,9 @@ ifeq ($(CROSS_COMPILE_WINDOWS),1)
 endif
 
 ifdef EMSCRIPTEN
-	# Todo #--js-library webassembly/helper.js
-	LDFLAGS+=--shell-file webassembly/x16emu-template.html  --preload-file rom.bin -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 
+	LDFLAGS+=--shell-file webassembly/x16emu-template.html --preload-file rom.bin -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 
 	# To the Javascript runtime exported functions
-	LDFLAGS+=-s EXPORTED_FUNCTIONS='["_j2c_reset", "_j2c_paste", _main]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]'
+	LDFLAGS+=-s EXPORTED_FUNCTIONS='["_j2c_reset", "_j2c_paste", "_j2c_start_audio", _main]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]'
 	
 	OUTPUT=x16emu.html
 endif
