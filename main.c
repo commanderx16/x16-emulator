@@ -93,7 +93,7 @@ bool run_after_load = false;
 
 #ifdef WITH_YM2151
 const char *audio_dev_name = NULL;
-SDL_AudioDeviceID audio_dev;
+SDL_AudioDeviceID audio_dev = 0;
 #endif
 
 #ifdef TRACE
@@ -326,7 +326,8 @@ void usageSound()
 	exit(1);
 }
 
-void initAudio()
+void
+init_audio()
 {
 	SDL_AudioSpec want;
 	SDL_AudioSpec have;
@@ -338,6 +339,12 @@ void initAudio()
 	want.samples = AUDIO_SAMPLES;
 	want.callback = audioCallback;
 	want.userdata = NULL;
+	
+	if (audio_dev > 0)
+	{
+		SDL_CloseAudioDevice(audio_dev);
+	}
+	
 	audio_dev = SDL_OpenAudioDevice(audio_dev_name, 0, &want, &have, 9 /* freq | samples */);
 	if ( audio_dev <= 0 ){
 		fprintf(stderr, "SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
@@ -673,7 +680,7 @@ main(int argc, char **argv)
 		);
 
 #ifdef WITH_YM2151
-	initAudio();
+	init_audio();
 #endif
 
 	video_init(window_scale, scale_quality);
