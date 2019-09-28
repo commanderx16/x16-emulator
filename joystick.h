@@ -1,11 +1,11 @@
 /**********************************************/
-// File     :     controller.h
+// File     :     joystick.h
 // Author   :     John Bliss
 // Date     :     September 27th 2019
 /**********************************************/
 
-#ifndef _CONTROLLER_H_
-#define _CONTROLLER_H_
+#ifndef _JOYSTICK_H_
+#define _JOYSTICK_H_
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -22,18 +22,18 @@
 enum joy_status{NES=0, NONE=1, SNES=0xF};
 extern enum joy_status joy1_mode;
 extern enum joy_status joy2_mode;
-extern bool controller_latch, controller_clock;
-extern bool controller_data1, controller_data2;
+extern bool joystick_latch, joystick_clock;
+extern bool joystick1_data, joystick2_data;
 
 
-bool controller_init(); //initialize SDL controllers
+bool joystick_init(); //initialize SDL controllers
 
-void controller_step(); //do next step for handling controllers
+void joystick_step(); //do next step for handling joysticks
 
 bool handle_latch(bool latch, bool clock);  //used internally to check when to
                                             //  write to VIA
 
                               //Used to get the 16-bit data needed to send
-uint16_t get_controller_state(SDL_GameController *control);
+uint16_t get_joystick_state(SDL_GameController *control);
 
 #endif

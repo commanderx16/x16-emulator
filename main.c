@@ -24,7 +24,7 @@
 #include "glue.h"
 #include "debugger.h"
 #include "utf8.h"
-#include "controller.h"
+#include "joystick.h"
 #ifdef WITH_YM2151
 #include "ym2151.h"
 #endif
@@ -276,9 +276,9 @@ usage()
 	printf("\tConfigure system dump: (C)PU, (R)AM, (B)anked-RAM, (V)RAM\n");
 	printf("\tMultiple characters are possible, e.g. -dump CV ; Default: RB\n");
 	printf("-joy1 {NES | SNES}\n");
-	printf("\tChoose what type of controller to use, e.g. -joy1 SNES\n");
+	printf("\tChoose what type of joystick to use, e.g. -joy1 SNES\n");
 	printf("-joy2 {NES | SNES}\n");
-	printf("\tChoose what type of controller to use, e.g. -joy2 SNES\n");
+	printf("\tChoose what type of joystick to use, e.g. -joy2 SNES\n");
 #ifdef WITH_YM2151
 	printf("-sound <output device>\n");
 	printf("\tSet the output device used for audio emulation");
@@ -678,7 +678,7 @@ main(int argc, char **argv)
 
 	video_init(window_scale, scale_quality);
 
-	controller_init();
+	joystick_init();
 
 	machine_reset();
 
@@ -772,7 +772,7 @@ emulator_loop(void *param)
 		for (uint8_t i = 0; i < clocks; i++) {
 			ps2_step();
 			spi_step();
-			controller_step();
+			joystick_step();
 			vera_spi_step();
 			new_frame |= video_step(MHZ);
 		}

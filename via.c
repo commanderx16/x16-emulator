@@ -11,7 +11,7 @@
 #include "memory.h"
 //XXX
 #include "glue.h"
-#include "controller.h"
+#include "joystick.h"
 
 //
 // VIA#1
@@ -100,8 +100,8 @@ via2_read(uint8_t reg)
 		if(joy1_mode == NONE){
 			value = value | 0x50; // short-circuit NES/SNES contoller -> not present
 		}else{
-			value = value | (controller_data1 ? JOY_DATA1_MASK : 0) |
-							(controller_data2 ? JOY_DATA2_MASK : 0);
+			value = value | (joystick1_data ? JOY_DATA1_MASK : 0) |
+							(joystick2_data ? JOY_DATA2_MASK : 0);
 		}
 		return value;
 	} else {
@@ -122,8 +122,8 @@ via2_write(uint8_t reg, uint8_t value)
 		// PA
 		ps2_clk_in = via2registers[3] & PS2_CLK_MASK ? via2registers[1] & PS2_CLK_MASK : 1;
 		ps2_data_in = via2registers[3] & PS2_DATA_MASK ? via2registers[1] & PS2_DATA_MASK : 1;
-		controller_latch = via2registers[1] & JOY_LATCH_MASK;
-		controller_clock = via2registers[1] & JOY_CLK_MASK;
+		joystick_latch = via2registers[1] & JOY_LATCH_MASK;
+		joystick_clock = via2registers[1] & JOY_CLK_MASK;
 	}
 }
 
