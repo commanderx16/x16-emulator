@@ -8,8 +8,17 @@ insert_final_newline = true
 tab_width = 4
 trim_trailing_whitespace = true
 
+[README]
+indent_style = space
+
 [*.yml]
 indent_style = space
 
 [*.py]
+indent_style = space
+
+[*.md]
+indent_style = space
+
+[{*.css,*.html,*.js}]
 indent_style = space

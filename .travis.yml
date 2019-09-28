@@ -16,5 +16,9 @@ matrix:
       addons:
         homebrew:
           packages:
-            - sdl2 
-      script: make 
+            - sdl2
+      script: make
+    - language: python
+      script:
+        - python -m pip install editorconfig-checker
+        - editorconfig-checker

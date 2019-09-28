@@ -90,7 +90,7 @@ void
 write6502(uint16_t address, uint8_t value)
 {
 #ifdef WITH_YM2151
-    static uint8_t lastAudioAdr = 0;
+	static uint8_t lastAudioAdr = 0;
 #endif
 	if (address < 0x9f00) { // RAM
 		RAM[address] = value;

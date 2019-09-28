@@ -91,7 +91,7 @@ via2_read(uint8_t reg)
 		// 0 input  -> take input bit
 		// 1 output -> take output bit
 		return (via2pb_in & (via2registers[2] ^ 0xff)) |
-		       (via2registers[0] & via2registers[2]);
+			(via2registers[0] & via2registers[2]);
 	} else if (reg == 1) {
 		// PA
 		uint8_t value =

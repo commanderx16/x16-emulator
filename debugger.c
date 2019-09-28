@@ -33,7 +33,7 @@ static void DEBUGRenderCode(int lines,int initialPC);
 // *******************************************************************************************
 //
 //		This is the minimum-interference flag. It's designed so that when
-//		its non-zero DEBUGRenderDisplay() is called. 
+//		its non-zero DEBUGRenderDisplay() is called.
 //
 //			if (showDebugOnRender != 0) {
 //				DEBUGRenderDisplay(SCREEN_WIDTH,SCREEN_HEIGHT,renderer);
@@ -51,9 +51,9 @@ static void DEBUGRenderCode(int lines,int initialPC);
 //				if (dbgCmd < 0) break;
 //			}
 //
-//		Both video.c and main.c require debugger.h to be included. 
+//		Both video.c and main.c require debugger.h to be included.
 //
-//		isDebuggerEnabled should be a flag set as a command line switch - without it 
+//		isDebuggerEnabled should be a flag set as a command line switch - without it
 //		it will run unchanged. It should not be necessary to test the render code
 //		because showDebugOnRender is statically initialised to zero and will only
 //		change if DEBUGGetCurrentStatus() is called.
@@ -70,7 +70,7 @@ static void DEBUGRenderCode(int lines,int initialPC);
 #define DBGKEY_STEP 	SDLK_F11 								// F11 is step into.
 #define DBGKEY_STEPOVER	SDLK_F10 								// F10 is step over.
 
-#define DBGSCANKEY_BRK 	SDL_SCANCODE_F12 						// F12 is break into running code.	
+#define DBGSCANKEY_BRK 	SDL_SCANCODE_F12 						// F12 is break into running code.
 #define DBGSCANKEY_SHOW	SDL_SCANCODE_TAB 						// Show screen key.
 
 																// *** MUST BE SCAN CODES ***
@@ -83,17 +83,17 @@ int currentMode = DMODE_RUN;									// Start running.
 int breakPoint = -1; 											// User Break
 int stepBreakPoint = -1;										// Single step break.
 //
-//		This flag controls 
+//		This flag controls
 //
 int xPos = 0;													// Position of debug window
-int yPos = 0;	
+int yPos = 0;
 
 SDL_Renderer *dbgRenderer; 										// Renderer passed in.
 
 // *******************************************************************************************
 //
 //			This is used to determine who is in control. If it returns zero then
-//			everything runs normally till the next call. 
+//			everything runs normally till the next call.
 //			If it returns +ve, then it will update the video, and loop round.
 //			If it returns -ve, then exit.
 //
@@ -125,12 +125,12 @@ int  DEBUGGetCurrentStatus(void) {
 					SDL_GetKeyboardState(NULL)[DBGSCANKEY_SHOW];
 		while (SDL_PollEvent(&event)) { 						// We now poll events here.
 			if (event.type == SDL_QUIT) return -1; 				// Time for exit
-			if (event.type == SDL_KEYDOWN) {					// Handle key presses.	
+			if (event.type == SDL_KEYDOWN) {					// Handle key presses.
 				DEBUGHandleKeyEvent(event.key.keysym.sym,
-									SDL_GetModState() & (KMOD_LSHIFT|KMOD_RSHIFT));		
+									SDL_GetModState() & (KMOD_LSHIFT|KMOD_RSHIFT));
 			}
 		}
-	} 
+	}
 
 	showDebugOnRender = (currentMode != DMODE_RUN);				// Do we draw it - only in RUN mode.
 	if (currentMode == DMODE_STOP) { 							// We're in charge.
@@ -141,7 +141,7 @@ int  DEBUGGetCurrentStatus(void) {
 }
 
 // *******************************************************************************************
-//					
+//
 //								Set a new breakpoint address. -1 to disable.
 //
 // *******************************************************************************************
@@ -151,7 +151,7 @@ void DEBUGSetBreakPoint(int newBreakPoint) {
 }
 
 // *******************************************************************************************
-//					
+//
 //								Break into debugger from code.
 //
 // *******************************************************************************************
@@ -165,8 +165,8 @@ void DEBUGBreakToDebugger(void) {
 //								Map keycodes to hexadecimal
 // *******************************************************************************************
 
-static SDL_Keycode keyToHex[] = { 
-	SDLK_0, SDLK_1, SDLK_2, SDLK_3, SDLK_4, SDLK_5, SDLK_6, SDLK_7,  
+static SDL_Keycode keyToHex[] = {
+	SDLK_0, SDLK_1, SDLK_2, SDLK_3, SDLK_4, SDLK_5, SDLK_6, SDLK_7,
 	SDLK_8, SDLK_9, SDLK_a, SDLK_b, SDLK_c, SDLK_d, SDLK_e, SDLK_f
 };
 
@@ -242,7 +242,7 @@ void DEBUGRenderDisplay(int width,int height,SDL_Renderer *pRenderer) {
 
 static void DEBUGRenderData(int y,int data) {
 	while (y < DBG_HEIGHT) {									// To bottom of screen
-		DEBUGNumber(DBG_MEMX,y,data & 0xFFFF,4,COL_LABEL);		// Show label.	
+		DEBUGNumber(DBG_MEMX,y,data & 0xFFFF,4,COL_LABEL);		// Show label.
 		for (int i = 0;i < 8;i++) {
 			int byte = read6502((data+i) & 0xFFFF);
 			DEBUGNumber(DBG_MEMX+5+i*3,y,byte,2,COL_DATA);
@@ -267,7 +267,7 @@ static void DEBUGRenderCode(int lines,int initialPC) {
 		if (initialPC == pc) {									// Output assembly highlighting PC
 			DEBUGString(DBG_ASMX+5,y,buffer,COL_HIGHLIGHT);
 		} else {
-			DEBUGString(DBG_ASMX+5,y,buffer,COL_DATA);		
+			DEBUGString(DBG_ASMX+5,y,buffer,COL_DATA);
 		}
 		initialPC += size;										// Forward to next
 	}
@@ -311,7 +311,7 @@ static int DEBUGRenderRegisters(void) {
 // *******************************************************************************************
 
 static unsigned char fontdata[] = {
-    0x00, 0x00, 0x00, 0x00, 0x00,   // 0x20 (space)
+	0x00, 0x00, 0x00, 0x00, 0x00,   // 0x20 (space)
 	0x00, 0x00, 0x5F, 0x00, 0x00,   // 0x21 '!'
 	0x00, 0x07, 0x00, 0x07, 0x00,   // 0x22 '"'
 	0x14, 0x7F, 0x14, 0x7F, 0x14,   // 0x23 '#'
@@ -442,7 +442,7 @@ static void DEBUGString(int x,int y,char *s,int r,int g,int b) {
 
 static void DEBUGWrite(int x,int y,int ch,int r,int g,int b) {
 	SDL_Rect rc;
-	rc.x = xPos + (x * 6 * CHAR_SCALE);							// Work out cell position				
+	rc.x = xPos + (x * 6 * CHAR_SCALE);							// Work out cell position
 	rc.w = CHAR_SCALE;rc.h = CHAR_SCALE; 						// and draw sizes.
 	ch = (ch & 0x7F);if (ch < 0x20) ch = '.';					// Process character
 	SDL_SetRenderDrawColor(dbgRenderer,r,g,b,SDL_ALPHA_OPAQUE);	// Set colour.
