@@ -63,6 +63,8 @@ char *paste_text = NULL;
 char paste_text_data[65536];
 bool pasting_bas = false;
 
+uint16_t num_ram_banks = 64; // 512 KB default
+
 bool log_video = false;
 bool log_speed = false;
 bool log_keyboard = false;
@@ -271,13 +273,10 @@ usage()
 	printf("All rights reserved. License: 2-clause BSD\n\n");
 	printf("Usage: x16emu [option] ...\n\n");
 	printf("-rom <rom.bin>\n");
-	printf("\tOverride KERNAL/BASIC/* ROM file:\n");
-	printf("\t$0000-$1FFF bank #0 of banked ROM (BASIC)\n");
-	printf("\t$2000-$3FFF fixed ROM at $E000-$FFFF (KERNAL)\n");
-	printf("\t$4000-$5FFF bank #1 of banked ROM\n");
-	printf("\t$6000-$7FFF bank #2 of banked ROM\n");
-	printf("\t...\n");
-	printf("\tThe file needs to be at least $4000 bytes in size.\n");
+	printf("\tOverride KERNAL/BASIC/* ROM file.\n");
+	printf("-ram <ramsize>\n");
+	printf("\tSpecify banked RAM size in KB (8, 16, 32, ..., 2048).\n");
+	printf("\tThe default is 512.\n");
 	printf("-keymap <keymap>\n");
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
@@ -432,6 +431,25 @@ main(int argc, char **argv)
 				usage();
 			}
 			rom_path = argv[0];
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-ram")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			int kb = atoi(argv[0]);
+			bool found = false;
+			for (int cmp = 8; cmp <= 2048; cmp *= 2) {
+				if (kb == cmp)  {
+					found = true;
+				}
+			}
+			if (!found) {
+				usage();
+			}
+			num_ram_banks = kb /8;
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-keymap")) {
@@ -700,6 +718,7 @@ main(int argc, char **argv)
 	init_audio();
 #endif
 
+	memory_init();
 	video_init(window_scale, scale_quality);
 
 	machine_reset();

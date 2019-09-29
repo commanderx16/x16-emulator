@@ -31,8 +31,12 @@ void
 via1_init()
 {
 	srand(time(NULL));
-	memory_set_ram_bank(NUM_RAM_BANKS - 1);
-	memory_set_rom_bank(NUM_ROM_BANKS - 1);
+
+	// use all 1 bits for bank number, even though there might
+	// be less installed physically
+	memory_set_ram_bank(255);
+	memory_set_rom_bank(7);
+
 	via1registers[0] = memory_get_rom_bank(); // PB: ROM bank, IEC
 	via1registers[1] = memory_get_ram_bank(); // PA: RAM bank
 }

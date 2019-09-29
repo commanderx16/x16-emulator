@@ -17,17 +17,22 @@
 uint8_t ram_bank;
 uint8_t rom_bank;
 
-uint8_t RAM[RAM_SIZE];
+uint8_t *RAM;
 uint8_t ROM[ROM_SIZE];
 
 #define DEVICE_EMULATOR (0x9fb0)
 
-// ROM file layout:
-//   0000-1FFF: bank 0       ($C000)
-//   2000-3FFF: fixed KERNAL ($E000)
-//   4000-5FFF: bank 1       ($C000)
-//   6000-7FFF: bank 2       ($C000)
-//   ...
+void
+memory_init()
+{
+	RAM = malloc(RAM_SIZE);
+}
+
+static uint8_t
+effective_ram_bank()
+{
+	return ram_bank % num_ram_banks;
+}
 
 //
 // interface for fake6502
@@ -64,7 +69,7 @@ read6502(uint16_t address)
 			return 0;
 		}
 	} else if (address < 0xc000) { // banked RAM
-		return RAM[0xa000 + (ram_bank << 13) + address - 0xa000];
+		return RAM[0xa000 + (effective_ram_bank() << 13) + address - 0xa000];
 #ifdef FIXED_KERNAL
 	} else if (address < 0xe000) { // banked ROM
 		if (rom_bank == 0) {
@@ -120,7 +125,7 @@ write6502(uint16_t address, uint8_t value)
 			// future expansion
 		}
 	} else if (address < 0xc000) { // banked RAM
-		RAM[0xa000 + (ram_bank << 13) + address - 0xa000] = value;
+		RAM[0xa000 + (effective_ram_bank() << 13) + address - 0xa000] = value;
 	} else { // ROM
 		// ignore
 	}
@@ -137,7 +142,7 @@ memory_save(FILE *f, bool dump_ram, bool dump_bank)
 		fwrite(&RAM[0], sizeof(uint8_t), 0xa000, f);
 	}
 	if (dump_bank) {
-		fwrite(&RAM[0xa000], sizeof(uint8_t), (NUM_RAM_BANKS * 8192), f);
+		fwrite(&RAM[0xa000], sizeof(uint8_t), (num_ram_banks * 8192), f);
 	}
 }
 
@@ -149,7 +154,7 @@ memory_save(FILE *f, bool dump_ram, bool dump_bank)
 void
 memory_set_ram_bank(uint8_t bank)
 {
-	ram_bank = bank & (NUM_RAM_BANKS - 1);
+	ram_bank = bank & (NUM_MAX_RAM_BANKS - 1);
 }
 
 uint8_t
