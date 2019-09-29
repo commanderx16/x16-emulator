@@ -11,7 +11,7 @@ include_directories(
 	"${CMAKE_CURRENT_LIST_DIR}/extern/src"
 )
 
-set(SOURCES 
+set(SOURCES
 	cpu/fake6502.c
 	debugger.c
 	disasm.c

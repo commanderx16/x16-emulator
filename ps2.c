@@ -81,7 +81,7 @@ ps2_step()
 //				printf("PS2: current_byte: %x\n", current_byte);
 				has_byte = true;
 			}
-			
+
 			data_bits = current_byte << 1 | (1 - parity(current_byte)) << 9 | (1 << 10);
 //			printf("PS2: data_bits: %x\n", data_bits);
 			bit_index = 0;

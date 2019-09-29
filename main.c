@@ -838,8 +838,8 @@ emulator_loop(void *param)
 			int32_t sdlTicks = SDL_GetTicks();
 			int32_t diff_time = 1000 * frames / 60 - sdlTicks;
 			if (diff_time > 0) {
-                #ifdef _MSC_VER
-                Sleep( diff_time );
+				#ifdef _MSC_VER
+				Sleep( diff_time );
 				#else
 				usleep(1000 * diff_time);
 				#endif
