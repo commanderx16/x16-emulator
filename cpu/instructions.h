@@ -18,7 +18,6 @@ static void adc() {
     penaltyop = 1;
     #ifndef NES_CPU
     if (status & FLAG_DECIMAL) {
-        clearcarry();
         uint16_t tmp, tmp2;
         value = getvalue();
         tmp = ((uint16_t)a & 0x0F) + (value & 0x0F) + (uint16_t)(status & FLAG_CARRY);
@@ -32,6 +31,8 @@ static void adc() {
         }
         if (tmp2 & 0xFF00) {
             setcarry();
+        } else {
+            clearcarry();
         }
         result = (tmp & 0x0F) + (tmp2 & 0xF0);
 
