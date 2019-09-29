@@ -15,17 +15,16 @@ static SDL_GameController *joystick1 = NULL;
 static SDL_GameController *joystick2 = NULL;
 static bool old_clock = false;
 static bool writing = false;
-static uint16_t joystick1_state = 0;
-static uint16_t joystick2_state = 0;
+static uint32_t joystick1_state = 0;
+static uint32_t joystick2_state = 0;
 static uint8_t clock_count = 0;
-
 
 bool joystick_latch, joystick_clock;
 bool joystick1_data, joystick2_data;
 
 bool joystick_init()
 {
-	int joystick1_number = 0;
+	int joystick1_number = -1;
 	//Try to get first controller, if it is not set to 1
 	if (joy1_mode != NONE) {
 		for (int i = 0; i < SDL_NumJoysticks(); i++) {
@@ -58,17 +57,15 @@ bool joystick_init()
 
 void joystick_step()
 {
-	if (joy1_mode == NONE) {
-		return;
-	}
 	if (!writing) { //if we are not already writing, check latch to
 		//see if we need to start
 		handle_latch(joystick_latch, joystick_clock);
+		return;
 	}
 
 	//if we have started writing controller data and the latch has dropped,
 	// we need to start the next bit
-	if (writing & !joystick_latch) {
+	if (!joystick_latch) {
 		//check if clock has changed
 		if (joystick_clock != old_clock) {
 			if (old_clock) {
@@ -76,7 +73,7 @@ void joystick_step()
 			} else {  //only write next bit when the new clock is high
 				clock_count +=1;
 				old_clock = joystick_clock;
-				if (clock_count < 16) { // write out the next 15 bits
+				if (clock_count < 24) { // write out the next 15 bits
 					joystick1_data = joystick1_state & 1;
 					joystick2_data = joystick2_state & 1;
 					joystick1_state = joystick1_state >> 1;
@@ -86,8 +83,8 @@ void joystick_step()
 					//reset flag and set count to 0
 					writing = false;
 					clock_count = 0;
-					joystick1_data = 0;
-					joystick2_data = 0;
+					joystick1_data = 1;
+					joystick2_data = 1;
 				}
 			}
 		}
@@ -103,8 +100,8 @@ bool handle_latch(bool latch, bool clock)
 	if (latch){
 		clock_count = 0;
 		//get the 16-representation to put to the VIA
-		joystick1_state = get_joystick_state(joystick1);
-		joystick2_state = get_joystick_state(joystick2);
+		joystick1_state = (joy1_mode != NONE) ? get_joystick_state(joystick1, joy1_mode) : 0xFFFFFF;
+		joystick2_state = (joy2_mode != NONE) ? get_joystick_state(joystick2, joy2_mode) : 0xFFFFFF;
 		//set writing flag to true to signal we will start writing controller data
 		writing = true;
 		old_clock = clock;
@@ -120,9 +117,9 @@ bool handle_latch(bool latch, bool clock)
 
 //get current state from SDL controller
 //Should replace this with SDL events, so we do not miss inputs when polling
-uint16_t get_joystick_state(SDL_GameController *control)
+uint32_t get_joystick_state(SDL_GameController *control, enum joy_status mode)
 {
-	if (joy1_mode == NES) {
+	if (mode == NES) {
 		bool a_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_A);
 		bool b_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_X);
 		bool select_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_BACK);
@@ -141,9 +138,9 @@ uint16_t get_joystick_state(SDL_GameController *control)
 		(!down_pressed) << 5 |
 		(!left_pressed) << 6 |
 		(!right_pressed) << 7 |
-		0x0000;
+		0x000000;
 	}
-	if (joy1_mode == SNES) {
+	if (mode == SNES) {
 		bool b_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_A);
 		bool y_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_X);
 		bool select_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_BACK);
@@ -171,7 +168,7 @@ uint16_t get_joystick_state(SDL_GameController *control)
 		(!x_pressed) << 9 |
 		(!l_pressed) << 10 |
 		(!r_pressed) << 11 |
-		0xF000;
+		0x00F000;
 	}
 
 	return 0x8FFF;

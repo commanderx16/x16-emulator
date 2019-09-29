@@ -34,6 +34,6 @@ bool handle_latch(bool latch, bool clock);  //used internally to check when to
 											//  write to VIA
 
 					//Used to get the 16-bit data needed to send
-uint16_t get_joystick_state(SDL_GameController *control);
+uint32_t get_joystick_state(SDL_GameController *control, enum joy_status mode);
 
 #endif
