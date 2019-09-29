@@ -203,7 +203,7 @@ emu_read(uint8_t reg)
 	} else if (reg == 2) {
 		return log_keyboard ? 1 : 0;
 	} else if (reg == 3) {
-		return echo_mode ? 1 : 0;
+		return echo_mode;
 	} else if (reg == 4) {
 		return save_on_exit ? 1 : 0;
 	} else if (reg == 13) {

@@ -69,8 +69,7 @@ bool dump_cpu = false;
 bool dump_ram = true;
 bool dump_bank = true;
 bool dump_vram = false;
-bool echo_mode = false;
-bool echo_raw = false;
+echo_mode_t echo_mode;
 bool save_on_exit = true;
 bool record_gif = false;
 char *gif_path = NULL;
@@ -447,12 +446,17 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-echo")) {
 			argc--;
 			argv++;
-			echo_mode = true;
-		} else if (!strcmp(argv[0], "-echoraw")) {
-			argc--;
-			argv++;
-			echo_mode = true;
-			echo_raw = true;
+			if (argc && argv[0][0] != '-') {
+				if (!strcmp(argv[0], "raw")) {
+					echo_mode = ECHO_MODE_RAW;
+				} else {
+					usage();
+				}
+				argc--;
+				argv++;
+			} else {
+				echo_mode = ECHO_MODE_COOKED;
+			}
 		} else if (!strcmp(argv[0], "-log")) {
 			argc--;
 			argv++;
@@ -817,14 +821,21 @@ emulator_loop(void *param)
 			break;
 		}
 
-		if (echo_mode && pc == 0xffd2 && is_kernal()) {
+		if (echo_mode != ECHO_MODE_NONE && pc == 0xffd2 && is_kernal()) {
 			uint8_t c = a;
-			if (!echo_raw) {
+			if (echo_mode == ECHO_MODE_COOKED) {
 				if (c == 0x0d) {
-					c = 0x0a;
+					printf("\n");
+				} else if (c == 0x0a) {
+					// skip
+				} else if (c < 0x20 || c >= 0x80) {
+					printf("\\X%02X", c);
+				} else {
+					printf("%c", c);
 				}
+			} else {
+				printf("%c", c);
 			}
-			printf("%c", c);
 			fflush(stdout);
 		}
 
