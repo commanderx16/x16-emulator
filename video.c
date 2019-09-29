@@ -624,22 +624,22 @@ render_layer_line(uint8_t layer, uint16_t y)
 		layer_line_empty[layer] = false;
 		for (int x = 0; x < SCREEN_WIDTH; x++) {
 			uint8_t col_index = 0;
+			int xx, yy;
 
-			int xx = x;
-			int yy = y;
-
+			int eff_x = x;
+			int eff_y = y;
 			// Scrolling
 			if (!props->bitmap_mode) {
-				xx = (xx + props->hscroll) & (props->layerw_max);
-				yy = (yy + props->vscroll) & (props->layerh_max);
+				eff_x = (x + props->hscroll) & (props->layerw_max);
+				eff_y = (y + props->vscroll) & (props->layerh_max);
 			}
 
 			if (props->bitmap_mode) {
-				xx = x % props->tilew;
-				yy = y % props->tileh;
+				xx = eff_x % props->tilew;
+				yy = eff_y % props->tileh;
 			} else {
-				xx = x & props->tilew_max;
-				yy = y & props->tileh_max;
+				xx = eff_x & props->tilew_max;
+				yy = eff_y & props->tileh_max;
 			}
 
 			uint16_t tile_index = 0;
@@ -652,7 +652,7 @@ render_layer_line(uint8_t layer, uint16_t y)
 				tile_index = 0;
 				palette_offset = reg_layer[layer][7] & 0xf;
 			} else {
-				uint32_t map_addr = props->map_base + (y / props->tileh * props->mapw + x / props->tilew) * 2;
+				uint32_t map_addr = props->map_base + (eff_y / props->tileh * props->mapw + eff_x / props->tilew) * 2;
 				uint8_t byte0 = video_space_read(map_addr);
 				uint8_t byte1 = video_space_read(map_addr + 1);
 				if (props->text_mode) {
