@@ -24,6 +24,7 @@
 #include "glue.h"
 #include "debugger.h"
 #include "utf8.h"
+#include "joystick.h"
 #include "utf8_encode.h"
 #ifdef WITH_YM2151
 #include "ym2151.h"
@@ -313,6 +314,10 @@ usage()
 	printf("-dump {C|R|B|V}...\n");
 	printf("\tConfigure system dump: (C)PU, (R)AM, (B)anked-RAM, (V)RAM\n");
 	printf("\tMultiple characters are possible, e.g. -dump CV ; Default: RB\n");
+	printf("-joy1 {NES | SNES}\n");
+	printf("\tChoose what type of joystick to use, e.g. -joy1 SNES\n");
+	printf("-joy2 {NES | SNES}\n");
+	printf("\tChoose what type of joystick to use, e.g. -joy2 SNES\n");
 #ifdef WITH_YM2151
 	printf("-sound <output device>\n");
 	printf("\tSet the output device used for audio emulation");
@@ -589,6 +594,31 @@ main(int argc, char **argv)
 				argc--;
 				argv++;
 			}
+		} else if (!strcmp(argv[0], "-joy1")) {
+			argc--;
+			argv++;
+			if (!strcmp(argv[0], "NES")) {
+				joy1_mode = NES;
+				argc--;
+				argv++;
+			} else if (!strcmp(argv[0], "SNES")) {
+				joy1_mode = SNES;
+				argc--;
+				argv++;
+			}
+
+		} else if (!strcmp(argv[0], "-joy2")){
+			argc--;
+			argv++;
+			if (!strcmp(argv[0], "NES")){
+				joy2_mode = NES;
+				argc--;
+				argv++;
+			} else if (!strcmp(argv[0], "SNES")){
+				joy2_mode = SNES;
+				argc--;
+				argv++;
+			}
 #ifdef TRACE
 		} else if (!strcmp(argv[0], "-trace")) {
 			argc--;
@@ -677,6 +707,7 @@ main(int argc, char **argv)
 		}
 	}
 
+
 	prg_override_start = -1;
 	if (prg_path) {
 		char *comma = strchr(prg_path, ',');
@@ -708,7 +739,7 @@ main(int argc, char **argv)
 		fclose(bas_file);
 	}
 
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER
 #ifdef WITH_YM2151
 		| SDL_INIT_AUDIO
 #endif
@@ -720,6 +751,8 @@ main(int argc, char **argv)
 
 	memory_init();
 	video_init(window_scale, scale_quality);
+
+	joystick_init();
 
 	machine_reset();
 
@@ -813,6 +846,7 @@ emulator_loop(void *param)
 		for (uint8_t i = 0; i < clocks; i++) {
 			ps2_step();
 			spi_step();
+			joystick_step();
 			vera_spi_step();
 			new_frame |= video_step(MHZ);
 		}
@@ -972,4 +1006,3 @@ emulator_loop(void *param)
 
 	return 0;
 }
-

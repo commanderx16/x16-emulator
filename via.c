@@ -11,7 +11,7 @@
 #include "memory.h"
 //XXX
 #include "glue.h"
-
+#include "joystick.h"
 
 //
 // VIA#1
@@ -100,8 +100,9 @@ via2_read(uint8_t reg)
 		// PA
 		uint8_t value =
 			(via2registers[3] & PS2_CLK_MASK ? 0 : ps2_clk_out << 1) |
-			(via2registers[3] & PS2_DATA_MASK ? 0 : ps2_data_out) |
-			0x50; // short-circuit NES/SNES contoller -> not present
+			(via2registers[3] & PS2_DATA_MASK ? 0 : ps2_data_out);
+			value = value | (joystick1_data ? JOY_DATA1_MASK : 0) |
+							(joystick2_data ? JOY_DATA2_MASK : 0);
 		return value;
 	} else {
 		return via2registers[reg];
@@ -121,6 +122,8 @@ via2_write(uint8_t reg, uint8_t value)
 		// PA
 		ps2_clk_in = via2registers[3] & PS2_CLK_MASK ? via2registers[1] & PS2_CLK_MASK : 1;
 		ps2_data_in = via2registers[3] & PS2_DATA_MASK ? via2registers[1] & PS2_DATA_MASK : 1;
+		joystick_latch = via2registers[1] & JOY_LATCH_MASK;
+		joystick_clock = via2registers[1] & JOY_CLK_MASK;
 	}
 }
 
