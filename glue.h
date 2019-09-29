@@ -12,10 +12,10 @@
 //#define TRACE
 #define LOAD_HYPERCALLS
 
-#define NUM_RAM_BANKS 256
+#define NUM_MAX_RAM_BANKS 256
 #define NUM_ROM_BANKS 8
 
-#define RAM_SIZE (0xa000 + NUM_RAM_BANKS * 8192) /* $0000-$9FFF + banks at $A000-$BFFF */
+#define RAM_SIZE (0xa000 + num_ram_banks * 8192) /* $0000-$9FFF + banks at $A000-$BFFF */
 #ifdef FIXED_KERNAL
 #define ROM_SIZE (8192 + NUM_ROM_BANKS * 8192)   /* $E000-$FFFF + banks at $A000-$BFFF */
 #else
@@ -31,8 +31,10 @@ typedef enum {
 
 extern uint8_t a, x, y, sp, status;
 extern uint16_t pc;
-extern uint8_t RAM[];
+extern uint8_t *RAM;
 extern uint8_t ROM[];
+
+extern uint16_t num_ram_banks;
 
 extern bool debuger_enabled;
 extern bool log_video;
