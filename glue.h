@@ -26,6 +26,7 @@ typedef enum {
 	ECHO_MODE_NONE,
 	ECHO_MODE_RAW,
 	ECHO_MODE_COOKED,
+	ECHO_MODE_ISO,
 } echo_mode_t;
 
 extern uint8_t a, x, y, sp, status;
