@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include "glue.h"
 #include "memory.h"
+#include "video.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -147,7 +148,21 @@ LOAD()
 		}
 
 		size_t bytes_read = 0;
-		if(start < 0x9f00) {
+		if(a > 1) {
+			// Video RAM
+			video_write(0, start & 0xff);
+			video_write(1, start >> 8);
+			video_write(2, ((a - 2) & 0xf) | 0x10);
+			uint8_t buf[2048];
+			while(1) {
+				size_t n = fread(buf, 1, sizeof buf, f);
+				if(n == 0) break;
+				for(size_t i = 0; i < n; i++) {
+					video_write(3, buf[i]);
+				}
+				bytes_read += n;
+			}
+		} else if(start < 0x9f00) {
 			// Fixed RAM
 			bytes_read = fread(RAM + start, 1, 0x9f00 - start, f);
 		} else if(start < 0xa000) {
