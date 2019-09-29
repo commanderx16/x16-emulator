@@ -907,7 +907,8 @@ video_update()
 			}
 			if (!consumed) {
 				if (log_keyboard) {
-					printf("DOWN 0x%02x\n", event.key.keysym.scancode);
+					printf("DOWN 0x%02X\n", event.key.keysym.scancode);
+					fflush(stdout);
 				}
 				if (event.key.keysym.scancode == LSHORTCUT_KEY || event.key.keysym.scancode == RSHORTCUT_KEY) {
 					cmd_down = true;
@@ -935,7 +936,8 @@ video_update()
 		}
 		if (event.type == SDL_KEYUP) {
 			if (log_keyboard) {
-				printf("UP   0x%02x\n", event.key.keysym.scancode);
+				printf("UP   0x%02X\n", event.key.keysym.scancode);
+				fflush(stdout);
 			}
 			if (event.key.keysym.scancode == LSHORTCUT_KEY || event.key.keysym.scancode == RSHORTCUT_KEY) {
 				cmd_down = false;
@@ -995,7 +997,7 @@ get_and_inc_address(uint8_t sel)
 	if (io_inc[sel]) {
 		io_addr[sel] += 1 << (io_inc[sel] - 1);
 	}
-//	printf("address = %06x, new = %06x\n", address, io_addr[sel]);
+//	printf("address = %06X, new = %06X\n", address, io_addr[sel]);
 	return address;
 }
 
@@ -1073,7 +1075,7 @@ video_read(uint8_t reg)
 			uint32_t address = get_and_inc_address(reg - 3);
 			uint8_t value = video_space_read(address);
 			if (log_video) {
-				printf("READ  video_space[$%x] = $%02x\n", address, value);
+				printf("READ  video_space[$%X] = $%02X\n", address, value);
 			}
 			return value;
 		}
@@ -1091,7 +1093,7 @@ video_read(uint8_t reg)
 void
 video_write(uint8_t reg, uint8_t value)
 {
-//	printf("ioregisters[%d] = $%02x\n", reg, value);
+//	printf("ioregisters[%d] = $%02X\n", reg, value);
 	switch (reg) {
 		case 0:
 			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0xfff00) | value;
@@ -1107,7 +1109,7 @@ video_write(uint8_t reg, uint8_t value)
 		case 4: {
 			uint32_t address = get_and_inc_address(reg - 3);
 			if (log_video) {
-				printf("WRITE video_space[$%x] = $%02x\n", address, value);
+				printf("WRITE video_space[$%X] = $%02X\n", address, value);
 			}
 			video_space_write(address, value);
 			break;
