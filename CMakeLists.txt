@@ -4,13 +4,18 @@ project(x16emu LANGUAGES C)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 find_package(SDL2 REQUIRED)
 if(MSVC)
-	include_directories("${CMAKE_CURRENT_LIST_DIR}/support/msvc/include")
+	include_directories("${CMAKE_CURRENT_LIST_DIR}/extern/include/msvc")
 endif()
+include_directories(
+	"${CMAKE_CURRENT_LIST_DIR}/extern/include"
+	"${CMAKE_CURRENT_LIST_DIR}/extern/src"
+)
 
 set(SOURCES 
 	cpu/fake6502.c
 	debugger.c
 	disasm.c
+	javascript_interface.c
 	loadsave.c
 	main.c
 	memory.c
@@ -36,6 +41,11 @@ set(HEADERS
 	via.h
 	video.h
 )
+if(WITH_YM2151)
+	list(APPEND SOURCES extern/src/ym2151.c)
+	list(APPEND HEADERS extern/src/ym2151.h)
+	add_definitions(-DWITH_YM2151)
+endif()
 find_file(ROM_LABELS rom_labels.h PATHS ${CMAKE_CURRENT_SOURCE_DIR} NO_DEFAULT_PATH)
 if(ROM_LABELS)
 	list(APPEND HEADERS ${ROM_LABELS})
