@@ -707,10 +707,7 @@ main(int argc, char **argv)
 		}
 	}
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 619463835bcc85860d4d64a8129448b8fdb96fed
 	prg_override_start = -1;
 	if (prg_path) {
 		char *comma = strchr(prg_path, ',');
