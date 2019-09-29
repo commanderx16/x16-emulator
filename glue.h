@@ -22,6 +22,12 @@
 #define ROM_SIZE (NUM_ROM_BANKS * 16384)   /* banks at $C000-$FFFF */
 #endif
 
+typedef enum {
+	ECHO_MODE_NONE,
+	ECHO_MODE_RAW,
+	ECHO_MODE_COOKED,
+} echo_mode_t;
+
 extern uint8_t a, x, y, sp, status;
 extern uint16_t pc;
 extern uint8_t RAM[];
@@ -30,7 +36,7 @@ extern uint8_t ROM[];
 extern bool debuger_enabled;
 extern bool log_video;
 extern bool log_keyboard;
-extern bool echo_mode;
+echo_mode_t echo_mode;
 extern bool save_on_exit;
 extern bool record_gif;
 extern char *gif_path;
