@@ -24,6 +24,7 @@
 #include "glue.h"
 #include "debugger.h"
 #include "utf8.h"
+#include "utf8_encode.h"
 #ifdef WITH_YM2151
 #include "ym2151.h"
 #endif
@@ -170,14 +171,14 @@ machine_paste(char *s)
 }
 
 uint8_t
-latin15_from_unicode(uint32_t c)
+iso8859_15_from_unicode(uint32_t c)
 {
 	// line feed -> carriage return
 	if (c == '\n') {
 		return '\r';
 	}
 
-	// translate Unicode charaters not part of Latin-1 but part of Latin-15
+	// translate Unicode characters not part of Latin-1 but part of Latin-15
 	switch (c) {
 		case 0x20ac: // '€'
 			return 0xa4;
@@ -219,6 +220,41 @@ latin15_from_unicode(uint32_t c)
 	return c;
 }
 
+uint32_t
+unicode_from_iso8859_15(uint8_t c)
+{
+	// translate Latin-15 characters not part of Latin-1
+	switch (c) {
+		case 0xa4:
+			return 0x20ac; // '€'
+		case 0xa6:
+			return 0x160; // 'Š'
+		case 0xa8:
+			return 0x161; // 'š'
+		case 0xb4:
+			return 0x17d; // 'Ž'
+		case 0xb8:
+			return 0x17e; // 'ž'
+		case 0xbc:
+			return 0x152; // 'Œ'
+		case 0xbd:
+			return 0x153; // 'œ'
+		case 0xbe:
+			return 0x178; // 'Ÿ'
+		default:
+			return c;
+	}
+}
+
+// converts the character to UTF-8 and prints it
+static void
+print_iso8859_15_char(char c)
+{
+	char utf8[5];
+	utf8_encode(utf8, unicode_from_iso8859_15(c));
+	printf("%s", utf8);
+}
+
 static bool
 is_kernal()
 {
@@ -256,8 +292,12 @@ usage()
 	printf("-run\n");
 	printf("\tStart the -prg/-bas program using RUN or SYS, depending\n");
 	printf("\ton the load address.\n");
-	printf("-echo\n");
+	printf("-echo [{iso|raw}]\n");
 	printf("\tPrint all KERNAL output to the host's stdout.\n");
+	printf("\tBy default, everything but printable ASCII characters get\n");
+	printf("\tescaped. \"iso\" will escape everything but non-printable\n");
+	printf("\tISO-8859-1 characters and convert the output to UTF-8.\n");
+	printf("\t\"raw\" will not do any substitutions.\n");
 	printf("\tWith the BASIC statement \"LIST\", this can be used\n");
 	printf("\tto detokenize a BASIC program.\n");
 	printf("-log {K|S|V}...\n");
@@ -449,6 +489,8 @@ main(int argc, char **argv)
 			if (argc && argv[0][0] != '-') {
 				if (!strcmp(argv[0], "raw")) {
 					echo_mode = ECHO_MODE_RAW;
+				} else if (!strcmp(argv[0], "iso")) {
+						echo_mode = ECHO_MODE_ISO;
 				} else {
 					usage();
 				}
@@ -833,6 +875,16 @@ emulator_loop(void *param)
 				} else {
 					printf("%c", c);
 				}
+			} else if (echo_mode == ECHO_MODE_ISO) {
+				if (c == 0x0d) {
+					printf("\n");
+				} else if (c == 0x0a) {
+					// skip
+				} else if (c < 0x20 || (c >= 0x80 && c < 0xa0)) {
+					printf("\\X%02X", c);
+				} else {
+					print_iso8859_15_char(c);
+				}
 			} else {
 				printf("%c", c);
 			}
@@ -879,9 +931,16 @@ emulator_loop(void *param)
 		while (pasting_bas && RAM[0xc6] < 10) {
 			uint32_t c;
 			int e = 0;
-			paste_text = utf8_decode(paste_text, &c, &e);
 
-			c = latin15_from_unicode(c);
+			if (paste_text[0] == '\\' && paste_text[1] == 'X' && paste_text[2] && paste_text[3]) {
+				uint8_t hi = strtol((char[]){paste_text[2], 0}, NULL, 16);
+				uint8_t lo = strtol((char[]){paste_text[3], 0}, NULL, 16);
+				c = hi << 4 | lo;
+				paste_text += 4;
+			} else {
+				paste_text = utf8_decode(paste_text, &c, &e);
+				c = iso8859_15_from_unicode(c);
+			}
 			if (c && !e) {
 				RAM[0x0277 + RAM[0xc6]] = c;
 				RAM[0xc6]++;
