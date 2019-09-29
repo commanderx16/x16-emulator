@@ -34,7 +34,7 @@ static void adc() {
         } else {
             clearcarry();
         }
-        result = (tmp & 0x0F) + (tmp2 & 0xF0);
+        result = (tmp & 0x0F) | (tmp2 & 0xF0);
 
         zerocalc(result);                /* 65C02 change, Decimal Arithmetic sets NZV */
         signcalc(result);
@@ -405,31 +405,38 @@ static void rts() {
 
 static void sbc() {
     penaltyop = 1;
-    value = getvalue() ^ 0x00FF;
-    result = (uint16_t)a + value + (uint16_t)(status & FLAG_CARRY);
-
-    carrycalc(result);
-    zerocalc(result);
-    overflowcalc(result, a, value);
-    signcalc(result);
 
     #ifndef NES_CPU
     if (status & FLAG_DECIMAL) {
-        clearcarry();
-
-        result -= 0x66;
-        if ((result & 0x0F) > 0x09) {
-            result += 0x06;
+        value = getvalue();
+        result = (uint16_t)a - (value & 0x0f) + (status & FLAG_CARRY) - 1;
+        if ((result & 0x0f) > (a & 0x0f)) {
+            result -= 6;
         }
-        if ((result & 0xF0) > 0x90) {
-            result += 0x60;
+        result -= (value & 0xf0);
+        if ((result & 0xfff0) > ((uint16_t)a & 0xf0)) {
+            result -= 0x60;
+        }
+        if (result <= (uint16_t)a) {
             setcarry();
+        } else {
+            clearcarry();
         }
 
         zerocalc(result);                /* 65C02 change, Decimal Arithmetic sets NZV */
         signcalc(result);
 
         clockticks6502++;
+    } else {
+    #endif
+        value = getvalue() ^ 0x00FF;
+        result = (uint16_t)a + value + (uint16_t)(status & FLAG_CARRY);
+
+        carrycalc(result);
+        zerocalc(result);
+        overflowcalc(result, a, value);
+        signcalc(result);
+    #ifndef NES_CPU
     }
     #endif
 
