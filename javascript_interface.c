@@ -9,16 +9,26 @@
 
 char javascript_text_data[65536];
 
-void 
+void
 j2c_reset()
 {
-    machine_reset();
+	machine_reset();
 }
 
-void 
+void
 j2c_paste(char * buffer)
 {
-    memset(javascript_text_data, 0, 65536);
-    strcpy(javascript_text_data, buffer);
-    machine_paste(javascript_text_data);
+	memset(javascript_text_data, 0, 65536);
+	strcpy(javascript_text_data, buffer);
+	machine_paste(javascript_text_data);
+}
+
+void
+j2c_start_audio()
+{
+
+#ifdef WITH_YM2151
+	init_audio();
+#endif
+
 }

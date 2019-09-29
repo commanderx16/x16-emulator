@@ -1,4 +1,3 @@
-
 // DOM elements
 const statusElement = document.getElementById('status');
 const progressElement = document.getElementById('progress');
@@ -6,6 +5,21 @@ const spinnerElement = document.getElementById('spinner');
 const output = document.getElementById('output');
 const canvas = document.getElementById('canvas');
 const code = document.getElementById('code');
+
+
+// Getting Audio Context
+var audioContext;
+
+window.addEventListener('load', init, false);
+function init() {
+  try {
+    window.AudioContext = window.AudioContext||window.webkitAudioContext;
+    audioContext = new AudioContext();
+  }
+  catch(e) {
+      console.log("AudioContext not supported on this Browser.")
+  }
+}
 
 //detecting keyboard layout...
 
@@ -27,10 +41,10 @@ const layouts = [
 
 lang = getFirstBrowserLanguage().toLowerCase().trim();
 
-if(layouts.includes(lang)) {
+if (layouts.includes(lang)) {
     logOutput('Using keyboard map: ' + lang);
 } else {
-    logOutput('Language ('+lang+') not found in keymaps so using keyboard map: en-us');
+    logOutput('Language (' + lang + ') not found in keymaps so using keyboard map: en-us');
     lang = 'en-us';
 }
 
@@ -38,17 +52,17 @@ if(layouts.includes(lang)) {
 
 var Module = {
     preRun: [
-        function() {         //Set the keyboard handling element (it's document by default). Keystrokes are stopped from propagating by emscripten, maybe there's an option to disable this?
+        function() { //Set the keyboard handling element (it's document by default). Keystrokes are stopped from propagating by emscripten, maybe there's an option to disable this?
             ENV.SDL_EMSCRIPTEN_KEYBOARD_ELEMENT = "#canvas";
         }
     ],
     postRun: [
-        function () {
+        function() {
             canvas.focus();
         }
     ],
-    arguments: [    //set key map to user's lang
-        '-keymap',lang
+    arguments: [ //set key map to user's lang
+        '-keymap', lang
     ],
     print: (function() {
 
@@ -124,6 +138,19 @@ window.onerror = function() {
 };
 
 
+function enableAudio(enable)
+{
+    if (enable === true)
+    {
+        if (audioContext && audioContext.state != "running")
+        {
+            audioContext.resume().then(() => {
+                console.log("Resumed Audio.")
+                Module.ccall("j2c_start_audio", "void", ["void"], []);
+              });
+        }
+    }
+}
 
 function resetEmulator() {
     j2c_reset = Module.cwrap("j2c_reset", "void", []);
@@ -132,18 +159,18 @@ function resetEmulator() {
 }
 
 function runCode() {
-
-    Module.ccall("j2c_paste", "void", ["string"], ['\nNEW\n'+ code.value + '\nRUN\n']);
+    enableAudio(true);
+    Module.ccall("j2c_paste", "void", ["string"], ['\nNEW\n' + code.value + '\nRUN\n']);
     canvas.focus();
 
 }
 
-function closeFs(){
+function closeFs() {
     canvas.parentElement.classList.remove("fullscreen");
     canvas.focus();
 }
 
-function openFs(){
+function openFs() {
     canvas.parentElement.classList.add("fullscreen");
     canvas.focus();
 }
@@ -183,4 +210,3 @@ function getFirstBrowserLanguage() {
 
     return null;
 }
-

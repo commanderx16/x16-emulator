@@ -33,6 +33,7 @@
 #include "glue.h"
 #include "debugger.h"
 #include "utf8.h"
+#include "utf8_encode.h"
 #ifdef WITH_YM2151
 #include "ym2151.h"
 #endif
@@ -71,6 +72,8 @@ char *paste_text = NULL;
 char paste_text_data[65536];
 bool pasting_bas = false;
 
+uint16_t num_ram_banks = 64; // 512 KB default
+
 bool log_video = false;
 bool log_speed = false;
 bool log_keyboard = false;
@@ -78,7 +81,7 @@ bool dump_cpu = false;
 bool dump_ram = true;
 bool dump_bank = true;
 bool dump_vram = false;
-bool echo_mode = false;
+echo_mode_t echo_mode;
 bool save_on_exit = true;
 bool record_gif = false;
 char *gif_path = NULL;
@@ -101,7 +104,7 @@ bool run_after_load = false;
 
 #ifdef WITH_YM2151
 const char *audio_dev_name = NULL;
-SDL_AudioDeviceID audio_dev;
+SDL_AudioDeviceID audio_dev = 0;
 #endif
 
 #ifdef TRACE
@@ -140,15 +143,15 @@ machine_dump()
 		return;
 	}
 
-    if (dump_cpu) {
-        fwrite(&a, sizeof(uint8_t), 1, f);
-        fwrite(&x, sizeof(uint8_t), 1, f);
-        fwrite(&y, sizeof(uint8_t), 1, f);
-        fwrite(&sp, sizeof(uint8_t), 1, f);
-        fwrite(&status, sizeof(uint8_t), 1, f);
-        fwrite(&pc, sizeof(uint16_t), 1, f);
-    }
-    memory_save(f, dump_ram, dump_bank);
+	if (dump_cpu) {
+		fwrite(&a, sizeof(uint8_t), 1, f);
+		fwrite(&x, sizeof(uint8_t), 1, f);
+		fwrite(&y, sizeof(uint8_t), 1, f);
+		fwrite(&sp, sizeof(uint8_t), 1, f);
+		fwrite(&status, sizeof(uint8_t), 1, f);
+		fwrite(&pc, sizeof(uint16_t), 1, f);
+	}
+	memory_save(f, dump_ram, dump_bank);
 
 	if (dump_vram) {
 		video_save(f);
@@ -179,14 +182,14 @@ machine_paste(char *s)
 }
 
 uint8_t
-latin15_from_unicode(uint32_t c)
+iso8859_15_from_unicode(uint32_t c)
 {
 	// line feed -> carriage return
 	if (c == '\n') {
 		return '\r';
 	}
 
-	// translate Unicode charaters not part of Latin-1 but part of Latin-15
+	// translate Unicode characters not part of Latin-1 but part of Latin-15
 	switch (c) {
 		case 0x20ac: // '€'
 			return 0xa4;
@@ -219,7 +222,7 @@ latin15_from_unicode(uint32_t c)
 			return '?';
 	}
 
-	// all  other Unicode characters are also unsupported
+	// all other Unicode characters are also unsupported
 	if (c >= 256) {
 		return '?';
 	}
@@ -228,13 +231,48 @@ latin15_from_unicode(uint32_t c)
 	return c;
 }
 
+uint32_t
+unicode_from_iso8859_15(uint8_t c)
+{
+	// translate Latin-15 characters not part of Latin-1
+	switch (c) {
+		case 0xa4:
+			return 0x20ac; // '€'
+		case 0xa6:
+			return 0x160; // 'Š'
+		case 0xa8:
+			return 0x161; // 'š'
+		case 0xb4:
+			return 0x17d; // 'Ž'
+		case 0xb8:
+			return 0x17e; // 'ž'
+		case 0xbc:
+			return 0x152; // 'Œ'
+		case 0xbd:
+			return 0x153; // 'œ'
+		case 0xbe:
+			return 0x178; // 'Ÿ'
+		default:
+			return c;
+	}
+}
+
+// converts the character to UTF-8 and prints it
+static void
+print_iso8859_15_char(char c)
+{
+	char utf8[5];
+	utf8_encode(utf8, unicode_from_iso8859_15(c));
+	printf("%s", utf8);
+}
+
 static bool
 is_kernal()
 {
 	return read6502(0xfff6) == 'M' && // only for KERNAL
-	       read6502(0xfff7) == 'I' &&
-	       read6502(0xfff8) == 'S' &&
-	       read6502(0xfff9) == 'T';
+			read6502(0xfff7) == 'I' &&
+			read6502(0xfff8) == 'S' &&
+			read6502(0xfff9) == 'T';
 }
 
 static void
@@ -244,13 +282,10 @@ usage()
 	printf("All rights reserved. License: 2-clause BSD\n\n");
 	printf("Usage: x16emu [option] ...\n\n");
 	printf("-rom <rom.bin>\n");
-	printf("\tOverride KERNAL/BASIC/* ROM file:\n");
-	printf("\t$0000-$1FFF bank #0 of banked ROM (BASIC)\n");
-	printf("\t$2000-$3FFF fixed ROM at $E000-$FFFF (KERNAL)\n");
-	printf("\t$4000-$5FFF bank #1 of banked ROM\n");
-	printf("\t$6000-$7FFF bank #2 of banked ROM\n");
-	printf("\t...\n");
-	printf("\tThe file needs to be at least $4000 bytes in size.\n");
+	printf("\tOverride KERNAL/BASIC/* ROM file.\n");
+	printf("-ram <ramsize>\n");
+	printf("\tSpecify banked RAM size in KB (8, 16, 32, ..., 2048).\n");
+	printf("\tThe default is 512.\n");
 	printf("-keymap <keymap>\n");
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
@@ -265,8 +300,12 @@ usage()
 	printf("-run\n");
 	printf("\tStart the -prg/-bas program using RUN or SYS, depending\n");
 	printf("\ton the load address.\n");
-	printf("-echo\n");
+	printf("-echo [{iso|raw}]\n");
 	printf("\tPrint all KERNAL output to the host's stdout.\n");
+	printf("\tBy default, everything but printable ASCII characters get\n");
+	printf("\tescaped. \"iso\" will escape everything but non-printable\n");
+	printf("\tISO-8859-1 characters and convert the output to UTF-8.\n");
+	printf("\t\"raw\" will not do any substitutions.\n");
 	printf("\tWith the BASIC statement \"LIST\", this can be used\n");
 	printf("\tto detokenize a BASIC program.\n");
 	printf("-log {K|S|V}...\n");
@@ -330,7 +369,8 @@ void usageSound()
 	exit(1);
 }
 
-void initAudio()
+void
+init_audio()
 {
 	SDL_AudioSpec want;
 	SDL_AudioSpec have;
@@ -342,6 +382,12 @@ void initAudio()
 	want.samples = AUDIO_SAMPLES;
 	want.callback = audioCallback;
 	want.userdata = NULL;
+
+	if (audio_dev > 0)
+	{
+		SDL_CloseAudioDevice(audio_dev);
+	}
+
 	audio_dev = SDL_OpenAudioDevice(audio_dev_name, 0, &want, &have, 9 /* freq | samples */);
 	if ( audio_dev <= 0 ){
 		fprintf(stderr, "SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
@@ -396,6 +442,25 @@ main(int argc, char **argv)
 			rom_path = argv[0];
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-ram")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			int kb = atoi(argv[0]);
+			bool found = false;
+			for (int cmp = 8; cmp <= 2048; cmp *= 2) {
+				if (kb == cmp)  {
+					found = true;
+				}
+			}
+			if (!found) {
+				usage();
+			}
+			num_ram_banks = kb /8;
+			argc--;
+			argv++;
 		} else if (!strcmp(argv[0], "-keymap")) {
 			argc--;
 			argv++;
@@ -448,7 +513,19 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-echo")) {
 			argc--;
 			argv++;
-			echo_mode = true;
+			if (argc && argv[0][0] != '-') {
+				if (!strcmp(argv[0], "raw")) {
+					echo_mode = ECHO_MODE_RAW;
+				} else if (!strcmp(argv[0], "iso")) {
+						echo_mode = ECHO_MODE_ISO;
+				} else {
+					usage();
+				}
+				argc--;
+				argv++;
+			} else {
+				echo_mode = ECHO_MODE_COOKED;
+			}
 		} else if (!strcmp(argv[0], "-log")) {
 			argc--;
 			argv++;
@@ -568,8 +645,8 @@ main(int argc, char **argv)
 				usage();
 			}
 			if (!strcmp(argv[0], "nearest") ||
-			    !strcmp(argv[0], "linear") ||
-			    !strcmp(argv[0], "best")) {
+				!strcmp(argv[0], "linear") ||
+				!strcmp(argv[0], "best")) {
 				scale_quality = argv[0];
 			} else {
 				usage();
@@ -609,7 +686,6 @@ main(int argc, char **argv)
 		}
 	}
 
-	
 	prg_override_start = -1;
 	if (prg_path) {
 		char *comma = strchr(prg_path, ',');
@@ -648,9 +724,10 @@ main(int argc, char **argv)
 		);
 
 #ifdef WITH_YM2151
-	initAudio();
+	init_audio();
 #endif
 
+	memory_init();
 	video_init(window_scale, scale_quality);
 
 	machine_reset();
@@ -671,13 +748,13 @@ main(int argc, char **argv)
 	return 0;
 }
 
-void 
+void
 emscripten_main_loop(void) {
 	emulator_loop(NULL);
 }
 
 
-void* 
+void*
 emulator_loop(void *param)
 {
 	for (;;) {
@@ -769,18 +846,18 @@ emulator_loop(void *param)
 			}
 
 			if (sdlTicks - last_perf_update > 5000) {
-			    int32_t frameCount = frames - perf_frame_count;
-			    int perf = frameCount / 3;
+				int32_t frameCount = frames - perf_frame_count;
+				int perf = frameCount / 3;
 
-                if (perf < 100) {
-                    sprintf(window_title, "Commander X16 (%d%%)", perf);
-                    video_update_title(window_title);
-                } else {
-                    video_update_title("Commander X16");
-                }
+				if (perf < 100) {
+					sprintf(window_title, "Commander X16 (%d%%)", perf);
+					video_update_title(window_title);
+				} else {
+					video_update_title("Commander X16");
+				}
 
-                perf_frame_count = frames;
-                last_perf_update = sdlTicks;
+				perf_frame_count = frames;
+				last_perf_update = sdlTicks;
 			}
 
 			if (log_speed) {
@@ -818,12 +895,31 @@ emulator_loop(void *param)
 			break;
 		}
 
-		if (echo_mode && pc == 0xffd2 && is_kernal()) {
+		if (echo_mode != ECHO_MODE_NONE && pc == 0xffd2 && is_kernal()) {
 			uint8_t c = a;
-			if (c == 13) {
-				c = 10;
+			if (echo_mode == ECHO_MODE_COOKED) {
+				if (c == 0x0d) {
+					printf("\n");
+				} else if (c == 0x0a) {
+					// skip
+				} else if (c < 0x20 || c >= 0x80) {
+					printf("\\X%02X", c);
+				} else {
+					printf("%c", c);
+				}
+			} else if (echo_mode == ECHO_MODE_ISO) {
+				if (c == 0x0d) {
+					printf("\n");
+				} else if (c == 0x0a) {
+					// skip
+				} else if (c < 0x20 || (c >= 0x80 && c < 0xa0)) {
+					printf("\\X%02X", c);
+				} else {
+					print_iso8859_15_char(c);
+				}
+			} else {
+				printf("%c", c);
 			}
-			printf("%c", c);
 			fflush(stdout);
 		}
 
@@ -867,9 +963,16 @@ emulator_loop(void *param)
 		while (pasting_bas && RAM[0xc6] < 10) {
 			uint32_t c;
 			int e = 0;
-			paste_text = utf8_decode(paste_text, &c, &e);
 
-			c = latin15_from_unicode(c);
+			if (paste_text[0] == '\\' && paste_text[1] == 'X' && paste_text[2] && paste_text[3]) {
+				uint8_t hi = strtol((char[]){paste_text[2], 0}, NULL, 16);
+				uint8_t lo = strtol((char[]){paste_text[3], 0}, NULL, 16);
+				c = hi << 4 | lo;
+				paste_text += 4;
+			} else {
+				paste_text = utf8_decode(paste_text, &c, &e);
+				c = iso8859_15_from_unicode(c);
+			}
 			if (c && !e) {
 				RAM[0x0277 + RAM[0xc6]] = c;
 				RAM[0xc6]++;
