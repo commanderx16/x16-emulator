@@ -284,7 +284,7 @@ usage()
 	printf("-sdcard <sdcard.img>\n");
 	printf("\tSpecify SD card image (partition map + FAT32)\n");
 	printf("-mountdir <directory>\n");
-	printf("\tSpecify a directory to switch to once loaded.\n");
+	printf("\tSpecify a directory for the host filesystem bridge (device 1).\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
 	printf("\tLoad application from the local disk into RAM\n");
 	printf("\t(.PRG file with 2 byte start address header)\n");
@@ -721,11 +721,8 @@ main(int argc, char **argv)
 	}
 
 	if (mountdir_path) {
-		DIR* dir = opendir(mountdir_path);
-		if (dir) {
-			closedir(dir);
-			chdir(mountdir_path);
-		} else {
+        int res = chdir(mountdir_path);
+		if (res != 0) {
 			printf("Cannot open dir %s!\n", mountdir_path);
 			exit(1);
 		}
