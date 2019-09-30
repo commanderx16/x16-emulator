@@ -721,7 +721,7 @@ main(int argc, char **argv)
 	}
 
 	if (mountdir_path) {
-        int res = chdir(mountdir_path);
+		int res = chdir(mountdir_path);
 		if (res != 0) {
 			printf("Cannot open dir %s!\n", mountdir_path);
 			exit(1);
