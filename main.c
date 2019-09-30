@@ -283,7 +283,7 @@ usage()
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
 	printf("\tSpecify SD card image (partition map + FAT32)\n");
-	printf("-mountdir <directory>\n");
+	printf("-dir <directory>\n");
 	printf("\tSpecify a directory for the host filesystem bridge (device 1).\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
 	printf("\tLoad application from the local disk into RAM\n");
@@ -510,7 +510,7 @@ main(int argc, char **argv)
 			sdcard_path = argv[0];
 			argc--;
 			argv++;
-		} else if (!strcmp(argv[0], "-mountdir")) {
+		} else if (!strcmp(argv[0], "-dir")) {
 			argc--;
 			argv++;
 			if (!argc || argv[0][0] == '-') {
