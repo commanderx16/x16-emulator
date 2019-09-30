@@ -754,16 +754,16 @@ render_line(uint16_t y)
 				uint8_t l2_col_index = layer_line_empty[0] ? 1 : layer_line[1][eff_x];
 				switch (spr_zindex) {
 					case 3:
-						col_index = spr_col_index ?: l2_col_index ?: l1_col_index;
+						col_index = spr_col_index ? spr_col_index : (l2_col_index ? l2_col_index : l1_col_index);
 						break;
 					case 2:
-						col_index = l2_col_index ?: spr_col_index ?: l1_col_index;
+						col_index = l2_col_index ? l2_col_index : (spr_col_index ? spr_col_index : l1_col_index);
 						break;
 					case 1:
-						col_index = l2_col_index ?: l1_col_index ?: spr_col_index;
+						col_index = l2_col_index ? l2_col_index : (l1_col_index ? l1_col_index : spr_col_index);
 						break;
 					case 0:
-						col_index = l2_col_index ?: l1_col_index;
+						col_index = l2_col_index ? l2_col_index : l1_col_index;
 						break;
 				}
 			}

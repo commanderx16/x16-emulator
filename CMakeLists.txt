@@ -16,6 +16,7 @@ set(SOURCES
 	debugger.c
 	disasm.c
 	javascript_interface.c
+	joystick.c
 	loadsave.c
 	main.c
 	memory.c
@@ -31,6 +32,7 @@ set(HEADERS
 	debugger.h
 	disasm.h
 	glue.h
+	joystick.h
 	loadsave.h
 	memory.h
 	ps2.h
