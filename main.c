@@ -11,6 +11,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <dirent.h>
 #include "cpu/fake6502.h"
 #include "disasm.h"
 #include "memory.h"
@@ -282,6 +283,8 @@ usage()
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
 	printf("\tSpecify SD card image (partition map + FAT32)\n");
+	printf("-mountdir <directory>\n");
+	printf("\tSpecify a directory to switch to once loaded.\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
 	printf("\tLoad application from the local disk into RAM\n");
 	printf("\t(.PRG file with 2 byte start address header)\n");
@@ -415,6 +418,7 @@ main(int argc, char **argv)
 	char *prg_path = NULL;
 	char *bas_path = NULL;
 	char *sdcard_path = NULL;
+	char *mountdir_path = NULL;
 
 	run_after_load = false;
 
@@ -504,6 +508,15 @@ main(int argc, char **argv)
 				usage();
 			}
 			sdcard_path = argv[0];
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-mountdir")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			mountdir_path = argv[0];
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-echo")) {
@@ -707,6 +720,16 @@ main(int argc, char **argv)
 		}
 	}
 
+	if (mountdir_path) {
+		DIR* dir = opendir(mountdir_path);
+		if (dir) {
+			closedir(dir);
+			chdir(mountdir_path);
+		} else {
+			printf("Cannot open dir %s!\n", mountdir_path);
+			exit(1);
+		}
+	}
 
 	prg_override_start = -1;
 	if (prg_path) {
