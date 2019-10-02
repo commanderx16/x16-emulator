@@ -751,7 +751,7 @@ render_line(uint16_t y)
 				uint8_t spr_col_index = sprite_line_empty ? 0 : sprite_line_col[eff_x];
 				uint8_t spr_zindex = sprite_line_z[eff_x];
 				uint8_t l1_col_index = layer_line_empty[0] ? 0 : layer_line[0][eff_x];
-				uint8_t l2_col_index = layer_line_empty[0] ? 1 : layer_line[1][eff_x];
+				uint8_t l2_col_index = layer_line_empty[1] ? 0 : layer_line[1][eff_x];
 				switch (spr_zindex) {
 					case 3:
 						col_index = spr_col_index ?: l2_col_index ?: l1_col_index;
