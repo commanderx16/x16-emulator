@@ -75,7 +75,7 @@ bool dump_bank = true;
 bool dump_vram = false;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
-bool record_gif = false;
+uint8_t record_gif = 0;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
@@ -305,6 +305,8 @@ usage()
 	printf("\tMultiple characters are possible, e.g. -log KS\n");
 	printf("-gif <file.gif>\n");
 	printf("\tRecord a gif for the video output.\n");
+	printf("\tPOKE $9FB5,3 to start recording, POKE $9FB5,0 to pause.\n");
+	printf("\tPOKE $9FB5,1 to capture a single frame.\n");
 	printf("-scale {1|2|3|4}\n");
 	printf("\tScale output to an integer multiple of 640x480\n");
 	printf("-quality {nearest|linear|best}\n");
@@ -578,7 +580,7 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-gif")) {
 			argc--;
 			argv++;
-			record_gif = true;
+			record_gif = 128; // set up but don't start recording
 			if (!argc || argv[0][0] == '-') {
 				usage();
 			}

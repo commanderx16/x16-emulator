@@ -195,6 +195,10 @@ All rights reserved. License: 2-clause BSD
 
 ## Release Notes
 
+### Next Release
+
+* `-gif <filename>` will start recording on `POKE $9FB5,3`. It will capture a single frame on `POKE $9FB5,1` and pause recording on `POKE $9FB5,0`. `PEEK($9FB5)` returns a 128 if recording is enabled but not active.
+
 ### Release 32
 
 * correct ROM banking
