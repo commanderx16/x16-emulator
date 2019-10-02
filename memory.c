@@ -179,7 +179,8 @@ memory_get_rom_bank()
 //        bit:  7     6  5  4  3  2  1           0
 // record_gif: [ctrl][0][0][0][0][0][continuous][active]
 void
-emu_recorder_set(uint8_t newstate) {
+emu_recorder_set(uint8_t newstate)
+{
 	// turning off while recording is enabled
 	if (newstate == 0 && record_gif > 0) {
 		record_gif = 128; // need to save
@@ -214,7 +215,7 @@ emu_write(uint8_t reg, uint8_t value)
 		case 2: log_keyboard = v; break;
 		case 3: echo_mode = v; break;
 		case 4: save_on_exit = v; break;
-		case 5: emu_recorder_set(v); break;
+		case 5: emu_recorder_set(value); break;
 		default: printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
 	}
 }
