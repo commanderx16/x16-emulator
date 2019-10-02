@@ -158,8 +158,10 @@ video_init(int window_scale, char *quality)
 
 	SDL_SetWindowTitle(window, "Commander X16");
 
-	if (record_gif) {
-		record_gif = GifBegin(&gif_writer, gif_path, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 8, false);
+	if (record_gif & 128) {
+		if (!GifBegin(&gif_writer, gif_path, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 8, false)) {
+			record_gif = 0;
+		}
 	}
 
 	return true;
@@ -863,10 +865,15 @@ video_update()
 {
 	SDL_UpdateTexture(sdlTexture, NULL, framebuffer, SCREEN_WIDTH * 4);
 
-	if (record_gif) {
-		record_gif = GifWriteFrame(&gif_writer, framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT, 2, 8, false);
-		if (!record_gif) {
+	if (record_gif & 1) {
+		if(!GifWriteFrame(&gif_writer, framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT, 2, 8, false)) {
+			// if that failed, stop recording
 			GifEnd(&gif_writer);
+			record_gif = 0;
+			printf("Unexpected end of recording.\n");
+		}
+		if (record_gif == 1) { // if single-shot stop recording
+			record_gif = 128;  // need to close in video_end()
 		}
 	}
 
@@ -981,7 +988,7 @@ video_update()
 void
 video_end()
 {
-	if (record_gif) {
+	if (record_gif > 0) {
 		GifEnd(&gif_writer);
 	}
 
