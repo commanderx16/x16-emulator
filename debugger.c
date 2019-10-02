@@ -331,10 +331,13 @@ static void DEBUGExecCmd() {
 	int number, addr;
 	char reg[10];
 	char cmd;
-	char line[sizeof(cmdLine)];
+	char *line= ltrim(cmdLine);
 
-	sscanf(ltrim(cmdLine), "%c%s", &cmd, line);
-	printf("cmd:%c line: '%s'", cmd, line);
+	cmd= *line;
+	if(*line) {
+		line++;
+	}
+	printf("cmd:%c line: '%s'\n", cmd, line);
 
 	switch (cmd) {
 		case CMD_DUMP_MEM:
@@ -358,7 +361,8 @@ static void DEBUGExecCmd() {
 			break;
 
 		case CMD_SET_BANK:
-			sscanf(line, "%s %x", reg, &number);
+			sscanf(line, "%s %d", reg, &number);
+
 			if(!stricmp(reg, "rom")) {
 				memory_set_rom_bank(number & 0x00FF);
 			}
@@ -369,6 +373,7 @@ static void DEBUGExecCmd() {
 
 		case CMD_SET_REGISTER:
 			sscanf(line, "%s %x", reg, &number);
+			
 			if(!stricmp(reg, "pc")) {
 				pc= number & 0xFFFF;
 			}
