@@ -91,6 +91,67 @@ read6502(uint16_t address)
 	}
 }
 
+/*
+	Read Memory only for debugger; no I/O, no side effects
+	duplicate read6502 to avoid impacting normal use performances
+*/
+uint8_t
+DEBUGread6502(uint16_t address, uint8_t bank)
+{
+	if (address < 0x9f00) { // RAM
+		return RAM[address];
+	}
+
+	if (address < 0xa000) { // I/O
+		if (address >= 0x9f00 && address < 0x9f20) {
+			// TODO: sound
+			return 0;
+		} else if (address >= 0x9f20 && address < 0x9f28) {
+			return DEBUGvideo_read(address & 7);
+		} else if (address >= 0x9f40 && address < 0x9f60) {
+			// TODO: character LCD
+			return 0;
+		} else if (address >= 0x9f60 && address < 0x9f70) {
+			return via1_read(address & 0xf);
+		} else if (address >= 0x9f70 && address < 0x9f80) {
+			return via2_read(address & 0xf);
+		} else if (address >= 0x9f80 && address < 0x9fa0) {
+			// TODO: RTC
+			return 0;
+		} else if (address >= 0x9fa0 && address < 0x9fb0) {
+			// fake mouse
+			return mouse_read(address & 0x1f);
+		} else if (address >= 0x9fb0 && address < 0x9fc0) {
+			// emulator state
+			return emu_read(address & 0xf);
+		} else {
+			return 0;
+		}
+	}
+	
+	if (address < 0xc000) { // banked RAM
+		return RAM[0xa000 + (bank << 13) + address - 0xa000];
+#ifdef FIXED_KERNAL
+	} else if (address < 0xe000) { // banked ROM
+		if (bank == 0) {
+			// BASIC is at offset 0 * 8192 in ROM
+			return ROM[address - 0xc000];
+		} else {
+			// other banks are at offset (n + 1) * 8192 in ROM
+			return ROM[((bank + 1) << 13) + address - 0xc000];
+		}
+	} else { // fixed ROM
+		// KERNAL is at offset 1 * 8192 in ROM
+		return ROM[address - 0xe000 + 0x2000];
+#else
+
+	} else { // banked ROM
+		return ROM[(bank << 14) + address - 0xc000];
+#endif
+
+	}
+}
+
 void
 write6502(uint16_t address, uint8_t value)
 {
@@ -178,7 +239,7 @@ memory_get_rom_bank()
 //
 // read/write emulator state (feature flags)
 //
-// 0: debuger_enabled
+// 0: debugger_enabled
 // 1: log_video
 // 2: log_keyboard
 // 3: echo_mode
@@ -189,7 +250,7 @@ emu_write(uint8_t reg, uint8_t value)
 {
 	bool v = value != 0;
 	switch (reg) {
-		case 0: debuger_enabled = v; break;
+		case 0: debugger_enabled = v; break;
 		case 1: log_video = v; break;
 		case 2: log_keyboard = v; break;
 		case 3: echo_mode = v; break;
@@ -202,7 +263,7 @@ uint8_t
 emu_read(uint8_t reg)
 {
 	if (reg == 0) {
-		return debuger_enabled ? 1 : 0;
+		return debugger_enabled ? 1 : 0;
 	} else if (reg == 1) {
 		return log_video ? 1 : 0;
 	} else if (reg == 2) {

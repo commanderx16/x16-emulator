@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <SDL.h>
+// #include <SDL_ttf.h>
+#include "SDL_FontCache.h"
 #include "glue.h"
 #include "disasm.h"
 #include "memory.h"
@@ -22,13 +24,18 @@
 
 static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift);
 
-static void DEBUGWrite(int x,int y,int ch,int r,int g,int b);
-static void DEBUGString(int x,int y,char *s,int r,int g,int b);
-static void DEBUGNumber(int x,int y,int n,int w,int r,int g,int b);
+static void DEBUGWrite(int x,int y,int ch, SDL_Color colour);
+static void DEBUGString(int x, int y, const char *s, SDL_Color colour);
+static void DEBUGNumber(int x,int y,int n,int w, SDL_Color colour);
+static void DEBUGAddress(int x, int y, int bank, int addr, SDL_Color colour);
 
 static void DEBUGRenderData(int y,int data);
 static int DEBUGRenderRegisters(void);
 static void DEBUGRenderCode(int lines,int initialPC);
+static void DEBUGRenderStack(int bytesCount);
+static void DEBUGRenderCmdLine();
+static bool DEBUGBuildCmdLine(SDL_Keycode key);
+static void DEBUGExecCmd();
 
 // *******************************************************************************************
 //
@@ -72,16 +79,33 @@ static void DEBUGRenderCode(int lines,int initialPC);
 
 #define DBGSCANKEY_BRK 	SDL_SCANCODE_F12 						// F12 is break into running code.
 #define DBGSCANKEY_SHOW	SDL_SCANCODE_TAB 						// Show screen key.
-
 																// *** MUST BE SCAN CODES ***
+
+enum DBG_CMD { CMD_DUMP_MEM='m', CMD_DISASM='d', CMD_SET_BANK='b', CMD_SET_REGISTER='r' };
+
+const char * kFontName= "FiraMono-Bold.ttf";
+const int kFontSize= 10;
+// RGB colours
+const SDL_Color col_bkgnd= {0, 0, 0, 255};
+const SDL_Color col_label= {0, 255, 0, 255};
+const SDL_Color col_data= {0, 255, 255, 255};
+const SDL_Color col_highlight= {255, 255, 0, 255};
+const SDL_Color col_cmdLine= {255, 255, 255, 255};
 
 int showDebugOnRender = 0;										// Used to trigger rendering in video.c
 int showFullDisplay = 0; 										// If non-zero show the whole thing.
 int currentPC = -1;												// Current PC value.
 int currentData = 0;											// Current data display address.
+int currentPCBank = -1;
+int currentBank = -1;
 int currentMode = DMODE_RUN;									// Start running.
 int breakPoint = -1; 											// User Break
 int stepBreakPoint = -1;										// Single step break.
+
+char cmdLine[64]= "";											// command line buffer
+int currentPosInLine= 0;										// cursor position in the buffer (NOT USED _YET_)
+int currentLineLen= 0;											// command line buffer length
+
 //
 //		This flag controls
 //
@@ -89,7 +113,19 @@ int xPos = 0;													// Position of debug window
 int yPos = 0;
 
 SDL_Renderer *dbgRenderer; 										// Renderer passed in.
+FC_Font* font = NULL;
 
+// *******************************************************************************************
+// left strim string
+char *ltrim(char *s) {
+	char *pStr= s;
+
+	while(pStr && *pStr && isspace(*pStr)) {
+		pStr++;
+	}
+
+	return pStr;
+}
 // *******************************************************************************************
 //
 //			This is used to determine who is in control. If it returns zero then
@@ -120,14 +156,28 @@ int  DEBUGGetCurrentStatus(void) {
 		currentPC = pc; 										// Set the PC to what it is.
 	}
 
+	if(currentPCBank<0 && currentPC >= 0xA000) {
+		currentPCBank= currentPC < 0xC000 ? memory_get_ram_bank() : memory_get_rom_bank();
+	}
+
 	if (currentMode != DMODE_RUN) {								// Not running, we own the keyboard.
 		showFullDisplay = 										// Check showing screen.
 					SDL_GetKeyboardState(NULL)[DBGSCANKEY_SHOW];
 		while (SDL_PollEvent(&event)) { 						// We now poll events here.
-			if (event.type == SDL_QUIT) return -1; 				// Time for exit
-			if (event.type == SDL_KEYDOWN) {					// Handle key presses.
-				DEBUGHandleKeyEvent(event.key.keysym.sym,
-									SDL_GetModState() & (KMOD_LSHIFT|KMOD_RSHIFT));
+			switch(event.type) {
+				case SDL_QUIT:									// Time for exit
+					return -1;
+
+				case SDL_KEYDOWN:								// Handle key presses.
+					DEBUGHandleKeyEvent(event.key.keysym.sym,
+										SDL_GetModState() & (KMOD_LSHIFT|KMOD_RSHIFT));
+					break;
+
+				case SDL_RENDER_DEVICE_RESET:					// Need to update our texture cache
+				case SDL_RENDER_TARGETS_RESET:
+					FC_ResetFontFromRendererReset(font, dbgRenderer, event.type);
+					break;
+			
 			}
 		}
 	}
@@ -137,7 +187,28 @@ int  DEBUGGetCurrentStatus(void) {
 		video_update();
 		return 1;
 	}
+
 	return 0;													// Run wild, run free.
+}
+
+// *******************************************************************************************
+//
+//								Setup fonts and co
+//
+// *******************************************************************************************
+void DEBUGInitUI(SDL_Renderer *pRenderer) {
+		dbgRenderer = pRenderer;				// Save renderer.
+		font= FC_CreateFont();
+		FC_LoadFont(font, dbgRenderer, kFontName, kFontSize, FC_MakeColor(0,0,0,255), TTF_STYLE_NORMAL);
+}
+
+// *******************************************************************************************
+//
+//								Setup fonts and co
+//
+// *******************************************************************************************
+void DEBUGFreeUI() {
+	FC_FreeFont(font);
 }
 
 // *******************************************************************************************
@@ -162,55 +233,164 @@ void DEBUGBreakToDebugger(void) {
 }
 
 // *******************************************************************************************
-//								Map keycodes to hexadecimal
-// *******************************************************************************************
-
-static SDL_Keycode keyToHex[] = {
-	SDLK_0, SDLK_1, SDLK_2, SDLK_3, SDLK_4, SDLK_5, SDLK_6, SDLK_7,
-	SDLK_8, SDLK_9, SDLK_a, SDLK_b, SDLK_c, SDLK_d, SDLK_e, SDLK_f
-};
-
-// *******************************************************************************************
 //
 //									Handle keyboard state.
 //
 // *******************************************************************************************
 
 static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift) {
-	if (key == DBGKEY_STEP) {									// Single step (F11 by default)
-		currentMode = DMODE_STEP; 								// Runs once, then switches back.
-	}
-	if (key == DBGKEY_STEPOVER) {								// Step over (F10 by default)
-		int opcode = read6502(pc);								// What opcode is it ?
-		if (opcode == 0x20) { 									// Is it JSR ?
-			stepBreakPoint = pc + 3;							// Then break 3 on.
-			currentMode = DMODE_RUN;							// And run.
-		} else {
-			currentMode = DMODE_STEP;							// Otherwise single step.
-		}
-	}
-	if (key == DBGKEY_RUN) {									// F5 Runs until Break.
-		currentMode = DMODE_RUN;
-	}
-	if (key == DBGKEY_SETBRK) {									// F9 Set breakpoint to displayed.
-		breakPoint = currentPC;
-	}
-	if (key == DBGKEY_HOME) {									// F1 sets the display PC to the actual one.
-		currentPC = pc;
-	}
-	if (key == DBGKEY_RESET) { 									// F2 reset the 6502
-		reset6502();
-		currentPC = pc;
-	}
-	for (int code = 0;code < 16;code++) { 						// Check hexadecimal.
-		if (key == keyToHex[code]) {
-			if (isShift) {
-				currentData = ((currentData << 4) | code) & 0xFFFF;
+	int opcode;
+
+	switch(key) {
+
+		case DBGKEY_STEP:									// Single step (F11 by default)
+			currentMode = DMODE_STEP; 						// Runs once, then switches back.
+			break;
+
+		case DBGKEY_STEPOVER:								// Step over (F10 by default)
+			opcode = read6502(pc);							// What opcode is it ?
+			if (opcode == 0x20) { 							// Is it JSR ?
+				stepBreakPoint = pc + 3;					// Then break 3 on.
+				currentMode = DMODE_RUN;					// And run.
 			} else {
-				currentPC = ((currentPC << 4) | code) & 0xFFFF;
+				currentMode = DMODE_STEP;					// Otherwise single step.
+			}
+			break;
+
+		case DBGKEY_RUN:									// F5 Runs until Break.
+			currentMode = DMODE_RUN;
+			break;
+
+		case DBGKEY_SETBRK:									// F9 Set breakpoint to displayed.
+			breakPoint = currentPC;
+			break;
+
+		case DBGKEY_HOME:									// F1 sets the display PC to the actual one.
+			currentPC = pc;
+			currentPCBank= currentPC < 0xC000 ? memory_get_ram_bank() : memory_get_rom_bank();
+			break;
+
+		case DBGKEY_RESET:									// F2 reset the 6502
+			reset6502();
+			currentPC = pc;
+			currentPCBank= -1;
+			break;
+
+		case SDLK_PAGEDOWN:
+			currentData= (currentData + 0xD0) & 0xFFFF;
+			break;
+
+		case SDLK_PAGEUP:
+			currentData= (currentData - 0xD0) & 0xFFFF;
+			break;
+
+		default:
+			if(DEBUGBuildCmdLine(key)) {
+				printf("cmd line: %s\n", cmdLine);
+				DEBUGExecCmd();
+			}
+			break;
+	}
+
+}
+
+char kNUM_KEYPAD_CHARS[10] = {'1','2','3','4','5','6','7','8','9','0'};
+
+static bool DEBUGBuildCmdLine(SDL_Keycode key) {
+	// right now, let's have a rudimentary input: only backspace to delete last char
+	// later, I want a real input line with delete, backspace, left and right cursor
+	// devs like their comfort ;)
+	if(currentLineLen <= sizeof(cmdLine)) {
+		if(
+			(key >= SDLK_SPACE && key <= SDLK_AT)
+			||
+			(key >= SDLK_LEFTBRACKET && key <= SDLK_z)
+			||
+			(key >= SDLK_KP_1 && key <= SDLK_KP_0)
+			) {
+			cmdLine[currentPosInLine++]= key>=SDLK_KP_1 ? kNUM_KEYPAD_CHARS[key-SDLK_KP_1] : key;
+			if(currentPosInLine > currentLineLen) {
+				currentLineLen++;
+			}
+		} else if(key == SDLK_BACKSPACE) {
+			currentPosInLine--;
+			if(currentPosInLine<0) {
+				currentPosInLine= 0;
+			}
+			currentLineLen--;
+			if(currentLineLen<0) {
+				currentLineLen= 0;
 			}
 		}
+		cmdLine[currentLineLen]= 0;
 	}
+	return (key == SDLK_RETURN) || (key == SDLK_KP_ENTER);
+}
+
+static void DEBUGExecCmd() {
+	int number, addr;
+	char reg[10];
+	char cmd;
+	char line[sizeof(cmdLine)];
+
+	sscanf(ltrim(cmdLine), "%c%s", &cmd, line);
+	printf("cmd:%c line: '%s'", cmd, line);
+
+	switch (cmd) {
+		case CMD_DUMP_MEM:
+			sscanf(line, "%x", &number);
+			addr= number & 0xFFFF;
+			// Banked Memory, RAM then ROM
+			if(addr >= 0xA000) {
+				currentBank= (number & 0xFF0000) >> 16;
+			}
+			currentData= addr;
+			break;
+	
+		case CMD_DISASM:
+			sscanf(line, "%x", &number);
+			addr= number & 0xFFFF;
+			// Banked Memory, RAM then ROM
+			if(addr >= 0xA000) {
+				currentPCBank= (number & 0xFF0000) >> 16;
+			}
+			currentPC= addr;
+			break;
+
+		case CMD_SET_BANK:
+			sscanf(line, "%s %x", reg, &number);
+			if(!stricmp(reg, "rom")) {
+				memory_set_rom_bank(number & 0x00FF);
+			}
+			if(!stricmp(reg, "ram")) {
+				memory_set_ram_bank(number & 0x00FF);
+			}
+			break;
+
+		case CMD_SET_REGISTER:
+			sscanf(line, "%s %x", reg, &number);
+			if(!stricmp(reg, "pc")) {
+				pc= number & 0xFFFF;
+			}
+			if(!stricmp(reg, "a")) {
+				a= number & 0x00FF;
+			}
+			if(!stricmp(reg, "x")) {
+				x= number & 0x00FF;
+			}
+			if(!stricmp(reg, "y")) {
+				y= number & 0x00FF;
+			}
+			if(!stricmp(reg, "sp")) {
+				sp= number & 0x00FF;
+			}
+			break;
+
+		default:
+			break;
+	}
+
+	currentPosInLine= currentLineLen= *cmdLine= 0;
 }
 
 // *******************************************************************************************
@@ -219,21 +399,40 @@ static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift) {
 //
 // *******************************************************************************************
 
-void DEBUGRenderDisplay(int width,int height,SDL_Renderer *pRenderer) {
+void DEBUGRenderDisplay(int width, int height) {
 	if (showFullDisplay) return;								// Not rendering debug.
-	dbgRenderer = pRenderer;									// Save renderer.
+
 	SDL_Rect rc;
 	rc.w = DBG_WIDTH * 6 * CHAR_SCALE;							// Erase background, set up rect
-	rc.h = DBG_HEIGHT * 8 * CHAR_SCALE;
-	xPos = width-rc.w-4;yPos = 4; 								// Position screen
+	rc.h = height;
+	xPos = width-rc.w;yPos = 0; 								// Position screen
 	rc.x = xPos;rc.y = yPos; 									// Set rectangle and black out.
-	SDL_SetRenderDrawColor(pRenderer,0,0,0,SDL_ALPHA_OPAQUE);
-	SDL_RenderFillRect(pRenderer,&rc);
-	int depth = DEBUGRenderRegisters();							// Draw register name and values.
-	DEBUGRenderCode(depth,currentPC);							// Render 6502 disassembly.
-	DEBUGRenderData(depth+1,currentData);
+	SDL_SetRenderDrawColor(dbgRenderer,0,0,0,SDL_ALPHA_OPAQUE);
+	SDL_RenderFillRect(dbgRenderer,&rc);
+
+	DEBUGRenderRegisters();							// Draw register name and values.
+	DEBUGRenderCode(20, currentPC);							// Render 6502 disassembly.
+	DEBUGRenderData(21, currentData);
+	DEBUGRenderStack(20);
+
+	DEBUGRenderCmdLine(xPos, rc.w, height);
 }
 
+// *******************************************************************************************
+//
+//									 Render command Line
+//
+// *******************************************************************************************
+
+static void DEBUGRenderCmdLine(int x, int width, int height) {
+	char buffer[sizeof(cmdLine)+1];
+
+	SDL_SetRenderDrawColor(dbgRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+	SDL_RenderDrawLine(dbgRenderer, x, height-12, x+width, height-12);
+
+	sprintf(buffer, ">%s", cmdLine);
+	DEBUGString(0, DBG_HEIGHT-1, buffer, col_cmdLine);
+}
 // *******************************************************************************************
 //
 //									 Render Data Area
@@ -241,12 +440,13 @@ void DEBUGRenderDisplay(int width,int height,SDL_Renderer *pRenderer) {
 // *******************************************************************************************
 
 static void DEBUGRenderData(int y,int data) {
-	while (y < DBG_HEIGHT) {									// To bottom of screen
-		DEBUGNumber(DBG_MEMX,y,data & 0xFFFF,4,COL_LABEL);		// Show label.
+	while (y < DBG_HEIGHT-2) {									// To bottom of screen
+		DEBUGAddress(DBG_MEMX, y, currentBank, data & 0xFFFF, col_label);	// Show label.
+
 		for (int i = 0;i < 8;i++) {
-			int byte = read6502((data+i) & 0xFFFF);
-			DEBUGNumber(DBG_MEMX+5+i*3,y,byte,2,COL_DATA);
-			DEBUGWrite(DBG_MEMX+30+i,y,byte,COL_DATA);
+			int byte= DEBUGread6502((data+i) & 0xFFFF, currentBank);
+			DEBUGNumber(DBG_MEMX+8+i*3,y,byte,2, col_data);
+			DEBUGWrite(DBG_MEMX+33+i,y,byte, col_data);
 		}
 		y++;
 		data += 8;
@@ -259,16 +459,15 @@ static void DEBUGRenderData(int y,int data) {
 //
 // *******************************************************************************************
 
-static void DEBUGRenderCode(int lines,int initialPC) {
+static void DEBUGRenderCode(int lines, int initialPC) {
 	char buffer[32];
-	for (int y = 0;y < lines;y++) { 							// Each line
-		DEBUGNumber(DBG_ASMX,y,initialPC,4,COL_LABEL);			// Output label
-		int size = disasm(initialPC,RAM,buffer,sizeof(buffer));	// Disassemble code
-		if (initialPC == pc) {									// Output assembly highlighting PC
-			DEBUGString(DBG_ASMX+5,y,buffer,COL_HIGHLIGHT);
-		} else {
-			DEBUGString(DBG_ASMX+5,y,buffer,COL_DATA);
-		}
+	for (int y = 0; y < lines; y++) { 							// Each line
+
+		DEBUGAddress(DBG_ASMX, y, currentPCBank, initialPC, col_label);
+
+		int size = DEBUGdisasm(initialPC, RAM, buffer, sizeof(buffer), currentPCBank);	// Disassemble code
+		// Output assembly highlighting PC
+		DEBUGString(DBG_ASMX+8, y, buffer, initialPC == pc ? col_highlight : col_data);
 		initialPC += size;										// Forward to next
 	}
 }
@@ -279,135 +478,64 @@ static void DEBUGRenderCode(int lines,int initialPC) {
 //
 // *******************************************************************************************
 
-static char *labels[] = { "PC","A","X","Y","S","SP","BRK","N","V","B","I","D","Z","C", NULL };
+static char *labels[] = { "NV-BDIZC","","","A","X","Y","","BKA","BKO", "PC","SP","","BRK","", "VA","VD0","VD1","VCT", NULL };
+
 
 static int DEBUGRenderRegisters(void) {
 	int n = 0,yc = 0;
 	while (labels[n] != NULL) {									// Labels
-		DEBUGString(DBG_LBLX,n,labels[n],COL_LABEL);n++;
+		DEBUGString(DBG_LBLX,n,labels[n], col_label);n++;
 	}
-	DEBUGNumber(DBG_DATX,yc++,pc,4,COL_DATA);					// Output registers
-	DEBUGNumber(DBG_DATX,yc++,a,2,COL_DATA);
-	DEBUGNumber(DBG_DATX,yc++,x,2,COL_DATA);
-	DEBUGNumber(DBG_DATX,yc++,y,2,COL_DATA);
-	DEBUGNumber(DBG_DATX,yc++,status,2,COL_DATA);
-	DEBUGNumber(DBG_DATX,yc++,sp|0x100,4,COL_DATA);
-	DEBUGNumber(DBG_DATX,yc++,breakPoint & 0xFFFF,4,COL_DATA);
-	DEBUGNumber(DBG_DATX,yc++,(status >> 7) & 1,1,COL_DATA);
-	DEBUGNumber(DBG_DATX,yc++,(status >> 6) & 1,1,COL_DATA);
-	DEBUGNumber(DBG_DATX,yc++,(status >> 4) & 1,1,COL_DATA);
-	DEBUGNumber(DBG_DATX,yc++,(status >> 3) & 1,1,COL_DATA);
-	DEBUGNumber(DBG_DATX,yc++,(status >> 2) & 1,1,COL_DATA);
-	DEBUGNumber(DBG_DATX,yc++,(status >> 1) & 1,1,COL_DATA);
-	DEBUGNumber(DBG_DATX,yc++,(status >> 0) & 1,1,COL_DATA);
+	yc++;
+	DEBUGNumber(DBG_LBLX, yc, (status >> 7) & 1, 1, col_data);
+	DEBUGNumber(DBG_LBLX+1, yc, (status >> 6) & 1, 1, col_data);
+	DEBUGNumber(DBG_LBLX+3, yc, (status >> 4) & 1, 1, col_data);
+	DEBUGNumber(DBG_LBLX+4, yc, (status >> 3) & 1, 1, col_data);
+	DEBUGNumber(DBG_LBLX+5, yc, (status >> 2) & 1, 1, col_data);
+	DEBUGNumber(DBG_LBLX+6, yc, (status >> 1) & 1, 1, col_data);
+	DEBUGNumber(DBG_LBLX+7, yc, (status >> 0) & 1, 1, col_data);
+	yc+= 2;
 
+	DEBUGNumber(DBG_DATX, yc++, a, 2, col_data);
+	DEBUGNumber(DBG_DATX, yc++, x, 2, col_data);
+	DEBUGNumber(DBG_DATX, yc++, y, 2, col_data);
+	yc++;
+	
+	DEBUGNumber(DBG_DATX, yc++, memory_get_ram_bank(), 2, col_data);
+	DEBUGNumber(DBG_DATX, yc++, memory_get_rom_bank(), 2, col_data);
+	DEBUGNumber(DBG_DATX, yc++, pc, 4, col_data);
+	DEBUGNumber(DBG_DATX, yc++, sp|0x100, 4, col_data);
+	yc++;
+
+	DEBUGNumber(DBG_DATX, yc++, breakPoint & 0xFFFF, 4, col_data);
+	yc++;
+
+	DEBUGNumber(DBG_DATX, yc++, DEBUGvideo_read(0) | (DEBUGvideo_read(1)<<8) | (DEBUGvideo_read(2)<<16), 2, col_data);
+	DEBUGNumber(DBG_DATX, yc++, DEBUGvideo_read(3), 2, col_data);
+	DEBUGNumber(DBG_DATX, yc++, DEBUGvideo_read(4), 2, col_data);
+	DEBUGNumber(DBG_DATX, yc++, DEBUGvideo_read(5), 2, col_data);
+	
 	return n; 													// Number of code display lines
 }
 
 // *******************************************************************************************
 //
-//										Simple 5 x 7 Font
+//									Render Top of Stack
 //
 // *******************************************************************************************
 
-static unsigned char fontdata[] = {
-	0x00, 0x00, 0x00, 0x00, 0x00,   // 0x20 (space)
-	0x00, 0x00, 0x5F, 0x00, 0x00,   // 0x21 '!'
-	0x00, 0x07, 0x00, 0x07, 0x00,   // 0x22 '"'
-	0x14, 0x7F, 0x14, 0x7F, 0x14,   // 0x23 '#'
-	0x24, 0x2A, 0x7F, 0x2A, 0x12,   // 0x24 '$'
-	0x23, 0x13, 0x08, 0x64, 0x62,   // 0x25 '%'
-	0x36, 0x49, 0x55, 0x22, 0x50,   // 0x26 '&'
-	0x00, 0x05, 0x03, 0x00, 0x00,   // 0x27 '''
-	0x00, 0x1C, 0x22, 0x41, 0x00,   // 0x28 '('
-	0x00, 0x41, 0x22, 0x1C, 0x00,   // 0x29 ')'
-	0x08, 0x2A, 0x1C, 0x2A, 0x08,   // 0x2A '*'
-	0x08, 0x08, 0x3E, 0x08, 0x08,   // 0x2B '+'
-	0x00, 0x50, 0x30, 0x00, 0x00,   // 0x2C ','
-	0x08, 0x08, 0x08, 0x08, 0x08,   // 0x2D '-'
-	0x00, 0x60, 0x60, 0x00, 0x00,   // 0x2E '.'
-	0x20, 0x10, 0x08, 0x04, 0x02,   // 0x2F '/'
-	0x3E, 0x51, 0x49, 0x45, 0x3E,   // 0x30 '0'
-	0x00, 0x42, 0x7F, 0x40, 0x00,   // 0x31 '1'
-	0x42, 0x61, 0x51, 0x49, 0x46,   // 0x32 '2'
-	0x21, 0x41, 0x45, 0x4B, 0x31,   // 0x33 '3'
-	0x18, 0x14, 0x12, 0x7F, 0x10,   // 0x34 '4'
-	0x27, 0x45, 0x45, 0x45, 0x39,   // 0x35 '5'
-	0x3C, 0x4A, 0x49, 0x49, 0x30,   // 0x36 '6'
-	0x01, 0x71, 0x09, 0x05, 0x03,   // 0x37 '7'
-	0x36, 0x49, 0x49, 0x49, 0x36,   // 0x38 '8'
-	0x06, 0x49, 0x49, 0x29, 0x1E,   // 0x39 '9'
-	0x00, 0x36, 0x36, 0x00, 0x00,   // 0x3A ':'
-	0x00, 0x56, 0x36, 0x00, 0x00,   // 0x3B ';'
-	0x00, 0x08, 0x14, 0x22, 0x41,   // 0x3C '<'
-	0x14, 0x14, 0x14, 0x14, 0x14,   // 0x3D '='
-	0x41, 0x22, 0x14, 0x08, 0x00,   // 0x3E '>'
-	0x02, 0x01, 0x51, 0x09, 0x06,   // 0x3F '?'
-	0x32, 0x49, 0x79, 0x41, 0x3E,   // 0x40 '@'
-	0x7E, 0x11, 0x11, 0x11, 0x7E,   // 0x41 'A'
-	0x7F, 0x49, 0x49, 0x49, 0x36,   // 0x42 'B'
-	0x3E, 0x41, 0x41, 0x41, 0x22,   // 0x43 'C'
-	0x7F, 0x41, 0x41, 0x22, 0x1C,   // 0x44 'D'
-	0x7F, 0x49, 0x49, 0x49, 0x41,   // 0x45 'E'
-	0x7F, 0x09, 0x09, 0x01, 0x01,   // 0x46 'F'
-	0x3E, 0x41, 0x41, 0x51, 0x32,   // 0x47 'G'
-	0x7F, 0x08, 0x08, 0x08, 0x7F,   // 0x48 'H'
-	0x00, 0x41, 0x7F, 0x41, 0x00,   // 0x49 'I'
-	0x20, 0x40, 0x41, 0x3F, 0x01,   // 0x4A 'J'
-	0x7F, 0x08, 0x14, 0x22, 0x41,   // 0x4B 'K'
-	0x7F, 0x40, 0x40, 0x40, 0x40,   // 0x4C 'L'
-	0x7F, 0x02, 0x04, 0x02, 0x7F,   // 0x4D 'M'
-	0x7F, 0x04, 0x08, 0x10, 0x7F,   // 0x4E 'N'
-	0x3E, 0x41, 0x41, 0x41, 0x3E,   // 0x4F 'O'
-	0x7F, 0x09, 0x09, 0x09, 0x06,   // 0x50 'P'
-	0x3E, 0x41, 0x51, 0x21, 0x5E,   // 0x51 'Q'
-	0x7F, 0x09, 0x19, 0x29, 0x46,   // 0x52 'R'
-	0x46, 0x49, 0x49, 0x49, 0x31,   // 0x53 'S'
-	0x01, 0x01, 0x7F, 0x01, 0x01,   // 0x54 'T'
-	0x3F, 0x40, 0x40, 0x40, 0x3F,   // 0x55 'U'
-	0x1F, 0x20, 0x40, 0x20, 0x1F,   // 0x56 'V'
-	0x7F, 0x20, 0x18, 0x20, 0x7F,   // 0x57 'W'
-	0x63, 0x14, 0x08, 0x14, 0x63,   // 0x58 'X'
-	0x03, 0x04, 0x78, 0x04, 0x03,   // 0x59 'Y'
-	0x61, 0x51, 0x49, 0x45, 0x43,   // 0x5A 'Z'
-	0x00, 0x00, 0x7F, 0x41, 0x41,   // 0x5B '['
-	0x02, 0x04, 0x08, 0x10, 0x20,   // 0x5C '\'
-	0x41, 0x41, 0x7F, 0x00, 0x00,   // 0x5D ']'
-	0x04, 0x02, 0x01, 0x02, 0x04,   // 0x5E '^'
-	0x40, 0x40, 0x40, 0x40, 0x40,   // 0x5F '_'
-	0x00, 0x01, 0x02, 0x04, 0x00,   // 0x60 '`'
-	0x20, 0x54, 0x54, 0x54, 0x78,   // 0x61 'a'
-	0x7F, 0x48, 0x44, 0x44, 0x38,   // 0x62 'b'
-	0x38, 0x44, 0x44, 0x44, 0x20,   // 0x63 'c'
-	0x38, 0x44, 0x44, 0x48, 0x7F,   // 0x64 'd'
-	0x38, 0x54, 0x54, 0x54, 0x18,   // 0x65 'e'
-	0x08, 0x7E, 0x09, 0x01, 0x02,   // 0x66 'f'
-	0x08, 0x14, 0x54, 0x54, 0x3C,   // 0x67 'g'
-	0x7F, 0x08, 0x04, 0x04, 0x78,   // 0x68 'h'
-	0x00, 0x44, 0x7D, 0x40, 0x00,   // 0x69 'i'
-	0x20, 0x40, 0x44, 0x3D, 0x00,   // 0x6A 'j'
-	0x00, 0x7F, 0x10, 0x28, 0x44,   // 0x6B 'k'
-	0x00, 0x41, 0x7F, 0x40, 0x00,   // 0x6C 'l'
-	0x7C, 0x04, 0x18, 0x04, 0x78,   // 0x6D 'm'
-	0x7C, 0x08, 0x04, 0x04, 0x78,   // 0x6E 'n'
-	0x38, 0x44, 0x44, 0x44, 0x38,   // 0x6F 'o'
-	0x7C, 0x14, 0x14, 0x14, 0x08,   // 0x70 'p'
-	0x08, 0x14, 0x14, 0x18, 0x7C,   // 0x71 'q'
-	0x7C, 0x08, 0x04, 0x04, 0x08,   // 0x72 'r'
-	0x48, 0x54, 0x54, 0x54, 0x20,   // 0x73 's'
-	0x04, 0x3F, 0x44, 0x40, 0x20,   // 0x74 't'
-	0x3C, 0x40, 0x40, 0x20, 0x7C,   // 0x75 'u'
-	0x1C, 0x20, 0x40, 0x20, 0x1C,   // 0x76 'v'
-	0x3C, 0x40, 0x30, 0x40, 0x3C,   // 0x77 'w'
-	0x44, 0x28, 0x10, 0x28, 0x44,   // 0x78 'x'
-	0x0C, 0x50, 0x50, 0x50, 0x3C,   // 0x79 'y'
-	0x44, 0x64, 0x54, 0x4C, 0x44,   // 0x7A 'z'
-	0x00, 0x08, 0x36, 0x41, 0x00,   // 0x7B '{'
-	0x00, 0x00, 0x7F, 0x00, 0x00,   // 0x7C '|'
-	0x00, 0x41, 0x36, 0x08, 0x00,   // 0x7D '}'
-	0x08, 0x08, 0x2A, 0x1C, 0x08,   // 0x7E ->'
-	0x08, 0x1C, 0x2A, 0x08, 0x08,   // 0x7F <-'
-};
+static void DEBUGRenderStack(int bytesCount) {
+	int data= (sp+1) | 0x100;
+	int y= 0;
+	while (y < bytesCount) {
+		DEBUGNumber(DBG_STCK,y,data & 0xFFFF,4, col_label);
+		int byte = read6502((data++) & 0xFFFF);
+		DEBUGNumber(DBG_STCK+5,y,byte,2, col_data);
+		DEBUGWrite(DBG_STCK+9,y,byte, col_data);
+		y++;
+		data= (data & 0xFF) | 0x100;
+	}
+}
 
 // *******************************************************************************************
 //
@@ -415,11 +543,30 @@ static unsigned char fontdata[] = {
 //
 // *******************************************************************************************
 
-static void DEBUGNumber(int x,int y,int n,int w,int r,int g,int b) {
+static void DEBUGNumber(int x, int y, int n, int w, SDL_Color colour) {
 	char fmtString[8],buffer[16];
-	snprintf(fmtString,sizeof(fmtString),"%%0%dx",w);
-	snprintf(buffer,sizeof(buffer),fmtString,n);
-	DEBUGString(x,y,buffer,r,g,b);
+	snprintf(fmtString, sizeof(fmtString), "%%0%dX", w);
+	snprintf(buffer, sizeof(buffer), fmtString, n);
+	DEBUGString(x, y, buffer, colour);
+}
+
+// *******************************************************************************************
+//
+//									Write Bank:Address
+//
+// *******************************************************************************************
+static void DEBUGAddress(int x, int y, int bank, int addr, SDL_Color colour) {
+	char buffer[4];
+
+	if(addr >= 0xA000) {
+		snprintf(buffer, sizeof(buffer), "%.2X:", bank);
+	} else {
+		strcpy(buffer, "--:");
+	}
+
+	DEBUGString(x, y, buffer, colour);
+
+	DEBUGNumber(x+3, y, addr, 4, colour);
 
 }
 
@@ -429,31 +576,26 @@ static void DEBUGNumber(int x,int y,int n,int w,int r,int g,int b) {
 //
 // *******************************************************************************************
 
-static void DEBUGString(int x,int y,char *s,int r,int g,int b) {
-	while (*s != '\0') {
-		DEBUGWrite(x++,y,*s++,r,g,b);
-	}
+static void DEBUGString(int x, int y, const char *s, SDL_Color colour) {
+	// COMMENTED AS WAY TOO SLOW !!
+	// SDL_Rect rc= {xPos + (x * 6 * CHAR_SCALE), yPos + (y * 10 * CHAR_SCALE), 0, 0};
+	// SDL_Surface *surface= TTF_RenderText_Shaded(font, s, colour, col_bkgnd);
+	// SDL_Texture *texture= SDL_CreateTextureFromSurface(dbgRenderer, surface);
+	// SDL_QueryTexture(texture, NULL, NULL, &rc.w, &rc.h);
+	// SDL_RenderCopy(dbgRenderer, texture, NULL, &rc);
+	// SDL_DestroyTexture(texture);
+    // SDL_FreeSurface(surface);
+	FC_DrawColor(font, dbgRenderer, xPos + (x * 6 * CHAR_SCALE), yPos + (y * 10 * CHAR_SCALE), colour, s);
 }
+
 // *******************************************************************************************
 //
 //										Write character
 //
 // *******************************************************************************************
 
-static void DEBUGWrite(int x,int y,int ch,int r,int g,int b) {
-	SDL_Rect rc;
-	rc.x = xPos + (x * 6 * CHAR_SCALE);							// Work out cell position
-	rc.w = CHAR_SCALE;rc.h = CHAR_SCALE; 						// and draw sizes.
-	ch = (ch & 0x7F);if (ch < 0x20) ch = '.';					// Process character
-	SDL_SetRenderDrawColor(dbgRenderer,r,g,b,SDL_ALPHA_OPAQUE);	// Set colour.
-	for (int x1 = 0;x1 < 5;x1++) {
-		rc.y = yPos + (y * 8 * CHAR_SCALE);
-		int pixData = fontdata[(ch - 0x20) * 5 + x1];
-		while (pixData != 0) {
-			if (pixData & 1) SDL_RenderFillRect(dbgRenderer,&rc);
-			pixData = pixData >> 1;
-			rc.y += rc.h;
-		}
-		rc.x += CHAR_SCALE;										// Horizontal spacing.
-	}
+static void DEBUGWrite(int x,int y,int ch, SDL_Color colour) {
+	char buffer[8];
+	snprintf(buffer, sizeof(buffer), "%c", (ch>=0x20 && ch<=0x7F ? ch : '.' ));
+	DEBUGString(x, y, buffer, colour);
 }

@@ -162,6 +162,10 @@ video_init(int window_scale, char *quality)
 		record_gif = GifBegin(&gif_writer, gif_path, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 8, false);
 	}
 
+	if (debugger_enabled) {
+		DEBUGInitUI(renderer);
+	}
+
 	return true;
 }
 
@@ -873,8 +877,8 @@ video_update()
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, sdlTexture, NULL, NULL);
 
-	if (debuger_enabled && showDebugOnRender != 0) {
-		DEBUGRenderDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, renderer);
+	if (debugger_enabled && showDebugOnRender != 0) {
+		DEBUGRenderDisplay(SCREEN_WIDTH, SCREEN_HEIGHT);
 		SDL_RenderPresent(renderer);
 		return true;
 	}
@@ -981,6 +985,10 @@ video_update()
 void
 video_end()
 {
+	if (debugger_enabled) {
+		DEBUGFreeUI();
+	}
+
 	if (record_gif) {
 		GifEnd(&gif_writer);
 	}
@@ -997,7 +1005,6 @@ get_and_inc_address(uint8_t sel)
 	if (io_inc[sel]) {
 		io_addr[sel] += 1 << (io_inc[sel] - 1);
 	}
-//	printf("address = %06X, new = %06X\n", address, io_addr[sel]);
 	return address;
 }
 
@@ -1073,6 +1080,37 @@ video_read(uint8_t reg)
 		case 3:
 		case 4: {
 			uint32_t address = get_and_inc_address(reg - 3);
+			uint8_t value = video_space_read(address);
+			if (log_video) {
+				printf("READ  video_space[$%X] = $%02X\n", address, value);
+			}
+			return value;
+		}
+		case 5:
+			return io_addrsel;
+		case 6:
+			return ien;
+		case 7:
+			return isr;
+		default:
+			return 0;
+	}
+}
+
+// same as video_read without any side effects (registers & memory unchanged)
+uint8_t
+DEBUGvideo_read(uint8_t reg)
+{
+	switch (reg) {
+		case 0:
+			return io_addr[io_addrsel] & 0xff;
+		case 1:
+			return (io_addr[io_addrsel] >> 8) & 0xff;
+		case 2:
+			return (io_addr[io_addrsel] >> 16) | (io_inc[io_addrsel] << 4);
+		case 3:
+		case 4: {
+			uint32_t address = io_addr[reg - 3];
 			uint8_t value = video_space_read(address);
 			if (log_video) {
 				printf("READ  video_space[$%X] = $%02X\n", address, value);
