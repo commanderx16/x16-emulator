@@ -175,6 +175,25 @@ memory_get_rom_bank()
 	return rom_bank;
 }
 
+// Control the GIF recorder
+//        bit:  7     6  5  4  3  2  1           0
+// record_gif: [ctrl][0][0][0][0][0][continuous][active]
+void
+emu_recorder_set(uint8_t newstate) {
+	// turning off while recording is enabled
+	if (newstate == 0 && record_gif > 0) {
+		record_gif = 128; // need to save
+	}
+	// turning on continuous recording
+	if (newstate == 3 && record_gif > 0) {
+		record_gif = 3;		// activate recording
+	}
+	// capture one frame
+	if (newstate == 1 && record_gif > 0) {
+		record_gif = 1;		// single-shot
+	}
+}
+
 //
 // read/write emulator state (feature flags)
 //
@@ -183,6 +202,7 @@ memory_get_rom_bank()
 // 2: log_keyboard
 // 3: echo_mode
 // 4: save_on_exit
+// 5: record_gif
 // POKE $9FB3,1:PRINT"ECHO MODE IS ON":POKE $9FB3,0
 void
 emu_write(uint8_t reg, uint8_t value)
@@ -194,6 +214,7 @@ emu_write(uint8_t reg, uint8_t value)
 		case 2: log_keyboard = v; break;
 		case 3: echo_mode = v; break;
 		case 4: save_on_exit = v; break;
+		case 5: emu_recorder_set(v); break;
 		default: printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
 	}
 }
@@ -211,6 +232,8 @@ emu_read(uint8_t reg)
 		return echo_mode;
 	} else if (reg == 4) {
 		return save_on_exit ? 1 : 0;
+	} else if (reg == 5) {
+		return record_gif;
 	} else if (reg == 13) {
 		return keymap;
 	} else if (reg == 14) {
