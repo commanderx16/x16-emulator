@@ -158,7 +158,16 @@ video_init(int window_scale, char *quality)
 
 	SDL_SetWindowTitle(window, "Commander X16");
 
-	if (record_gif & 128) {
+	if (record_gif > 0) {
+		if (!strcmp(gif_path+strlen(gif_path)-5, ",wait")) {
+			// wait for POKE
+			record_gif = 128;
+			// move the string terminator to remove the ",wait"
+			gif_path[strlen(gif_path)-5] = 0;
+		} else {
+			// start now
+			record_gif = 3;
+		}
 		if (!GifBegin(&gif_writer, gif_path, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 8, false)) {
 			record_gif = 0;
 		}
