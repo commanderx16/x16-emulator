@@ -13,19 +13,16 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <SDL.h>
-// #include <SDL_ttf.h>
-#include "SDL_FontCache.h"
 #include "glue.h"
 #include "disasm.h"
 #include "memory.h"
 #include "video.h"
 #include "cpu/fake6502.h"
 #include "debugger.h"
+#include "rendertext.h"
 
 static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift);
 
-static void DEBUGWrite(int x,int y,int ch, SDL_Color colour);
-static void DEBUGString(int x, int y, const char *s, SDL_Color colour);
 static void DEBUGNumber(int x,int y,int n,int w, SDL_Color colour);
 static void DEBUGAddress(int x, int y, int bank, int addr, SDL_Color colour);
 
@@ -83,8 +80,6 @@ static void DEBUGExecCmd();
 
 enum DBG_CMD { CMD_DUMP_MEM='m', CMD_DISASM='d', CMD_SET_BANK='b', CMD_SET_REGISTER='r' };
 
-const char * kFontName= "FiraMono-Bold.ttf";
-const int kFontSize= 10;
 // RGB colours
 const SDL_Color col_bkgnd= {0, 0, 0, 255};
 const SDL_Color col_label= {0, 255, 0, 255};
@@ -109,11 +104,8 @@ int currentLineLen= 0;											// command line buffer length
 //
 //		This flag controls
 //
-int xPos = 0;													// Position of debug window
-int yPos = 0;
 
 SDL_Renderer *dbgRenderer; 										// Renderer passed in.
-FC_Font* font = NULL;
 
 // *******************************************************************************************
 // left strim string
@@ -172,11 +164,6 @@ int  DEBUGGetCurrentStatus(void) {
 					DEBUGHandleKeyEvent(event.key.keysym.sym,
 										SDL_GetModState() & (KMOD_LSHIFT|KMOD_RSHIFT));
 					break;
-
-				case SDL_RENDER_DEVICE_RESET:					// Need to update our texture cache
-				case SDL_RENDER_TARGETS_RESET:
-					FC_ResetFontFromRendererReset(font, dbgRenderer, event.type);
-					break;
 			
 			}
 		}
@@ -198,8 +185,6 @@ int  DEBUGGetCurrentStatus(void) {
 // *******************************************************************************************
 void DEBUGInitUI(SDL_Renderer *pRenderer) {
 		dbgRenderer = pRenderer;				// Save renderer.
-		font= FC_CreateFont();
-		FC_LoadFont(font, dbgRenderer, kFontName, kFontSize, FC_MakeColor(0,0,0,255), TTF_STYLE_NORMAL);
 }
 
 // *******************************************************************************************
@@ -208,7 +193,6 @@ void DEBUGInitUI(SDL_Renderer *pRenderer) {
 //
 // *******************************************************************************************
 void DEBUGFreeUI() {
-	FC_FreeFont(font);
 }
 
 // *******************************************************************************************
@@ -436,7 +420,7 @@ static void DEBUGRenderCmdLine(int x, int width, int height) {
 	SDL_RenderDrawLine(dbgRenderer, x, height-12, x+width, height-12);
 
 	sprintf(buffer, ">%s", cmdLine);
-	DEBUGString(0, DBG_HEIGHT-1, buffer, col_cmdLine);
+	DEBUGString(dbgRenderer, 0, DBG_HEIGHT-1, buffer, col_cmdLine);
 }
 // *******************************************************************************************
 //
@@ -451,7 +435,7 @@ static void DEBUGRenderData(int y,int data) {
 		for (int i = 0;i < 8;i++) {
 			int byte= DEBUGread6502((data+i) & 0xFFFF, currentBank);
 			DEBUGNumber(DBG_MEMX+8+i*3,y,byte,2, col_data);
-			DEBUGWrite(DBG_MEMX+33+i,y,byte, col_data);
+			DEBUGWrite(dbgRenderer, DBG_MEMX+33+i,y,byte, col_data);
 		}
 		y++;
 		data += 8;
@@ -472,7 +456,7 @@ static void DEBUGRenderCode(int lines, int initialPC) {
 
 		int size = DEBUGdisasm(initialPC, RAM, buffer, sizeof(buffer), currentPCBank);	// Disassemble code
 		// Output assembly highlighting PC
-		DEBUGString(DBG_ASMX+8, y, buffer, initialPC == pc ? col_highlight : col_data);
+		DEBUGString(dbgRenderer, DBG_ASMX+8, y, buffer, initialPC == pc ? col_highlight : col_data);
 		initialPC += size;										// Forward to next
 	}
 }
@@ -489,7 +473,7 @@ static char *labels[] = { "NV-BDIZC","","","A","X","Y","","BKA","BKO", "PC","SP"
 static int DEBUGRenderRegisters(void) {
 	int n = 0,yc = 0;
 	while (labels[n] != NULL) {									// Labels
-		DEBUGString(DBG_LBLX,n,labels[n], col_label);n++;
+		DEBUGString(dbgRenderer, DBG_LBLX,n,labels[n], col_label);n++;
 	}
 	yc++;
 	DEBUGNumber(DBG_LBLX, yc, (status >> 7) & 1, 1, col_data);
@@ -536,7 +520,7 @@ static void DEBUGRenderStack(int bytesCount) {
 		DEBUGNumber(DBG_STCK,y,data & 0xFFFF,4, col_label);
 		int byte = read6502((data++) & 0xFFFF);
 		DEBUGNumber(DBG_STCK+5,y,byte,2, col_data);
-		DEBUGWrite(DBG_STCK+9,y,byte, col_data);
+		DEBUGWrite(dbgRenderer, DBG_STCK+9,y,byte, col_data);
 		y++;
 		data= (data & 0xFF) | 0x100;
 	}
@@ -552,7 +536,7 @@ static void DEBUGNumber(int x, int y, int n, int w, SDL_Color colour) {
 	char fmtString[8],buffer[16];
 	snprintf(fmtString, sizeof(fmtString), "%%0%dX", w);
 	snprintf(buffer, sizeof(buffer), fmtString, n);
-	DEBUGString(x, y, buffer, colour);
+	DEBUGString(dbgRenderer, x, y, buffer, colour);
 }
 
 // *******************************************************************************************
@@ -569,38 +553,8 @@ static void DEBUGAddress(int x, int y, int bank, int addr, SDL_Color colour) {
 		strcpy(buffer, "--:");
 	}
 
-	DEBUGString(x, y, buffer, colour);
+	DEBUGString(dbgRenderer, x, y, buffer, colour);
 
 	DEBUGNumber(x+3, y, addr, 4, colour);
 
-}
-
-// *******************************************************************************************
-//
-//										Write String
-//
-// *******************************************************************************************
-
-static void DEBUGString(int x, int y, const char *s, SDL_Color colour) {
-	// COMMENTED AS WAY TOO SLOW !!
-	// SDL_Rect rc= {xPos + (x * 6 * CHAR_SCALE), yPos + (y * 10 * CHAR_SCALE), 0, 0};
-	// SDL_Surface *surface= TTF_RenderText_Shaded(font, s, colour, col_bkgnd);
-	// SDL_Texture *texture= SDL_CreateTextureFromSurface(dbgRenderer, surface);
-	// SDL_QueryTexture(texture, NULL, NULL, &rc.w, &rc.h);
-	// SDL_RenderCopy(dbgRenderer, texture, NULL, &rc);
-	// SDL_DestroyTexture(texture);
-    // SDL_FreeSurface(surface);
-	FC_DrawColor(font, dbgRenderer, xPos + (x * 6 * CHAR_SCALE), yPos + (y * 10 * CHAR_SCALE), colour, s);
-}
-
-// *******************************************************************************************
-//
-//										Write character
-//
-// *******************************************************************************************
-
-static void DEBUGWrite(int x,int y,int ch, SDL_Color colour) {
-	char buffer[8];
-	snprintf(buffer, sizeof(buffer), "%c", (ch>=0x20 && ch<=0x7F ? ch : '.' ));
-	DEBUGString(x, y, buffer, colour);
 }
