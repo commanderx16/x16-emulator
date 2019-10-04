@@ -583,7 +583,7 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			// set up for recording
-			record_gif = RECORD_GIF_PAUSED; 
+			record_gif = RECORD_GIF_PAUSED;
 			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
