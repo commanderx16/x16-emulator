@@ -158,18 +158,18 @@ video_init(int window_scale, char *quality)
 
 	SDL_SetWindowTitle(window, "Commander X16");
 
-	if (record_gif > 0) {
+	if (record_gif != RECORD_GIF_DISABLED) {
 		if (!strcmp(gif_path+strlen(gif_path)-5, ",wait")) {
 			// wait for POKE
-			record_gif = 128;
+			record_gif = RECORD_GIF_PAUSED;
 			// move the string terminator to remove the ",wait"
 			gif_path[strlen(gif_path)-5] = 0;
 		} else {
 			// start now
-			record_gif = 3;
+			record_gif = RECORD_GIF_ACTIVE;
 		}
 		if (!GifBegin(&gif_writer, gif_path, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 8, false)) {
-			record_gif = 0;
+			record_gif = RECORD_GIF_DISABLED;
 		}
 	}
 
@@ -874,15 +874,15 @@ video_update()
 {
 	SDL_UpdateTexture(sdlTexture, NULL, framebuffer, SCREEN_WIDTH * 4);
 
-	if (record_gif & 1) {
+	if (record_gif & RECORD_GIF_SINGLE) {
 		if(!GifWriteFrame(&gif_writer, framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT, 2, 8, false)) {
 			// if that failed, stop recording
 			GifEnd(&gif_writer);
-			record_gif = 0;
+			record_gif = RECORD_GIF_DISABLED;
 			printf("Unexpected end of recording.\n");
 		}
-		if (record_gif == 1) { // if single-shot stop recording
-			record_gif = 128;  // need to close in video_end()
+		if (record_gif == RECORD_GIF_SINGLE) { // if single-shot stop recording
+			record_gif = RECORD_GIF_PAUSED;  // need to close in video_end()
 		}
 	}
 
@@ -997,8 +997,9 @@ video_update()
 void
 video_end()
 {
-	if (record_gif > 0) {
+	if (record_gif != RECORD_GIF_DISABLED) {
 		GifEnd(&gif_writer);
+		record_gif = RECORD_GIF_DISABLED;
 	}
 
 	SDL_DestroyRenderer(renderer);

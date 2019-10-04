@@ -228,7 +228,7 @@ Release Notes
 
 ### Next Release
 
-* `-gif <filename>` will start recording on `POKE $9FB5,3`. It will capture a single frame on `POKE $9FB5,1` and pause recording on `POKE $9FB5,0`. `PEEK($9FB5)` returns a 128 if recording is enabled but not active.
+* `-gif <filename>,wait` will start recording on `POKE $9FB5,2`. It will capture a single frame on `POKE $9FB5,1` and pause recording on `POKE $9FB5,0`. `PEEK($9FB5)` returns a 128 if recording is enabled but not active. Please exit the emulator before reading the saved .gif file.
 
 ### Release 32
 

@@ -176,22 +176,22 @@ memory_get_rom_bank()
 }
 
 // Control the GIF recorder
-//        bit:  7     6  5  4  3  2  1           0
-// record_gif: [ctrl][0][0][0][0][0][continuous][active]
+//        bit:  7       6  5  4  3  2  1           0
+// record_gif: [paused][0][0][0][0][0][continuous][active]
 void
-emu_recorder_set(uint8_t newstate)
+emu_recorder_set(uint8_t command)
 {
 	// turning off while recording is enabled
-	if (newstate == 0 && record_gif > 0) {
-		record_gif = 128; // need to save
+	if (command == RECORD_GIF_PAUSE && record_gif != RECORD_GIF_DISABLED) {
+		record_gif = RECORD_GIF_PAUSED; // need to save
 	}
 	// turning on continuous recording
-	if (newstate == 3 && record_gif > 0) {
-		record_gif = 3;		// activate recording
+	if (command == RECORD_GIF_RESUME && record_gif != RECORD_GIF_DISABLED) {
+		record_gif = RECORD_GIF_ACTIVE;		// activate recording
 	}
 	// capture one frame
-	if (newstate == 1 && record_gif > 0) {
-		record_gif = 1;		// single-shot
+	if (command == RECORD_GIF_SNAP && record_gif != RECORD_GIF_DISABLED) {
+		record_gif = RECORD_GIF_SINGLE;		// single-shot
 	}
 }
 
