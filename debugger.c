@@ -108,17 +108,6 @@ int currentLineLen= 0;											// command line buffer length
 SDL_Renderer *dbgRenderer; 										// Renderer passed in.
 
 // *******************************************************************************************
-// left strim string
-char *ltrim(char *s) {
-	char *pStr= s;
-
-	while(pStr && *pStr && isspace(*pStr)) {
-		pStr++;
-	}
-
-	return pStr;
-}
-// *******************************************************************************************
 //
 //			This is used to determine who is in control. If it returns zero then
 //			everything runs normally till the next call.
