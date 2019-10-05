@@ -26,6 +26,7 @@
 #include "utf8.h"
 #include "joystick.h"
 #include "utf8_encode.h"
+#include "rom_symbols.h"
 #ifdef WITH_YM2151
 #include "ym2151.h"
 #endif
@@ -828,7 +829,7 @@ emulator_loop(void *param)
 #endif
 
 #ifdef LOAD_HYPERCALLS
-		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && RAM[0xba] == 1) {
+		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && RAM[FA] == 1) {
 			if (pc == 0xffd5) {
 				LOAD();
 			} else {
@@ -961,8 +962,8 @@ emulator_loop(void *param)
 				prg_file = NULL;
 				if (start == 0x0801) {
 					// set start of variables
-					RAM[0x2d] = end & 0xff;
-					RAM[0x2e] = end >> 8;
+					RAM[VARTAB] = end & 0xff;
+					RAM[VARTAB + 1] = end >> 8;
 				}
 
 				if (run_after_load) {
@@ -981,7 +982,7 @@ emulator_loop(void *param)
 			}
 		}
 
-		while (pasting_bas && RAM[0xc6] < 10) {
+		while (pasting_bas && RAM[NDX] < 10) {
 			uint32_t c;
 			int e = 0;
 
@@ -995,8 +996,8 @@ emulator_loop(void *param)
 				c = iso8859_15_from_unicode(c);
 			}
 			if (c && !e) {
-				RAM[0x0277 + RAM[0xc6]] = c;
-				RAM[0xc6]++;
+				RAM[KEYD + RAM[NDX]] = c;
+				RAM[NDX]++;
 			} else {
 				pasting_bas = false;
 				paste_text = NULL;
