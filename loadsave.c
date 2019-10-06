@@ -11,6 +11,7 @@
 #include "glue.h"
 #include "memory.h"
 #include "video.h"
+#include "rom_symbols.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -116,8 +117,8 @@ void
 LOAD()
 {
 	char filename[41];
-	uint8_t len = MIN(RAM[0xb7], sizeof(filename) - 1);
-	memcpy(filename, (char *)&RAM[RAM[0xbb] | RAM[0xbc] << 8], len);
+	uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
+	memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
 	filename[len] = 0;
 
 	uint16_t override_start = (x | (y << 8));
@@ -128,20 +129,20 @@ LOAD()
 		x = end & 0xff;
 		y = end >> 8;
 		status &= 0xfe;
-		RAM[0x90] = 0;
+		RAM[STATUS] = 0;
 		a = 0;
 	} else {
 		FILE *f = fopen(filename, "rb");
 		if (!f) {
 			a = 4; // FNF
-			RAM[0x90] = a;
+			RAM[STATUS] = a;
 			status |= 1;
 			return;
 		}
 		uint8_t start_lo = fgetc(f);
 		uint8_t start_hi = fgetc(f);
 		uint16_t start;
-		if (!RAM[0xb9]) {
+		if (!RAM[SA]) {
 			start = override_start;
 		} else {
 			start = start_hi << 8 | start_lo;
@@ -180,7 +181,7 @@ LOAD()
 		x = end & 0xff;
 		y = end >> 8;
 		status &= 0xfe;
-		RAM[0x90] = 0;
+		RAM[STATUS] = 0;
 		a = 0;
 	}
 }
@@ -189,8 +190,8 @@ void
 SAVE()
 {
 	char filename[41];
-	uint8_t len = MIN(RAM[0xb7], sizeof(filename) - 1);
-	memcpy(filename, (char *)&RAM[RAM[0xbb] | RAM[0xbc] << 8], len);
+	uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
+	memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
 	filename[len] = 0;
 
 	uint16_t start = RAM[a] | RAM[a + 1] << 8;
@@ -204,7 +205,7 @@ SAVE()
 	FILE *f = fopen(filename, "wb");
 	if (!f) {
 		a = 4; // FNF
-		RAM[0x90] = a;
+		RAM[STATUS] = a;
 		status |= 1;
 		return;
 	}
@@ -216,7 +217,7 @@ SAVE()
 	fclose(f);
 
 	status &= 0xfe;
-	RAM[0x90] = 0;
+	RAM[STATUS] = 0;
 	a = 0;
 }
 
