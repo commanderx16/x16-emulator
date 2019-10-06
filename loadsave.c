@@ -169,7 +169,15 @@ LOAD()
 			// IO addresses
 		} else if(start < 0xc000) {
 			// banked RAM
-			bytes_read = fread(RAM + ((uint16_t)memory_get_ram_bank() << 13) + start, 1, 0xc000 - start, f);
+			while(1) {
+				size_t len = 0xc000 - start;
+				bytes_read = fread(RAM + ((uint16_t)memory_get_ram_bank() << 13) + start, 1, len, f);
+				if(bytes_read < len) break;
+
+				// Wrap into the next bank
+				start = 0xa000;
+				write6502(0x9f61, 1 + read6502(0x9f61));
+			}
 		} else {
 			// ROM
 		}
