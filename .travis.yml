@@ -20,7 +20,22 @@ matrix:
           packages:
             - sdl2
       script: make clean all
-    - name: Editorconfig Checker
+    - name: Windows (macOS cross-compilation)
+      os: osx
+      osx_image: xcode11
+      addons:
+        homebrew:
+          packages:
+            - mingw-w64
+      before_script:
+        - mkdir -p /tmp/sdl2
+        - wget https://www.libsdl.org/release/SDL2-devel-2.0.10-mingw.tar.gz
+        - tar -xf SDL2-devel-2.0.10-mingw.tar.gz -C /tmp/sdl2
+        - sudo mkdir -p /opt/local
+        - sudo chmod 777 /opt/local
+        - cp -r /tmp/sdl2/SDL2-2.0.10/* /opt/local/
+      script: CROSS_COMPILE_WINDOWS=1 make WIN_SDL2=/opt/local/i686-w64-mingw32 clean all
+    - name: Check editorconfig style
       language: python
       script:
         - python -m pip install editorconfig-checker
