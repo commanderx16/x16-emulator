@@ -4,21 +4,38 @@ language: c
 
 matrix:
   include:
-    - os: linux
+    - name: Linux
+      os: linux
       addons:
         apt:
           packages:
             - libsdl2-dev
       compiler: gcc
-      script: make
-    - os: osx
+      script: make clean all
+    - name: macOS
+      os: osx
       osx_image: xcode11
       addons:
         homebrew:
           packages:
             - sdl2
-      script: make
-    - language: python
+      script: make clean all
+    - name: Editorconfig Checker
+      language: python
       script:
         - python -m pip install editorconfig-checker
         - editorconfig-checker
+    - name: WebAssembly
+      os: linux
+      addons:
+        apt:
+          packages:
+            - libsdl2-dev
+      services:
+        - docker
+      before_install:
+        - wget https://github.com/commanderx16/x16-emulator/releases/download/r32/x16emu_linux-r32.zip
+        - unzip x16emu_linux-r32.zip
+        - docker run -dit --name emscripten -v $(pwd):/src trzeci/emscripten:sdk-incoming-64bit bash
+      script:
+        - docker exec -it emscripten make wasm
