@@ -9,15 +9,26 @@ Binaries & Compiling
 
 <a href="https://travis-ci.org/commanderx16/x16-emulator"><img alt="Travis (.org)" src="https://img.shields.io/travis/commanderx16/x16-emulator.svg?label=CI&logo=travis&logoColor=white&style=for-the-badge"></a>
 
-Binary releases for macOS, Windows and x86_64 Linux are available on the [releases page](https://github.com/commanderx16/x16-emulator/releases).
+Binary releases for MacOS, Windows and x86_64 Linux are available on the [releases page][releases].
 
-To build the emulator you will need the SDL2 development package along with the [cc65](https://cc65.github.io/) assembler.  On RedHat based nodes these are provided by the SDL2-devel and cc65 packages (yum install SDL2-devel cc65).
+The emulator itself is dependent only on SDL2. However, to run the emulated system you will also need a compatible `rom.bin` ROM image. This will be
+loaded from the directory containing the emulator binary, or you can use the `-rom .../path/to/rom.bin` option.
 
-Steps for compiling WebAssembly/HTML5 can be found [here](webassembly/WebAssembly.md).
+> __WARNING:__ Older versions of the ROM might not work in newer versions of the emulator, and vice versa.
 
-You will also need the system ROM (`rom.bin`) which you can build from the [X16 ROM source](https://github.com/commanderx16/x16-rom) or take from the *latest* binary release. (It is not always guaranteed though that the latest binary release is compatible with the current state of the emulator source.)
+You can build a ROM image yourself using the [build instructions][x16rom-build] in the [x16rom] repo. The `rom.bin` included in the [_latest_ release][releases] of the emulator may also work with the HEAD of this repo, but this is not guaranteed.
 
-Type `make` to build the source.
+### Linux Build
+
+The SDL2 development package is available as a distribution package with most major versions of Linux:
+- Red Hat: `yum install SDL2-devel`
+- Debian: `apt-get install libsdl2-dev`
+
+Type `make` to build the source. The output will be `x16emu` in the current directory. Remember you will also need a `rom.bin` as described above.
+
+### WebAssembly Build
+
+Steps for compiling WebAssembly/HTML5 can be found [here][webassembly].
 
 
 Starting
@@ -443,3 +454,11 @@ updated KERNAL with proper power-on message
 
 * 6502 core, fake PS/2 keyboard emulation (PS/2 data bytes appear at VIA#1 PB) and text mode Vera emulation
 * KERNAL/BASIC modified for memory layout, missing VIC, Vera text mode and PS/2 keyboard
+
+
+
+<!-------------------------------------------------------------------->
+[releases]: https://github.com/commanderx16/x16-emulator/releases
+[webassembly]: webassembly/WebAssembly.md
+[x16rom-build]: https://github.com/commanderx16/x16-rom#releases-and-building
+[x16rom]: https://github.com/commanderx16/x16-rom
