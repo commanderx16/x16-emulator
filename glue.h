@@ -48,7 +48,7 @@ extern uint8_t ROM[];
 
 extern uint16_t num_ram_banks;
 
-extern bool debuger_enabled;
+extern bool debugger_enabled;
 extern bool log_video;
 extern bool log_keyboard;
 echo_mode_t echo_mode;

@@ -60,7 +60,7 @@ char *keymaps[] = {
 	"pt-br",
 };
 
-bool debuger_enabled = false;
+bool debugger_enabled = false;
 char *paste_text = NULL;
 char paste_text_data[65536];
 bool pasting_bas = false;
@@ -594,7 +594,7 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-debug")) {
 			argc--;
 			argv++;
-			debuger_enabled = true;
+			debugger_enabled = true;
 			if (argc && argv[0][0] != '-') {
 				DEBUGSetBreakPoint((uint16_t)strtol(argv[0], NULL, 16));
 				argc--;
@@ -789,7 +789,7 @@ emulator_loop(void *param)
 {
 	for (;;) {
 
-		if (debuger_enabled) {
+		if (debugger_enabled) {
 			int dbgCmd = DEBUGGetCurrentStatus();
 			if (dbgCmd > 0) continue;
 			if (dbgCmd < 0) break;

@@ -37,9 +37,15 @@ effective_ram_bank()
 //
 // interface for fake6502
 //
+// if debugOn then reads memory only for debugger; no I/O, no side effects whatsoever
 
 uint8_t
-read6502(uint16_t address)
+read6502(uint16_t address) {
+	return real_read6502(address, false, 0);
+}
+
+uint8_t
+real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 {
 	if (address < 0x9f00) { // RAM
 		return RAM[address];
@@ -48,7 +54,7 @@ read6502(uint16_t address)
 			// TODO: sound
 			return 0;
 		} else if (address >= 0x9f20 && address < 0x9f28) {
-			return video_read(address & 7);
+			return video_read(address & 7, debugOn);
 		} else if (address >= 0x9f40 && address < 0x9f60) {
 			// TODO: character LCD
 			return 0;
@@ -69,7 +75,8 @@ read6502(uint16_t address)
 			return 0;
 		}
 	} else if (address < 0xc000) { // banked RAM
-		return RAM[0xa000 + (effective_ram_bank() << 13) + address - 0xa000];
+		return	RAM[0xa000 + ( (debugOn ? bank : effective_ram_bank()) << 13) + address - 0xa000];
+
 #ifdef FIXED_KERNAL
 	} else if (address < 0xe000) { // banked ROM
 		if (rom_bank == 0) {
@@ -85,7 +92,7 @@ read6502(uint16_t address)
 #else
 
 	} else { // banked ROM
-		return ROM[(rom_bank << 14) + address - 0xc000];
+		return ROM[((debugOn ? bank : rom_bank) << 14) + address - 0xc000];
 #endif
 
 	}
@@ -198,7 +205,7 @@ emu_recorder_set(uint8_t command)
 //
 // read/write emulator state (feature flags)
 //
-// 0: debuger_enabled
+// 0: debugger_enabled
 // 1: log_video
 // 2: log_keyboard
 // 3: echo_mode
@@ -210,7 +217,7 @@ emu_write(uint8_t reg, uint8_t value)
 {
 	bool v = value != 0;
 	switch (reg) {
-		case 0: debuger_enabled = v; break;
+		case 0: debugger_enabled = v; break;
 		case 1: log_video = v; break;
 		case 2: log_keyboard = v; break;
 		case 3: echo_mode = v; break;
@@ -224,7 +231,7 @@ uint8_t
 emu_read(uint8_t reg)
 {
 	if (reg == 0) {
-		return debuger_enabled ? 1 : 0;
+		return debugger_enabled ? 1 : 0;
 	} else if (reg == 1) {
 		return log_video ? 1 : 0;
 	} else if (reg == 2) {
