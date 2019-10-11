@@ -76,7 +76,7 @@ bool dump_bank = true;
 bool dump_vram = false;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
-bool record_gif = false;
+uint8_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
@@ -304,8 +304,12 @@ usage()
 	printf("-log {K|S|V}...\n");
 	printf("\tEnable logging of (K)eyboard, (S)peed, (V)ideo.\n");
 	printf("\tMultiple characters are possible, e.g. -log KS\n");
-	printf("-gif <file.gif>\n");
+	printf("-gif <file.gif>[,wait]\n");
 	printf("\tRecord a gif for the video output.\n");
+	printf("\tUse ,wait to start paused.\n");
+	printf("\tPOKE $9FB5,2 to start recording.\n");
+	printf("\tPOKE $9FB5,1 to capture a single frame.\n");
+	printf("\tPOKE $9FB5,0 to pause.\n");
 	printf("-scale {1|2|3|4}\n");
 	printf("\tScale output to an integer multiple of 640x480\n");
 	printf("-quality {nearest|linear|best}\n");
@@ -579,7 +583,8 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-gif")) {
 			argc--;
 			argv++;
-			record_gif = true;
+			// set up for recording
+			record_gif = RECORD_GIF_PAUSED;
 			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
