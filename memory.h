@@ -10,7 +10,7 @@
 #include <stdio.h>
 
 uint8_t read6502(uint16_t address);
-uint8_t DEBUGread6502(uint16_t address, uint8_t bank);
+uint8_t real_read6502(uint16_t address, bool debugOn, uint8_t bank);
 
 void memory_init();
 

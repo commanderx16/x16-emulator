@@ -1066,9 +1066,10 @@ video_space_write(uint32_t address, uint8_t value)
 //
 // Vera: 6502 I/O Interface
 //
+// if debugOn, read without any side effects (registers & memory unchanged)
 
 uint8_t
-video_read(uint8_t reg)
+video_read(uint8_t reg, bool debugOn)
 {
 	switch (reg) {
 		case 0:
@@ -1079,38 +1080,7 @@ video_read(uint8_t reg)
 			return (io_addr[io_addrsel] >> 16) | (io_inc[io_addrsel] << 4);
 		case 3:
 		case 4: {
-			uint32_t address = get_and_inc_address(reg - 3);
-			uint8_t value = video_space_read(address);
-			if (log_video) {
-				printf("READ  video_space[$%X] = $%02X\n", address, value);
-			}
-			return value;
-		}
-		case 5:
-			return io_addrsel;
-		case 6:
-			return ien;
-		case 7:
-			return isr;
-		default:
-			return 0;
-	}
-}
-
-// same as video_read without any side effects (registers & memory unchanged)
-uint8_t
-DEBUGvideo_read(uint8_t reg)
-{
-	switch (reg) {
-		case 0:
-			return io_addr[io_addrsel] & 0xff;
-		case 1:
-			return (io_addr[io_addrsel] >> 8) & 0xff;
-		case 2:
-			return (io_addr[io_addrsel] >> 16) | (io_inc[io_addrsel] << 4);
-		case 3:
-		case 4: {
-			uint32_t address = io_addr[reg - 3];
+			uint32_t address = debugOn ? io_addr[reg - 3] : get_and_inc_address(reg - 3);
 			uint8_t value = video_space_read(address);
 			if (log_video) {
 				printf("READ  video_space[$%X] = $%02X\n", address, value);
