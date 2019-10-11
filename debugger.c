@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
-#include <string.h>
 #include <SDL.h>
 #include "glue.h"
 #include "disasm.h"
@@ -337,10 +336,10 @@ static void DEBUGExecCmd() {
 		case CMD_SET_BANK:
 			sscanf(line, "%s %d", reg, &number);
 
-			if(!stricmp(reg, "rom")) {
+			if(!strcmp(reg, "rom")) {
 				memory_set_rom_bank(number & 0x00FF);
 			}
-			if(!stricmp(reg, "ram")) {
+			if(!strcmp(reg, "ram")) {
 				memory_set_ram_bank(number & 0x00FF);
 			}
 			break;
@@ -348,19 +347,19 @@ static void DEBUGExecCmd() {
 		case CMD_SET_REGISTER:
 			sscanf(line, "%s %x", reg, &number);
 
-			if(!stricmp(reg, "pc")) {
+			if(!strcmp(reg, "pc")) {
 				pc= number & 0xFFFF;
 			}
-			if(!stricmp(reg, "a")) {
+			if(!strcmp(reg, "a")) {
 				a= number & 0x00FF;
 			}
-			if(!stricmp(reg, "x")) {
+			if(!strcmp(reg, "x")) {
 				x= number & 0x00FF;
 			}
-			if(!stricmp(reg, "y")) {
+			if(!strcmp(reg, "y")) {
 				y= number & 0x00FF;
 			}
-			if(!stricmp(reg, "sp")) {
+			if(!strcmp(reg, "sp")) {
 				sp= number & 0x00FF;
 			}
 			break;
