@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <string.h>
 #include <SDL.h>
 #include "glue.h"
 #include "disasm.h"
@@ -153,7 +154,7 @@ int  DEBUGGetCurrentStatus(void) {
 					DEBUGHandleKeyEvent(event.key.keysym.sym,
 										SDL_GetModState() & (KMOD_LSHIFT|KMOD_RSHIFT));
 					break;
-			
+
 			}
 		}
 	}
@@ -322,7 +323,7 @@ static void DEBUGExecCmd() {
 			}
 			currentData= addr;
 			break;
-	
+
 		case CMD_DISASM:
 			sscanf(line, "%x", &number);
 			addr= number & 0xFFFF;
@@ -346,7 +347,7 @@ static void DEBUGExecCmd() {
 
 		case CMD_SET_REGISTER:
 			sscanf(line, "%s %x", reg, &number);
-			
+
 			if(!stricmp(reg, "pc")) {
 				pc= number & 0xFFFF;
 			}
@@ -478,7 +479,7 @@ static int DEBUGRenderRegisters(void) {
 	DEBUGNumber(DBG_DATX, yc++, x, 2, col_data);
 	DEBUGNumber(DBG_DATX, yc++, y, 2, col_data);
 	yc++;
-	
+
 	DEBUGNumber(DBG_DATX, yc++, memory_get_ram_bank(), 2, col_data);
 	DEBUGNumber(DBG_DATX, yc++, memory_get_rom_bank(), 2, col_data);
 	DEBUGNumber(DBG_DATX, yc++, pc, 4, col_data);
@@ -492,7 +493,7 @@ static int DEBUGRenderRegisters(void) {
 	DEBUGNumber(DBG_DATX, yc++, DEBUGvideo_read(3), 2, col_data);
 	DEBUGNumber(DBG_DATX, yc++, DEBUGvideo_read(4), 2, col_data);
 	DEBUGNumber(DBG_DATX, yc++, DEBUGvideo_read(5), 2, col_data);
-	
+
 	return n; 													// Number of code display lines
 }
 

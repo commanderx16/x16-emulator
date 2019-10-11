@@ -128,7 +128,7 @@ DEBUGread6502(uint16_t address, uint8_t bank)
 			return 0;
 		}
 	}
-	
+
 	if (address < 0xc000) { // banked RAM
 		return RAM[0xa000 + (bank << 13) + address - 0xa000];
 #ifdef FIXED_KERNAL
