@@ -29,6 +29,18 @@ typedef enum {
 	ECHO_MODE_ISO,
 } echo_mode_t;
 
+// GIF recorder commands
+#define RECORD_GIF_PAUSE	0
+#define RECORD_GIF_SNAP		1
+#define RECORD_GIF_RESUME	2
+
+// GIF recorder states
+// [paused] [0] [0] [0] [0] [0] [continuous] [active]
+#define RECORD_GIF_PAUSED	128
+#define RECORD_GIF_ACTIVE	3
+#define RECORD_GIF_SINGLE	1
+#define RECORD_GIF_DISABLED	0
+
 extern uint8_t a, x, y, sp, status;
 extern uint16_t pc;
 extern uint8_t *RAM;
@@ -41,7 +53,7 @@ extern bool log_video;
 extern bool log_keyboard;
 echo_mode_t echo_mode;
 extern bool save_on_exit;
-extern bool record_gif;
+extern uint8_t record_gif;
 extern char *gif_path;
 extern uint8_t keymap;
 

@@ -32,24 +32,28 @@ via1_init()
 {
 	srand(time(NULL));
 
-	// use all 1 bits for bank number, even though there might
-	// be less installed physically
-	memory_set_ram_bank(255);
-	memory_set_rom_bank(7);
-
-	via1registers[0] = memory_get_rom_bank(); // PB: ROM bank, IEC
-	via1registers[1] = memory_get_ram_bank(); // PA: RAM bank
+	// default banks are 0
+	memory_set_ram_bank(0);
+	memory_set_rom_bank(0);
 }
 
 uint8_t
 via1_read(uint8_t reg)
 {
-	if (reg == 4 || reg == 5 || reg == 8 || reg == 9) {
-		// timer A and B: return random numbers for RND(0)
-		// XXX TODO: these should be real timers :)
-		return rand() & 0xff;
-	} else {
-		return via1registers[reg];
+	switch (reg) {
+		case 0:
+			return memory_get_rom_bank(); // PB: ROM bank, IEC
+		case 1:
+			return memory_get_ram_bank(); // PA: RAM bank
+		case 4:
+		case 5:
+		case 8:
+		case 9:
+			// timer A and B: return random numbers for RND(0)
+			// XXX TODO: these should be real timers :)
+			return rand() & 0xff;
+		default:
+			return via1registers[reg];
 	}
 }
 

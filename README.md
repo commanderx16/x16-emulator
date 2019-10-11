@@ -1,22 +1,38 @@
-# Commander X16 Emulator
+Commander X16 Emulator
+======================
 
 This is an emulator for the Commander X16 computer system. It only depends on SDL2 and should compile on all modern operating systems.
 
-## Binaries & Compiling
+
+Binaries & Compiling
+--------------------
 
 <a href="https://travis-ci.org/commanderx16/x16-emulator"><img alt="Travis (.org)" src="https://img.shields.io/travis/commanderx16/x16-emulator.svg?label=CI&logo=travis&logoColor=white&style=for-the-badge"></a>
 
-Binary releases for macOS, Windows and x86_64 Linux are available on the [releases page](https://github.com/commanderx16/x16-emulator/releases).
+Binary releases for MacOS, Windows and x86_64 Linux are available on the [releases page][releases].
 
-To build the emulator you will need the SDL2 development package along with the [cc65](https://cc65.github.io/) assembler.  On RedHat based nodes these are provided by the SDL2-devel and cc65 packages (yum install SDL2-devel cc65).
+The emulator itself is dependent only on SDL2. However, to run the emulated system you will also need a compatible `rom.bin` ROM image. This will be
+loaded from the directory containing the emulator binary, or you can use the `-rom .../path/to/rom.bin` option.
 
-Steps for compiling WebAssembly/HTML5 can be found [here](webassembly/WebAssembly.md).
+> __WARNING:__ Older versions of the ROM might not work in newer versions of the emulator, and vice versa.
 
-You will also need the system ROM (`rom.bin`) which you can build from the [X16 ROM source](https://github.com/commanderx16/x16-rom) or take from the *latest* binary release. (It is not always guaranteed though that the latest binary release is compatible with the current state of the emulator source.)
+You can build a ROM image yourself using the [build instructions][x16rom-build] in the [x16rom] repo. The `rom.bin` included in the [_latest_ release][releases] of the emulator may also work with the HEAD of this repo, but this is not guaranteed.
 
-Type `make` to build the source.
+### Linux Build
 
-## Starting
+The SDL2 development package is available as a distribution package with most major versions of Linux:
+- Red Hat: `yum install SDL2-devel`
+- Debian: `apt-get install libsdl2-dev`
+
+Type `make` to build the source. The output will be `x16emu` in the current directory. Remember you will also need a `rom.bin` as described above.
+
+### WebAssembly Build
+
+Steps for compiling WebAssembly/HTML5 can be found [here][webassembly].
+
+
+Starting
+--------
 
 You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the command line. The latter allows you to specify additional arguments.
 
@@ -49,7 +65,9 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 
 Run `x16emu -h` to see all command line options.
 
-## Keyboard Layout
+
+Keyboard Layout
+---------------
 
 The X16 uses a PS/2 keyboard, and the ROM currently supports several different layouts. The following table shows their names, and what keys produce different characters than expected:
 
@@ -88,7 +106,9 @@ The following keys can be used for controlling games:
 |Cursor Left   | LEFT		|
 |Cursor Right  | RIGHT		|
 
-## Functions while running
+
+Functions while running
+-----------------------
 
 * Ctrl + R will reset the computer.
 * Ctrl + V will paste the clipboard by injecting key presses.
@@ -97,7 +117,9 @@ The following keys can be used for controlling games:
 
 On the Mac, use the Cmd key instead.
 
-## BASIC and the Screen Editor
+
+BASIC and the Screen Editor
+---------------------------
 
 On startup, the X16 presents direct mode of BASIC V2. You can enter BASIC statements, or line numbers with BASIC statements and `RUN` the program, just like on Commodore computers.
 
@@ -106,7 +128,9 @@ On startup, the X16 presents direct mode of BASIC V2. You can enter BASIC statem
 * To clear the screen, press Shift + Home.
 * The X16 does not have a STOP+RESTORE function.
 
-## Host Filesystem Interface
+
+Host Filesystem Interface
+-------------------------
 
 If the system ROM contains any version of the KERNAL, the LOAD (`$FFD5`) and SAVE (`$FFD8`) KERNAL calls are intercepted by the emulator if the device is 1 (which is the default). So the BASIC statements
 
@@ -121,18 +145,24 @@ The emulator will interpret filesnames relative to the directory it was started 
 
 To avoid incompatibility problems between the PETSCII and ASCII encodings, use lower case filenames on the host side, and unshifted filenames on the X16 side.
 
-## Dealing with BASIC Programs
+
+Dealing with BASIC Programs
+---------------------------
 
 BASIC programs are encoded in a tokenized form, they are not simply ASCII files. If you want to edit BASIC programs on the host's text editor, you need to convert it between tokenized BASIC form and ASCII.
 
 * To convert ASCII to BASIC, reboot the machine and paste the ASCII text using Ctrl + V (Mac: Cmd + V). You can now run the program, or use the `SAVE` BASIC command to write the tokenized version to disk.
 * To convert BASIC to ASCII, start x16emu with the -echo argument, `LOAD` the BASIC file, and type `LIST`. Now copy the ASCII version from the terminal.
 
-## Using the KERNAL/BASIC environment
+
+Using the KERNAL/BASIC environment
+----------------------------------
 
 Please see the KERNAL/BASIC documentation.
 
-## Debugger
+
+Debugger
+--------
 
 The debugger requires `-debug` to start. Without it it is effectively disabled.
 
@@ -155,11 +185,15 @@ When -debug is selected the No-Operation $FF will break into the debugger automa
 
 Effectively keyboard routines only work when the debugger is running normally. Single stepping through keyboard code will not work at present.
 
-## Wiki
+
+Wiki
+----
 
 https://github.com/commanderx16/x16-emulator/wiki
 
-## Features
+
+Features
+--------
 
 * CPU: Full 65C02 instruction set (improved "fake6502")
 * VERA
@@ -170,7 +204,9 @@ https://github.com/commanderx16/x16-emulator/wiki
 	* PS/2 keyboard
 	* SD card (SPI)
 
-## Missing Features
+
+Missing Features
+----------------
 
 * VERA
 	* Does not support raster IRQs (does support VSYNC though)
@@ -184,16 +220,26 @@ https://github.com/commanderx16/x16-emulator/wiki
 * Sound
 	* No support
 
-## License
+
+License
+-------
 
 Copyright (c) 2019 Michael Steil &lt;mist64@mac.com&gt;, [www.pagetable.com](https://www.pagetable.com/).
 All rights reserved. License: 2-clause BSD
 
-## Known Issues
+
+Known Issues
+------------
 
 * Emulator: LOAD"$ (and LOAD"$",1) will show host uppercase filenames as garbage. Use Ctrl+N to switch to the X16 upper/lower character set for a workaround.
 
-## Release Notes
+
+Release Notes
+-------------
+
+### Next Release
+
+* `-gif <filename>,wait` will start recording on `POKE $9FB5,2`. It will capture a single frame on `POKE $9FB5,1` and pause recording on `POKE $9FB5,0`. `PEEK($9FB5)` returns a 128 if recording is enabled but not active. Please exit the emulator before reading the saved .gif file.
 
 ### Release 32
 
@@ -412,3 +458,11 @@ updated KERNAL with proper power-on message
 
 * 6502 core, fake PS/2 keyboard emulation (PS/2 data bytes appear at VIA#1 PB) and text mode Vera emulation
 * KERNAL/BASIC modified for memory layout, missing VIC, Vera text mode and PS/2 keyboard
+
+
+
+<!-------------------------------------------------------------------->
+[releases]: https://github.com/commanderx16/x16-emulator/releases
+[webassembly]: webassembly/WebAssembly.md
+[x16rom-build]: https://github.com/commanderx16/x16-rom#releases-and-building
+[x16rom]: https://github.com/commanderx16/x16-rom
