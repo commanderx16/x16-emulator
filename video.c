@@ -158,8 +158,23 @@ video_init(int window_scale, char *quality)
 
 	SDL_SetWindowTitle(window, "Commander X16");
 
-	if (record_gif) {
-		record_gif = GifBegin(&gif_writer, gif_path, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 8, false);
+	if (record_gif != RECORD_GIF_DISABLED) {
+		if (!strcmp(gif_path+strlen(gif_path)-5, ",wait")) {
+			// wait for POKE
+			record_gif = RECORD_GIF_PAUSED;
+			// move the string terminator to remove the ",wait"
+			gif_path[strlen(gif_path)-5] = 0;
+		} else {
+			// start now
+			record_gif = RECORD_GIF_ACTIVE;
+		}
+		if (!GifBegin(&gif_writer, gif_path, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 8, false)) {
+			record_gif = RECORD_GIF_DISABLED;
+		}
+	}
+
+	if (debugger_enabled) {
+		DEBUGInitUI(renderer);
 	}
 
 	return true;
@@ -863,18 +878,23 @@ video_update()
 {
 	SDL_UpdateTexture(sdlTexture, NULL, framebuffer, SCREEN_WIDTH * 4);
 
-	if (record_gif) {
-		record_gif = GifWriteFrame(&gif_writer, framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT, 2, 8, false);
-		if (!record_gif) {
+	if (record_gif & RECORD_GIF_SINGLE) {
+		if(!GifWriteFrame(&gif_writer, framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT, 2, 8, false)) {
+			// if that failed, stop recording
 			GifEnd(&gif_writer);
+			record_gif = RECORD_GIF_DISABLED;
+			printf("Unexpected end of recording.\n");
+		}
+		if (record_gif == RECORD_GIF_SINGLE) { // if single-shot stop recording
+			record_gif = RECORD_GIF_PAUSED;  // need to close in video_end()
 		}
 	}
 
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, sdlTexture, NULL, NULL);
 
-	if (debuger_enabled && showDebugOnRender != 0) {
-		DEBUGRenderDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, renderer);
+	if (debugger_enabled && showDebugOnRender != 0) {
+		DEBUGRenderDisplay(SCREEN_WIDTH, SCREEN_HEIGHT);
 		SDL_RenderPresent(renderer);
 		return true;
 	}
@@ -981,8 +1001,13 @@ video_update()
 void
 video_end()
 {
-	if (record_gif) {
+	if (debugger_enabled) {
+		DEBUGFreeUI();
+	}
+
+	if (record_gif != RECORD_GIF_DISABLED) {
 		GifEnd(&gif_writer);
+		record_gif = RECORD_GIF_DISABLED;
 	}
 
 	SDL_DestroyRenderer(renderer);
@@ -997,7 +1022,6 @@ get_and_inc_address(uint8_t sel)
 	if (io_inc[sel]) {
 		io_addr[sel] += 1 << (io_inc[sel] - 1);
 	}
-//	printf("address = %06X, new = %06X\n", address, io_addr[sel]);
 	return address;
 }
 
@@ -1059,9 +1083,10 @@ video_space_write(uint32_t address, uint8_t value)
 //
 // Vera: 6502 I/O Interface
 //
+// if debugOn, read without any side effects (registers & memory unchanged)
 
 uint8_t
-video_read(uint8_t reg)
+video_read(uint8_t reg, bool debugOn)
 {
 	switch (reg) {
 		case 0:
@@ -1072,7 +1097,7 @@ video_read(uint8_t reg)
 			return (io_addr[io_addrsel] >> 16) | (io_inc[io_addrsel] << 4);
 		case 3:
 		case 4: {
-			uint32_t address = get_and_inc_address(reg - 3);
+			uint32_t address = debugOn ? io_addr[reg - 3] : get_and_inc_address(reg - 3);
 			uint8_t value = video_space_read(address);
 			if (log_video) {
 				printf("READ  video_space[$%X] = $%02X\n", address, value);

@@ -18,7 +18,7 @@ bool video_update(void);
 void video_end(void);
 bool video_get_irq_out(void);
 void video_save(FILE *f);
-uint8_t video_read(uint8_t reg);
+uint8_t video_read(uint8_t reg, bool debugOn);
 void video_write(uint8_t reg, uint8_t value);
 void video_update_title(const char* window_title);
 

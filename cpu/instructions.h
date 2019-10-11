@@ -16,33 +16,43 @@
 //
 static void adc() {
     penaltyop = 1;
-    value = getvalue();
-    result = (uint16_t)a + value + (uint16_t)(status & FLAG_CARRY);
-   
-    carrycalc(result);
-    zerocalc(result);
-    overflowcalc(result, a, value);
-    signcalc(result);
-    
     #ifndef NES_CPU
     if (status & FLAG_DECIMAL) {
-        clearcarry();
-        
-        if ((result & 0x0F) > 0x09) {
-            result += 0x06;
+        uint16_t tmp, tmp2;
+        value = getvalue();
+        tmp = ((uint16_t)a & 0x0F) + (value & 0x0F) + (uint16_t)(status & FLAG_CARRY);
+        tmp2 = ((uint16_t)a & 0xF0) + (value & 0xF0);
+        if (tmp > 0x09) {
+            tmp2 += 0x10;
+            tmp += 0x06;
         }
-        if ((result & 0xF0) > 0x90) {
-            result += 0x60;
+        if (tmp2 > 0x90) {
+            tmp2 += 0x60;
+        }
+        if (tmp2 & 0xFF00) {
             setcarry();
+        } else {
+            clearcarry();
         }
+        result = (tmp & 0x0F) | (tmp2 & 0xF0);
 
         zerocalc(result);                /* 65C02 change, Decimal Arithmetic sets NZV */
         signcalc(result);
-        
+
         clockticks6502++;
+    } else {
+    #endif
+        value = getvalue();
+        result = (uint16_t)a + value + (uint16_t)(status & FLAG_CARRY);
+
+        carrycalc(result);
+        zerocalc(result);
+        overflowcalc(result, a, value);
+        signcalc(result);
+    #ifndef NES_CPU
     }
     #endif
-   
+
     saveaccum(result);
 }
 
@@ -50,10 +60,10 @@ static void and() {
     penaltyop = 1;
     value = getvalue();
     result = (uint16_t)a & value;
-   
+
     zerocalc(result);
     signcalc(result);
-   
+
     saveaccum(result);
 }
 
@@ -64,7 +74,7 @@ static void asl() {
     carrycalc(result);
     zerocalc(result);
     signcalc(result);
-   
+
     putvalue(result);
 }
 
@@ -98,7 +108,7 @@ static void beq() {
 static void bit() {
     value = getvalue();
     result = (uint16_t)a & value;
-   
+
     zerocalc(result);
     status = (status & 0x3F) | (uint8_t)(value & 0xC0);
 }
@@ -133,7 +143,7 @@ static void bpl() {
 static void brk() {
     pc++;
 
-        
+
     push16(pc); //push next instruction address onto stack
     push8(status | FLAG_BREAK); //push CPU status to stack
     setinterrupt(); //set interrupt flag
@@ -179,7 +189,7 @@ static void cmp() {
     penaltyop = 1;
     value = getvalue();
     result = (uint16_t)a - value;
-   
+
     if (a >= (uint8_t)(value & 0x00FF)) setcarry();
         else clearcarry();
     if (a == (uint8_t)(value & 0x00FF)) setzero();
@@ -190,7 +200,7 @@ static void cmp() {
 static void cpx() {
     value = getvalue();
     result = (uint16_t)x - value;
-   
+
     if (x >= (uint8_t)(value & 0x00FF)) setcarry();
         else clearcarry();
     if (x == (uint8_t)(value & 0x00FF)) setzero();
@@ -201,7 +211,7 @@ static void cpx() {
 static void cpy() {
     value = getvalue();
     result = (uint16_t)y - value;
-   
+
     if (y >= (uint8_t)(value & 0x00FF)) setcarry();
         else clearcarry();
     if (y == (uint8_t)(value & 0x00FF)) setzero();
@@ -212,23 +222,23 @@ static void cpy() {
 static void dec() {
     value = getvalue();
     result = value - 1;
-   
+
     zerocalc(result);
     signcalc(result);
-   
+
     putvalue(result);
 }
 
 static void dex() {
     x--;
-   
+
     zerocalc(x);
     signcalc(x);
 }
 
 static void dey() {
     y--;
-   
+
     zerocalc(y);
     signcalc(y);
 }
@@ -237,33 +247,33 @@ static void eor() {
     penaltyop = 1;
     value = getvalue();
     result = (uint16_t)a ^ value;
-   
+
     zerocalc(result);
     signcalc(result);
-   
+
     saveaccum(result);
 }
 
 static void inc() {
     value = getvalue();
     result = value + 1;
-   
+
     zerocalc(result);
     signcalc(result);
-   
+
     putvalue(result);
 }
 
 static void inx() {
     x++;
-   
+
     zerocalc(x);
     signcalc(x);
 }
 
 static void iny() {
     y++;
-   
+
     zerocalc(y);
     signcalc(y);
 }
@@ -281,7 +291,7 @@ static void lda() {
     penaltyop = 1;
     value = getvalue();
     a = (uint8_t)(value & 0x00FF);
-   
+
     zerocalc(a);
     signcalc(a);
 }
@@ -290,7 +300,7 @@ static void ldx() {
     penaltyop = 1;
     value = getvalue();
     x = (uint8_t)(value & 0x00FF);
-   
+
     zerocalc(x);
     signcalc(x);
 }
@@ -299,7 +309,7 @@ static void ldy() {
     penaltyop = 1;
     value = getvalue();
     y = (uint8_t)(value & 0x00FF);
-   
+
     zerocalc(y);
     signcalc(y);
 }
@@ -307,12 +317,12 @@ static void ldy() {
 static void lsr() {
     value = getvalue();
     result = value >> 1;
-   
+
     if (value & 1) setcarry();
         else clearcarry();
     zerocalc(result);
     signcalc(result);
-   
+
     putvalue(result);
 }
 
@@ -333,10 +343,10 @@ static void ora() {
     penaltyop = 1;
     value = getvalue();
     result = (uint16_t)a | value;
-   
+
     zerocalc(result);
     signcalc(result);
-   
+
     saveaccum(result);
 }
 
@@ -350,7 +360,7 @@ static void php() {
 
 static void pla() {
     a = pull8();
-   
+
     zerocalc(a);
     signcalc(a);
 }
@@ -362,23 +372,23 @@ static void plp() {
 static void rol() {
     value = getvalue();
     result = (value << 1) | (status & FLAG_CARRY);
-   
+
     carrycalc(result);
     zerocalc(result);
     signcalc(result);
-   
+
     putvalue(result);
 }
 
 static void ror() {
     value = getvalue();
     result = (value >> 1) | ((status & FLAG_CARRY) << 7);
-   
+
     if (value & 1) setcarry();
         else clearcarry();
     zerocalc(result);
     signcalc(result);
-   
+
     putvalue(result);
 }
 
@@ -395,34 +405,41 @@ static void rts() {
 
 static void sbc() {
     penaltyop = 1;
-    value = getvalue() ^ 0x00FF;
-    result = (uint16_t)a + value + (uint16_t)(status & FLAG_CARRY);
-   
-    carrycalc(result);
-    zerocalc(result);
-    overflowcalc(result, a, value);
-    signcalc(result);
 
     #ifndef NES_CPU
     if (status & FLAG_DECIMAL) {
-        clearcarry();
-
-        result -= 0x66;
-        if ((result & 0x0F) > 0x09) {
-            result += 0x06;
+        value = getvalue();
+        result = (uint16_t)a - (value & 0x0f) + (status & FLAG_CARRY) - 1;
+        if ((result & 0x0f) > (a & 0x0f)) {
+            result -= 6;
         }
-        if ((result & 0xF0) > 0x90) {
-            result += 0x60;
+        result -= (value & 0xf0);
+        if ((result & 0xfff0) > ((uint16_t)a & 0xf0)) {
+            result -= 0x60;
+        }
+        if (result <= (uint16_t)a) {
             setcarry();
+        } else {
+            clearcarry();
         }
-        
+
         zerocalc(result);                /* 65C02 change, Decimal Arithmetic sets NZV */
         signcalc(result);
 
         clockticks6502++;
+    } else {
+    #endif
+        value = getvalue() ^ 0x00FF;
+        result = (uint16_t)a + value + (uint16_t)(status & FLAG_CARRY);
+
+        carrycalc(result);
+        zerocalc(result);
+        overflowcalc(result, a, value);
+        signcalc(result);
+    #ifndef NES_CPU
     }
     #endif
-   
+
     saveaccum(result);
 }
 
@@ -452,28 +469,28 @@ static void sty() {
 
 static void tax() {
     x = a;
-   
+
     zerocalc(x);
     signcalc(x);
 }
 
 static void tay() {
     y = a;
-   
+
     zerocalc(y);
     signcalc(y);
 }
 
 static void tsx() {
     x = sp;
-   
+
     zerocalc(x);
     signcalc(x);
 }
 
 static void txa() {
     a = x;
-   
+
     zerocalc(a);
     signcalc(a);
 }
@@ -484,7 +501,7 @@ static void txs() {
 
 static void tya() {
     a = y;
-   
+
     zerocalc(a);
     signcalc(a);
 }
