@@ -183,10 +183,8 @@ memory_get_rom_bank()
 }
 
 // Control the GIF recorder
-//        bit:  7       6  5  4  3  2  1           0
-// record_gif: [paused][0][0][0][0][0][continuous][active]
 void
-emu_recorder_set(uint8_t command)
+emu_recorder_set(gif_recorder_command_t command)
 {
 	// turning off while recording is enabled
 	if (command == RECORD_GIF_PAUSE && record_gif != RECORD_GIF_DISABLED) {
@@ -222,7 +220,7 @@ emu_write(uint8_t reg, uint8_t value)
 		case 2: log_keyboard = v; break;
 		case 3: echo_mode = v; break;
 		case 4: save_on_exit = v; break;
-		case 5: emu_recorder_set(value); break;
+		case 5: emu_recorder_set((gif_recorder_command_t) value); break;
 		default: printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
 	}
 }
