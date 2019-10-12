@@ -177,7 +177,7 @@ LOAD()
 
 				// Wrap into the next bank
 				start = 0xa000;
-				write6502(0x9f61, 1 + read6502(0x9f61));
+				memory_set_ram_bank(1 + memory_get_ram_bank());
 			}
 		} else {
 			// ROM

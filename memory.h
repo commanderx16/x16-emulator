@@ -11,7 +11,6 @@
 
 uint8_t read6502(uint16_t address);
 uint8_t real_read6502(uint16_t address, bool debugOn, uint8_t bank);
-void write6502(uint16_t address, uint8_t value);
 
 void memory_init();
 
