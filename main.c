@@ -76,7 +76,7 @@ bool dump_bank = true;
 bool dump_vram = false;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
-uint8_t record_gif = RECORD_GIF_DISABLED;
+gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
