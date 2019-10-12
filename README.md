@@ -45,6 +45,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-run` executes the application specified through `-prg` or `-bas` using `RUN` or `SYS`, depending on the load address.
 * `-scale` scales video output to an integer multiple of 640x480
 * `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
+* `-gif <filename>[,wait]` to record the screen into a GIF. See below for more info.
 * `-scale` scales video output to an integer multiple of 640x480
 * `-quality` change image scaling algorithm quality
 	* `nearest`: nearest pixel sampling
@@ -116,6 +117,14 @@ Functions while running
 * Ctrl + Return will toggle full screen mode.
 
 On the Mac, use the Cmd key instead.
+
+
+GIF Recording
+-------------
+
+With the argument `-gif`, followed by a filename, a screen recording will be saved into the given GIF file. Please exit the emulator before reading the GIF file.
+
+If the option `,wait` is specified after the filename, it will start recording on `POKE $9FB5,2`. It will capture a single frame on `POKE $9FB5,1` and pause recording on `POKE $9FB5,0`. `PEEK($9FB5)` returns a 128 if recording is enabled but not active.
 
 
 BASIC and the Screen Editor
@@ -236,6 +245,25 @@ Known Issues
 
 Release Notes
 -------------
+
+### Release 33
+
+* significant performance optimizations
+* VERA
+	* enabled all 128 sprites
+	* correct sprite zdepth
+	* support for raster IRQs
+* SDL controller support using `-joy1` and `-joy2` [John J Bliss]
+* 65C02 BSD fixes [Norman B. Lancaster]
+* feature parity with new LOAD/VLOAD features [John-Paul Gignac]
+* default RAM and ROM banks are now 0, matching the hardware
+* GIF recording can now be controlled from inside the machine [Randall Bohn]
+* Debugging
+	* Major enhancements to the debugger [kktos]
+	* `-echo` will now encode non-printable characters like this: \X93 for CHR$(93), -bas as 	well as pasting accepts this convention again
+	* `-echo raw` for the original behavior
+	* `-echo iso` to for correct character encoding in ISO mode
+	* `-ram` to specify RAM size; now defaults to 512
 
 ### Release 32
 

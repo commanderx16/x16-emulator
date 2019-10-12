@@ -34,7 +34,7 @@ ifdef EMSCRIPTEN
 	OUTPUT=x16emu.html
 endif
 
-OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o spi.o vera_spi.o sdcard.o main.o debugger.o javascript_interface.o joystick.o
+OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o spi.o vera_spi.o sdcard.o main.o debugger.o javascript_interface.o joystick.o rendertext.o
 
 HEADERS = disasm.h cpu/fake6502.h glue.h memory.h video.h ps2.h via.h loadsave.h joystick.h
 
@@ -86,7 +86,7 @@ wasm:
 # hostname of the Linux VM
 LINUX_COMPILE_HOST = ubuntu.local
 # path to the equivalent of `pwd` on the Mac
-LINUX_BASE_DIR = /mnt/Documents/git/x16emu
+LINUX_BASE_DIR = /mnt/Documents/git/x16-emulator
 
 TMPDIR_NAME=TMP-x16emu-package
 
