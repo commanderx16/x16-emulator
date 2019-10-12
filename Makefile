@@ -86,7 +86,7 @@ wasm:
 # hostname of the Linux VM
 LINUX_COMPILE_HOST = ubuntu.local
 # path to the equivalent of `pwd` on the Mac
-LINUX_BASE_DIR = /mnt/Documents/git/x16emu
+LINUX_BASE_DIR = /mnt/Documents/git/x16-emulator
 
 TMPDIR_NAME=TMP-x16emu-package
 
