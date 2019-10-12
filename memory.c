@@ -183,8 +183,6 @@ memory_get_rom_bank()
 }
 
 // Control the GIF recorder
-//        bit:  7       6  5  4  3  2  1           0
-// record_gif: [paused][0][0][0][0][0][continuous][active]
 void
 emu_recorder_set(uint8_t command)
 {

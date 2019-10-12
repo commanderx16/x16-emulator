@@ -878,7 +878,7 @@ video_update()
 {
 	SDL_UpdateTexture(sdlTexture, NULL, framebuffer, SCREEN_WIDTH * 4);
 
-	if (record_gif & RECORD_GIF_SINGLE) {
+	if (record_gif > RECORD_GIF_PAUSED) {
 		if(!GifWriteFrame(&gif_writer, framebuffer, SCREEN_WIDTH, SCREEN_HEIGHT, 2, 8, false)) {
 			// if that failed, stop recording
 			GifEnd(&gif_writer);
