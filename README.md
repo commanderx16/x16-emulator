@@ -254,7 +254,7 @@ Release Notes
 	* correct sprite zdepth
 	* support for raster IRQs
 * SDL controller support using `-joy1` and `-joy2` [John J Bliss]
-* 65C02 BSD fixes [Norman B. Lancaster]
+* 65C02 BCD fixes [Norman B. Lancaster]
 * feature parity with new LOAD/VLOAD features [John-Paul Gignac]
 * default RAM and ROM banks are now 0, matching the hardware
 * GIF recording can now be controlled from inside the machine [Randall Bohn]

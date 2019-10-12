@@ -812,7 +812,7 @@ emulator_loop(void *param)
 			}
 			printf(" .,%04x ", pc);
 			char disasm_line[15];
-			int len = disasm(pc, RAM, disasm_line, sizeof(disasm_line));
+			int len = disasm(pc, RAM, disasm_line, sizeof(disasm_line), false, 0);
 			for (int i = 0; i < len; i++) {
 				printf("%02x ", read6502(pc + i));
 			}
