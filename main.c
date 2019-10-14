@@ -76,7 +76,7 @@ bool dump_bank = true;
 bool dump_vram = false;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
-uint8_t record_gif = RECORD_GIF_DISABLED;
+gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
@@ -812,7 +812,7 @@ emulator_loop(void *param)
 			}
 			printf(" .,%04x ", pc);
 			char disasm_line[15];
-			int len = disasm(pc, RAM, disasm_line, sizeof(disasm_line));
+			int len = disasm(pc, RAM, disasm_line, sizeof(disasm_line), false, 0);
 			for (int i = 0; i < len; i++) {
 				printf("%02x ", read6502(pc + i));
 			}
