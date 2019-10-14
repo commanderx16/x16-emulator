@@ -99,8 +99,8 @@ bool handle_latch(bool latch, bool clock)
 	if (latch){
 		clock_count = 0;
 		//get the 16-representation to put to the VIA
-		joystick1_state = (joy1_mode != NONE) ? get_joystick_state(joystick1, joy1_mode) : 0xFFFF;
-		joystick2_state = (joy2_mode != NONE) ? get_joystick_state(joystick2, joy2_mode) : 0xFFFF;
+		joystick1_state = get_joystick_state(joystick1, joy1_mode);
+		joystick2_state = get_joystick_state(joystick2, joy2_mode);
 		//set writing flag to true to signal we will start writing controller data
 		writing = true;
 		old_clock = clock;
