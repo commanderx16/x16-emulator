@@ -207,7 +207,12 @@ Features
 * CPU: Full 65C02 instruction set (improved "fake6502")
 * VERA
 	* Mostly cycle exact emulation
-	* Supports almost all features: composer, two layers, sprites, progressive/interlaced
+	* Supports almost all features:
+		* composer
+		* two layers
+		* sprites
+		* progressive/interlaced
+		* VSYNC and raster IRQ
 * VIA
 	* ROM/RAM banking
 	* PS/2 keyboard
@@ -218,14 +223,11 @@ Missing Features
 ----------------
 
 * VERA
-	* Does not support raster IRQs (does support VSYNC though)
 	* Does not support the "CURRENT_FIELD" bit
-	* Does not sprite z-depth, collisions or limitations
-	* Only supports the first 16 sprites
-	* Interlaced modes (NTSC/RGB) don't render at the full horizontal fidelity
+	* Does not sprite collisions
+	*	* Interlaced modes (NTSC/RGB) don't render at the full horizontal fidelity
 * VIA
 	* Does not support counters/timers/IRQs
-	* Does not support game controllers
 * Sound
 	* No support
 
