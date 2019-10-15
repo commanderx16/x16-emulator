@@ -116,7 +116,7 @@ bool handle_latch(bool latch, bool clock)
 
 //get current state from SDL controller
 //Should replace this with SDL events, so we do not miss inputs when polling
-uint32_t get_joystick_state(SDL_GameController *control, enum joy_status mode)
+uint16_t get_joystick_state(SDL_GameController *control, enum joy_status mode)
 {
 	if (mode == NES) {
 		bool a_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_A);
