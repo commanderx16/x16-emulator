@@ -1,13 +1,16 @@
-Commander X16 Emulator
-======================
+<p align="center">
+  <img src="./.gh/logo.png" />
+</p>
+
+[![Build Status](https://travis-ci.org/commanderx16/x16-emulator.svg?branch=master)](https://travis-ci.org/commanderx16/x16-emulator)
+[![Release](https://img.shields.io/github/v/release/commanderx16/x16-emulator)](https://github.com/commanderx16/x16-emulator/releases)
+[![License: BSD-Clause](https://img.shields.io/github/license/commanderx16/x16-emulator)](./LICENSE)
+[![Contributors](https://img.shields.io/github/contributors/commanderx16/x16-emulator.svg)](https://github.com/commanderx16/x16-emulator/graphs/contributors)
 
 This is an emulator for the Commander X16 computer system. It only depends on SDL2 and should compile on all modern operating systems.
 
-
 Binaries & Compiling
 --------------------
-
-<a href="https://travis-ci.org/commanderx16/x16-emulator"><img alt="Travis (.org)" src="https://img.shields.io/travis/commanderx16/x16-emulator.svg?label=CI&logo=travis&logoColor=white&style=for-the-badge"></a>
 
 Binary releases for MacOS, Windows and x86_64 Linux are available on the [releases page][releases].
 
