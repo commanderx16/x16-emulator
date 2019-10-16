@@ -11,6 +11,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#ifdef __MINGW32__
+#include <ctype.h>
+#endif
 #include "cpu/fake6502.h"
 #include "disasm.h"
 #include "memory.h"
