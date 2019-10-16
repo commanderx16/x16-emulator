@@ -1,4 +1,7 @@
 #include <SDL.h>
+#ifdef __MINGW32__
+#include <ctype.h>
+#endif
 #include "rendertext.h"
 
 // Text Area origin => debug area
