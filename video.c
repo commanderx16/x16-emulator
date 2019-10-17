@@ -460,13 +460,9 @@ void refresh_layer_properties(uint8_t layer)
 	if (props->tile_mode || props->text_mode) {
 		props->mapw = 1 << ((reg_layer[layer][1] & 3) + 5);
 		props->maph = 1 << (((reg_layer[layer][1] >> 2) & 3) + 5);
-		if (props->tile_mode) {
-			props->tilew = 1 << (((reg_layer[layer][1] >> 4) & 1) + 3);
-			props->tileh = 1 << (((reg_layer[layer][1] >> 5) & 1) + 3);
-		} else {
-			props->tilew = 8;
-			props->tileh = 8;
-		}
+		// Scale the tiles or text characters arccording to TILEW and TILEH.
+		props->tilew = 1 << (((reg_layer[layer][1] >> 4) & 1) + 3);
+		props->tileh = 1 << (((reg_layer[layer][1] >> 5) & 1) + 3);
 	} else if (props->bitmap_mode) {
 		// bitmap mode is basically tiled mode with a single huge tile
 		props->tilew = ((reg_layer[layer][1] >> 4) & 1) ? 640 : 320;
