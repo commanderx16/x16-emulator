@@ -965,7 +965,8 @@ emulator_loop(void *param)
 				} else {
 					start = start_hi << 8 | start_lo;
 				}
-				uint16_t end = start + fread(RAM + start, 1, 65536-start, prg_file);
+				uint16_t end = start + fread(RAM + start, 1, 0x9f00-start, prg_file);
+				readBanked(prg_file, 0xa000);
 				fclose(prg_file);
 				prg_file = NULL;
 				if (start == 0x0801) {
