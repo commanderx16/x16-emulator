@@ -900,7 +900,7 @@ emulator_loop(void *param)
 		uint8_t clocks = clockticks6502 - old_clockticks6502;
 		bool new_frame = false;
 		for (uint8_t i = 0; i < clocks; i++) {
-			ps2_step();
+			ps2_step(0);
 			spi_step();
 			joystick_step();
 			vera_spi_step();

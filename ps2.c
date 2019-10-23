@@ -6,32 +6,35 @@
 #include <stdbool.h>
 #include "ps2.h"
 
-#define KBD_BUFFER_SIZE 32
-uint8_t kbd_buffer[KBD_BUFFER_SIZE];
-uint8_t kbd_buffer_read = 0;
-uint8_t kbd_buffer_write = 0;
+#define PS2_BUFFER_SIZE 32
+struct
+{
+	uint8_t data[PS2_BUFFER_SIZE];
+	uint8_t read;
+	uint8_t write;
+} ps2_buffer[2];
 
 void
-kbd_buffer_add(uint8_t code)
+ps2_buffer_add(int i, uint8_t byte)
 {
-	if ((kbd_buffer_write + 1) % KBD_BUFFER_SIZE == kbd_buffer_read) {
+	if ((ps2_buffer[i].write + 1) % PS2_BUFFER_SIZE == ps2_buffer[i].read) {
 		// buffer full
 		return;
 	}
 
-	kbd_buffer[kbd_buffer_write] = code;
-	kbd_buffer_write = (kbd_buffer_write + 1) % KBD_BUFFER_SIZE;
+	ps2_buffer[i].data[ps2_buffer[i].write] = byte;
+	ps2_buffer[i].write = (ps2_buffer[i].write + 1) % PS2_BUFFER_SIZE;
 }
 
 uint8_t
-kbd_buffer_remove()
+ps2_buffer_remove(int i)
 {
-	if (kbd_buffer_read == kbd_buffer_write) {
+	if (ps2_buffer[i].read == ps2_buffer[i].write) {
 		return 0; // empty
 	} else {
-		uint8_t code = kbd_buffer[kbd_buffer_read];
-		kbd_buffer_read = (kbd_buffer_read + 1) % KBD_BUFFER_SIZE;
-		return code;
+		uint8_t byte = ps2_buffer[i].data[ps2_buffer[i].read];
+		ps2_buffer[i].read = (ps2_buffer[i].read + 1) % PS2_BUFFER_SIZE;
+		return byte;
 	}
 }
 
@@ -44,28 +47,27 @@ static int send_state = 0;
 
 #define HOLD 25 * 8 /* 25 x ~3 cycles at 8 MHz = 75µs */
 
-int ps2_clk_out, ps2_data_out;
-int ps2_clk_in, ps2_data_in;
+ps2_port_t ps2_port[2];
 
 void
-ps2_step()
+ps2_step(int i)
 {
-	if (!ps2_clk_in && ps2_data_in) { // communication inhibited
-		ps2_clk_out = 0;
-		ps2_data_out = 0;
+	if (!ps2_port[i].clk_in && ps2_port[i].data_in) { // communication inhibited
+		ps2_port[i].clk_out = 0;
+		ps2_port[i].data_out = 0;
 		sending = false;
 //		printf("PS2: STATE: communication inhibited.\n");
 		return;
-	} else if (ps2_clk_in && ps2_data_in) { // idle state
+	} else if (ps2_port[i].clk_in && ps2_port[i].data_in) { // idle state
 //		printf("PS2: STATE: idle\n");
 		if (!sending) {
 			// get next byte
 			if (!has_byte) {
-				current_byte = kbd_buffer_remove();
+				current_byte = ps2_buffer_remove(i);
 				if (!current_byte) {
 					// we have nothing to send
-					ps2_clk_out = 1;
-					ps2_data_out = 0;
+					ps2_port[i].clk_out = 1;
+					ps2_port[i].data_out = 0;
 //					printf("PS2: nothing to send.\n");
 					return;
 				}
@@ -81,8 +83,8 @@ ps2_step()
 		}
 
 		if (send_state <= HOLD) {
-			ps2_clk_out = 0; // data ready
-			ps2_data_out = data_bits & 1;
+			ps2_port[i].clk_out = 0; // data ready
+			ps2_port[i].data_out = data_bits & 1;
 //			printf("PS2: [%d]sending #%d: %x\n", send_state, bit_index, data_bits & 1);
 			if (send_state == 0 && bit_index == 10) {
 				// we have sent the last bit, if the host
@@ -96,8 +98,8 @@ ps2_step()
 			send_state++;
 		} else if (send_state <= 2 * HOLD) {
 //			printf("PS2: [%d]not ready\n", send_state);
-			ps2_clk_out = 1; // not ready
-			ps2_data_out = 0;
+			ps2_port[i].clk_out = 1; // not ready
+			ps2_port[i].data_out = 0;
 			if (send_state == 2 * HOLD) {
 //				printf("XXX bit_index: %d\n", bit_index);
 				if (bit_index < 11) {
@@ -111,9 +113,9 @@ ps2_step()
 			}
 		}
 	} else {
-//		printf("PS2: Warning: unknown PS/2 bus state: CLK_IN=%d, DATA_IN=%d\n", ps2_clk_in, ps2_data_in);
-		ps2_clk_out = 0;
-		ps2_data_out = 0;
+//		printf("PS2: Warning: unknown PS/2 bus state: CLK_IN=%d, DATA_IN=%d\n", ps2_port[i].clk_in, ps2_port[i].data_in);
+		ps2_port[i].clk_out = 0;
+		ps2_port[i].data_out = 0;
 	}
 }
 

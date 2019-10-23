@@ -103,8 +103,8 @@ via2_read(uint8_t reg)
 	} else if (reg == 1) {
 		// PA
 		uint8_t value =
-			(via2registers[3] & PS2_CLK_MASK ? 0 : ps2_clk_out << 1) |
-			(via2registers[3] & PS2_DATA_MASK ? 0 : ps2_data_out);
+			(via2registers[3] & PS2_CLK_MASK ? 0 : ps2_port[0].clk_out << 1) |
+			(via2registers[3] & PS2_DATA_MASK ? 0 : ps2_port[0].data_out);
 			value = value | (joystick1_data ? JOY_DATA1_MASK : 0) |
 							(joystick2_data ? JOY_DATA2_MASK : 0);
 		return value;
@@ -124,8 +124,8 @@ via2_write(uint8_t reg, uint8_t value)
 		// PB DDRB
 	} else if (reg == 1 || reg == 3) {
 		// PA
-		ps2_clk_in = via2registers[3] & PS2_CLK_MASK ? via2registers[1] & PS2_CLK_MASK : 1;
-		ps2_data_in = via2registers[3] & PS2_DATA_MASK ? via2registers[1] & PS2_DATA_MASK : 1;
+		ps2_port[0].clk_in = via2registers[3] & PS2_CLK_MASK ? via2registers[1] & PS2_CLK_MASK : 1;
+		ps2_port[0].data_in = via2registers[3] & PS2_DATA_MASK ? via2registers[1] & PS2_DATA_MASK : 1;
 		joystick_latch = via2registers[1] & JOY_LATCH_MASK;
 		joystick_clock = via2registers[1] & JOY_CLK_MASK;
 	}
