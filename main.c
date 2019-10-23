@@ -63,6 +63,10 @@ char *keymaps[] = {
 	"pt-br",
 };
 
+#ifdef PERFSTAT
+uint32_t stat[65536];
+#endif
+
 bool debugger_enabled = false;
 char *paste_text = NULL;
 char paste_text_data[65536];
@@ -778,6 +782,33 @@ main(int argc, char **argv)
 #endif
 	video_end();
 	SDL_Quit();
+
+#ifdef PERFSTAT
+	for (int pc = 0xc000; pc < sizeof(stat)/sizeof(*stat); pc++) {
+		if (stat[pc] == 0) {
+			continue;
+		}
+		char *label = label_for_address(pc);
+		if (!label) {
+			continue;
+		}
+		char *original_label = label;
+		uint16_t pc2 = pc;
+		if (label[0] == '@') {
+			label = NULL;
+			while (!label || label[0] == '@') {
+				pc2--;
+				label = label_for_address(pc2);
+			}
+		}
+		printf("%d\t $%04X %s+%d", stat[pc], pc, label, pc-pc2);
+		if (pc-pc2 != 0) {
+			printf(" (%s)", original_label);
+		}
+		printf("\n");
+	}
+#endif
+
 	return 0;
 }
 
@@ -797,6 +828,22 @@ emulator_loop(void *param)
 			if (dbgCmd > 0) continue;
 			if (dbgCmd < 0) break;
 		}
+
+#ifdef PERFSTAT
+
+//		if (memory_get_rom_bank() == 3) {
+//			stat[pc]++;
+//		}
+		if (memory_get_rom_bank() == 3) {
+			static uint8_t old_sp;
+			static uint16_t base_pc;
+			if (sp < old_sp) {
+				base_pc = pc;
+			}
+			old_sp = sp;
+			stat[base_pc]++;
+		}
+#endif
 
 #ifdef TRACE
 		if (pc == trace_address && trace_address != 0) {

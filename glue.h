@@ -10,6 +10,7 @@
 
 //#define FIXED_KERNAL
 //#define TRACE
+//#define PERFSTAT
 #define LOAD_HYPERCALLS
 
 #define NUM_MAX_RAM_BANKS 256
