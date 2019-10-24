@@ -1,4 +1,5 @@
 #include <SDL.h>
+#include <stdio.h>
 #include <stdbool.h>
 #include "glue.h"
 #include "ps2.h"
