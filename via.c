@@ -94,14 +94,14 @@ via2_init()
 uint8_t
 via2_read(uint8_t reg)
 {
-	if (reg == 0) {
-		// PB
-		// 0 input  -> take input bit
-		// 1 output -> take output bit
-		return (via2pb_in & (via2registers[2] ^ 0xff)) |
-			(via2registers[0] & via2registers[2]);
-	} else if (reg == 1) {
-		// PA
+	// DDR=0 (input)  -> take input bit
+	// DDR=1 (output) -> take output bit
+	if (reg == 0) { // PB
+		uint8_t value =
+			(via2registers[2] & PS2_CLK_MASK ? 0 : ps2_port[1].clk_out << 1) |
+			(via2registers[2] & PS2_DATA_MASK ? 0 : ps2_port[1].data_out);
+		return value;
+	} else if (reg == 1) { // PA
 		uint8_t value =
 			(via2registers[3] & PS2_CLK_MASK ? 0 : ps2_port[0].clk_out << 1) |
 			(via2registers[3] & PS2_DATA_MASK ? 0 : ps2_port[0].data_out);
@@ -118,10 +118,10 @@ via2_write(uint8_t reg, uint8_t value)
 {
 	via2registers[reg] = value;
 
-	if (reg == 0) {
+	if (reg == 0 || reg == 2) {
 		// PB
-	} else if (reg == 2) {
-		// PB DDRB
+		ps2_port[1].clk_in = via2registers[2] & PS2_CLK_MASK ? via2registers[0] & PS2_CLK_MASK : 1;
+		ps2_port[1].data_in = via2registers[2] & PS2_DATA_MASK ? via2registers[0] & PS2_DATA_MASK : 1;
 	} else if (reg == 1 || reg == 3) {
 		// PA
 		ps2_port[0].clk_in = via2registers[3] & PS2_CLK_MASK ? via2registers[1] & PS2_CLK_MASK : 1;

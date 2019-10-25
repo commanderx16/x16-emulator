@@ -901,6 +901,7 @@ emulator_loop(void *param)
 		bool new_frame = false;
 		for (uint8_t i = 0; i < clocks; i++) {
 			ps2_step(0);
+			ps2_step(1);
 			spi_step();
 			joystick_step();
 			vera_spi_step();

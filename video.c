@@ -744,7 +744,11 @@ video_update()
 			}
 		}
 		if (event.type == SDL_MOUSEMOTION) {
-			mouse_move(event.motion.x, event.motion.y);
+			static int mouse_x;
+			static int mouse_y;
+			mouse_move(event.motion.x - mouse_x, event.motion.y - mouse_y);
+			mouse_x = event.motion.x;
+			mouse_y = event.motion.y;
 		}
 	}
 	return true;
