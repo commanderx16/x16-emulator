@@ -878,7 +878,7 @@ emulator_loop(void *param)
 			for (int i = 7; i >= 0; i--) {
 				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 			}
-//			printf(" --- %04x", RAM[0xae]  | RAM[0xaf]  << 8);
+			printf(" --- %04x :%02x", RAM[0xc] | RAM[0xd] << 8, RAM[0x9000]);
 			printf("\n");
 		}
 #endif
@@ -901,6 +901,7 @@ emulator_loop(void *param)
 		bool new_frame = false;
 		for (uint8_t i = 0; i < clocks; i++) {
 			ps2_step(0);
+			ps2_step(1);
 			spi_step();
 			joystick_step();
 			vera_spi_step();
