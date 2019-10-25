@@ -159,6 +159,8 @@ video_init(int window_scale, char *quality)
 
 	SDL_SetWindowTitle(window, "Commander X16");
 
+	SDL_ShowCursor(SDL_DISABLE);
+
 	if (record_gif != RECORD_GIF_DISABLED) {
 		if (!strcmp(gif_path+strlen(gif_path)-5, ",wait")) {
 			// wait for POKE
@@ -744,7 +746,11 @@ video_update()
 			}
 		}
 		if (event.type == SDL_MOUSEMOTION) {
-			mouse_move(event.motion.x, event.motion.y);
+			static int mouse_x;
+			static int mouse_y;
+			mouse_move(event.motion.x - mouse_x, event.motion.y - mouse_y);
+			mouse_x = event.motion.x;
+			mouse_y = event.motion.y;
 		}
 	}
 	return true;
