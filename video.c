@@ -159,6 +159,8 @@ video_init(int window_scale, char *quality)
 
 	SDL_SetWindowTitle(window, "Commander X16");
 
+	SDL_ShowCursor(SDL_DISABLE);
+
 	if (record_gif != RECORD_GIF_DISABLED) {
 		if (!strcmp(gif_path+strlen(gif_path)-5, ",wait")) {
 			// wait for POKE

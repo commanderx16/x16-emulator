@@ -136,8 +136,8 @@ ps2_step(int i)
 // fake mouse
 
 static uint8_t buttons;
-static uint16_t mouse_diff_x = 0;
-static uint16_t mouse_diff_y = 0;
+static int16_t mouse_diff_x = 0;
+static int16_t mouse_diff_y = 0;
 
 // byte 0, bit 7: Y overflow
 // byte 0, bit 6: X overflow
@@ -151,42 +151,68 @@ static uint16_t mouse_diff_y = 0;
 // byte 3:        Y Movement
 
 
-void
-mouse_send()
+static bool
+mouse_send(int x, int y, int b)
 {
 	if (ps2_buffer_can_fit(1, 3)) {
 		uint8_t byte0 =
-			((mouse_diff_y >> 9) & 1) << 5 |
-			((mouse_diff_x >> 9) & 1) << 4 |
+			((y >> 9) & 1) << 5 |
+			((x >> 9) & 1) << 4 |
 			1 << 3 |
-			buttons;
-		uint8_t byte1 = mouse_diff_x;
-		uint8_t byte2 = mouse_diff_y;
+			b;
+		uint8_t byte1 = x;
+		uint8_t byte2 = y;
 		printf("%02X %02X %02X\n", byte0, byte1, byte2);
 
 		ps2_buffer_add(1, byte0);
 		ps2_buffer_add(1, byte1);
 		ps2_buffer_add(1, byte2);
 
-		mouse_diff_x = 0;
-		mouse_diff_y = 0;
+		return true;
 	} else {
 		printf("buffer full, skipping...\n");
+		return false;
 	}
 }
+
+void
+mouse_send_state()
+{
+	if (mouse_diff_x > 255) {
+		mouse_send(255, 0, buttons);
+		mouse_diff_x -= 255;
+	}
+	if (mouse_diff_x < -256) {
+		mouse_send(-256, 0, buttons);
+		mouse_diff_x -= -256;
+	}
+	if (mouse_diff_y > 255) {
+		mouse_send(0, 255, buttons);
+		mouse_diff_y -= 255;
+	}
+	if (mouse_diff_y < -256) {
+		mouse_send(0, -256, buttons);
+		mouse_diff_y -= -256;
+	}
+	if (mouse_send(mouse_diff_x, mouse_diff_y, buttons)) {
+		mouse_diff_x = 0;
+		mouse_diff_y = 0;
+	}
+}
+
 
 void
 mouse_button_down(int num)
 {
 	buttons |= 1 << num;
-	mouse_send();
+	mouse_send_state();
 }
 
 void
 mouse_button_up(int num)
 {
 	buttons &= (1 << num) ^ 0xff;
-	mouse_send();
+	mouse_send_state();
 }
 
 void
@@ -194,7 +220,7 @@ mouse_move(int x, int y)
 {
 	mouse_diff_x += x;
 	mouse_diff_y += y;
-	mouse_send();
+	mouse_send_state();
 }
 
 uint8_t

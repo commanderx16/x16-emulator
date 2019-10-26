@@ -878,7 +878,7 @@ emulator_loop(void *param)
 			for (int i = 7; i >= 0; i--) {
 				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 			}
-//			printf(" --- %04x", RAM[0xae]  | RAM[0xaf]  << 8);
+			printf(" --- %04x :%02x", RAM[0xc] | RAM[0xd] << 8, RAM[0x9000]);
 			printf("\n");
 		}
 #endif
