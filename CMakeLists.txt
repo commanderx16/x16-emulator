@@ -101,7 +101,7 @@ set(HEADERS
 	via.h
 	video.h
 	extern/include/gif.h
-	$<$<BOOL:${WITH_YM2151}>:extern/src/ym2151.h>
+	$<$<BOOL:${WITH_YM2151}>:extern/include/ym2151.h>
 	$<$<BOOL:${ROM_LABELS}>:${ROM_LABELS}>
 )
 
