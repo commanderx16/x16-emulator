@@ -641,16 +641,13 @@ render_line(uint16_t y)
 {
 	uint8_t out_mode = reg_composer[0] & 3;
 
-	float hscale = 128.0 / reg_composer[1];
-	float vscale = 128.0 / reg_composer[2];
-
 	uint8_t border_color = reg_composer[3];
 	uint16_t hstart = reg_composer[4] | (reg_composer[8] & 3) << 8;
 	uint16_t hstop = reg_composer[5] | ((reg_composer[8] >> 2) & 3) << 8;
 	uint16_t vstart = reg_composer[6] | ((reg_composer[8] >> 4) & 1) << 8;
 	uint16_t vstop = reg_composer[7] | ((reg_composer[8] >> 5) & 1) << 8;
 
-	int eff_y = 1.0 / vscale * (y - vstart);
+	int eff_y = (reg_composer[2] * (y - vstart)) / 128;
 	render_sprite_line(eff_y);
 	render_layer_line(0, eff_y);
 	render_layer_line(1, eff_y);
@@ -680,7 +677,7 @@ render_line(uint16_t y)
 
 			int eff_x[LAYER_PIXELS_PER_ITERATION];
 			for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-				eff_x[i] = 1.0 / hscale * (x + i - hstart);
+				eff_x[i] = (reg_composer[1] * (x + i - hstart)) / 128;
 			}
 
 			if (!sprite_line_empty) {
