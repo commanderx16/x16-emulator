@@ -49,6 +49,15 @@ static int send_state = 0;
 
 ps2_port_t ps2_port[2];
 
+static int
+parity(uint8_t b)
+{
+	b ^= b >> 4;
+	b ^= b >> 2;
+	b ^= b >> 1;
+	return b & 1;
+}
+
 void
 ps2_step(int i)
 {
@@ -75,7 +84,7 @@ ps2_step(int i)
 				has_byte = true;
 			}
 
-			data_bits = current_byte << 1 | (1 - __builtin_parity(current_byte)) << 9 | (1 << 10);
+			data_bits = current_byte << 1 | (1 - parity(current_byte)) << 9 | (1 << 10);
 //			printf("PS2: data_bits: %x\n", data_bits);
 			bit_index = 0;
 			send_state = 0;
@@ -162,4 +171,3 @@ mouse_read(uint8_t reg)
 			return 0xff;
 	}
 }
-

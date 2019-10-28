@@ -4,7 +4,12 @@
 
 #include <sys/types.h>
 #include <string.h>
+#ifdef _MSC_VER
+#include <io.h>
+#define F_OK 0	// Test for existence.
+#else
 #include <unistd.h>
+#endif   // MSC_VER
 #include "glue.h"
 #include "via.h"
 #include "memory.h"
