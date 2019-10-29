@@ -85,7 +85,7 @@ ps2_step(int i)
 					return;
 				}
 				state[i].current_byte = current_byte;
-				printf("PS2[%d]: current_byte: %x\n", i, state[i].current_byte);
+//				printf("PS2[%d]: current_byte: %x\n", i, state[i].current_byte);
 				state[i].has_byte = true;
 			}
 
@@ -162,7 +162,7 @@ mouse_send(int x, int y, int b)
 			b;
 		uint8_t byte1 = x;
 		uint8_t byte2 = y;
-		printf("%02X %02X %02X\n", byte0, byte1, byte2);
+//		printf("%02X %02X %02X\n", byte0, byte1, byte2);
 
 		ps2_buffer_add(1, byte0);
 		ps2_buffer_add(1, byte1);
