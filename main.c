@@ -1027,7 +1027,7 @@ emulator_loop(void *param)
 						paste_text = "RUN\r";
 					} else {
 						paste_text = paste_text_data;
-						snprintf(paste_text, sizeof(paste_text_data), "SYS$%04x\r", start);
+						snprintf(paste_text, sizeof(paste_text_data), "SYS%d\r", start);
 					}
 				}
 			}
