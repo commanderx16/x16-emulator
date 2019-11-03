@@ -218,7 +218,9 @@ Features
 		* VSYNC and raster IRQ
 * VIA
 	* ROM/RAM banking
-	* PS/2 keyboard
+	* keyboard
+	* mouse
+	* gamepad
 	* SD card (SPI)
 
 
@@ -250,6 +252,12 @@ Known Issues
 
 Release Notes
 -------------
+
+### Release 34
+
+* PS/2 mouse
+* support for text mode with tiles other than 8x8 [Serentty]
+* fix: programmatic echo mode control [Mikael O. Bonnier]
 
 ### Release 33
 
