@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(x16emu LANGUAGES C VERSION 34)
+project(x16emu LANGUAGES C VERSION 35)
 
 option(BUILD_DOCS "Build documentation")
 option(WITH_YM2151 "Enable YM2151")

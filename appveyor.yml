@@ -43,7 +43,7 @@ install:
 build_script:
   - git clone https://github.com/commanderx16/x16-docs.git --depth 1
   - git clone https://github.com/commanderx16/x16-rom.git --depth 1
-  - curl -fLsS -o x16emu_release.zip https://github.com/commanderx16/x16-emulator/releases/download/r32/x16emu_linux-r32.zip
+  - curl -fLsS -o x16emu_release.zip https://github.com/commanderx16/x16-emulator/releases/download/r34/x16emu_linux-r34.zip
   - 7z x x16emu_release.zip -orelease
   - copy release\rom.bin x16-rom
   - copy release\rom.sym x16-rom

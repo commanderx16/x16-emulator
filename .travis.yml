@@ -57,8 +57,8 @@ matrix:
       services:
         - docker
       before_install:
-        - wget https://github.com/commanderx16/x16-emulator/releases/download/r32/x16emu_linux-r32.zip
-        - unzip x16emu_linux-r32.zip
+        - wget https://github.com/commanderx16/x16-emulator/releases/download/r34/x16emu_linux-r34.zip
+        - unzip x16emu_linux-r34.zip
         - docker run -dit --name emscripten -v $(pwd):/src trzeci/emscripten:sdk-incoming-64bit bash
       script:
         - docker exec -it emscripten sh -c "cd /src && mkdir build && cd build && emcmake cmake .. -DWITH_YM2151=ON -DX16ROM_PATH=.. && make"
@@ -70,8 +70,8 @@ matrix:
         - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
         - mkdir x16-docs  # git clone https://github.com/commanderx16/x16-docs.git --depth 1
         - mkdir x16-rom  # git clone https://github.com/commanderx16/x16-rom.git --depth 1
-        - wget https://github.com/commanderx16/x16-emulator/releases/download/r32/x16emu_linux-r32.zip
-        - unzip x16emu_linux-r32.zip -d x16-rom
+        - wget https://github.com/commanderx16/x16-emulator/releases/download/r34/x16emu_linux-r34.zip
+        - unzip x16emu_linux-r34.zip -d x16-rom
       script:
         - mkdir build && cd build
         - conan install .. -o x16docs_path=../x16-docs -o x16rom_path=../x16-rom -pr ../conan_profiles/emsdk --build missing
