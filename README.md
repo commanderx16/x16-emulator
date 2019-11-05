@@ -178,7 +178,16 @@ Debugger
 
 The debugger requires `-debug` to start. Without it it is effectively disabled.
 
-There are 2 panels you can control. The code panel, the top left half, and the data panel, the bottom half of the screen. The displayed address can be changed using keys 0-9 and A-F, in a 'shift and roll' manner (easier to see than explain). To change the data panel address, press the shift key and type 0-9 A-F. The top write panel is fixed.
+There are 2 panels you can control. The code panel, the top left half, and the data panel, the bottom half of the screen. You can also edit the contents of the registers PC, A, X, Y, and SP.
+
+The debugger uses its own command line with the following syntax:
+
+|Statement|Description|
+|---------|----------------------------------------------------------------------------------------------------|
+|d %x|Change the code panel to view disassembly starting from the address %x.|
+|m %x|Change the data panel to view memory starting from the address %x.|
+|b %s %d|Changes the current memory bank for disassembly and data. The %s param can be either 'ram' or 'rom', the %d is the memory bank to display.|
+|r %s %x|Changes the value in the specified register. Valid registers in the %s param are 'pc', 'a', 'x', 'y', and 'sp'. %x is the value to store in that register.|
 
 The debugger keys are similar to the Microsoft Debugger shortcut keys, and work as follows
 
