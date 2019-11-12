@@ -300,6 +300,8 @@ usage()
 	printf("-run\n");
 	printf("\tStart the -prg/-bas program using RUN or SYS, depending\n");
 	printf("\ton the load address.\n");
+	printf("-geos\n");
+	printf("\tLaunch GEOS at startup.\n");
 	printf("-echo [{iso|raw}]\n");
 	printf("\tPrint all KERNAL output to the host's stdout.\n");
 	printf("\tBy default, everything but printable ASCII characters get\n");
@@ -427,6 +429,7 @@ main(int argc, char **argv)
 	char *prg_path = NULL;
 	char *bas_path = NULL;
 	char *sdcard_path = NULL;
+	bool run_geos = false;
 
 	run_after_load = false;
 
@@ -509,6 +512,10 @@ main(int argc, char **argv)
 			bas_path = argv[0];
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-geos")) {
+			argc--;
+			argv++;
+			run_geos = true;
 		} else if (!strcmp(argv[0], "-sdcard")) {
 			argc--;
 			argv++;
@@ -752,6 +759,10 @@ main(int argc, char **argv)
 		fclose(bas_file);
 	}
 
+	if (run_geos) {
+		paste_text = "GEOS\r";
+	}
+
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER
 #ifdef WITH_YM2151
 		| SDL_INIT_AUDIO
@@ -878,7 +889,7 @@ emulator_loop(void *param)
 			for (int i = 7; i >= 0; i--) {
 				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 			}
-			printf(" --- %04x :%02x", RAM[0xc] | RAM[0xd] << 8, RAM[0x9000]);
+			printf(" --- %04x :%02x", RAM[0x20] | RAM[0x21] << 8, RAM[RAM[0x20] | RAM[0x21] << 8]);
 			printf("\n");
 		}
 #endif

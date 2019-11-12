@@ -46,6 +46,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
 * `-bas` lets you specify a BASIC program in ASCII format that automatically typed in (and tokenized).
 * `-run` executes the application specified through `-prg` or `-bas` using `RUN` or `SYS`, depending on the load address.
+* `-geos` launches GEOS at startup.
 * `-scale` scales video output to an integer multiple of 640x480
 * `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
 * `-gif <filename>[,wait]` to record the screen into a GIF. See below for more info.
