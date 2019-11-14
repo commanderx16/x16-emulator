@@ -140,7 +140,7 @@ static unsigned char fontdata[] = {
 void DEBUGInitChars(SDL_Renderer *renderer) {
 	uint16_t textureData[TEXTURE_WIDTH * TEXTURE_HEIGHT];
 	memset(textureData, 0, sizeof textureData);
-	
+
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
 	fontTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA4444, SDL_TEXTUREACCESS_STATIC, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 	for (int ch =0x00; ch<0x60; ch++){
