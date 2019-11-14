@@ -138,7 +138,6 @@ static unsigned char fontdata[] = {
 // *******************************************************************************************
 
 void DEBUGInitChars(SDL_Renderer *renderer) {
-	printf("debugInit");
 	uint16_t textureData[TEXTURE_WIDTH * TEXTURE_HEIGHT];
 	memset(textureData, 0, sizeof textureData);
 	
@@ -158,6 +157,7 @@ void DEBUGInitChars(SDL_Renderer *renderer) {
 		}
 	}
 	SDL_UpdateTexture(fontTexture, NULL, &textureData, TEXTURE_WIDTH*2);
+	textureInitialized = 1;
 }
 
 // *******************************************************************************************
@@ -169,7 +169,6 @@ void DEBUGInitChars(SDL_Renderer *renderer) {
 void DEBUGWrite(SDL_Renderer *renderer, int x, int y, int ch, SDL_Color colour) {
 	if (!textureInitialized) {
 		DEBUGInitChars(renderer);
-		textureInitialized = 1;
 	}
 	SDL_SetTextureColorMod(fontTexture, colour.r, colour.g, colour.b);
 	ch-=0x20;
