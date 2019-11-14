@@ -173,6 +173,7 @@ int  DEBUGGetCurrentStatus(void) {
 //
 // *******************************************************************************************
 void DEBUGInitUI(SDL_Renderer *pRenderer) {
+		DEBUGInitChars(pRenderer);
 		dbgRenderer = pRenderer;				// Save renderer.
 }
 
