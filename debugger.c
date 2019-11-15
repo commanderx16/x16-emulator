@@ -73,6 +73,8 @@ static void DEBUGExecCmd();
 #define DBGKEY_SETBRK 	SDLK_F9									// F9 sets breakpoint
 #define DBGKEY_STEP 	SDLK_F11 								// F11 is step into.
 #define DBGKEY_STEPOVER	SDLK_F10 								// F10 is step over.
+#define DBGKEY_PAGE_NEXT	SDLK_KP_PLUS
+#define DBGKEY_PAGE_PREV	SDLK_KP_MINUS
 
 #define DBGSCANKEY_BRK 	SDL_SCANCODE_F12 						// F12 is break into running code.
 #define DBGSCANKEY_SHOW	SDL_SCANCODE_TAB 						// Show screen key.
@@ -249,6 +251,14 @@ static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift) {
 			currentPCBank= -1;
 			break;
 
+		case DBGKEY_PAGE_NEXT:
+			currentBank += 1;
+			break;
+
+		case DBGKEY_PAGE_PREV:
+			currentBank -= 1;
+			break;
+
 		case SDLK_PAGEDOWN:
 			currentData= (currentData + 0xD0) & 0xFFFF;
 			break;
@@ -419,7 +429,7 @@ static void DEBUGRenderCmdLine(int x, int width, int height) {
 
 static void DEBUGRenderData(int y,int data) {
 	while (y < DBG_HEIGHT-2) {									// To bottom of screen
-		DEBUGAddress(DBG_MEMX, y, currentBank, data & 0xFFFF, col_label);	// Show label.
+		DEBUGAddress(DBG_MEMX, y, (uint8_t)currentBank, data & 0xFFFF, col_label);	// Show label.
 
 		for (int i = 0;i < 8;i++) {
 			int byte= real_read6502((data+i) & 0xFFFF, true, currentBank);
