@@ -25,7 +25,7 @@ uint8_t ROM[ROM_SIZE];
 void
 memory_init()
 {
-	RAM = malloc(RAM_SIZE);
+	RAM = calloc(RAM_SIZE, sizeof(uint8_t));
 }
 
 static uint8_t
@@ -75,11 +75,13 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 			return 0;
 		}
 	} else if (address < 0xc000) { // banked RAM
-		return	RAM[0xa000 + ( (debugOn ? bank : effective_ram_bank()) << 13) + address - 0xa000];
+		int ramBank = debugOn ? bank % num_ram_banks : effective_ram_bank();
+		return	RAM[0xa000 + (ramBank << 13) + address - 0xa000];
 
 
 	} else { // banked ROM
-		return ROM[((debugOn ? bank : rom_bank) << 14) + address - 0xc000];
+		int romBank = debugOn ? bank % NUM_ROM_BANKS : rom_bank;
+		return ROM[(romBank << 14) + address - 0xc000];
 	}
 }
 
