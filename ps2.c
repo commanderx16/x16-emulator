@@ -170,7 +170,7 @@ mouse_send(int x, int y, int b)
 
 		return true;
 	} else {
-		printf("buffer full, skipping...\n");
+//		printf("buffer full, skipping...\n");
 		return false;
 	}
 }
