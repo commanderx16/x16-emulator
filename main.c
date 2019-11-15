@@ -871,7 +871,7 @@ emulator_loop(void *param)
 			for (int i = 0; i < 10 - label_len; i++) {
 				printf(" ");
 			}
-			printf(" .,%04x ", pc);
+			printf(" %02x:.,%04x ", memory_get_rom_bank(), pc);
 			char disasm_line[15];
 			int len = disasm(pc, RAM, disasm_line, sizeof(disasm_line), false, 0);
 			for (int i = 0; i < len; i++) {
@@ -1038,7 +1038,7 @@ emulator_loop(void *param)
 						paste_text = "RUN\r";
 					} else {
 						paste_text = paste_text_data;
-						snprintf(paste_text, sizeof(paste_text_data), "SYS$%04x\r", start);
+						snprintf(paste_text, sizeof(paste_text_data), "SYS$%04X\r", start);
 					}
 				}
 			}
