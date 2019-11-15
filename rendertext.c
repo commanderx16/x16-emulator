@@ -4,9 +4,18 @@
 #endif
 #include "rendertext.h"
 
+#define CHAR_WIDTH 5
+#define CHAR_HEIGHT 7
+#define TEXTURE_HEIGHT (CHAR_HEIGHT * 1)
+#define TEXTURE_WIDTH (CHAR_WIDTH * 0x60)
+
 // Text Area origin => debug area
 int xPos = 0;
 int yPos = 0;
+
+// font texture
+SDL_Texture *fontTexture;
+int textureInitialized = 0;
 
 // *******************************************************************************************
 // left trim string
@@ -124,26 +133,58 @@ static unsigned char fontdata[] = {
 
 // *******************************************************************************************
 //
+//										Initialize charset
+//
+// *******************************************************************************************
+
+void DEBUGInitChars(SDL_Renderer *renderer) {
+	uint16_t textureData[TEXTURE_WIDTH * TEXTURE_HEIGHT];
+	memset(textureData, 0, sizeof textureData);
+
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
+	fontTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA4444, SDL_TEXTUREACCESS_STATIC, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+	for (int ch =0x00; ch<0x60; ch++){
+		int rcx = 0;
+		for (int x1 = 0; x1 < 5; x1++) {
+			int rcy = 0;
+			int pixData = fontdata[ch * 5 + x1];
+			while (pixData != 0) {
+				textureData[ch*CHAR_WIDTH + rcy*TEXTURE_WIDTH + rcx] = (pixData & 1) ? 0xFFFF : 0x0000;
+				pixData = pixData >> 1;
+				rcy++;
+			}
+			rcx++;
+		}
+	}
+	SDL_UpdateTexture(fontTexture, NULL, &textureData, TEXTURE_WIDTH*2);
+	textureInitialized = 1;
+}
+
+// *******************************************************************************************
+//
 //										Write character
 //
 // *******************************************************************************************
 
 void DEBUGWrite(SDL_Renderer *renderer, int x, int y, int ch, SDL_Color colour) {
-	SDL_Rect rc;
-	rc.x = xPos + (x * 6 * CHAR_SCALE);							// Work out cell position
-	rc.w = CHAR_SCALE;rc.h = CHAR_SCALE; 						// and draw sizes.
-	ch = (ch & 0x7F);if (ch < 0x20) ch = '.';					// Process character
-	SDL_SetRenderDrawColor(renderer, colour.r, colour.g, colour.b, colour.a);	// Set colour.
-	for (int x1 = 0;x1 < 5;x1++) {
-		rc.y = yPos + (y * 8 * CHAR_SCALE);
-		int pixData = fontdata[(ch - 0x20) * 5 + x1];
-		while (pixData != 0) {
-			if (pixData & 1) SDL_RenderFillRect(renderer,&rc);
-			pixData = pixData >> 1;
-			rc.y += rc.h;
-		}
-		rc.x += CHAR_SCALE;										// Horizontal spacing.
+	if (!textureInitialized) {
+		DEBUGInitChars(renderer);
 	}
+	SDL_SetTextureColorMod(fontTexture, colour.r, colour.g, colour.b);
+	ch-=0x20;
+	SDL_Rect srcRect = {
+		ch* CHAR_WIDTH,
+		0,
+		CHAR_WIDTH,
+		CHAR_HEIGHT
+	};
+	SDL_Rect dstRect = {
+		x*(CHAR_WIDTH+1) + xPos,
+		y*(CHAR_HEIGHT+1) + yPos,
+		CHAR_WIDTH,
+		CHAR_HEIGHT
+	};
+	SDL_RenderCopy(renderer, fontTexture, &srcRect, &dstRect);
 }
 
 // *******************************************************************************************
