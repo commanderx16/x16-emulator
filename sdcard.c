@@ -62,7 +62,7 @@ sdcard_handle(uint8_t inbyte)
 				}
 				case 0x40 + 16: {
 					// set block size
-					printf("Set block size = 0x%04x\n", cmd[2] << 8 | cmd[3]);
+//					printf("Set block size = 0x%04x\n", cmd[2] << 8 | cmd[3]);
 					static const uint8_t r[] = { 1 };
 					response = r;
 					response_length = sizeof(r);
@@ -78,7 +78,7 @@ sdcard_handle(uint8_t inbyte)
 					static uint8_t read_block_respose[2 + 512 + 2];
 					read_block_respose[0] = 0;
 					read_block_respose[1] = 0xfe;
-					printf("Reading LBA %d\n", lba);
+//					printf("Reading LBA %d\n", lba);
 					fseek(sdcard_file, lba * 512, SEEK_SET);
 					int bytes_read = fread(&read_block_respose[2], 1, 512, sdcard_file);
 					if (bytes_read != 512) {
