@@ -645,9 +645,7 @@ render_line(uint16_t y)
 
 	uint8_t border_color = reg_composer[3];
 	uint16_t hstart = reg_composer[4] | (reg_composer[8] & 3) << 8;
-	uint16_t hstop = reg_composer[5] | ((reg_composer[8] >> 2) & 3) << 8;
 	uint16_t vstart = reg_composer[6] | ((reg_composer[8] >> 4) & 1) << 8;
-	uint16_t vstop = reg_composer[7] | ((reg_composer[8] >> 5) & 1) << 8;
 
 	int eff_y = (reg_composer[2] * (y - vstart)) / 128;
 	render_sprite_line(eff_y);
@@ -655,6 +653,7 @@ render_line(uint16_t y)
 	render_layer_line(1, eff_y);
 
 	uint8_t col_line[SCREEN_WIDTH];
+	memset(col_line, border_color, SCREEN_WIDTH);
 
 	if (video_palette.dirty) {
 		refresh_palette();
@@ -743,14 +742,6 @@ render_line(uint16_t y)
 			}
 		}
 
-		// Add border after if required.
-		if (hstart > 0 || hstop < SCREEN_WIDTH || vstart > 0 || vstop < SCREEN_HEIGHT) {
-			for (uint16_t x = 0; x < SCREEN_WIDTH; x++) {
-				if (x < hstart || x > hstop || y < vstart || y > vstop) {
-					col_line[x] = border_color;
-				}
-			}
-		}
 	}
 
 	// Look up all color indices.
