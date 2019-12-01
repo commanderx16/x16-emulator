@@ -12,14 +12,18 @@ This is an emulator for the Commander X16 computer system. It only depends on SD
 Binaries & Compiling
 --------------------
 
-Binary releases for MacOS, Windows and x86_64 Linux are available on the [releases page][releases].
+Binary releases for macOS, Windows and x86_64 Linux are available on the [releases page][releases].
 
 The emulator itself is dependent only on SDL2. However, to run the emulated system you will also need a compatible `rom.bin` ROM image. This will be
 loaded from the directory containing the emulator binary, or you can use the `-rom .../path/to/rom.bin` option.
 
 > __WARNING:__ Older versions of the ROM might not work in newer versions of the emulator, and vice versa.
 
-You can build a ROM image yourself using the [build instructions][x16rom-build] in the [x16rom] repo. The `rom.bin` included in the [_latest_ release][releases] of the emulator may also work with the HEAD of this repo, but this is not guaranteed.
+You can build a ROM image yourself using the [build instructions][x16rom-build] in the [x16-rom] repo. The `rom.bin` included in the [_latest_ release][releases] of the emulator may also work with the HEAD of this repo, but this is not guaranteed.
+
+### macOS Build
+
+Install SDL2 using `brew install sdl2`.
 
 ### Linux Build
 
