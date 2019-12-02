@@ -34,7 +34,7 @@ ifdef EMSCRIPTEN
 	OUTPUT=x16emu.html
 endif
 
-OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o spi.o vera_uart.o vera_spi.o sdcard.o main.o debugger.o javascript_interface.o joystick.o rendertext.o keyboard.o
+OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o spi.o vera_uart.o vera_spi.o sdcard.o main.o debugger.o javascript_interface.o joystick.o rendertext.o keyboard.o icon.o
 
 HEADERS = disasm.h cpu/fake6502.h glue.h memory.h video.h ps2.h via.h loadsave.h joystick.h keyboard.h
 
