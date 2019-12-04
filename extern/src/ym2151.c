@@ -94,7 +94,7 @@ uint32_t       noise_f;             /* current noise period */
 uint32_t       csm_req;             /* CSM  KEY ON / KEY OFF sequence request */
 
 uint32_t       irq_enable;          /* IRQ enable for timer B (bit 3) and timer A (bit 2); bit 7 - CSM mode (keyon to all slots, everytime timer A overflows) */
-uint32_t       status;              /* chip status (BUSY, IRQ Flags) */
+static uint32_t       status;       /* chip status (BUSY, IRQ Flags) */
 uint8_t        connects[8];         /* channels connections */
 
 #ifdef USE_MAME_TIMERS
