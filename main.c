@@ -430,6 +430,7 @@ main(int argc, char **argv)
 	char *bas_path = NULL;
 	char *sdcard_path = NULL;
 	bool run_geos = false;
+	bool run_test = false;
 
 	run_after_load = false;
 
@@ -516,6 +517,10 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			run_geos = true;
+		} else if (!strcmp(argv[0], "-test")) {
+			argc--;
+			argv++;
+			run_test = true;
 		} else if (!strcmp(argv[0], "-sdcard")) {
 			argc--;
 			argv++;
@@ -762,6 +767,9 @@ main(int argc, char **argv)
 	if (run_geos) {
 		paste_text = "GEOS\r";
 	}
+	if (run_test) {
+		paste_text = "TEST\r";
+	}
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER
 #ifdef WITH_YM2151
@@ -889,7 +897,12 @@ emulator_loop(void *param)
 			for (int i = 7; i >= 0; i--) {
 				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 			}
-			printf(" --- %04x :%02x", RAM[0x20] | RAM[0x21] << 8, RAM[RAM[0x20] | RAM[0x21] << 8]);
+//			printf(" --- r1H:%01x\n", RAM[5]);
+
+			printf(" ---");
+			for (int i = 0; i < 7; i++) {
+				printf(" r%i:%04x", i, RAM[2 + i*2] | RAM[3 + i*2] << 8);
+			}
 			printf("\n");
 		}
 #endif
