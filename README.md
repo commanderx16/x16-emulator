@@ -267,6 +267,22 @@ Known Issues
 Release Notes
 -------------
 
+### Release 35
+
+* video optimization [Neil Forbes-Richardson]
+* added '-geos' to launch GEOS on startup
+* added '-test' to launch (graphics) unit test on startup
+* debugger
+	* switch viewed RAM/ROM bank with numpad + and numpad - [Kobrasadetin]
+	* optimized character printing [Kobrasadetin]
+* trace mode:
+	* prepend ROM bank to address in trace
+	* also prints 16 bit virtual regs (graph/GEOS)
+* fixes
+	* initialize memory to 0 [Kobrasadetin]
+	* fixed SYS hex argument
+	* disabled "buffer full, skipping" and SD card debug text, it was too noisy
+
 ### Release 34
 
 * PS/2 mouse
