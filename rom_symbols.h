@@ -1,8 +1,8 @@
 #define NDX 0x00A00A
 #define KEYD 0x00A000
-#define FA 0x000281
+#define FA 0x000280
 #define VARTAB 0x0003E3
-#define FNLEN 0x00027E
+#define FNLEN 0x00027D
 #define FNADR 0x000084
-#define STATUS 0x000276
-#define SA 0x000280
+#define STATUS 0x000275
+#define SA 0x00027F
