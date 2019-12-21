@@ -33,7 +33,11 @@ static void ainx() { 		// absolute indexed branch
     uint16_t eahelp, eahelp2;
     eahelp = (uint16_t)read6502(pc) | (uint16_t)((uint16_t)read6502(pc+1) << 8);
     eahelp = (eahelp + (uint16_t)x) & 0xFFFF;
+#if 0
     eahelp2 = (eahelp & 0xFF00) | ((eahelp + 1) & 0x00FF); //replicate 6502 page-boundary wraparound bug
+#else
+    eahelp2 = eahelp + 1; // the 65c02 doesn't have the bug
+#endif
     ea = (uint16_t)read6502(eahelp) | ((uint16_t)read6502(eahelp2) << 8);
     pc += 2;
 }
