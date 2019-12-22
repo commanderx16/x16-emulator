@@ -22,6 +22,7 @@
 #include "ps2.h"
 #include "spi.h"
 #include "vera_spi.h"
+#include "vera_uart.h"
 #include "sdcard.h"
 #include "loadsave.h"
 #include "glue.h"
@@ -41,8 +42,6 @@
 #include <emscripten.h>
 #include <pthread.h>
 #endif
-
-#define MHZ 8
 
 void *emulator_loop(void *param);
 void emscripten_main_loop(void);
@@ -166,6 +165,7 @@ machine_reset()
 {
 	spi_init();
 	vera_spi_init();
+	vera_uart_init();
 	via1_init();
 	via2_init();
 	video_reset();
@@ -290,6 +290,10 @@ usage()
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
 	printf("\tSpecify SD card image (partition map + FAT32)\n");
+	printf("-uart-in <filename>\n");
+	printf("\tSpecify filename to read RS232 input from.\n");
+	printf("-uart-out <filename>\n");
+	printf("\tSpecify filename to write RS232 output to.\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
 	printf("\tLoad application from the local disk into RAM\n");
 	printf("\t(.PRG file with 2 byte start address header)\n");
@@ -431,6 +435,9 @@ main(int argc, char **argv)
 	char *sdcard_path = NULL;
 	bool run_geos = false;
 	bool run_test = false;
+
+	char *uart_in_path = NULL;
+	char *uart_out_path = NULL;
 
 	run_after_load = false;
 
@@ -710,6 +717,24 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 #endif
+		} else if (!strcmp(argv[0], "-uart-in")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			uart_in_path = argv[0];
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-uart-out")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			uart_out_path = argv[0];
+			argc--;
+			argv++;
 		} else {
 			usage();
 		}
@@ -732,6 +757,21 @@ main(int argc, char **argv)
 		}
 	}
 
+	if (uart_in_path) {
+		uart_in_file = fopen(uart_in_path, "r");
+		if (!uart_in_file) {
+			printf("Cannot open %s!\n", uart_in_path);
+			exit(1);
+		}
+	}
+
+	if (uart_out_path) {
+		uart_out_file = fopen(uart_out_path, "w");
+		if (!uart_out_file) {
+			printf("Cannot open %s!\n", uart_out_path);
+			exit(1);
+		}
+	}
 
 	prg_override_start = -1;
 	if (prg_path) {
@@ -929,6 +969,7 @@ emulator_loop(void *param)
 			spi_step();
 			joystick_step();
 			vera_spi_step();
+			vera_uart_step();
 			new_frame |= video_step(MHZ);
 		}
 

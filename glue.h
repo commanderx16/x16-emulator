@@ -12,6 +12,8 @@
 //#define PERFSTAT
 #define LOAD_HYPERCALLS
 
+#define MHZ 8
+
 #define NUM_MAX_RAM_BANKS 256
 #define NUM_ROM_BANKS 8
 
