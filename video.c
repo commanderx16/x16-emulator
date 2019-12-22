@@ -10,6 +10,7 @@
 #include "keyboard.h"
 #include "gif.h"
 #include "vera_spi.h"
+#include "vera_uart.h"
 
 #include <limits.h>
 
@@ -33,6 +34,8 @@
 #define ADDR_SPRDATA_END    0xF6000
 #define ADDR_SPI_START      0xF7000
 #define ADDR_SPI_END        0xF8000
+#define ADDR_UART_START     0xF8000
+#define ADDR_UART_END       0xF9000
 
 #define ESC_IS_BREAK /* if enabled, Esc sends Break/Pause key instead of Esc */
 
@@ -986,6 +989,8 @@ video_space_read(uint32_t address)
 		return sprite_data[(address >> 3) & 0xff][address & 0x7];
 	} else if (address >= ADDR_SPI_START && address < ADDR_SPI_END) {
 		return vera_spi_read(address & 1);
+	} else if (address >= ADDR_UART_START && address < ADDR_UART_END) {
+		return vera_uart_read(address & 3);
 	} else {
 		return 0xFF; // unassigned
 	}
@@ -1027,6 +1032,8 @@ video_space_write(uint32_t address, uint8_t value)
 		refresh_sprite_properties((address >> 3) & 0xff);
 	} else if (address >= ADDR_SPI_START && address < ADDR_SPI_END) {
 		vera_spi_write(address & 1, value);
+	} else if (address >= ADDR_UART_START && address < ADDR_UART_END) {
+		vera_uart_write(address & 1, value);
 	} else {
 		// unassigned, do nothing
 	}
