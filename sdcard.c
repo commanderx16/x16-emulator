@@ -24,6 +24,11 @@ sdcard_handle(uint8_t inbyte)
 	static int response_counter = 0;
 	uint8_t outbyte;
 
+	if (!sdcard_file) {
+		// no SD card connected
+		return 0xff;
+	}
+
 	if (cmd_receive_counter == 0 && inbyte == 0xff) {
 		// send response data
 		if (response) {
