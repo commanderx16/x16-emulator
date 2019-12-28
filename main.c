@@ -948,7 +948,7 @@ emulator_loop(void *param)
 #endif
 
 #ifdef LOAD_HYPERCALLS
-		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && RAM[FA] == 1) {
+		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && RAM[FA] == 8 && !sdcard_file) {
 			if (pc == 0xffd5) {
 				LOAD();
 			} else {
