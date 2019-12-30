@@ -141,7 +141,7 @@ BASIC and the Screen Editor
 On startup, the X16 presents direct mode of BASIC V2. You can enter BASIC statements, or line numbers with BASIC statements and `RUN` the program, just like on Commodore computers.
 
 * To stop execution of a BASIC program, hit the `RUN/STOP` key (`Esc` in the emulator), or `Ctrl + C`.
-* To insert a character, press `Shift + Backspace`.
+* To insert characters, first insert spaces by pressing `Shift + Backspaces`, then type over those spaces.
 * To clear the screen, press `Shift + Home`.
 * The X16 does not have a `STOP + RESTORE` function.
 
@@ -244,7 +244,7 @@ Missing Features
 * VERA
 	* Does not support the "CURRENT_FIELD" bit
 	* Does not support sprite collisions
-	*	* Interlaced modes (NTSC/RGB) don't render at the full horizontal fidelity
+	*	Interlaced modes (NTSC/RGB) don't render at the full horizontal fidelity
 * VIA
 	* Does not support counters/timers/IRQs
 * Sound
@@ -305,7 +305,7 @@ Release Notes
 	* Major enhancements to the debugger [kktos]
 	* `-echo` will now encode non-printable characters like this: \X93 for CHR$(93), `-bas` as 	well as pasting accepts this convention again
 	* `-echo raw` for the original behavior
-	* `-echo iso` to for correct character encoding in ISO mode
+	* `-echo iso` for correct character encoding in ISO mode
 	* `-ram` to specify RAM size; now defaults to 512
 
 ### Release 32
@@ -358,7 +358,7 @@ Emulator:
 * `-bas file.txt` loads a BASIC program in ASCII encoding
 * `-echo` prints all BASIC/KERNAL output to the terminal, use it with LIST to convert a BASIC program to ASCII
 * `-run` acts like `-prg`, but also autostarts the program
-* JMP $FFFF and SYS 65535 exit the emulator and save memory the host's storage
+* `JMP $FFFF` and `SYS 65535` exit the emulator and save memory into the host's storage
 * the packages now contain the current version of the Programmer's Reference Guide (HTML)
 * fix: on Windows, some file load/saves may be been truncated
 
