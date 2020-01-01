@@ -1,4 +1,4 @@
-#include <SDL.h>
+#include "SDL.h"
 #ifdef __MINGW32__
 #include <ctype.h>
 #endif
