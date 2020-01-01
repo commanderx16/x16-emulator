@@ -34,6 +34,7 @@ It appears that a small patch is required to the sdl library.
 
 
 In SDL_stdinc.h add the lines shown below
+
 ---
 `
 typedef void *(SDLCALL *SDL_realloc_func)(void *mem, size_t size);
