@@ -25,6 +25,34 @@ You can build a ROM image yourself using the [build instructions][x16rom-build] 
 
 Install SDL2 using `brew install sdl2`.
 
+### iPad Build
+
+Using xcode open the project file in the emulator xcode directory.
+You also need the SDL xcode project file from https://github.com/SDL-mirror/SDL
+Drag the SDL ios project into your emulator project.
+It appears that a small patch is required to the sdl library.
+
+
+In SDL_stdinc.h add the lines shown below
+---
+`
+typedef void *(SDLCALL *SDL_realloc_func)(void *mem, size_t size);
+typedef void (SDLCALL *SDL_free_func)(void *mem);
+
+#ifdef __APPLE__
+    void memset_pattern4(void *__b, const void *__pattern4, size_t __len);
+#endif
+
+/**
+ *  \brief Get the current set of SDL memory functions
+ */
+ `
+---
+
+Choose your device or simulator and press run.
+
+
+
 ### Linux Build
 
 The SDL2 development package is available as a distribution package with most major versions of Linux:
