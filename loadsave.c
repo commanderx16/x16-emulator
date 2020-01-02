@@ -50,8 +50,18 @@ create_directory_listing(uint8_t *data)
 	*data++ = 'P';
 	*data++ = 'C';
 	*data++ = 0;
+    
+    char filename[256];
+    uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
+    memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
+    filename[len] = 0;
+    
+    strcpy(filename,getenv("HOME"));
+    
+    //concatenating the path string returned from HOME
+    strcat(filename,"/Documents/.");
 
-	if (!(dirp = opendir("."))) {
+	if (!(dirp = opendir(filename))) {
 		return 0;
 	}
 	while ((dp = readdir(dirp))) {
@@ -116,7 +126,7 @@ create_directory_listing(uint8_t *data)
 void
 LOAD()
 {
-	char filename[41];
+	char filename[256];
 	uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
 	memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
 	filename[len] = 0;
@@ -132,7 +142,12 @@ LOAD()
 		RAM[STATUS] = 0;
 		a = 0;
 	} else {
-		FILE *f = fopen(filename, "rb");
+        
+        strcpy(filename,getenv("HOME"));
+        
+        //concatenating the path string returned from HOME
+        strcat(filename,"/Documents/myfile.txt");
+		FILE *f = fopen(filename, "r");
 		if (!f) {
 			a = 4; // FNF
 			RAM[STATUS] = a;
@@ -197,7 +212,7 @@ LOAD()
 void
 SAVE()
 {
-	char filename[41];
+	char filename[256];
 	uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
 	memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
 	filename[len] = 0;
@@ -210,7 +225,12 @@ SAVE()
 		return;
 	}
 
-	FILE *f = fopen(filename, "wb");
+    strcpy(filename,getenv("HOME"));
+    
+    //concatenating the path string returned from HOME
+    strcat(filename,"/Documents/myfile.txt");
+    
+	FILE *f = fopen(filename, "w");
 	if (!f) {
 		a = 4; // FNF
 		RAM[STATUS] = a;

@@ -15,6 +15,8 @@
 		A1805B3723BCCF2C00D2B9F0 /* libc.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = A1805B3623BCCF2B00D2B9F0 /* libc.tbd */; };
 		A1805B3A23BCD23200D2B9F0 /* rom.sym in Resources */ = {isa = PBXBuildFile; fileRef = A1805B3823BCD23200D2B9F0 /* rom.sym */; };
 		A1805B3B23BCD23200D2B9F0 /* rom.bin in Resources */ = {isa = PBXBuildFile; fileRef = A1805B3923BCD23200D2B9F0 /* rom.bin */; };
+		A19B6B9F23BCFFB600797D89 /* SettingsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A19B6B9D23BCFFB600797D89 /* SettingsViewController.m */; };
+		A19B6BA023BCFFB600797D89 /* SettingsViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = A19B6B9E23BCFFB600797D89 /* SettingsViewController.xib */; };
 		A1C5FA6423BCC2F700897B0F /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A1C5FA5823BCC2BA00897B0F /* libSDL2.a */; };
 		A1C5FA6623BCC6C200897B0F /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1C5FA6523BCC6C200897B0F /* AVFoundation.framework */; };
 		A1C5FAA923BCC71600897B0F /* ym2151.c in Sources */ = {isa = PBXBuildFile; fileRef = A1C5FA6D23BCC71300897B0F /* ym2151.c */; };
@@ -37,7 +39,7 @@
 		A1C5FAC423BCC71600897B0F /* memory.c in Sources */ = {isa = PBXBuildFile; fileRef = A1C5FA9F23BCC71500897B0F /* memory.c */; };
 		A1C5FAC523BCC71600897B0F /* javascript_interface.c in Sources */ = {isa = PBXBuildFile; fileRef = A1C5FAA223BCC71500897B0F /* javascript_interface.c */; };
 		A1C5FAC623BCC71600897B0F /* disasm.c in Sources */ = {isa = PBXBuildFile; fileRef = A1C5FAA423BCC71600897B0F /* disasm.c */; };
-		A1C5FAC823BCC71600897B0F /* keyboard.c in Sources */ = {isa = PBXBuildFile; fileRef = A1C5FAA723BCC71600897B0F /* keyboard.c */; };
+		A1C5FAC823BCC71600897B0F /* keyboard.m in Sources */ = {isa = PBXBuildFile; fileRef = A1C5FAA723BCC71600897B0F /* keyboard.m */; };
 		A1C5FACC23BCC78B00897B0F /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = A1C5FACB23BCC78A00897B0F /* main.c */; };
 		FA8B4B97196703B400F8EB7C /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA8B4B96196703B400F8EB7C /* CoreMotion.framework */; };
 		FAE0E9651BAF967F0098DFA4 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAE0E9641BAF967F0098DFA4 /* GameController.framework */; };
@@ -104,6 +106,9 @@
 		A1805B3623BCCF2B00D2B9F0 /* libc.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libc.tbd; path = usr/lib/libc.tbd; sourceTree = SDKROOT; };
 		A1805B3823BCD23200D2B9F0 /* rom.sym */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = rom.sym; path = ../../rom.sym; sourceTree = "<group>"; };
 		A1805B3923BCD23200D2B9F0 /* rom.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; name = rom.bin; path = ../../rom.bin; sourceTree = "<group>"; };
+		A19B6B9C23BCFFB600797D89 /* SettingsViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SettingsViewController.h; sourceTree = "<group>"; };
+		A19B6B9D23BCFFB600797D89 /* SettingsViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SettingsViewController.m; sourceTree = "<group>"; };
+		A19B6B9E23BCFFB600797D89 /* SettingsViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = SettingsViewController.xib; sourceTree = "<group>"; };
 		A1C5FA4B23BCC2BA00897B0F /* SDL.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SDL.xcodeproj; path = "../../../SDL/Xcode-iOS/SDL/SDL.xcodeproj"; sourceTree = "<group>"; };
 		A1C5FA6523BCC6C200897B0F /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		A1C5FA6723BCC71300897B0F /* debugger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debugger.h; path = ../../debugger.h; sourceTree = "<group>"; };
@@ -153,7 +158,7 @@
 		A1C5FAA323BCC71600897B0F /* sdcard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sdcard.h; path = ../../sdcard.h; sourceTree = "<group>"; };
 		A1C5FAA423BCC71600897B0F /* disasm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = disasm.c; path = ../../disasm.c; sourceTree = "<group>"; };
 		A1C5FAA523BCC71600897B0F /* loadsave.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = loadsave.h; path = ../../loadsave.h; sourceTree = "<group>"; };
-		A1C5FAA723BCC71600897B0F /* keyboard.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = keyboard.c; path = ../../keyboard.c; sourceTree = "<group>"; };
+		A1C5FAA723BCC71600897B0F /* keyboard.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = keyboard.m; path = ../../keyboard.m; sourceTree = "<group>"; };
 		A1C5FAC923BCC75E00897B0F /* main_temp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main_temp.c; sourceTree = "<group>"; };
 		A1C5FACB23BCC78A00897B0F /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = main.c; path = ../../main.c; sourceTree = "<group>"; };
 		FA8B4B96196703B400F8EB7C /* CoreMotion.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMotion.framework; path = System/Library/Frameworks/CoreMotion.framework; sourceTree = SDKROOT; };
@@ -211,6 +216,7 @@
 		29B97315FDCFA39411CA2CEA /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				A19B6B9223BCFF6A00797D89 /* iOS Settings */,
 				A1805B3923BCD23200D2B9F0 /* rom.bin */,
 				A1805B3823BCD23200D2B9F0 /* rom.sym */,
 				A1C5FA7D23BCC71400897B0F /* cpu */,
@@ -223,7 +229,7 @@
 				A1C5FAA223BCC71500897B0F /* javascript_interface.c */,
 				A1C5FA7823BCC71400897B0F /* joystick.c */,
 				A1C5FA8F23BCC71400897B0F /* joystick.h */,
-				A1C5FAA723BCC71600897B0F /* keyboard.c */,
+				A1C5FAA723BCC71600897B0F /* keyboard.m */,
 				A1C5FA8D23BCC71400897B0F /* keyboard.h */,
 				A1C5FA7223BCC71300897B0F /* loadsave.c */,
 				A1C5FAA523BCC71600897B0F /* loadsave.h */,
@@ -282,6 +288,16 @@
 				1D30AB110D05D00D00671497 /* Foundation.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A19B6B9223BCFF6A00797D89 /* iOS Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A19B6B9C23BCFFB600797D89 /* SettingsViewController.h */,
+				A19B6B9D23BCFFB600797D89 /* SettingsViewController.m */,
+				A19B6B9E23BCFFB600797D89 /* SettingsViewController.xib */,
+			);
+			path = "iOS Settings";
 			sourceTree = "<group>";
 		};
 		A1C5FA4C23BCC2BA00897B0F /* Products */ = {
@@ -469,6 +485,7 @@
 				FD77A07F0E26BDA900F39101 /* Default.png in Resources */,
 				A1C5FABE23BCC71600897B0F /* WebAssembly.md in Resources */,
 				945C4F53195AF17F00DBBF61 /* Default-568h@2x.png in Resources */,
+				A19B6BA023BCFFB600797D89 /* SettingsViewController.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -488,8 +505,9 @@
 				A1C5FAB023BCC71600897B0F /* ps2.c in Sources */,
 				A1C5FAAC23BCC71600897B0F /* loadsave.c in Sources */,
 				A1C5FAC423BCC71600897B0F /* memory.c in Sources */,
-				A1C5FAC823BCC71600897B0F /* keyboard.c in Sources */,
+				A1C5FAC823BCC71600897B0F /* keyboard.m in Sources */,
 				A1C5FAB923BCC71600897B0F /* via.c in Sources */,
+				A19B6B9F23BCFFB600797D89 /* SettingsViewController.m in Sources */,
 				A1C5FAAF23BCC71600897B0F /* rendertext.c in Sources */,
 				A1C5FAC323BCC71600897B0F /* video.c in Sources */,
 				A1C5FAC623BCC71600897B0F /* disasm.c in Sources */,
@@ -518,7 +536,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.mattp.CommanderX16;
 				PRODUCT_NAME = CommanderX16;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				USER_HEADER_SEARCH_PATHS = "../../../include /Users/mpe18/Documents/code/SDL/include";
+				USER_HEADER_SEARCH_PATHS = "../../../include /Users/mpe18/Documents/code/SDL/include /Users/mpe18/Documents/code/SDL/src/video/uikit/**";
 			};
 			name = Debug;
 		};
@@ -535,7 +553,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.mattp.CommanderX16;
 				PRODUCT_NAME = CommanderX16;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				USER_HEADER_SEARCH_PATHS = "../../../include /Users/mpe18/Documents/code/SDL/include";
+				USER_HEADER_SEARCH_PATHS = "../../../include /Users/mpe18/Documents/code/SDL/include /Users/mpe18/Documents/code/SDL/src/video/uikit/**";
 			};
 			name = Release;
 		};

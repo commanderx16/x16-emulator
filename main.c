@@ -928,7 +928,7 @@ void*
 emulator_loop(void *param)
 {
 	for (;;) {
-
+        
 		if (debugger_enabled) {
 			int dbgCmd = DEBUGGetCurrentStatus();
 			if (dbgCmd > 0) continue;
@@ -995,7 +995,10 @@ emulator_loop(void *param)
 #endif
 
 #ifdef LOAD_HYPERCALLS
-		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && RAM[FA] == 8 && !sdcard_file) {
+        
+		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal()  && !sdcard_file) { // && RAM[FA] == 8
+            printf("FA: %04x", RAM[FA]);
+        //if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && !sdcard_file) {
 			if (pc == 0xffd5) {
 				LOAD();
 			} else {
@@ -1003,7 +1006,7 @@ emulator_loop(void *param)
 			}
 			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
 			sp += 2;
-		}
+        }
 #endif
 
 		uint32_t old_clockticks6502 = clockticks6502;

@@ -1,9 +1,12 @@
 #include "SDL.h"
+#include "SDL_uikitappdelegate.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include "glue.h"
 #include "ps2.h"
 #include "keyboard.h"
+#include <UIKit/UIKit.h>
+#include "SettingsViewController.h"
 
 #define EXTENDED_FLAG 0x100
 
@@ -223,7 +226,23 @@ ps2_scancode_from_SDL_Scancode(SDL_Scancode scancode)
 void
 handle_keyboard(bool down, SDL_Keycode sym, SDL_Scancode scancode)
 {
-	if (down) {
+	
+    if (down) {
+        
+        if (scancode == SDL_SCANCODE_MENU) {
+            
+            SettingsViewController *settings = [[SettingsViewController alloc] initWithNibName:@"SettingsViewController" bundle:nil];
+            
+            SDLUIKitDelegate *delegate = [SDLUIKitDelegate sharedAppDelegate];
+            UIWindow *window = [delegate window];
+            
+            UIViewController *vc = [window rootViewController];
+            [vc presentViewController:settings animated:true completion:^{
+             
+             }];
+            
+        }
+        
 		if (log_keyboard) {
 			printf("DOWN 0x%02X\n", scancode);
 			fflush(stdout);
@@ -260,5 +279,6 @@ handle_keyboard(bool down, SDL_Keycode sym, SDL_Scancode scancode)
 		ps2_buffer_add(0, ps2_scancode & 0xff);
 	}
 }
+
 
 
