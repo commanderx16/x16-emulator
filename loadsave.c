@@ -127,6 +127,8 @@ void
 LOAD()
 {
 	char filename[256];
+    char fullFileName[256];
+    
 	uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
 	memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
 	filename[len] = 0;
@@ -143,11 +145,12 @@ LOAD()
 		a = 0;
 	} else {
         
-        strcpy(filename,getenv("HOME"));
-        
         //concatenating the path string returned from HOME
-        strcat(filename,"/Documents/myfile.txt");
-		FILE *f = fopen(filename, "r");
+        strcpy(fullFileName,getenv("HOME"));
+        strcat(fullFileName,"/Documents/");
+        strcat(fullFileName,filename);
+        
+		FILE *f = fopen(fullFileName, "r");
 		if (!f) {
 			a = 4; // FNF
 			RAM[STATUS] = a;
@@ -212,7 +215,10 @@ LOAD()
 void
 SAVE()
 {
-	char filename[256];
+    
+	char filename[41];
+    char fullFileName[256];
+    
 	uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
 	memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
 	filename[len] = 0;
@@ -225,12 +231,12 @@ SAVE()
 		return;
 	}
 
-    strcpy(filename,getenv("HOME"));
-    
     //concatenating the path string returned from HOME
-    strcat(filename,"/Documents/myfile.txt");
+    strcpy(fullFileName,getenv("HOME"));
+    strcat(fullFileName,"/Documents/");
+    strcat(fullFileName,filename);
     
-	FILE *f = fopen(filename, "w");
+	FILE *f = fopen(fullFileName, "w");
 	if (!f) {
 		a = 4; // FNF
 		RAM[STATUS] = a;
