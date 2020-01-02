@@ -37,8 +37,6 @@
 #define ADDR_UART_START     0xF8000
 #define ADDR_UART_END       0xF9000
 
-#define ESC_IS_BREAK /* if enabled, Esc sends Break/Pause key instead of Esc */
-
 #define NUM_SPRITES 128
 
 // both VGA and NTSC
