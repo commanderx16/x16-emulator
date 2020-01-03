@@ -12,11 +12,14 @@
 		28FD15000DC6FC520079059D /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD14FF0DC6FC520079059D /* OpenGLES.framework */; };
 		28FD15080DC6FC5B0079059D /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD15070DC6FC5B0079059D /* QuartzCore.framework */; };
 		945C4F53195AF17F00DBBF61 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 945C4F52195AF17F00DBBF61 /* Default-568h@2x.png */; };
+		A1194D7123BF9DBD00EE8ED5 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1194D7023BF9DBD00EE8ED5 /* Metal.framework */; };
 		A1805B3723BCCF2C00D2B9F0 /* libc.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = A1805B3623BCCF2B00D2B9F0 /* libc.tbd */; };
 		A1805B3A23BCD23200D2B9F0 /* rom.sym in Resources */ = {isa = PBXBuildFile; fileRef = A1805B3823BCD23200D2B9F0 /* rom.sym */; };
 		A1805B3B23BCD23200D2B9F0 /* rom.bin in Resources */ = {isa = PBXBuildFile; fileRef = A1805B3923BCD23200D2B9F0 /* rom.bin */; };
 		A19B6B9F23BCFFB600797D89 /* SettingsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A19B6B9D23BCFFB600797D89 /* SettingsViewController.m */; };
 		A19B6BA023BCFFB600797D89 /* SettingsViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = A19B6B9E23BCFFB600797D89 /* SettingsViewController.xib */; };
+		A1A7949B23BF8D7000D813EF /* GameControlViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A1A7949923BF8D7000D813EF /* GameControlViewController.m */; };
+		A1A7949C23BF8D7000D813EF /* GameControlViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = A1A7949A23BF8D7000D813EF /* GameControlViewController.xib */; };
 		A1C5FA6423BCC2F700897B0F /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A1C5FA5823BCC2BA00897B0F /* libSDL2.a */; };
 		A1C5FA6623BCC6C200897B0F /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1C5FA6523BCC6C200897B0F /* AVFoundation.framework */; };
 		A1C5FAA923BCC71600897B0F /* ym2151.c in Sources */ = {isa = PBXBuildFile; fileRef = A1C5FA6D23BCC71300897B0F /* ym2151.c */; };
@@ -116,6 +119,7 @@
 		28FD15070DC6FC5B0079059D /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		945C4F52195AF17F00DBBF61 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
+		A1194D7023BF9DBD00EE8ED5 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		A1805B3623BCCF2B00D2B9F0 /* libc.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libc.tbd; path = usr/lib/libc.tbd; sourceTree = SDKROOT; };
 		A1805B3823BCD23200D2B9F0 /* rom.sym */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = rom.sym; path = ../../rom.sym; sourceTree = "<group>"; };
 		A1805B3923BCD23200D2B9F0 /* rom.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; name = rom.bin; path = ../../rom.bin; sourceTree = "<group>"; };
@@ -125,6 +129,9 @@
 		A1A7947923BE54F100D813EF /* KeyboardViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = KeyboardViewController.h; sourceTree = "<group>"; };
 		A1A7947A23BE54F100D813EF /* KeyboardViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = KeyboardViewController.m; sourceTree = "<group>"; };
 		A1A7947C23BE54F100D813EF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1A7949823BF8D7000D813EF /* GameControlViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GameControlViewController.h; sourceTree = "<group>"; };
+		A1A7949923BF8D7000D813EF /* GameControlViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GameControlViewController.m; sourceTree = "<group>"; };
+		A1A7949A23BF8D7000D813EF /* GameControlViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = GameControlViewController.xib; sourceTree = "<group>"; };
 		A1C5FA4B23BCC2BA00897B0F /* SDL.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SDL.xcodeproj; path = "../../../SDL/Xcode-iOS/SDL/SDL.xcodeproj"; sourceTree = "<group>"; };
 		A1C5FA6523BCC6C200897B0F /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		A1C5FA6723BCC71300897B0F /* debugger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debugger.h; path = ../../debugger.h; sourceTree = "<group>"; };
@@ -190,6 +197,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1194D7123BF9DBD00EE8ED5 /* Metal.framework in Frameworks */,
 				A1805B3723BCCF2C00D2B9F0 /* libc.tbd in Frameworks */,
 				A1C5FA6423BCC2F700897B0F /* libSDL2.a in Frameworks */,
 				FAE0E9651BAF967F0098DFA4 /* GameController.framework in Frameworks */,
@@ -290,6 +298,7 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A1194D7023BF9DBD00EE8ED5 /* Metal.framework */,
 				A1805B3623BCCF2B00D2B9F0 /* libc.tbd */,
 				A1C5FA6523BCC6C200897B0F /* AVFoundation.framework */,
 				FAE0E9641BAF967F0098DFA4 /* GameController.framework */,
@@ -311,6 +320,9 @@
 				A19B6B9C23BCFFB600797D89 /* SettingsViewController.h */,
 				A19B6B9D23BCFFB600797D89 /* SettingsViewController.m */,
 				A19B6B9E23BCFFB600797D89 /* SettingsViewController.xib */,
+				A1A7949823BF8D7000D813EF /* GameControlViewController.h */,
+				A1A7949923BF8D7000D813EF /* GameControlViewController.m */,
+				A1A7949A23BF8D7000D813EF /* GameControlViewController.xib */,
 			);
 			path = "iOS Settings";
 			sourceTree = "<group>";
@@ -423,7 +435,7 @@
 				LastUpgradeCheck = 0510;
 				TargetAttributes = {
 					1D6058900D05DD3D006BFB54 = {
-						DevelopmentTeam = E87QEX3645;
+						DevelopmentTeam = RUE5S47RT7;
 					};
 				};
 			};
@@ -512,6 +524,7 @@
 				A1C5FABE23BCC71600897B0F /* WebAssembly.md in Resources */,
 				945C4F53195AF17F00DBBF61 /* Default-568h@2x.png in Resources */,
 				A19B6BA023BCFFB600797D89 /* SettingsViewController.xib in Resources */,
+				A1A7949C23BF8D7000D813EF /* GameControlViewController.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -530,6 +543,7 @@
 				A1C5FAB223BCC71600897B0F /* fake6502.c in Sources */,
 				A1C5FAB023BCC71600897B0F /* ps2.c in Sources */,
 				A1C5FAAC23BCC71600897B0F /* loadsave.c in Sources */,
+				A1A7949B23BF8D7000D813EF /* GameControlViewController.m in Sources */,
 				A1C5FAC423BCC71600897B0F /* memory.c in Sources */,
 				A1C5FAC823BCC71600897B0F /* keyboard.m in Sources */,
 				A1C5FAB923BCC71600897B0F /* via.c in Sources */,
@@ -554,14 +568,15 @@
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
-				DEVELOPMENT_TEAM = E87QEX3645;
+				DEVELOPMENT_TEAM = RUE5S47RT7;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "";
 				INFOPLIST_FILE = Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.mattp.CommanderX16;
+				PRODUCT_BUNDLE_IDENTIFIER = com.matthewpearce.commanderx16;
 				PRODUCT_NAME = CommanderX16;
 				TARGETED_DEVICE_FAMILY = 2;
 				USER_HEADER_SEARCH_PATHS = "../../../include /Users/mpe18/Documents/code/SDL/include /Users/mpe18/Documents/code/SDL/src/video/uikit/**";
@@ -575,12 +590,13 @@
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
-				DEVELOPMENT_TEAM = E87QEX3645;
+				DEVELOPMENT_TEAM = RUE5S47RT7;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "";
 				INFOPLIST_FILE = Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.mattp.CommanderX16;
+				PRODUCT_BUNDLE_IDENTIFIER = com.matthewpearce.commanderx16;
 				PRODUCT_NAME = CommanderX16;
 				TARGETED_DEVICE_FAMILY = 2;
 				USER_HEADER_SEARCH_PATHS = "../../../include /Users/mpe18/Documents/code/SDL/include /Users/mpe18/Documents/code/SDL/src/video/uikit/**";

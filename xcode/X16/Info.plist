@@ -6,6 +6,31 @@
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
 	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeIconFiles</key>
+			<array/>
+			<key>CFBundleTypeName</key>
+			<string>X16 PRG files</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>.prg</string>
+				<string>.PRG</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeIconFiles</key>
+			<array/>
+			<key>CFBundleTypeName</key>
+			<string>X16 BAS files</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>.bas</string>
+				<string>.BAS</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleExecutable</key>
 	<string>${EXECUTABLE_NAME}</string>
 	<key>CFBundleIconFile</key>
@@ -28,6 +53,8 @@
 	<string>YES</string>
 	<key>LSRequiresIPhoneOS</key>
 	<false/>
+	<key>UIRequiresFullScreen</key>
+	<true/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationLandscapeRight</string>
