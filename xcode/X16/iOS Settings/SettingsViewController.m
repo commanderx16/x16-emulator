@@ -6,9 +6,15 @@
 //
 
 #import "SettingsViewController.h"
+#include "SDL.h"
+#include "SDL_keyboard.h"
 
 @interface SettingsViewController ()
 
+@property (nonatomic, strong) IBOutlet UIButton *keyboard1;
+-(IBAction)buttonPressed:(id)sender;
+-(IBAction)closeWindow:(id)sender;
+-(IBAction)toggleKeyboard:(id)sender;
 @end
 
 @implementation SettingsViewController
@@ -27,5 +33,21 @@
     // Pass the selected object to the new view controller.
 }
 */
+
+-(IBAction)toggleKeyboard:(id)sender {
+
+    SDL_StartTextInput();
+}
+
+-(IBAction)buttonPressed:(id)sender
+{
+    UIButton *button = (UIButton *)sender;
+    SDL_SendKeyboardKey(1, button.tag);
+}
+
+-(IBAction)closeWindow:(id)sender
+{
+    [self.view removeFromSuperview];
+}
 
 @end

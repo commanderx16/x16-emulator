@@ -231,15 +231,24 @@ handle_keyboard(bool down, SDL_Keycode sym, SDL_Scancode scancode)
         
         if (scancode == SDL_SCANCODE_MENU) {
             
+            
             SettingsViewController *settings = [[SettingsViewController alloc] initWithNibName:@"SettingsViewController" bundle:nil];
             
             SDLUIKitDelegate *delegate = [SDLUIKitDelegate sharedAppDelegate];
             UIWindow *window = [delegate window];
             
             UIViewController *vc = [window rootViewController];
-            [vc presentViewController:settings animated:true completion:^{
-             
-             }];
+            [[vc.view viewWithTag:666] removeFromSuperview];
+            
+            CGRect rect = settings.view.frame;
+            
+            CGPoint origin = CGPointMake(0, 0);
+            rect.origin = origin;
+            settings.view.frame = rect;
+            
+            settings.view.tag = 666;
+            
+            [vc.view addSubview:settings.view];
             
         }
         

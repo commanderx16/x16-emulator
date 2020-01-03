@@ -95,6 +95,19 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		A1A7948C23BE54F100D813EF /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		1D30AB110D05D00D00671497 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		1D6058910D05DD3D006BFB54 /* CommanderX16.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CommanderX16.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -109,6 +122,9 @@
 		A19B6B9C23BCFFB600797D89 /* SettingsViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SettingsViewController.h; sourceTree = "<group>"; };
 		A19B6B9D23BCFFB600797D89 /* SettingsViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SettingsViewController.m; sourceTree = "<group>"; };
 		A19B6B9E23BCFFB600797D89 /* SettingsViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = SettingsViewController.xib; sourceTree = "<group>"; };
+		A1A7947923BE54F100D813EF /* KeyboardViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = KeyboardViewController.h; sourceTree = "<group>"; };
+		A1A7947A23BE54F100D813EF /* KeyboardViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = KeyboardViewController.m; sourceTree = "<group>"; };
+		A1A7947C23BE54F100D813EF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1C5FA4B23BCC2BA00897B0F /* SDL.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SDL.xcodeproj; path = "../../../SDL/Xcode-iOS/SDL/SDL.xcodeproj"; sourceTree = "<group>"; };
 		A1C5FA6523BCC6C200897B0F /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		A1C5FA6723BCC71300897B0F /* debugger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debugger.h; path = ../../debugger.h; sourceTree = "<group>"; };
@@ -159,7 +175,6 @@
 		A1C5FAA423BCC71600897B0F /* disasm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = disasm.c; path = ../../disasm.c; sourceTree = "<group>"; };
 		A1C5FAA523BCC71600897B0F /* loadsave.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = loadsave.h; path = ../../loadsave.h; sourceTree = "<group>"; };
 		A1C5FAA723BCC71600897B0F /* keyboard.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = keyboard.m; path = ../../keyboard.m; sourceTree = "<group>"; };
-		A1C5FAC923BCC75E00897B0F /* main_temp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main_temp.c; sourceTree = "<group>"; };
 		A1C5FACB23BCC78A00897B0F /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = main.c; path = ../../main.c; sourceTree = "<group>"; };
 		FA8B4B96196703B400F8EB7C /* CoreMotion.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMotion.framework; path = System/Library/Frameworks/CoreMotion.framework; sourceTree = SDKROOT; };
 		FAE0E9641BAF967F0098DFA4 /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
@@ -207,6 +222,7 @@
 				945C4F52195AF17F00DBBF61 /* Default-568h@2x.png */,
 				29B97315FDCFA39411CA2CEA /* Sources */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
+				A1A7947823BE54F100D813EF /* Keyboard */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
 			);
@@ -257,7 +273,6 @@
 				A1C5FACB23BCC78A00897B0F /* main.c */,
 				A1C5FA9723BCC71500897B0F /* webassembly */,
 				A1C5FA4B23BCC2BA00897B0F /* SDL.xcodeproj */,
-				A1C5FAC923BCC75E00897B0F /* main_temp.c */,
 			);
 			name = Sources;
 			sourceTree = "<group>";
@@ -298,6 +313,16 @@
 				A19B6B9E23BCFFB600797D89 /* SettingsViewController.xib */,
 			);
 			path = "iOS Settings";
+			sourceTree = "<group>";
+		};
+		A1A7947823BE54F100D813EF /* Keyboard */ = {
+			isa = PBXGroup;
+			children = (
+				A1A7947923BE54F100D813EF /* KeyboardViewController.h */,
+				A1A7947A23BE54F100D813EF /* KeyboardViewController.m */,
+				A1A7947C23BE54F100D813EF /* Info.plist */,
+			);
+			path = Keyboard;
 			sourceTree = "<group>";
 		};
 		A1C5FA4C23BCC2BA00897B0F /* Products */ = {
@@ -378,6 +403,7 @@
 				1D60588D0D05DD3D006BFB54 /* Resources */,
 				1D60588E0D05DD3D006BFB54 /* Sources */,
 				1D60588F0D05DD3D006BFB54 /* Frameworks */,
+				A1A7948C23BE54F100D813EF /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
@@ -525,6 +551,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEVELOPMENT_TEAM = E87QEX3645;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -535,7 +563,7 @@
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mattp.CommanderX16;
 				PRODUCT_NAME = CommanderX16;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 2;
 				USER_HEADER_SEARCH_PATHS = "../../../include /Users/mpe18/Documents/code/SDL/include /Users/mpe18/Documents/code/SDL/src/video/uikit/**";
 			};
 			name = Debug;
@@ -544,6 +572,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
 				DEVELOPMENT_TEAM = E87QEX3645;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -552,7 +582,7 @@
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mattp.CommanderX16;
 				PRODUCT_NAME = CommanderX16;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 2;
 				USER_HEADER_SEARCH_PATHS = "../../../include /Users/mpe18/Documents/code/SDL/include /Users/mpe18/Documents/code/SDL/src/video/uikit/**";
 			};
 			name = Release;
@@ -568,6 +598,7 @@
 				OTHER_CFLAGS = "";
 				PREBINDING = NO;
 				SDKROOT = iphoneos;
+				USER_HEADER_SEARCH_PATHS = "../../../include /Users/mpe18/Documents/code/SDL/include /Users/mpe18/Documents/code/SDL/src/video/uikit/**";
 			};
 			name = Debug;
 		};
@@ -581,6 +612,7 @@
 				OTHER_CFLAGS = "";
 				PREBINDING = NO;
 				SDKROOT = iphoneos;
+				USER_HEADER_SEARCH_PATHS = "../../../include /Users/mpe18/Documents/code/SDL/include /Users/mpe18/Documents/code/SDL/src/video/uikit/**";
 			};
 			name = Release;
 		};
