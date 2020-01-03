@@ -28,7 +28,7 @@ Install SDL2 using `brew install sdl2`.
 ### iPad Build
 
 Using xcode open the project file in the emulator xcode directory.
-You also need the SDL xcode project file from https://github.com/SDL-mirror/SDL
+You also need the SDL xcode project file from https://github.com/mattuna15/SDL
 Drag the SDL ios project into your emulator project.
 It appears that a small patch is required to the sdl library.
 
