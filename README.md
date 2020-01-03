@@ -36,7 +36,7 @@ It appears that a small patch is required to the sdl library.
 In SDL_stdinc.h add the lines shown below
 
 ---
-`
+```
 typedef void *(SDLCALL *SDL_realloc_func)(void *mem, size_t size);
 typedef void (SDLCALL *SDL_free_func)(void *mem);
 
@@ -47,7 +47,7 @@ typedef void (SDLCALL *SDL_free_func)(void *mem);
 /**
  *  \brief Get the current set of SDL memory functions
  */
- `
+ ```
 ---
 
 Choose your device or simulator and press run.
@@ -107,6 +107,8 @@ Run `x16emu -h` to see all command line options.
 
 Keyboard Layout
 ---------------
+
+* ON IPADS A LONG PRESS WILL GIVE YOU ACCESS TO THE FUNCTION KEYS
 
 The X16 uses a PS/2 keyboard, and the ROM currently supports several different layouts. The following table shows their names, and what keys produce different characters than expected:
 
@@ -192,6 +194,7 @@ The emulator will interpret filesnames relative to the directory it was started 
 
 To avoid incompatibility problems between the PETSCII and ASCII encodings, use lower case filenames on the host side, and unshifted filenames on the X16 side.
 
+* ON IPADS THEY WILL BE STORED IN THE DOCUMENTS FOLDER
 
 Dealing with BASIC Programs
 ---------------------------
