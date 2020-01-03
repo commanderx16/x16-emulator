@@ -267,6 +267,15 @@ Known Issues
 Release Notes
 -------------
 
+### Release 36 ("Berlin")
+
+* added VERA UART emulation (`-uart-in`, `-uart-out`)
+* correctly emulate missing SD card
+* moved host filesystem interface from device 1 to device 8, only available if no SD card is attached
+* require numeric argument for `-test` to auto-run test
+* fixed JMP (a,x) for 65c02
+* Fixed ESC as RUN/STOP [Ingo Hinterding]
+
 ### Release 35
 
 * video optimization [Neil Forbes-Richardson]
