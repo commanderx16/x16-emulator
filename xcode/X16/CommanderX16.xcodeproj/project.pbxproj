@@ -17,7 +17,6 @@
 		A153A2CD23C12728000C9C1E /* MessageObserver.m in Sources */ = {isa = PBXBuildFile; fileRef = A153A2CC23C12728000C9C1E /* MessageObserver.m */; };
 		A153A2D023C134BB000C9C1E /* ios_functions.c in Sources */ = {isa = PBXBuildFile; fileRef = A153A2CF23C134BB000C9C1E /* ios_functions.c */; };
 		A1805B3723BCCF2C00D2B9F0 /* libc.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = A1805B3623BCCF2B00D2B9F0 /* libc.tbd */; };
-		A1805B3A23BCD23200D2B9F0 /* rom.sym in Resources */ = {isa = PBXBuildFile; fileRef = A1805B3823BCD23200D2B9F0 /* rom.sym */; };
 		A1805B3B23BCD23200D2B9F0 /* rom.bin in Resources */ = {isa = PBXBuildFile; fileRef = A1805B3923BCD23200D2B9F0 /* rom.bin */; };
 		A19B6B9F23BCFFB600797D89 /* SettingsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A19B6B9D23BCFFB600797D89 /* SettingsViewController.m */; };
 		A19B6BA023BCFFB600797D89 /* SettingsViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = A19B6B9E23BCFFB600797D89 /* SettingsViewController.xib */; };
@@ -128,7 +127,6 @@
 		A153A2CE23C134BB000C9C1E /* ios_functions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ios_functions.h; sourceTree = "<group>"; };
 		A153A2CF23C134BB000C9C1E /* ios_functions.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ios_functions.c; sourceTree = "<group>"; };
 		A1805B3623BCCF2B00D2B9F0 /* libc.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libc.tbd; path = usr/lib/libc.tbd; sourceTree = SDKROOT; };
-		A1805B3823BCD23200D2B9F0 /* rom.sym */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = rom.sym; path = ../../rom.sym; sourceTree = "<group>"; };
 		A1805B3923BCD23200D2B9F0 /* rom.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; name = rom.bin; path = ../../rom.bin; sourceTree = "<group>"; };
 		A19B6B9C23BCFFB600797D89 /* SettingsViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SettingsViewController.h; sourceTree = "<group>"; };
 		A19B6B9D23BCFFB600797D89 /* SettingsViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SettingsViewController.m; sourceTree = "<group>"; };
@@ -245,7 +243,6 @@
 			children = (
 				A19B6B9223BCFF6A00797D89 /* iOS */,
 				A1805B3923BCD23200D2B9F0 /* rom.bin */,
-				A1805B3823BCD23200D2B9F0 /* rom.sym */,
 				A1C5FA7D23BCC71400897B0F /* cpu */,
 				A1C5FA9023BCC71400897B0F /* debugger.c */,
 				A1C5FA6723BCC71300897B0F /* debugger.h */,
@@ -523,7 +520,6 @@
 				A1C5FAC123BCC71600897B0F /* main.js in Resources */,
 				A1805B3B23BCD23200D2B9F0 /* rom.bin in Resources */,
 				A1C5FABF23BCC71600897B0F /* x16emu-template.html in Resources */,
-				A1805B3A23BCD23200D2B9F0 /* rom.sym in Resources */,
 				FD77A07F0E26BDA900F39101 /* Default.png in Resources */,
 				A1C5FABE23BCC71600897B0F /* WebAssembly.md in Resources */,
 				945C4F53195AF17F00DBBF61 /* Default-568h@2x.png in Resources */,
