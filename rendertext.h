@@ -2,7 +2,20 @@
 #ifndef _RENDERTEXT_H
 #define _RENDERTEXT_H
 
+#if __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
 #include "SDL.h"
+#include "ios_functions.h"
+
+#elif TARGET_OS_MAC
+#include <SDL.h>
+#else
+#   error "Unknown Apple platform"
+#endif
+#else
+#include <SDL.h>
+#endif
 
 #define CHAR_SCALE 		(1)										// character pixel size.
 

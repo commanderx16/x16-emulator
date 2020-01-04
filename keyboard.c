@@ -1,22 +1,10 @@
-#include "SDL.h"
+
 #include <stdio.h>
 #include <stdbool.h>
 #include "glue.h"
 #include "ps2.h"
 #include "keyboard.h"
 
-#if __APPLE__
-#include <TargetConditionals.h>
-#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
-
-#include "ios_functions.h"
-
-#elif TARGET_OS_MAC
-// Other kinds of Mac OS
-#else
-#   error "Unknown Apple platform"
-#endif
-#endif
 
 #define EXTENDED_FLAG 0x100
 #define ESC_IS_BREAK /* if enabled, Esc sends Break/Pause key instead of Esc */
