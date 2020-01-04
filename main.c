@@ -478,6 +478,7 @@ main(int argc, char **argv)
 	char *sdcard_path = NULL;
 	bool run_geos = false;
 	bool run_test = false;
+	int test_number = 0;
 
 	char *uart_in_path = NULL;
 	char *uart_out_path = NULL;
@@ -572,7 +573,13 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-test")) {
 			argc--;
 			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			test_number = atoi(argv[0]);
 			run_test = true;
+			argc--;
+			argv++;
 		} else if (!strcmp(argv[0], "-sdcard")) {
 			argc--;
 			argv++;
@@ -853,7 +860,8 @@ main(int argc, char **argv)
 		paste_text = "GEOS\r";
 	}
 	if (run_test) {
-		paste_text = "TEST\r";
+		paste_text = paste_text_data;
+		snprintf(paste_text, sizeof(paste_text_data), "TEST %d\r", test_number);
 	}
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER
@@ -984,10 +992,10 @@ emulator_loop(void *param)
 			for (int i = 7; i >= 0; i--) {
 				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 			}
-//			printf(" --- r1H:%01x\n", RAM[5]);
+			printf(" --- rambank:%01x", memory_get_ram_bank());
 
 			printf(" ---");
-			for (int i = 0; i < 7; i++) {
+			for (int i = 0; i < 8; i++) {
 				printf(" r%i:%04x", i, RAM[2 + i*2] | RAM[3 + i*2] << 8);
 			}
 			printf("\n");
