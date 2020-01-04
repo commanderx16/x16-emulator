@@ -13,6 +13,10 @@
 #include "video.h"
 #include "rom_symbols.h"
 
+#if __APPLE__
+#include <TargetConditionals.h>
+#endif
+
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
@@ -56,10 +60,15 @@ create_directory_listing(uint8_t *data)
     memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
     filename[len] = 0;
     
+    //use correct file location for ios
+    #if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
     strcpy(filename,getenv("HOME"));
-    
     //concatenating the path string returned from HOME
     strcat(filename,"/Documents/.");
+    #else
+    strcpy(filename,".");
+    #endif
+    
 
 	if (!(dirp = opendir(filename))) {
 		return 0;
@@ -126,10 +135,8 @@ create_directory_listing(uint8_t *data)
 void
 LOAD()
 {
-	char filename[256];
-    char fullFileName[256];
-    
-	uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
+	char filename[41];
+    uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
 	memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
 	filename[len] = 0;
 
@@ -145,12 +152,19 @@ LOAD()
 		a = 0;
 	} else {
         
+        //use correct file location for ios
+        //use correct file location for ios
+        #if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
+        char fullFileName[256];
         //concatenating the path string returned from HOME
         strcpy(fullFileName,getenv("HOME"));
         strcat(fullFileName,"/Documents/");
         strcat(fullFileName,filename);
-        
-		FILE *f = fopen(fullFileName, "r");
+        FILE *f = fopen(fullFileName, "r");
+        #else
+        FILE *f = fopen(filename, "r");
+        #endif
+		
 		if (!f) {
 			a = 4; // FNF
 			RAM[STATUS] = a;
@@ -217,7 +231,6 @@ SAVE()
 {
     
 	char filename[41];
-    char fullFileName[256];
     
 	uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
 	memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
@@ -231,12 +244,19 @@ SAVE()
 		return;
 	}
 
+    //use correct file location for ios
+    //use correct file location for ios
+    #if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
+    char fullFileName[256];
     //concatenating the path string returned from HOME
     strcpy(fullFileName,getenv("HOME"));
     strcat(fullFileName,"/Documents/");
     strcat(fullFileName,filename);
+    FILE *f = fopen(fullFileName, "w");
+    #else
+    FILE *f = fopen(filename, "w");
+    #endif
     
-	FILE *f = fopen(fullFileName, "w");
 	if (!f) {
 		a = 4; // FNF
 		RAM[STATUS] = a;
