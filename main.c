@@ -432,6 +432,7 @@ void closeAudio()
 }
 #endif
 
+#if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
 int HandleAppEvents(void *userdata, SDL_Event *event)
 {
     switch (event->type)
@@ -473,6 +474,7 @@ int HandleAppEvents(void *userdata, SDL_Event *event)
             return 1;
     }
 }
+#endif
 
 int
 main(int argc, char **argv)
@@ -490,8 +492,6 @@ main(int argc, char **argv)
 
 	char *uart_in_path = NULL;
 	char *uart_out_path = NULL;
-    
-    SDL_SetEventFilter(HandleAppEvents, NULL);
 
 	run_after_load = false;
 
@@ -888,11 +888,10 @@ main(int argc, char **argv)
 	joystick_init();
 
 // first time through for iOS
-#if __APPLE__
-#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
+#if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
+    SDL_SetEventFilter(HandleAppEvents, NULL);
     createIosMessageObserver();
     SDL_StartTextInput();
-#endif
 #endif
     
 	machine_reset();
@@ -1018,7 +1017,7 @@ emulator_loop(void *param)
 
 #ifdef LOAD_HYPERCALLS
         
-		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal()  && !sdcard_file && RAM[FA] == 8) { // && RAM[FA] == 8
+		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && RAM[FA] == 8 && !sdcard_file) {
 			if (pc == 0xffd5) {
 				LOAD();
 			} else {
