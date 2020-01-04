@@ -14,6 +14,8 @@
 		945C4F53195AF17F00DBBF61 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 945C4F52195AF17F00DBBF61 /* Default-568h@2x.png */; };
 		A1194D7123BF9DBD00EE8ED5 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1194D7023BF9DBD00EE8ED5 /* Metal.framework */; };
 		A153A2CA23C114E9000C9C1E /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A153A2BF23C114D3000C9C1E /* libSDL2.a */; };
+		A153A2CD23C12728000C9C1E /* MessageObserver.m in Sources */ = {isa = PBXBuildFile; fileRef = A153A2CC23C12728000C9C1E /* MessageObserver.m */; };
+		A153A2D023C134BB000C9C1E /* ios_functions.c in Sources */ = {isa = PBXBuildFile; fileRef = A153A2CF23C134BB000C9C1E /* ios_functions.c */; };
 		A1805B3723BCCF2C00D2B9F0 /* libc.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = A1805B3623BCCF2B00D2B9F0 /* libc.tbd */; };
 		A1805B3A23BCD23200D2B9F0 /* rom.sym in Resources */ = {isa = PBXBuildFile; fileRef = A1805B3823BCD23200D2B9F0 /* rom.sym */; };
 		A1805B3B23BCD23200D2B9F0 /* rom.bin in Resources */ = {isa = PBXBuildFile; fileRef = A1805B3923BCD23200D2B9F0 /* rom.bin */; };
@@ -42,7 +44,7 @@
 		A1C5FAC423BCC71600897B0F /* memory.c in Sources */ = {isa = PBXBuildFile; fileRef = A1C5FA9F23BCC71500897B0F /* memory.c */; };
 		A1C5FAC523BCC71600897B0F /* javascript_interface.c in Sources */ = {isa = PBXBuildFile; fileRef = A1C5FAA223BCC71500897B0F /* javascript_interface.c */; };
 		A1C5FAC623BCC71600897B0F /* disasm.c in Sources */ = {isa = PBXBuildFile; fileRef = A1C5FAA423BCC71600897B0F /* disasm.c */; };
-		A1C5FAC823BCC71600897B0F /* keyboard.m in Sources */ = {isa = PBXBuildFile; fileRef = A1C5FAA723BCC71600897B0F /* keyboard.m */; };
+		A1C5FAC823BCC71600897B0F /* keyboard.c in Sources */ = {isa = PBXBuildFile; fileRef = A1C5FAA723BCC71600897B0F /* keyboard.c */; };
 		A1C5FACC23BCC78B00897B0F /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = A1C5FACB23BCC78A00897B0F /* main.c */; };
 		FA8B4B97196703B400F8EB7C /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA8B4B96196703B400F8EB7C /* CoreMotion.framework */; };
 		FAE0E9651BAF967F0098DFA4 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAE0E9641BAF967F0098DFA4 /* GameController.framework */; };
@@ -121,15 +123,16 @@
 		945C4F52195AF17F00DBBF61 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
 		A1194D7023BF9DBD00EE8ED5 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		A153A2B223C114D3000C9C1E /* SDL.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SDL.xcodeproj; path = "../../SDL/Xcode-iOS/SDL/SDL.xcodeproj"; sourceTree = "<group>"; };
+		A153A2CB23C12728000C9C1E /* MessageObserver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MessageObserver.h; sourceTree = "<group>"; };
+		A153A2CC23C12728000C9C1E /* MessageObserver.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MessageObserver.m; sourceTree = "<group>"; };
+		A153A2CE23C134BB000C9C1E /* ios_functions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ios_functions.h; sourceTree = "<group>"; };
+		A153A2CF23C134BB000C9C1E /* ios_functions.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ios_functions.c; sourceTree = "<group>"; };
 		A1805B3623BCCF2B00D2B9F0 /* libc.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libc.tbd; path = usr/lib/libc.tbd; sourceTree = SDKROOT; };
 		A1805B3823BCD23200D2B9F0 /* rom.sym */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = rom.sym; path = ../../rom.sym; sourceTree = "<group>"; };
 		A1805B3923BCD23200D2B9F0 /* rom.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; name = rom.bin; path = ../../rom.bin; sourceTree = "<group>"; };
 		A19B6B9C23BCFFB600797D89 /* SettingsViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SettingsViewController.h; sourceTree = "<group>"; };
 		A19B6B9D23BCFFB600797D89 /* SettingsViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SettingsViewController.m; sourceTree = "<group>"; };
 		A19B6B9E23BCFFB600797D89 /* SettingsViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = SettingsViewController.xib; sourceTree = "<group>"; };
-		A1A7947923BE54F100D813EF /* KeyboardViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = KeyboardViewController.h; sourceTree = "<group>"; };
-		A1A7947A23BE54F100D813EF /* KeyboardViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = KeyboardViewController.m; sourceTree = "<group>"; };
-		A1A7947C23BE54F100D813EF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1A7949823BF8D7000D813EF /* GameControlViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GameControlViewController.h; sourceTree = "<group>"; };
 		A1A7949923BF8D7000D813EF /* GameControlViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GameControlViewController.m; sourceTree = "<group>"; };
 		A1A7949A23BF8D7000D813EF /* GameControlViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = GameControlViewController.xib; sourceTree = "<group>"; };
@@ -181,7 +184,7 @@
 		A1C5FAA323BCC71600897B0F /* sdcard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sdcard.h; path = ../../sdcard.h; sourceTree = "<group>"; };
 		A1C5FAA423BCC71600897B0F /* disasm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = disasm.c; path = ../../disasm.c; sourceTree = "<group>"; };
 		A1C5FAA523BCC71600897B0F /* loadsave.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = loadsave.h; path = ../../loadsave.h; sourceTree = "<group>"; };
-		A1C5FAA723BCC71600897B0F /* keyboard.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = keyboard.m; path = ../../keyboard.m; sourceTree = "<group>"; };
+		A1C5FAA723BCC71600897B0F /* keyboard.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = keyboard.c; path = ../../keyboard.c; sourceTree = "<group>"; };
 		A1C5FACB23BCC78A00897B0F /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = main.c; path = ../../main.c; sourceTree = "<group>"; };
 		FA8B4B96196703B400F8EB7C /* CoreMotion.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMotion.framework; path = System/Library/Frameworks/CoreMotion.framework; sourceTree = SDKROOT; };
 		FAE0E9641BAF967F0098DFA4 /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
@@ -227,10 +230,10 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
+				A153A2B123C114A6000C9C1E /* Frameworks */,
 				945C4F52195AF17F00DBBF61 /* Default-568h@2x.png */,
 				29B97315FDCFA39411CA2CEA /* Sources */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
-				A1A7947823BE54F100D813EF /* Keyboard */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
 			);
@@ -240,8 +243,7 @@
 		29B97315FDCFA39411CA2CEA /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				A153A2B123C114A6000C9C1E /* SDL */,
-				A19B6B9223BCFF6A00797D89 /* iOS Settings */,
+				A19B6B9223BCFF6A00797D89 /* iOS */,
 				A1805B3923BCD23200D2B9F0 /* rom.bin */,
 				A1805B3823BCD23200D2B9F0 /* rom.sym */,
 				A1C5FA7D23BCC71400897B0F /* cpu */,
@@ -254,7 +256,7 @@
 				A1C5FAA223BCC71500897B0F /* javascript_interface.c */,
 				A1C5FA7823BCC71400897B0F /* joystick.c */,
 				A1C5FA8F23BCC71400897B0F /* joystick.h */,
-				A1C5FAA723BCC71600897B0F /* keyboard.m */,
+				A1C5FAA723BCC71600897B0F /* keyboard.c */,
 				A1C5FA8D23BCC71400897B0F /* keyboard.h */,
 				A1C5FA7223BCC71300897B0F /* loadsave.c */,
 				A1C5FAA523BCC71600897B0F /* loadsave.h */,
@@ -314,12 +316,12 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		A153A2B123C114A6000C9C1E /* SDL */ = {
+		A153A2B123C114A6000C9C1E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				A153A2B223C114D3000C9C1E /* SDL.xcodeproj */,
 			);
-			path = SDL;
+			path = Frameworks;
 			sourceTree = "<group>";
 		};
 		A153A2B323C114D3000C9C1E /* Products */ = {
@@ -335,7 +337,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A19B6B9223BCFF6A00797D89 /* iOS Settings */ = {
+		A19B6B9223BCFF6A00797D89 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
 				A19B6B9C23BCFFB600797D89 /* SettingsViewController.h */,
@@ -344,18 +346,12 @@
 				A1A7949823BF8D7000D813EF /* GameControlViewController.h */,
 				A1A7949923BF8D7000D813EF /* GameControlViewController.m */,
 				A1A7949A23BF8D7000D813EF /* GameControlViewController.xib */,
+				A153A2CB23C12728000C9C1E /* MessageObserver.h */,
+				A153A2CC23C12728000C9C1E /* MessageObserver.m */,
+				A153A2CE23C134BB000C9C1E /* ios_functions.h */,
+				A153A2CF23C134BB000C9C1E /* ios_functions.c */,
 			);
-			path = "iOS Settings";
-			sourceTree = "<group>";
-		};
-		A1A7947823BE54F100D813EF /* Keyboard */ = {
-			isa = PBXGroup;
-			children = (
-				A1A7947923BE54F100D813EF /* KeyboardViewController.h */,
-				A1A7947A23BE54F100D813EF /* KeyboardViewController.m */,
-				A1A7947C23BE54F100D813EF /* Info.plist */,
-			);
-			path = Keyboard;
+			path = iOS;
 			sourceTree = "<group>";
 		};
 		A1C5FA6823BCC71300897B0F /* extern */ = {
@@ -553,16 +549,18 @@
 				A1C5FAAC23BCC71600897B0F /* loadsave.c in Sources */,
 				A1A7949B23BF8D7000D813EF /* GameControlViewController.m in Sources */,
 				A1C5FAC423BCC71600897B0F /* memory.c in Sources */,
-				A1C5FAC823BCC71600897B0F /* keyboard.m in Sources */,
+				A1C5FAC823BCC71600897B0F /* keyboard.c in Sources */,
 				A1C5FAB923BCC71600897B0F /* via.c in Sources */,
 				A19B6B9F23BCFFB600797D89 /* SettingsViewController.m in Sources */,
 				A1C5FAAF23BCC71600897B0F /* rendertext.c in Sources */,
 				A1C5FAC323BCC71600897B0F /* video.c in Sources */,
 				A1C5FAC623BCC71600897B0F /* disasm.c in Sources */,
+				A153A2CD23C12728000C9C1E /* MessageObserver.m in Sources */,
 				A1C5FABD23BCC71600897B0F /* spi.c in Sources */,
 				A1C5FABB23BCC71600897B0F /* sdcard.c in Sources */,
 				A1C5FAC523BCC71600897B0F /* javascript_interface.c in Sources */,
 				A1C5FAAE23BCC71600897B0F /* joystick.c in Sources */,
+				A153A2D023C134BB000C9C1E /* ios_functions.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -584,6 +582,7 @@
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				"OTHER_LDFLAGS[arch=*]" = "-lobjc";
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthewpearce.commanderx16;
 				PRODUCT_NAME = CommanderX16;
 				TARGETED_DEVICE_FAMILY = 2;
@@ -604,6 +603,7 @@
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				"OTHER_LDFLAGS[arch=*]" = "-lobjc";
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthewpearce.commanderx16;
 				PRODUCT_NAME = CommanderX16;
 				TARGETED_DEVICE_FAMILY = 2;

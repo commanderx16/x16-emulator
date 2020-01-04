@@ -36,6 +36,14 @@
 #include "ym2151.h"
 #endif
 
+//show keyboard first time through for iOS
+#if __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
+#include "ios_functions.h"
+#endif
+#endif
+
 #define AUDIO_SAMPLES 4096
 #define SAMPLERATE 22050
 
@@ -878,9 +886,15 @@ main(int argc, char **argv)
 	video_init(window_scale, scale_quality);
 
 	joystick_init();
-    
-    SDL_StartTextInput();
 
+// first time through for iOS
+#if __APPLE__
+#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
+    createIosMessageObserver();
+    SDL_StartTextInput();
+#endif
+#endif
+    
 	machine_reset();
 
 	instruction_counter = 0;
