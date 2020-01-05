@@ -227,13 +227,13 @@ iPad
         1. Browse to the file in the "File App"
         2. Select any BIN files you need and open them with the X16 app
         3. Select the PRG file you wish to run.
-        4. The emulator will open and load the PRG. 
-        5. "RUN" will be displayed when it has loaded and is ready to go. Press ENTER at this point.
-* BASIC Code can be pasted by tapping the "Paste" Icon on the software keyboard.
+        4. The emulator will open and load the PRG
+        5. "RUN" will be displayed when it has loaded and is ready to go. Press ENTER at this point
+* BASIC Code can be pasted by tapping the "Paste" Icon on the software keyboard
 
 TODO: 
-        * BAS files are not yet able to be loaded from the Files app.
-        * Sound support
+* BAS files are not yet able to be loaded from the Files app
+* Sound support
 
 Wiki
 ----
