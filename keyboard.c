@@ -224,18 +224,11 @@ void
 handle_keyboard(bool down, SDL_Keycode sym, SDL_Scancode scancode)
 {
     if (down) {
-#if __APPLE__
-#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
-        
+#if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
         // iOS device
         if (scancode == SDL_SCANCODE_MENU) {
             sendNotification("ShowKeyboard");
         }
-#elif TARGET_OS_MAC
-        // Other kinds of Mac OS
-#else
-#   error "Unknown Apple platform"
-#endif
 #endif
         
         if (log_keyboard) {

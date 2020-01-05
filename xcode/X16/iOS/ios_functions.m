@@ -11,7 +11,7 @@
 #if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
 // iOS device
 #define OBJC_OLD_DISPATCH_PROTOTYPES 1
-
+#import <Foundation/Foundation.h>
 #include <objc/objc.h>
 #include <objc/runtime.h>
 #include <objc/message.h>
@@ -34,23 +34,8 @@ void createIosMessageObserver(void) {
 }
 
 void sendNotification(const char *notification_name) {
-    
-    SEL alloc = sel_registerName("alloc");
-    id NSString = (id)objc_getClass("NSString");
-    SEL initWithCString_encoding = sel_registerName("initWithCString:encoding:");
-    int NSUTF8StringEncoding = 4;
-    id tmp2 = objc_msgSend(NSString, alloc);
-    id notificationName = objc_msgSend(tmp2, initWithCString_encoding,
-                                       notification_name, NSUTF8StringEncoding);
-    id NSNotificationCenter = (id)objc_getClass("NSNotificationCenter");
-    
-    SEL defaultCenter = sel_registerName("defaultCenter");
-    SEL postNotificationName = sel_registerName("postNotificationName:object:");
-    
-    id tmp = objc_msgSend(NSNotificationCenter, defaultCenter);
-    
-    objc_msgSend(tmp, postNotificationName, notificationName, NULL);
-    
+    NSString *notificationName = [NSString stringWithCString:notification_name encoding:NSUTF8StringEncoding];
+    [[NSNotificationCenter defaultCenter] postNotificationName:notificationName object:nil];
 }
 
 int loadBasFile(const char *bas_path) {

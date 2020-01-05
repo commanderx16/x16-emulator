@@ -14,7 +14,7 @@
 		A1194D7123BF9DBD00EE8ED5 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1194D7023BF9DBD00EE8ED5 /* Metal.framework */; };
 		A153A2CA23C114E9000C9C1E /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A153A2BF23C114D3000C9C1E /* libSDL2.a */; };
 		A153A2CD23C12728000C9C1E /* MessageObserver.m in Sources */ = {isa = PBXBuildFile; fileRef = A153A2CC23C12728000C9C1E /* MessageObserver.m */; };
-		A153A2D023C134BB000C9C1E /* ios_functions.c in Sources */ = {isa = PBXBuildFile; fileRef = A153A2CF23C134BB000C9C1E /* ios_functions.c */; };
+		A153A2D023C134BB000C9C1E /* ios_functions.m in Sources */ = {isa = PBXBuildFile; fileRef = A153A2CF23C134BB000C9C1E /* ios_functions.m */; };
 		A1805B3723BCCF2C00D2B9F0 /* libc.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = A1805B3623BCCF2B00D2B9F0 /* libc.tbd */; };
 		A1805B3B23BCD23200D2B9F0 /* rom.bin in Resources */ = {isa = PBXBuildFile; fileRef = A1805B3923BCD23200D2B9F0 /* rom.bin */; };
 		A19B6B9F23BCFFB600797D89 /* SettingsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A19B6B9D23BCFFB600797D89 /* SettingsViewController.m */; };
@@ -122,7 +122,7 @@
 		A153A2CB23C12728000C9C1E /* MessageObserver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MessageObserver.h; sourceTree = "<group>"; };
 		A153A2CC23C12728000C9C1E /* MessageObserver.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MessageObserver.m; sourceTree = "<group>"; };
 		A153A2CE23C134BB000C9C1E /* ios_functions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ios_functions.h; sourceTree = "<group>"; };
-		A153A2CF23C134BB000C9C1E /* ios_functions.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ios_functions.c; sourceTree = "<group>"; };
+		A153A2CF23C134BB000C9C1E /* ios_functions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ios_functions.m; sourceTree = "<group>"; };
 		A1805B3623BCCF2B00D2B9F0 /* libc.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libc.tbd; path = usr/lib/libc.tbd; sourceTree = SDKROOT; };
 		A1805B3923BCD23200D2B9F0 /* rom.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; name = rom.bin; path = ../../rom.bin; sourceTree = "<group>"; };
 		A19B6B9C23BCFFB600797D89 /* SettingsViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SettingsViewController.h; sourceTree = "<group>"; };
@@ -340,7 +340,7 @@
 				A153A2CB23C12728000C9C1E /* MessageObserver.h */,
 				A153A2CC23C12728000C9C1E /* MessageObserver.m */,
 				A153A2CE23C134BB000C9C1E /* ios_functions.h */,
-				A153A2CF23C134BB000C9C1E /* ios_functions.c */,
+				A153A2CF23C134BB000C9C1E /* ios_functions.m */,
 			);
 			path = iOS;
 			sourceTree = "<group>";
@@ -545,7 +545,7 @@
 				A1C5FABB23BCC71600897B0F /* sdcard.c in Sources */,
 				A1C5FAC523BCC71600897B0F /* javascript_interface.c in Sources */,
 				A1C5FAAE23BCC71600897B0F /* joystick.c in Sources */,
-				A153A2D023C134BB000C9C1E /* ios_functions.c in Sources */,
+				A153A2D023C134BB000C9C1E /* ios_functions.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
