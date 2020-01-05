@@ -10,6 +10,8 @@
 #include "SDL_keyboard.h"
 
 @interface GameControlViewController ()
+int SDL_SendKeyboardKey(Uint8 state, SDL_Scancode scancode);
+
 -(IBAction)buttonPressed:(id)sender;
 -(IBAction)closeWindow:(id)sender;
 @end

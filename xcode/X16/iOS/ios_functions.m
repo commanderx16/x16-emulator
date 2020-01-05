@@ -15,6 +15,11 @@
 #include <objc/objc.h>
 #include <objc/runtime.h>
 #include <objc/message.h>
+#import <UIKit/UIKit.h>
+#include "SDL.h"
+#include "SDL_uikitappdelegate.h"
+
+#import "MessageObserver.h"
 #elif TARGET_OS_MAC
 // Other kinds of Mac OS
 #else
@@ -28,9 +33,17 @@
 void createIosMessageObserver(void) {
     SEL alloc = sel_registerName("alloc");
     SEL init = sel_registerName("init");
-    id MessageObserver = (id)objc_getClass("MessageObserver");
-    id tmp = objc_msgSend(MessageObserver, alloc);
+    id messageObserver = (id)objc_getClass("MessageObserver");
+    id tmp = objc_msgSend(messageObserver, alloc);
     objc_msgSend(tmp, init);
+    
+    SDLUIKitDelegate *delegate = [SDLUIKitDelegate sharedAppDelegate];
+    UIWindow *window = [delegate window];
+    UIView *rootView = [window rootViewController].view;
+    
+    MessageObserver *observer = (MessageObserver *)tmp;
+    UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:observer action:@selector(showSettings)];
+    [rootView addGestureRecognizer: longPress];
 }
 
 void sendNotification(const char *notification_name) {
@@ -195,4 +208,10 @@ int loadPrgFile(const char *prg_path) {
     }
     
     return 0;
+}
+
+UIView* rootView(void) {
+    SDLUIKitDelegate *delegate = [SDLUIKitDelegate sharedAppDelegate];
+    UIWindow *window = [delegate window];
+    return [window rootViewController].view;
 }

@@ -11,8 +11,8 @@
 #if __APPLE__
 #include <TargetConditionals.h>
 #if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
-#include "SDL.h"
 #include "ios_functions.h"
+#include "SDL.h"
 
 #elif TARGET_OS_MAC
 #include <SDL.h>
