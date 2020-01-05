@@ -1,3 +1,0 @@
-[submodule "xcode/SDL"]
-	path = xcode/SDL
-	url = https://github.com/mattuna15/SDL.git
