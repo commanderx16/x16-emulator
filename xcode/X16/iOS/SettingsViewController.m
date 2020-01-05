@@ -2,7 +2,7 @@
 //  SettingsViewController.m
 //  CommanderX16
 //
-//  Created by Pearce, Matthew (Senior Developer) on 01/01/2020.
+//  ; (C)2020 Matthew Pearce, License: 2-clause BSD
 //
 
 #import "SettingsViewController.h"
