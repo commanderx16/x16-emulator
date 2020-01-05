@@ -949,7 +949,7 @@ void*
 emulator_loop(void *param)
 {
 	for (;;) {
-        
+
 		if (debugger_enabled) {
 			int dbgCmd = DEBUGGetCurrentStatus();
 			if (dbgCmd > 0) continue;
@@ -1016,8 +1016,7 @@ emulator_loop(void *param)
 #endif
 
 #ifdef LOAD_HYPERCALLS
-        
-		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && RAM[FA] == 8 && !sdcard_file) {
+        if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && RAM[FA] == 8 && !sdcard_file) {
 			if (pc == 0xffd5) {
 				LOAD();
 			} else {
@@ -1197,4 +1196,3 @@ emulator_loop(void *param)
 
 	return 0;
 }
-

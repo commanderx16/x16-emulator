@@ -1,10 +1,8 @@
-
 #include <stdio.h>
 #include <stdbool.h>
 #include "glue.h"
 #include "ps2.h"
 #include "keyboard.h"
-
 
 #define EXTENDED_FLAG 0x100
 #define ESC_IS_BREAK /* if enabled, Esc sends Break/Pause key instead of Esc */
@@ -225,9 +223,7 @@ ps2_scancode_from_SDL_Scancode(SDL_Scancode scancode)
 void
 handle_keyboard(bool down, SDL_Keycode sym, SDL_Scancode scancode)
 {
-    
     if (down) {
- 
 #if __APPLE__
 #if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
         
@@ -243,41 +239,38 @@ handle_keyboard(bool down, SDL_Keycode sym, SDL_Scancode scancode)
 #endif
         
         if (log_keyboard) {
-            printf("DOWN 0x%02X\n", scancode);
-            fflush(stdout);
-        }
-        
-        int ps2_scancode = ps2_scancode_from_SDL_Scancode(scancode);
-        if (ps2_scancode == 0xff) {
-            // "Pause/Break" sequence
-            ps2_buffer_add(0, 0xe1);
-            ps2_buffer_add(0, 0x14);
-            ps2_buffer_add(0, 0x77);
-            ps2_buffer_add(0, 0xe1);
-            ps2_buffer_add(0, 0xf0);
-            ps2_buffer_add(0, 0x14);
-            ps2_buffer_add(0, 0xf0);
-            ps2_buffer_add(0, 0x77);
+                printf("DOWN 0x%02X\n", scancode);
+                fflush(stdout);
+            }
+
+            int ps2_scancode = ps2_scancode_from_SDL_Scancode(scancode);
+            if (ps2_scancode == 0xff) {
+                // "Pause/Break" sequence
+                ps2_buffer_add(0, 0xe1);
+                ps2_buffer_add(0, 0x14);
+                ps2_buffer_add(0, 0x77);
+                ps2_buffer_add(0, 0xe1);
+                ps2_buffer_add(0, 0xf0);
+                ps2_buffer_add(0, 0x14);
+                ps2_buffer_add(0, 0xf0);
+                ps2_buffer_add(0, 0x77);
+            } else {
+                if (ps2_scancode & EXTENDED_FLAG) {
+                    ps2_buffer_add(0, 0xe0);
+                }
+                ps2_buffer_add(0, ps2_scancode & 0xff);
+            }
         } else {
+            if (log_keyboard) {
+                printf("UP   0x%02X\n", scancode);
+                fflush(stdout);
+            }
+
+            int ps2_scancode = ps2_scancode_from_SDL_Scancode(scancode);
             if (ps2_scancode & EXTENDED_FLAG) {
                 ps2_buffer_add(0, 0xe0);
             }
+            ps2_buffer_add(0, 0xf0); // BREAK
             ps2_buffer_add(0, ps2_scancode & 0xff);
         }
-    } else {
-        if (log_keyboard) {
-            printf("UP   0x%02X\n", scancode);
-            fflush(stdout);
-        }
-        
-        int ps2_scancode = ps2_scancode_from_SDL_Scancode(scancode);
-        if (ps2_scancode & EXTENDED_FLAG) {
-            ps2_buffer_add(0, 0xe0);
-        }
-        ps2_buffer_add(0, 0xf0); // BREAK
-        ps2_buffer_add(0, ps2_scancode & 0xff);
-    }
 }
-
-
-

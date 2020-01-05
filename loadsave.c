@@ -160,9 +160,9 @@ LOAD()
         strcpy(fullFileName,getenv("HOME"));
         strcat(fullFileName,"/Documents/");
         strcat(fullFileName,filename);
-        FILE *f = fopen(fullFileName, "r");
+        FILE *f = fopen(fullFileName, "rb");
         #else
-        FILE *f = fopen(filename, "r");
+        FILE *f = fopen(filename, "rb");
         #endif
 		
 		if (!f) {
@@ -229,9 +229,7 @@ LOAD()
 void
 SAVE()
 {
-    
 	char filename[41];
-    
 	uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
 	memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
 	filename[len] = 0;
@@ -243,8 +241,6 @@ SAVE()
 		a = 0;
 		return;
 	}
-
-    //use correct file location for ios
     //use correct file location for ios
     #if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
     char fullFileName[256];
@@ -252,9 +248,9 @@ SAVE()
     strcpy(fullFileName,getenv("HOME"));
     strcat(fullFileName,"/Documents/");
     strcat(fullFileName,filename);
-    FILE *f = fopen(fullFileName, "w");
+    FILE *f = fopen(fullFileName, "wb");
     #else
-    FILE *f = fopen(filename, "w");
+    FILE *f = fopen(filename, "wb");
     #endif
     
 	if (!f) {
