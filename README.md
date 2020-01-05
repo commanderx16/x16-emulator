@@ -27,13 +27,11 @@ Install SDL2 using `brew install sdl2`.
 
 ### iPad Build
 
-Using xcode open the project file in the emulator xcode directory.
+Using Xcode open the project file in the emulator xcode directory.
 A modified version of the SDL Library is included as a submodule. 
 Ensure that you have updated the git submodules.
 
 Choose your device or simulator and press run.
-
-
 
 ### Linux Build
 
@@ -87,8 +85,6 @@ Run `x16emu -h` to see all command line options.
 
 Keyboard Layout
 ---------------
-
-* ON IPADS A LONG PRESS WILL GIVE YOU ACCESS TO THE FUNCTION KEYS
 
 The X16 uses a PS/2 keyboard, and the ROM currently supports several different layouts. The following table shows their names, and what keys produce different characters than expected:
 
@@ -174,8 +170,6 @@ The emulator will interpret filenames relative to the directory it was started i
 
 To avoid incompatibility problems between the PETSCII and ASCII encodings, use lower case filenames on the host side, and unshifted filenames on the X16 side.
 
-* ON IPADS THEY WILL BE STORED IN THE DOCUMENTS FOLDER
-
 Dealing with BASIC Programs
 ---------------------------
 
@@ -224,6 +218,22 @@ When `-debug` is selected the No-Operation $FF will break into the debugger auto
 
 Effectively keyboard routines only work when the debugger is running normally. Single stepping through keyboard code will not work at present.
 
+iPad
+----
+
+* Files are saved in the $HOME/Documents folder
+* Function keys and a Gamepad can be accessed by using a Long Press on the main window
+* To run PRG files:
+        1. Browse to the file in the "File App"
+        2. Select any BIN files you need and open them with the X16 app
+        3. Select the PRG file you wish to run.
+        4. The emulator will open and load the PRG. 
+        5. "RUN" will be displayed when it has loaded and is ready to go. Press ENTER at this point.
+* BASIC Code can be pasted by tapping the "Paste" Icon on the software keyboard.
+
+TODO: 
+        * BAS files are not yet able to be loaded from the Files app.
+        * Sound support
 
 Wiki
 ----
