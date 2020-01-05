@@ -17,7 +17,6 @@
 uint8_t ram_bank;
 uint8_t rom_bank;
 
-uint8_t *RAM;
 uint8_t ROM[ROM_SIZE];
 
 #define DEVICE_EMULATOR (0x9fb0)
