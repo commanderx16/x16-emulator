@@ -51,7 +51,23 @@ void receiveFile(char* dropped_filedir) {
     //remove old file.
     [[NSFileManager defaultManager] removeItemAtPath:path error:&error];
     [[NSFileManager defaultManager] moveItemAtPath:fileURL.path toPath:path error:&error];
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"FileSaved" object:path];
+    
+    //bin file
+    
+    NSString *filePath = [path uppercaseString];
+    if ([filePath rangeOfString:@".BIN"].location != NSNotFound) {
+        return;
+    }
+    
+    if ([filePath rangeOfString:@".PRG"].location == NSNotFound) {
+        if ([filePath rangeOfString:@".BAS"].location == NSNotFound) {
+            return;
+        } else {
+            loadBasFile([path cStringUsingEncoding:NSUTF8StringEncoding]);
+        }
+    } else {
+        loadPrgFile([path cStringUsingEncoding:NSUTF8StringEncoding]);
+    }
 }
 
 int loadBasFile(const char *bas_path) {

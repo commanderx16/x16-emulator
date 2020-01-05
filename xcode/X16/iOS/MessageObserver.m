@@ -24,32 +24,9 @@
     if (self == [super init]) {
         
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showSettings) name:@"ShowKeyboard" object:nil];
-        
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(loadFile:) name:@"FileSaved" object:nil];
     }
     
     return self;
-}
-
--(int)loadFile:(NSNotification *)notification {
-    NSString *filePath = (NSString *)notification.object;
-    
-    //bin file
-    if ([[filePath uppercaseString] rangeOfString:@".BIN"].location != NSNotFound) {
-        return 0;
-    }
-    
-    if ([[filePath uppercaseString] rangeOfString:@".PRG"].location == NSNotFound) {
-        if ([[filePath uppercaseString] rangeOfString:@".BAS"].location == NSNotFound) {
-            return 1;
-        } else {
-            return loadBasFile([filePath cStringUsingEncoding:NSUTF8StringEncoding]);
-        }
-    } else {
-      return loadPrgFile([filePath cStringUsingEncoding:NSUTF8StringEncoding]);
-    }
-    
-    return 1;
 }
 
 -(void)showSettings {
