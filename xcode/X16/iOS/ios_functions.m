@@ -38,6 +38,22 @@ void sendNotification(const char *notification_name) {
     [[NSNotificationCenter defaultCenter] postNotificationName:notificationName object:nil];
 }
 
+void receiveFile(char* dropped_filedir) {
+    
+    NSURL *fileURL = [NSURL URLWithString:[NSString stringWithCString:dropped_filedir encoding:NSUTF8StringEncoding]];
+    
+    NSString *path = NSHomeDirectory();
+    path = [path stringByAppendingPathComponent:@"Documents"];
+    path = [path stringByAppendingPathComponent:fileURL.lastPathComponent];
+    
+    NSError *error;
+    
+    //remove old file.
+    [[NSFileManager defaultManager] removeItemAtPath:path error:&error];
+    [[NSFileManager defaultManager] moveItemAtPath:fileURL.path toPath:path error:&error];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"FileSaved" object:path];
+}
+
 int loadBasFile(const char *bas_path) {
     bool pasting_bas = false;
     char paste_text_data[65536];

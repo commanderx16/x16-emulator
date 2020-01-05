@@ -16,6 +16,7 @@
 
 void sendNotification(const char *notification_name);
 void createIosMessageObserver(void);
+void receiveFile(char* dropped_filedir);
 int loadPrgFile(const char *prg_path);
 int loadBasFile(const char *bas_path);
 
