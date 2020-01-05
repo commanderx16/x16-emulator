@@ -18,11 +18,6 @@ int SDL_SendKeyboardKey(Uint8 state, SDL_Scancode scancode);
 
 @implementation GameControlViewController
 
-- (void)viewDidLoad {
-    [super viewDidLoad];
-    // Do any additional setup after loading the view from its nib.
-}
-
 -(IBAction)buttonPressed:(id)sender
 {
     UIButton *button = (UIButton *)sender;

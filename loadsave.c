@@ -55,13 +55,9 @@ create_directory_listing(uint8_t *data)
 	*data++ = 'C';
 	*data++ = 0;
     
-    char filename[256];
-    uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
-    memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
-    filename[len] = 0;
-    
-    //use correct file location for ios
+    char filename[255];
     #if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
+	//use correct file location for ios
     strcpy(filename,getenv("HOME"));
     //concatenating the path string returned from HOME
     strcat(filename,"/Documents/.");
@@ -69,7 +65,6 @@ create_directory_listing(uint8_t *data)
     strcpy(filename,".");
     #endif
     
-
 	if (!(dirp = opendir(filename))) {
 		return 0;
 	}
@@ -152,14 +147,13 @@ LOAD()
 		a = 0;
 	} else {
         
-        //use correct file location for ios
-        //use correct file location for ios
         #if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
-        char fullFileName[256];
+		//use correct file location for ios
+        char fullFileName[255];
         //concatenating the path string returned from HOME
-        strcpy(fullFileName,getenv("HOME"));
-        strcat(fullFileName,"/Documents/");
-        strcat(fullFileName,filename);
+        strcpy(fullFileName, getenv("HOME"));
+        strcat(fullFileName, "/Documents/");
+        strcat(fullFileName, filename);
         FILE *f = fopen(fullFileName, "rb");
         #else
         FILE *f = fopen(filename, "rb");
@@ -243,11 +237,11 @@ SAVE()
 	}
     //use correct file location for ios
     #if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
-    char fullFileName[256];
+    char fullFileName[255];
     //concatenating the path string returned from HOME
-    strcpy(fullFileName,getenv("HOME"));
-    strcat(fullFileName,"/Documents/");
-    strcat(fullFileName,filename);
+    strcpy(fullFileName, getenv("HOME"));
+    strcat(fullFileName, "/Documents/");
+    strcat(fullFileName, filename);
     FILE *f = fopen(fullFileName, "wb");
     #else
     FILE *f = fopen(filename, "wb");

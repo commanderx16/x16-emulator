@@ -435,44 +435,8 @@ void closeAudio()
 #if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
 int HandleAppEvents(void *userdata, SDL_Event *event)
 {
-    switch (event->type)
-    {
-        case SDL_APP_TERMINATING:
-            /* Terminate the app.
-             Shut everything down before returning from this function.
-             */
-            return 0;
-        case SDL_APP_LOWMEMORY:
-            /* You will get this when your app is paused and iOS wants more memory.
-             113                Release as much memory as possible.
-             114             */
-            return 0;
-        case SDL_APP_WILLENTERBACKGROUND:
-            /* Prepare your app to go into the background.  Stop loops, etc.
-             118                This gets called when the user hits the home button, or gets a call.
-             119             */
-            return 0;
-        case SDL_APP_DIDENTERBACKGROUND:
-            /* This will get called if the user accepted whatever sent your app to the background.
-             123                If the user got a phone call and canceled it, you'll instead get an SDL_APP_DIDENTERFOREGROUND event and restart your loops.
-             124                When you get this, you have 5 seconds to save all your state or the app will be terminated.
-             125                Your app is NOT active at this point.
-             126             */
-            return 0;
-        case SDL_APP_WILLENTERFOREGROUND:
-            /* This call happens when your app is coming back to the foreground.
-             130                Restore all your state here.
-             131             */
-            return 0;
-        case SDL_APP_DIDENTERFOREGROUND:
-            /* Restart your loops here.
-             135                Your app is interactive and getting CPU again.
-             136             */
-            return 0;
-        default:
-            /* No special processing, add it to the event queue */
-            return 1;
-    }
+//TODO: App events to be handled here if backgrounding support is needed.
+	return 1;
 }
 #endif
 
@@ -891,9 +855,10 @@ main(int argc, char **argv)
 #if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
     SDL_SetEventFilter(HandleAppEvents, NULL);
     createIosMessageObserver();
-    SDL_StartTextInput();
 #endif
-    
+	//Allow text entry on touch
+	SDL_StartTextInput();
+	
 	machine_reset();
 
 	instruction_counter = 0;
