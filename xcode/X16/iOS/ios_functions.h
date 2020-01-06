@@ -19,7 +19,7 @@ void receiveFile(char* dropped_filedir);
 int loadPrgFile(const char *prg_path);
 int loadBasFile(const char *bas_path);
 
-//patch required for SDL 
+//patch required for SDL
 void memset_pattern4(void *__b, const void *__pattern4, size_t __len);
 
 uint8_t iso8859_15_from_unicode(uint32_t c);
