@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Workspace
-   version = "1.0">
-   <FileRef
-	  location = "self:/Users/mpe18/Documents/code/x16-emulator/xcode/X16/CommanderX16.xcodeproj">
-   </FileRef>
+<Workspace version = "1.0">
+		<FileRef location = "self:/Users/mpe18/Documents/code/x16-emulator/xcode/X16/CommanderX16.xcodeproj">
+		</FileRef>
 </Workspace>

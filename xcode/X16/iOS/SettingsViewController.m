@@ -46,17 +46,17 @@ int SDL_SendKeyboardKey(Uint8 state, SDL_Scancode scancode);
 	if (!game) {
 		game = [[GameControlViewController alloc] initWithNibName:@"GameControlViewController" bundle:nil];
 	}
-	
+
 	UIView *sdlView = [self.view superview];
-	
+
 	CGRect rect = game.view.frame;
-	
+
 	CGPoint origin = CGPointMake(sdlView.frame.size.width - 400, sdlView.frame.size.height - 200);
 	rect.origin = origin;
 	game.view.frame = rect;
-	
+
 	game.view.tag = 667;
-	
+
 	[sdlView addSubview:game.view];
 }
 
