@@ -2,7 +2,7 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
-#define _XOPEN_SOURCE   600
+#define _XOPEN_SOURCE	600
 #define _POSIX_C_SOURCE 1
 
 #include <stdlib.h>
@@ -488,7 +488,7 @@ main(int argc, char **argv)
 			int kb = atoi(argv[0]);
 			bool found = false;
 			for (int cmp = 8; cmp <= 2048; cmp *= 2) {
-				if (kb == cmp)  {
+				if (kb == cmp)	{
 					found = true;
 				}
 			}
@@ -853,12 +853,12 @@ main(int argc, char **argv)
 
 // first time through for iOS
 #if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
-    SDL_SetEventFilter(HandleAppEvents, NULL);
-    createIosMessageObserver();
+	SDL_SetEventFilter(HandleAppEvents, NULL);
+	createIosMessageObserver();
 #endif
 	//Allow text entry on touch
 	SDL_StartTextInput();
-	
+
 	machine_reset();
 
 	instruction_counter = 0;
@@ -981,7 +981,7 @@ emulator_loop(void *param)
 #endif
 
 #ifdef LOAD_HYPERCALLS
-        if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && RAM[FA] == 8 && !sdcard_file) {
+		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && RAM[FA] == 8 && !sdcard_file) {
 			if (pc == 0xffd5) {
 				LOAD();
 			} else {
@@ -989,7 +989,7 @@ emulator_loop(void *param)
 			}
 			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
 			sp += 2;
-        }
+		}
 #endif
 
 		uint32_t old_clockticks6502 = clockticks6502;

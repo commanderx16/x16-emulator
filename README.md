@@ -28,7 +28,7 @@ Install SDL2 using `brew install sdl2`.
 ### iPad Build
 
 Using Xcode open the project file in the emulator xcode directory.
-A modified version of the SDL Library is included as a zip file. Extract it in place before building. 
+A copy of the SDL Library source is included as a zip file. Extract it in place before building.
 Ensure that you have updated the git submodules.
 
 Choose your device or simulator and press run.
@@ -231,7 +231,7 @@ iPad
         5. "RUN" will be displayed when it has loaded and is ready to go. Press ENTER at this point
 * BASIC Code can be pasted by tapping the "Paste" Icon on the software keyboard
 
-TODO: 
+TODO:
 * BAS files are not yet able to be loaded from the Files app
 * Sound support
 

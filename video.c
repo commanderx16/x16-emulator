@@ -934,12 +934,12 @@ video_update()
 			mouse_y = event.motion.y;
 		}
 #if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
-        if (event.type == SDL_DROPFILE) {      // In case if dropped file
-            char* dropped_filedir;
-            dropped_filedir = event.drop.file;
-            receiveFile(dropped_filedir);
-            SDL_free(dropped_filedir);    // Free dropped_filedir memory
-        }
+		if (event.type == SDL_DROPFILE) {	   // In case if dropped file
+			char* dropped_filedir;
+			dropped_filedir = event.drop.file;
+			receiveFile(dropped_filedir);
+			SDL_free(dropped_filedir);	  // Free dropped_filedir memory
+		}
 #endif
 	}
 	return true;
