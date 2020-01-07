@@ -3,7 +3,7 @@
 //	CommanderX16
 //
 //	; (C)2020 Matthew Pearce, License: 2-clause BSD
-//
+// 	icons by Icons8 
 
 #import "SettingsViewController.h"
 #import "GameControlViewController.h"
