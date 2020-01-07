@@ -6,7 +6,7 @@
 //
 
 #import "GameControlViewController.h"
-#include "SDL.h"
+#include <SDL.h>
 #include "SDL_keyboard.h"
 
 @interface GameControlViewController ()

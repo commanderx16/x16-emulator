@@ -12,16 +12,11 @@
 #include <TargetConditionals.h>
 #if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
 #include "ios_functions.h"
-#include "SDL.h"
+#endif
+#endif
 
-#elif TARGET_OS_MAC
 #include <SDL.h>
-#else
-#   error "Unknown Apple platform"
-#endif
-#else
-#include <SDL.h>
-#endif
+
 #include "glue.h"
 
 bool video_init(int window_scale, char *quality);
