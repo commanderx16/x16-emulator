@@ -12,6 +12,7 @@
 #include "memory.h"
 #include "rom_symbols.h"
 #include "utf8.h"
+#include "glue.h"
 
 void sendNotification(const char *notification_name);
 void createIosMessageObserver(void);

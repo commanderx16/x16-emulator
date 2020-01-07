@@ -9,14 +9,15 @@
 #import "GameControlViewController.h"
 #include "SDL.h"
 #include "SDL_keyboard.h"
+#include "ios_functions.h"
 
 @interface SettingsViewController ()
 int SDL_SendKeyboardKey(Uint8 state, SDL_Scancode scancode);
-
 -(IBAction)buttonPressed:(id)sender;
 -(IBAction)closeWindow:(id)sender;
 -(IBAction)toggleKeyboard:(id)sender;
 -(IBAction)showGamePad:(id)sender;
+-(IBAction)reset:(id)sender;
 
 @property (nonatomic, retain) GameControlViewController *game;
 @end
@@ -24,6 +25,16 @@ int SDL_SendKeyboardKey(Uint8 state, SDL_Scancode scancode);
 @implementation SettingsViewController
 
 @synthesize game;
+
+-(void)viewDidLoad {
+	[super viewDidLoad];
+
+	self.view.translatesAutoresizingMaskIntoConstraints = YES;
+	self.view.layer.cornerRadius = 10;
+	self.view.layer.masksToBounds = true;
+	self.view.layer.borderWidth = 2;
+	self.view.layer.borderColor = UIColor.blackColor.CGColor;
+}
 
 -(IBAction)toggleKeyboard:(id)sender {
 
@@ -54,10 +65,13 @@ int SDL_SendKeyboardKey(Uint8 state, SDL_Scancode scancode);
 	CGPoint origin = CGPointMake(sdlView.frame.size.width - 400, sdlView.frame.size.height - 200);
 	rect.origin = origin;
 	game.view.frame = rect;
-
 	game.view.tag = 667;
 
 	[sdlView addSubview:game.view];
+}
+
+-(IBAction)reset:(id)sender {
+	machine_reset();
 }
 
 @end
