@@ -20,5 +20,5 @@ indent_style = space
 [*.md]
 indent_style = space
 
-[{*.css,*.html,*.js,*.json,*.xib}]
+[{*.css,*.html,*.js,*.json,*.xib,*.xcscheme}]
 indent_style = space
