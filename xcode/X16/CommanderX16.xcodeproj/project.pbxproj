@@ -12,7 +12,10 @@
 		28FD15000DC6FC520079059D /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD14FF0DC6FC520079059D /* OpenGLES.framework */; };
 		28FD15080DC6FC5B0079059D /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD15070DC6FC5B0079059D /* QuartzCore.framework */; };
 		A1194D7123BF9DBD00EE8ED5 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1194D7023BF9DBD00EE8ED5 /* Metal.framework */; };
-		A153A2CA23C114E9000C9C1E /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A153A2BF23C114D3000C9C1E /* libSDL2.a */; };
+		A127A00823C5DA0500CA3665 /* JoystickController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A127A00723C5DA0500CA3665 /* JoystickController.swift */; };
+		A127A02923C5EAFF00CA3665 /* JoyStickView.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A127A00F23C5EA3E00CA3665 /* JoyStickView.framework */; };
+		A127A02A23C5EAFF00CA3665 /* JoyStickView.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A127A00F23C5EA3E00CA3665 /* JoyStickView.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A127A02E23C5EB9300CA3665 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A127A01E23C5EA5600CA3665 /* libSDL2.a */; };
 		A153A2CD23C12728000C9C1E /* MessageObserver.m in Sources */ = {isa = PBXBuildFile; fileRef = A153A2CC23C12728000C9C1E /* MessageObserver.m */; };
 		A153A2D023C134BB000C9C1E /* ios_functions.m in Sources */ = {isa = PBXBuildFile; fileRef = A153A2CF23C134BB000C9C1E /* ios_functions.m */; };
 		A1805B3723BCCF2C00D2B9F0 /* libc.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = A1805B3623BCCF2B00D2B9F0 /* libc.tbd */; };
@@ -53,51 +56,72 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		A153A2BE23C114D3000C9C1E /* PBXContainerItemProxy */ = {
+		A127A00E23C5EA3E00CA3665 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = A153A2B223C114D3000C9C1E /* SDL.xcodeproj */;
+			containerPortal = A162BDEF23C4EDD800796247 /* JoyStickView.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BDCA4093215A3AEE00578F67;
+			remoteInfo = JoyStickView;
+		};
+		A127A01023C5EA3E00CA3665 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A162BDEF23C4EDD800796247 /* JoyStickView.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BDBB51CF220B0D9900C579B2;
+			remoteInfo = JoyStickViewTests;
+		};
+		A127A01D23C5EA5600CA3665 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A162BDD623C4ED9100796247 /* SDL.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = FD6526630DE8FCCB002AD96B;
 			remoteInfo = "libSDL-iOS";
 		};
-		A153A2C023C114D3000C9C1E /* PBXContainerItemProxy */ = {
+		A127A01F23C5EA5600CA3665 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = A153A2B223C114D3000C9C1E /* SDL.xcodeproj */;
+			containerPortal = A162BDD623C4ED9100796247 /* SDL.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = 52ED1E5C222889500061FCE0;
 			remoteInfo = "libSDL-iOS-dylib";
 		};
-		A153A2C223C114D3000C9C1E /* PBXContainerItemProxy */ = {
+		A127A02123C5EA5600CA3665 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = A153A2B223C114D3000C9C1E /* SDL.xcodeproj */;
+			containerPortal = A162BDD623C4ED9100796247 /* SDL.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = FAB598141BB5C1B100BE72C5;
 			remoteInfo = "libSDL-tvOS";
 		};
-		A153A2C423C114D3000C9C1E /* PBXContainerItemProxy */ = {
+		A127A02323C5EA5600CA3665 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = A153A2B223C114D3000C9C1E /* SDL.xcodeproj */;
+			containerPortal = A162BDD623C4ED9100796247 /* SDL.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = F3E3C7572241389A007D243C;
 			remoteInfo = "libSDL-tvOS-dylib";
 		};
-		A153A2C623C114D3000C9C1E /* PBXContainerItemProxy */ = {
+		A127A02523C5EA5600CA3665 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = A153A2B223C114D3000C9C1E /* SDL.xcodeproj */;
+			containerPortal = A162BDD623C4ED9100796247 /* SDL.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = F3E3C65222406928007D243C;
 			remoteInfo = "libSDLmain-iOS";
 		};
-		A153A2C823C114D3000C9C1E /* PBXContainerItemProxy */ = {
+		A127A02723C5EA5600CA3665 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = A153A2B223C114D3000C9C1E /* SDL.xcodeproj */;
+			containerPortal = A162BDD623C4ED9100796247 /* SDL.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = F3E3C75F224138AE007D243C;
 			remoteInfo = "libSDLmain-tvOS";
 		};
-		A162BDAD23C4E20C00796247 /* PBXContainerItemProxy */ = {
+		A127A02F23C5EB9D00CA3665 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = A153A2B223C114D3000C9C1E /* SDL.xcodeproj */;
+			containerPortal = A162BDEF23C4EDD800796247 /* JoyStickView.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = BDCA4092215A3AEE00578F67;
+			remoteInfo = JoyStickView;
+		};
+		A127A03123C5EB9D00CA3665 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A162BDD623C4ED9100796247 /* SDL.xcodeproj */;
 			proxyType = 1;
 			remoteGlobalIDString = FD6526620DE8FCCB002AD96B;
 			remoteInfo = "libSDL-iOS";
@@ -111,6 +135,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				A127A02A23C5EAFF00CA3665 /* JoyStickView.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -135,11 +160,14 @@
 		28FD15070DC6FC5B0079059D /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1194D7023BF9DBD00EE8ED5 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
-		A153A2B223C114D3000C9C1E /* SDL.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SDL.xcodeproj; path = "../../SDL/Xcode-iOS/SDL/SDL.xcodeproj"; sourceTree = "<group>"; };
+		A1279FF923C4FFFC00CA3665 /* CommanderX16-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CommanderX16-Bridging-Header.h"; sourceTree = "<group>"; };
+		A127A00723C5DA0500CA3665 /* JoystickController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoystickController.swift; sourceTree = "<group>"; };
 		A153A2CB23C12728000C9C1E /* MessageObserver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MessageObserver.h; sourceTree = "<group>"; };
 		A153A2CC23C12728000C9C1E /* MessageObserver.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MessageObserver.m; sourceTree = "<group>"; };
 		A153A2CE23C134BB000C9C1E /* ios_functions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ios_functions.h; sourceTree = "<group>"; };
 		A153A2CF23C134BB000C9C1E /* ios_functions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ios_functions.m; sourceTree = "<group>"; };
+		A162BDD623C4ED9100796247 /* SDL.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SDL.xcodeproj; path = "../Frameworks/SDL/Xcode-iOS/SDL/SDL.xcodeproj"; sourceTree = "<group>"; };
+		A162BDEF23C4EDD800796247 /* JoyStickView.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = JoyStickView.xcodeproj; path = ../Frameworks/JoyStickView/JoyStickView.xcodeproj; sourceTree = "<group>"; };
 		A1805B3623BCCF2B00D2B9F0 /* libc.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libc.tbd; path = usr/lib/libc.tbd; sourceTree = SDKROOT; };
 		A1805B3923BCD23200D2B9F0 /* rom.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; name = rom.bin; path = ../../rom.bin; sourceTree = "<group>"; };
 		A19B6B9C23BCFFB600797D89 /* SettingsViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SettingsViewController.h; sourceTree = "<group>"; };
@@ -218,9 +246,10 @@
 				1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */,
 				1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */,
 				28FD15000DC6FC520079059D /* OpenGLES.framework in Frameworks */,
-				A153A2CA23C114E9000C9C1E /* libSDL2.a in Frameworks */,
 				28FD15080DC6FC5B0079059D /* QuartzCore.framework in Frameworks */,
 				FD779EDE0E26BA1200F39101 /* CoreAudio.framework in Frameworks */,
+				A127A02923C5EAFF00CA3665 /* JoyStickView.framework in Frameworks */,
+				A127A02E23C5EB9300CA3665 /* libSDL2.a in Frameworks */,
 				FD77A0850E26BDB800F39101 /* AudioToolbox.framework in Frameworks */,
 				FDB8BFC60E5A0F6A00980157 /* CoreGraphics.framework in Frameworks */,
 				FA8B4B97196703B400F8EB7C /* CoreMotion.framework in Frameworks */,
@@ -241,7 +270,7 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
-				A153A2B123C114A6000C9C1E /* Frameworks */,
+				A162BDD523C4ED7A00796247 /* Frameworks */,
 				29B97315FDCFA39411CA2CEA /* Sources */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
@@ -324,30 +353,41 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		A153A2B123C114A6000C9C1E /* Frameworks */ = {
+		A127A00A23C5EA3E00CA3665 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A153A2B223C114D3000C9C1E /* SDL.xcodeproj */,
-			);
-			path = Frameworks;
-			sourceTree = "<group>";
-		};
-		A153A2B323C114D3000C9C1E /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				A153A2BF23C114D3000C9C1E /* libSDL2.a */,
-				A153A2C123C114D3000C9C1E /* libSDL2.dylib */,
-				A153A2C323C114D3000C9C1E /* libSDL2.a */,
-				A153A2C523C114D3000C9C1E /* libSDL2.dylib */,
-				A153A2C723C114D3000C9C1E /* libSDLmain.a */,
-				A153A2C923C114D3000C9C1E /* libSDLmain.a */,
+				A127A00F23C5EA3E00CA3665 /* JoyStickView.framework */,
+				A127A01123C5EA3E00CA3665 /* JoyStickViewTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A127A01223C5EA5500CA3665 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A127A01E23C5EA5600CA3665 /* libSDL2.a */,
+				A127A02023C5EA5600CA3665 /* libSDL2.dylib */,
+				A127A02223C5EA5600CA3665 /* libSDL2.a */,
+				A127A02423C5EA5600CA3665 /* libSDL2.dylib */,
+				A127A02623C5EA5600CA3665 /* libSDLmain.a */,
+				A127A02823C5EA5600CA3665 /* libSDLmain.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A162BDD523C4ED7A00796247 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A162BDEF23C4EDD800796247 /* JoyStickView.xcodeproj */,
+				A162BDD623C4ED9100796247 /* SDL.xcodeproj */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		A19B6B9223BCFF6A00797D89 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
+				A127A00723C5DA0500CA3665 /* JoystickController.swift */,
 				A19B6B9C23BCFFB600797D89 /* SettingsViewController.h */,
 				A19B6B9D23BCFFB600797D89 /* SettingsViewController.m */,
 				A19B6B9E23BCFFB600797D89 /* SettingsViewController.xib */,
@@ -358,6 +398,7 @@
 				A153A2CC23C12728000C9C1E /* MessageObserver.m */,
 				A153A2CE23C134BB000C9C1E /* ios_functions.h */,
 				A153A2CF23C134BB000C9C1E /* ios_functions.m */,
+				A1279FF923C4FFFC00CA3665 /* CommanderX16-Bridging-Header.h */,
 			);
 			path = iOS;
 			sourceTree = "<group>";
@@ -433,7 +474,8 @@
 			buildRules = (
 			);
 			dependencies = (
-				A162BDAE23C4E20C00796247 /* PBXTargetDependency */,
+				A127A03023C5EB9D00CA3665 /* PBXTargetDependency */,
+				A127A03223C5EB9D00CA3665 /* PBXTargetDependency */,
 			);
 			name = CommanderX16;
 			productName = "___PROJECTNAME___";
@@ -450,6 +492,7 @@
 				TargetAttributes = {
 					1D6058900D05DD3D006BFB54 = {
 						DevelopmentTeam = RUE5S47RT7;
+						LastSwiftMigration = 1130;
 					};
 				};
 			};
@@ -464,8 +507,12 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
-					ProductGroup = A153A2B323C114D3000C9C1E /* Products */;
-					ProjectRef = A153A2B223C114D3000C9C1E /* SDL.xcodeproj */;
+					ProductGroup = A127A00A23C5EA3E00CA3665 /* Products */;
+					ProjectRef = A162BDEF23C4EDD800796247 /* JoyStickView.xcodeproj */;
+				},
+				{
+					ProductGroup = A127A01223C5EA5500CA3665 /* Products */;
+					ProjectRef = A162BDD623C4ED9100796247 /* SDL.xcodeproj */;
 				},
 			);
 			projectRoot = "";
@@ -476,46 +523,60 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
-		A153A2BF23C114D3000C9C1E /* libSDL2.a */ = {
+		A127A00F23C5EA3E00CA3665 /* JoyStickView.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = JoyStickView.framework;
+			remoteRef = A127A00E23C5EA3E00CA3665 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A127A01123C5EA3E00CA3665 /* JoyStickViewTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = JoyStickViewTests.xctest;
+			remoteRef = A127A01023C5EA3E00CA3665 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A127A01E23C5EA5600CA3665 /* libSDL2.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
 			path = libSDL2.a;
-			remoteRef = A153A2BE23C114D3000C9C1E /* PBXContainerItemProxy */;
+			remoteRef = A127A01D23C5EA5600CA3665 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		A153A2C123C114D3000C9C1E /* libSDL2.dylib */ = {
+		A127A02023C5EA5600CA3665 /* libSDL2.dylib */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
 			path = libSDL2.dylib;
-			remoteRef = A153A2C023C114D3000C9C1E /* PBXContainerItemProxy */;
+			remoteRef = A127A01F23C5EA5600CA3665 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		A153A2C323C114D3000C9C1E /* libSDL2.a */ = {
+		A127A02223C5EA5600CA3665 /* libSDL2.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
 			path = libSDL2.a;
-			remoteRef = A153A2C223C114D3000C9C1E /* PBXContainerItemProxy */;
+			remoteRef = A127A02123C5EA5600CA3665 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		A153A2C523C114D3000C9C1E /* libSDL2.dylib */ = {
+		A127A02423C5EA5600CA3665 /* libSDL2.dylib */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
 			path = libSDL2.dylib;
-			remoteRef = A153A2C423C114D3000C9C1E /* PBXContainerItemProxy */;
+			remoteRef = A127A02323C5EA5600CA3665 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		A153A2C723C114D3000C9C1E /* libSDLmain.a */ = {
+		A127A02623C5EA5600CA3665 /* libSDLmain.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
 			path = libSDLmain.a;
-			remoteRef = A153A2C623C114D3000C9C1E /* PBXContainerItemProxy */;
+			remoteRef = A127A02523C5EA5600CA3665 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		A153A2C923C114D3000C9C1E /* libSDLmain.a */ = {
+		A127A02823C5EA5600CA3665 /* libSDLmain.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
 			path = libSDLmain.a;
-			remoteRef = A153A2C823C114D3000C9C1E /* PBXContainerItemProxy */;
+			remoteRef = A127A02723C5EA5600CA3665 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
@@ -547,6 +608,7 @@
 				A1C5FABA23BCC71600897B0F /* debugger.c in Sources */,
 				A1C5FAAA23BCC71600897B0F /* vera_spi.c in Sources */,
 				A1C5FAAB23BCC71600897B0F /* vera_uart.c in Sources */,
+				A127A00823C5DA0500CA3665 /* JoystickController.swift in Sources */,
 				A1C5FAA923BCC71600897B0F /* ym2151.c in Sources */,
 				A1C5FAB223BCC71600897B0F /* fake6502.c in Sources */,
 				A1C5FAB023BCC71600897B0F /* ps2.c in Sources */,
@@ -571,10 +633,15 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		A162BDAE23C4E20C00796247 /* PBXTargetDependency */ = {
+		A127A03023C5EB9D00CA3665 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = JoyStickView;
+			targetProxy = A127A02F23C5EB9D00CA3665 /* PBXContainerItemProxy */;
+		};
+		A127A03223C5EB9D00CA3665 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "libSDL-iOS";
-			targetProxy = A162BDAD23C4E20C00796247 /* PBXContainerItemProxy */;
+			targetProxy = A127A03123C5EB9D00CA3665 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -585,6 +652,7 @@
 				ALWAYS_SEARCH_USER_PATHS = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
@@ -600,8 +668,11 @@
 				"OTHER_LDFLAGS[arch=*]" = "-lobjc";
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthewpearce.commanderx16;
 				PRODUCT_NAME = CommanderX16;
+				SWIFT_OBJC_BRIDGING_HEADER = "iOS/CommanderX16-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 2;
-				USER_HEADER_SEARCH_PATHS = "../../../include ../SDL/include ../SDL/src/video/uikit/**";
+				USER_HEADER_SEARCH_PATHS = "../../../include ../Frameworks/SDL/include ../Frameworks/SDL/src/video/uikit/** \"$(SRCROOT)/../Frameworks/JoyStickView/Src\"";
 			};
 			name = Debug;
 		};
@@ -611,6 +682,7 @@
 				ALWAYS_SEARCH_USER_PATHS = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
@@ -624,8 +696,10 @@
 				"OTHER_LDFLAGS[arch=*]" = "-lobjc";
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthewpearce.commanderx16;
 				PRODUCT_NAME = CommanderX16;
+				SWIFT_OBJC_BRIDGING_HEADER = "iOS/CommanderX16-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 2;
-				USER_HEADER_SEARCH_PATHS = "../../../include ../SDL/include ../SDL/src/video/uikit/**";
+				USER_HEADER_SEARCH_PATHS = "../../../include ../Frameworks/SDL/include ../Frameworks/SDL/src/video/uikit/** \"$(SRCROOT)/../Frameworks/JoyStickView/Src\"";
 			};
 			name = Release;
 		};

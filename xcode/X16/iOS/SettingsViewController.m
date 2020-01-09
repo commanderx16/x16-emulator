@@ -10,6 +10,7 @@
 #include "SDL.h"
 #include "SDL_keyboard.h"
 #include "ios_functions.h"
+#import "SDL_uikitappdelegate.h"
 
 @interface SettingsViewController ()
 int SDL_SendKeyboardKey(Uint8 state, SDL_Scancode scancode);
@@ -34,6 +35,7 @@ int SDL_SendKeyboardKey(Uint8 state, SDL_Scancode scancode);
 	self.view.layer.masksToBounds = true;
 	self.view.layer.borderWidth = 2;
 	self.view.layer.borderColor = UIColor.blackColor.CGColor;
+
 }
 
 -(IBAction)toggleKeyboard:(id)sender {
@@ -58,20 +60,24 @@ int SDL_SendKeyboardKey(Uint8 state, SDL_Scancode scancode);
 		game = [[GameControlViewController alloc] initWithNibName:@"GameControlViewController" bundle:nil];
 	}
 
-	UIView *sdlView = [self.view superview];
+	CGRect frame = game.view.frame;
 
-	CGRect rect = game.view.frame;
-
-	CGPoint origin = CGPointMake(sdlView.frame.size.width - 400, sdlView.frame.size.height - 200);
-	rect.origin = origin;
-	game.view.frame = rect;
+	CGPoint origin = CGPointMake(0, self.rootView.frame.size.height - game.view.frame.size.height - 10);
+	frame.origin = origin;
+	game.view.frame = frame;
 	game.view.tag = 667;
 
-	[sdlView addSubview:game.view];
+	[self.rootView addSubview:game.view];
 }
 
 -(IBAction)reset:(id)sender {
 	machine_reset();
+}
+
+-(UIView *)rootView {
+	SDLUIKitDelegate *delegate = [SDLUIKitDelegate sharedAppDelegate];
+	UIWindow *window = [delegate window];
+	return window.rootViewController.view;
 }
 
 @end
