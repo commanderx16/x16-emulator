@@ -945,12 +945,24 @@ emulator_loop(void *param)
 			for (int i = 7; i >= 0; i--) {
 				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 			}
-			printf(" --- rambank:%01x", memory_get_ram_bank());
 
 			printf(" ---");
-			for (int i = 0; i < 8; i++) {
+			for (int i = 0; i < 6; i++) {
 				printf(" r%i:%04x", i, RAM[2 + i*2] | RAM[3 + i*2] << 8);
 			}
+			for (int i = 14; i < 16; i++) {
+				printf(" r%i:%04x", i, RAM[2 + i*2] | RAM[3 + i*2] << 8);
+			}
+
+			printf(" RAM:%01x", memory_get_ram_bank());
+			printf(" px:%d py:%d", RAM[0xa0e8] | RAM[0xa0e9] << 8, RAM[0xa0ea] | RAM[0xa0eb] << 8);
+
+//			printf(" c:%d", RAM[0xa0e2]);
+//			printf("-");
+//			for (int i = 0; i < 10; i++) {
+//				printf("%02x:", RAM[0xa041+i]);
+//			}
+
 			printf("\n");
 		}
 #endif
