@@ -8,9 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
-		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
-		28FD15000DC6FC520079059D /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD14FF0DC6FC520079059D /* OpenGLES.framework */; };
-		28FD15080DC6FC5B0079059D /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD15070DC6FC5B0079059D /* QuartzCore.framework */; };
 		A1194D7123BF9DBD00EE8ED5 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1194D7023BF9DBD00EE8ED5 /* Metal.framework */; };
 		A127A00823C5DA0500CA3665 /* JoystickController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A127A00723C5DA0500CA3665 /* JoystickController.swift */; };
 		A127A02923C5EAFF00CA3665 /* JoyStickView.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A127A00F23C5EA3E00CA3665 /* JoyStickView.framework */; };
@@ -18,6 +15,9 @@
 		A127A02E23C5EB9300CA3665 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A127A01E23C5EA5600CA3665 /* libSDL2.a */; };
 		A153A2CD23C12728000C9C1E /* MessageObserver.m in Sources */ = {isa = PBXBuildFile; fileRef = A153A2CC23C12728000C9C1E /* MessageObserver.m */; };
 		A153A2D023C134BB000C9C1E /* ios_functions.m in Sources */ = {isa = PBXBuildFile; fileRef = A153A2CF23C134BB000C9C1E /* ios_functions.m */; };
+		A15D4B4823C75B3200BC90E8 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD14FF0DC6FC520079059D /* OpenGLES.framework */; };
+		A15D4B4A23C75B3400BC90E8 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD15070DC6FC5B0079059D /* QuartzCore.framework */; };
+		A15D4B4C23C75B3700BC90E8 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
 		A1805B3723BCCF2C00D2B9F0 /* libc.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = A1805B3623BCCF2B00D2B9F0 /* libc.tbd */; };
 		A1805B3B23BCD23200D2B9F0 /* rom.bin in Resources */ = {isa = PBXBuildFile; fileRef = A1805B3923BCD23200D2B9F0 /* rom.bin */; };
 		A19B6B9F23BCFFB600797D89 /* SettingsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A19B6B9D23BCFFB600797D89 /* SettingsViewController.m */; };
@@ -241,12 +241,12 @@
 			files = (
 				A1194D7123BF9DBD00EE8ED5 /* Metal.framework in Frameworks */,
 				A1805B3723BCCF2C00D2B9F0 /* libc.tbd in Frameworks */,
+				A15D4B4A23C75B3400BC90E8 /* QuartzCore.framework in Frameworks */,
 				FAE0E9651BAF967F0098DFA4 /* GameController.framework in Frameworks */,
 				A1C5FA6623BCC6C200897B0F /* AVFoundation.framework in Frameworks */,
+				A15D4B4C23C75B3700BC90E8 /* UIKit.framework in Frameworks */,
 				1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */,
-				1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */,
-				28FD15000DC6FC520079059D /* OpenGLES.framework in Frameworks */,
-				28FD15080DC6FC5B0079059D /* QuartzCore.framework in Frameworks */,
+				A15D4B4823C75B3200BC90E8 /* OpenGLES.framework in Frameworks */,
 				FD779EDE0E26BA1200F39101 /* CoreAudio.framework in Frameworks */,
 				A127A02923C5EAFF00CA3665 /* JoyStickView.framework in Frameworks */,
 				A127A02E23C5EB9300CA3665 /* libSDL2.a in Frameworks */,
@@ -658,6 +658,8 @@
 				COPY_PHASE_STRIP = NO;
 				DEVELOPMENT_TEAM = RUE5S47RT7;
 				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_FAST_MATH = YES;
+				GCC_INCREASE_PRECOMPILED_HEADER_SHARING = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "";
@@ -665,6 +667,10 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				LLVM_LTO = YES_THIN;
+				MTL_ENABLE_MODULES = YES;
+				MTL_FAST_MATH = YES;
+				OTHER_CFLAGS = "-ffast-math";
 				"OTHER_LDFLAGS[arch=*]" = "-lobjc";
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthewpearce.commanderx16;
 				PRODUCT_NAME = CommanderX16;
@@ -687,12 +693,20 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
 				DEVELOPMENT_TEAM = RUE5S47RT7;
+				GCC_DYNAMIC_NO_PIC = YES;
+				GCC_FAST_MATH = YES;
+				GCC_INCREASE_PRECOMPILED_HEADER_SHARING = NO;
+				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "";
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				LLVM_LTO = YES_THIN;
+				MTL_ENABLE_MODULES = YES;
+				MTL_FAST_MATH = YES;
+				OTHER_CFLAGS = "-ffast-math";
 				"OTHER_LDFLAGS[arch=*]" = "-lobjc";
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthewpearce.commanderx16;
 				PRODUCT_NAME = CommanderX16;
