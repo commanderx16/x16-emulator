@@ -23,20 +23,17 @@
                     <rect key="frame" x="782" y="34" width="150" height="150"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                    <userDefinedRuntimeAttributes>
-                        <userDefinedRuntimeAttribute type="image" keyPath="baseImage" value="FancyBase"/>
-                        <userDefinedRuntimeAttribute type="image" keyPath="handleImage" value="FancyHandle"/>
-                    </userDefinedRuntimeAttributes>
                 </view>
-                <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="DHN-U6-bMb">
+                <button opaque="NO" alpha="0.75" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="DHN-U6-bMb">
                     <rect key="frame" x="962" y="20" width="42" height="42"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                    <color key="backgroundColor" systemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
                     <state key="normal" image="close"/>
                     <connections>
                         <action selector="closeWindow:" destination="-1" eventType="touchUpInside" id="Ia6-iX-Lrk"/>
                     </connections>
                 </button>
-                <button opaque="NO" tag="40" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Wse-R5-RRc">
+                <button opaque="NO" alpha="0.75" tag="40" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Wse-R5-RRc">
                     <rect key="frame" x="397" y="99" width="100" height="100"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <state key="normal" image="start" backgroundImage="DefaultBase"/>
@@ -44,7 +41,7 @@
                         <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="dif-yM-lZW"/>
                     </connections>
                 </button>
-                <button opaque="NO" tag="224" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="2SE-1e-dSf">
+                <button opaque="NO" alpha="0.75" tag="224" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="2SE-1e-dSf">
                     <rect key="frame" x="16" y="20" width="100" height="100"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <state key="normal" image="A" backgroundImage="DefaultBase"/>
@@ -52,7 +49,7 @@
                         <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="0Ba-rg-ybG"/>
                     </connections>
                 </button>
-                <button opaque="NO" tag="226" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="cwV-D6-fWd">
+                <button opaque="NO" alpha="0.75" tag="226" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="cwV-D6-fWd">
                     <rect key="frame" x="124" y="99" width="100" height="100"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <state key="normal" image="b" backgroundImage="DefaultBase"/>
@@ -60,7 +57,7 @@
                         <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="vpT-GW-25v"/>
                     </connections>
                 </button>
-                <button opaque="NO" tag="44" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="GWc-Fa-k4Y">
+                <button opaque="NO" alpha="0.75" tag="44" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="GWc-Fa-k4Y">
                     <rect key="frame" x="557" y="99" width="100" height="100"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <state key="normal" image="select" backgroundImage="DefaultBase"/>
@@ -78,8 +75,6 @@
     <resources>
         <image name="A" width="42" height="42"/>
         <image name="DefaultBase" width="100" height="100"/>
-        <image name="FancyBase" width="100" height="100"/>
-        <image name="FancyHandle" width="100" height="100"/>
         <image name="b" width="42" height="42"/>
         <image name="close" width="42" height="42"/>
         <image name="select" width="42" height="42"/>

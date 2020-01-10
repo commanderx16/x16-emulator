@@ -16,8 +16,9 @@ public protocol JoystickControllerDelegate {
 @objc
 public class JoystickController: NSObject {
 
+	private var saveDisplacement = CGFloat(0.0)
+	private var saveAngle = CGFloat(0.0)
 	@objc
-	public var joyStick: JoyStickView?
 	var delegate: JoystickControllerDelegate?
 
 	let joystickOffset: CGFloat = 60.0
@@ -29,12 +30,18 @@ public class JoystickController: NSObject {
 		self.delegate = delegate
 		let stick = makeJoystick()
 		let monitor: JoyStickViewPolarMonitor = { report in
-			if report.displacement > 0.0 {
-				self.delegate?.joystickPositionUpdated(angle: report.angle, displacement: report.displacement)
+
+			guard let joystickDelegate = self.delegate else {
+				return
+			}
+
+			if (self.saveDisplacement != report.displacement) || (self.saveAngle != report.angle) {
+				joystickDelegate.joystickPositionUpdated(angle: report.angle, displacement: report.displacement)
+				self.saveDisplacement = report.displacement
+				self.saveAngle = report.displacement
 			}
 		}
 		stick.monitor = .polar(monitor: monitor)
-		joyStick = stick
 		return stick
 	}
 
@@ -52,4 +59,3 @@ public class JoystickController: NSObject {
 		return joystick
 	}
 }
-
