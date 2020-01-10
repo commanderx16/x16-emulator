@@ -3,7 +3,7 @@
 //	CommanderX16
 //
 //	; (C)2020 Matthew Pearce, License: 2-clause BSD
-// 	icons by Icons8
+//	icons by Icons8
 
 #import "InputViewController.h"
 #import <GameController/GameController.h>
@@ -95,11 +95,8 @@ int SDL_SendKeyboardKey(Uint8 state, SDL_Scancode scancode);
 	controller = [GCController.controllers firstObject];
 	NSString *message = [NSString stringWithFormat:@"%@ connected", controller.vendorName];
 
-	UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Wireless Controller"
-																   message:message
-															preferredStyle:UIAlertControllerStyleAlert];
-	UIAlertAction* defaultAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault
-														  handler:^(UIAlertAction * action) {
+	UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Wireless Controller" message:message preferredStyle:UIAlertControllerStyleAlert];
+	UIAlertAction* defaultAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
 	}];
 
 	[alert addAction:defaultAction];
@@ -157,11 +154,8 @@ int SDL_SendKeyboardKey(Uint8 state, SDL_Scancode scancode);
 
 -(void)deviceDisonnected {
 
-	UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Wireless Controller"
-																   message:@"Controller Disconnected\n\n\n"
-															preferredStyle:UIAlertControllerStyleAlert];
-	UIAlertAction* defaultAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault
-														  handler:^(UIAlertAction * action) {
+	UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Wireless Controller" message:@"Controller Disconnected\n\n\n" preferredStyle:UIAlertControllerStyleAlert];
+	UIAlertAction* defaultAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
 	}];
 
 	[alert addAction:defaultAction];
@@ -178,9 +172,7 @@ int SDL_SendKeyboardKey(Uint8 state, SDL_Scancode scancode);
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(deviceConnected) name:GCControllerDidConnectNotification object:nil];
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(deviceDisconnected) name:GCControllerDidDisconnectNotification object:nil];
 
-	UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Wireless Controller"
-																   message:@"Searching for connected controllers\n\n\n"
-															preferredStyle:UIAlertControllerStyleAlert];
+	UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Wireless Controller" message:@"Searching for connected controllers\n\n\n" preferredStyle:UIAlertControllerStyleAlert];
 
 	UIActivityIndicatorView* indicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
 	indicator.color = [UIColor blackColor];
@@ -195,8 +187,7 @@ int SDL_SendKeyboardKey(Uint8 state, SDL_Scancode scancode);
 	[indicator setUserInteractionEnabled:NO];
 	[indicator startAnimating];
 
-	UIAlertAction* defaultAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel
-														  handler:^(UIAlertAction * action) {
+	UIAlertAction* defaultAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * action) {
 		[GCController stopWirelessControllerDiscovery];
 	}];
 
