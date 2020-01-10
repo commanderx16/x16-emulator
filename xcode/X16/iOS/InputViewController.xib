@@ -8,7 +8,7 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
-        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="SettingsViewController">
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="InputViewController">
             <connections>
                 <outlet property="view" destination="i5M-Pr-FkT" id="sfx-zR-JGt"/>
             </connections>
@@ -21,11 +21,11 @@
                     <rect key="frame" x="20" y="14.166666666666686" width="539.5" height="93.5"/>
                     <autoresizingMask key="autoresizingMask"/>
                     <subviews>
-                        <stackView opaque="NO" contentMode="scaleToFill" distribution="equalSpacing" translatesAutoresizingMaskIntoConstraints="NO" id="QCM-sa-wkO">
+                        <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="85" translatesAutoresizingMaskIntoConstraints="NO" id="QCM-sa-wkO">
                             <rect key="frame" x="0.0" y="0.0" width="539.5" height="42"/>
                             <subviews>
                                 <button opaque="NO" tag="60" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oxf-zH-AjY">
-                                    <rect key="frame" x="0.0" y="0.0" width="41.5" height="42"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="40" height="42"/>
                                     <fontDescription key="fontDescription" type="system" pointSize="24"/>
                                     <state key="normal" image="close">
                                         <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -36,7 +36,7 @@
                                     </connections>
                                 </button>
                                 <button opaque="NO" tag="58" contentMode="scaleToFill" horizontalCompressionResistancePriority="751" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="HQa-m2-46C">
-                                    <rect key="frame" x="166" y="0.0" width="41.5" height="42"/>
+                                    <rect key="frame" x="125" y="0.0" width="40" height="42"/>
                                     <fontDescription key="fontDescription" type="system" pointSize="24"/>
                                     <state key="normal" image="icons8-keyboard-500">
                                         <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -47,7 +47,7 @@
                                     </connections>
                                 </button>
                                 <button opaque="NO" tag="59" contentMode="scaleToFill" horizontalCompressionResistancePriority="752" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="mbZ-Yl-Ug0">
-                                    <rect key="frame" x="332" y="0.0" width="41.5" height="42"/>
+                                    <rect key="frame" x="250" y="0.0" width="39.5" height="42"/>
                                     <fontDescription key="fontDescription" type="system" pointSize="24"/>
                                     <state key="normal" image="icons8-joystick-500">
                                         <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -58,11 +58,15 @@
                                         <action selector="showGamePad:" destination="-2" eventType="touchUpInside" id="dhy-Nw-VTu"/>
                                     </connections>
                                 </button>
+                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="bCt-ee-9sQ">
+                                    <rect key="frame" x="374.5" y="0.0" width="40" height="42"/>
+                                    <state key="normal" image="icons8-game-controller-500"/>
+                                    <connections>
+                                        <action selector="startControllerSearch:" destination="-1" eventType="touchUpInside" id="cf5-cu-myC"/>
+                                    </connections>
+                                </button>
                                 <button opaque="NO" tag="41" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="DS0-P6-4v3">
-                                    <rect key="frame" x="498" y="0.0" width="41.5" height="42"/>
-                                    <constraints>
-                                        <constraint firstAttribute="width" constant="41.5" id="Ten-1b-Ecc"/>
-                                    </constraints>
+                                    <rect key="frame" x="499.5" y="0.0" width="40" height="42"/>
                                     <fontDescription key="fontDescription" type="system" pointSize="24"/>
                                     <state key="normal" image="icons8-restart-500">
                                         <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -73,9 +77,6 @@
                                     </connections>
                                 </button>
                             </subviews>
-                            <constraints>
-                                <constraint firstAttribute="trailing" secondItem="mbZ-Yl-Ug0" secondAttribute="trailing" constant="166" id="Ceg-IQ-lOz"/>
-                            </constraints>
                         </stackView>
                         <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" translatesAutoresizingMaskIntoConstraints="NO" id="Xuc-qc-QnR">
                             <rect key="frame" x="0.0" y="52" width="539.5" height="41.5"/>
@@ -250,6 +251,7 @@
         <image name="icons8-f7-key-500" width="41.5" height="41.5"/>
         <image name="icons8-f8-key-500" width="41.5" height="41.5"/>
         <image name="icons8-f9-key-500" width="41.5" height="41.5"/>
+        <image name="icons8-game-controller-500" width="41.5" height="41.5"/>
         <image name="icons8-joystick-500" width="41.5" height="41.5"/>
         <image name="icons8-keyboard-500" width="41.5" height="41.5"/>
         <image name="icons8-restart-500" width="41.5" height="41.5"/>

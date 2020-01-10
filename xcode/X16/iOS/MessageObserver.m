@@ -6,13 +6,13 @@
 //
 
 #import "MessageObserver.h"
-#import "SettingsViewController.h"
+#import "InputViewController.h"
 #import "SDL.h"
 #import "SDL_uikitappdelegate.h"
 #include "ios_functions.h"
 
 @interface MessageObserver ()
-@property (nonatomic, retain) SettingsViewController *settings;
+@property (nonatomic, retain) InputViewController *settings;
 @end
 
 @implementation MessageObserver
@@ -31,7 +31,7 @@
 -(void)showSettings {
 
 	if (!settings) {
-		settings = [[SettingsViewController alloc] initWithNibName:@"SettingsViewController" bundle:nil];
+		settings = [[InputViewController alloc] initWithNibName:@"InputViewController" bundle:nil];
 	} else {
 		[[self.rootView viewWithTag:666] removeFromSuperview];
 	}

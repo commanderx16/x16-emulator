@@ -8,6 +8,7 @@
 import Foundation
 import JoyStickView
 
+
 @objc
 public protocol JoystickControllerDelegate {
 	func joystickPositionUpdated(angle: CGFloat, displacement: CGFloat)
