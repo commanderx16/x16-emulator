@@ -27,8 +27,8 @@ Install SDL2 using `brew install sdl2`.
 
 ### iPad Build
 
-Using Xcode open the project file in the emulator xcode directory.
-A copy of the framework source required is included as a zip file (frameworks.zip).
+Using Xcode open the project file in the emulator Xcode directory.
+A copy of the framework source required is included as a zip file (Frameworks.zip).
 Extract it in place before building.
 
 Choose your device or simulator and press run.
@@ -222,7 +222,8 @@ iPad
 ----
 
 * Files are saved in the $HOME/Documents folder
-* Function keys and a Gamepad can be accessed by using a Long Press on the main window
+* On-screen joystick and external Gamecontrollers can be accessed by using a Long Press on the main window and pressing the appropriate button
+* Function keys, a reset button and "ESC" button are available on the on-sceen keyboard
 * To run PRG files:
         1. Browse to the file in the "File App"
         2. Select any BIN files you need and open them with the X16 app
