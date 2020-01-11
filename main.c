@@ -111,7 +111,62 @@ SDL_AudioDeviceID audio_dev = 0;
 char *
 label_for_address(uint16_t address)
 {
-	for (int i = 0; i < sizeof(addresses) / sizeof(*addresses); i++) {
+	uint16_t *addresses;
+	char **labels;
+	int count;
+	switch (memory_get_rom_bank()) {
+		case 0:
+			addresses = addresses_bank0;
+			labels = labels_bank0;
+			count = sizeof(addresses_bank0) / sizeof(uint16_t);
+			break;
+		case 1:
+			addresses = addresses_bank1;
+			labels = labels_bank1;
+			count = sizeof(addresses_bank1) / sizeof(uint16_t);
+			break;
+		case 2:
+			addresses = addresses_bank2;
+			labels = labels_bank2;
+			count = sizeof(addresses_bank2) / sizeof(uint16_t);
+			break;
+		case 3:
+			addresses = addresses_bank3;
+			labels = labels_bank3;
+			count = sizeof(addresses_bank3) / sizeof(uint16_t);
+			break;
+		case 4:
+			addresses = addresses_bank4;
+			labels = labels_bank4;
+			count = sizeof(addresses_bank4) / sizeof(uint16_t);
+			break;
+		case 5:
+			addresses = addresses_bank5;
+			labels = labels_bank5;
+			count = sizeof(addresses_bank5) / sizeof(uint16_t);
+			break;
+		case 6:
+			addresses = addresses_bank6;
+			labels = labels_bank6;
+			count = sizeof(addresses_bank6) / sizeof(uint16_t);
+			break;
+#if 0
+		case 7:
+			addresses = addresses_bank7;
+			labels = labels_bank7;
+			count = sizeof(addresses_bank7) / sizeof(uint16_t);
+			break;
+#endif
+		default:
+			addresses = NULL;
+			labels = NULL;
+	}
+
+	if (!addresses) {
+		return NULL;
+	}
+
+	for (int i = 0; i < count; i++) {
 		if (address == addresses[i]) {
 			return labels[i];
 		}
@@ -917,14 +972,15 @@ emulator_loop(void *param)
 			trace_mode = true;
 		}
 		if (trace_mode) {
-			printf("\t\t\t\t[%6d] ", instruction_counter);
+			//printf("\t\t\t\t");
+			printf("[%6d] ", instruction_counter);
 
 			char *label = label_for_address(pc);
 			int label_len = label ? strlen(label) : 0;
 			if (label) {
 				printf("%s", label);
 			}
-			for (int i = 0; i < 10 - label_len; i++) {
+			for (int i = 0; i < 20 - label_len; i++) {
 				printf(" ");
 			}
 			printf(" %02x:.,%04x ", memory_get_rom_bank(), pc);
@@ -946,6 +1002,7 @@ emulator_loop(void *param)
 				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 			}
 
+#if 0
 			printf(" ---");
 			for (int i = 0; i < 6; i++) {
 				printf(" r%i:%04x", i, RAM[2 + i*2] | RAM[3 + i*2] << 8);
@@ -962,6 +1019,7 @@ emulator_loop(void *param)
 //			for (int i = 0; i < 10; i++) {
 //				printf("%02x:", RAM[0xa041+i]);
 //			}
+#endif
 
 			printf("\n");
 		}
@@ -1041,6 +1099,7 @@ emulator_loop(void *param)
 
 		if (video_get_irq_out()) {
 			if (!(status & 4)) {
+//				printf("IRQ!\n");
 				irq6502();
 			}
 		}
