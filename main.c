@@ -1098,6 +1098,7 @@ emulator_loop(void *param)
 
 		if (video_get_irq_out()) {
 			if (!(status & 4)) {
+				printf("IRQ!\n");
 				irq6502();
 			}
 		}
