@@ -972,14 +972,15 @@ emulator_loop(void *param)
 			trace_mode = true;
 		}
 		if (trace_mode) {
-			printf("\t\t\t\t[%6d] ", instruction_counter);
+			//printf("\t\t\t\t");
+			printf("[%6d] ", instruction_counter);
 
 			char *label = label_for_address(pc);
 			int label_len = label ? strlen(label) : 0;
 			if (label) {
 				printf("%s", label);
 			}
-			for (int i = 0; i < 10 - label_len; i++) {
+			for (int i = 0; i < 20 - label_len; i++) {
 				printf(" ");
 			}
 			printf(" %02x:.,%04x ", memory_get_rom_bank(), pc);
@@ -1098,7 +1099,7 @@ emulator_loop(void *param)
 
 		if (video_get_irq_out()) {
 			if (!(status & 4)) {
-				printf("IRQ!\n");
+//				printf("IRQ!\n");
 				irq6502();
 			}
 		}
