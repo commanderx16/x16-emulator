@@ -13,6 +13,11 @@ endif
 CFLAGS=-std=c99 -O3 -Wall -Werror -g $(shell $(SDL2CONFIG) --cflags) -Iextern/include -Iextern/src
 LDFLAGS=$(shell $(SDL2CONFIG) --libs) -lm
 
+
+ifdef TRACE
+	CFLAGS+=-D TRACE
+endif
+
 OUTPUT=x16emu
 
 ifeq ($(MAC_STATIC),1)
