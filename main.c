@@ -44,7 +44,7 @@
 #endif
 #endif
 
-#define AUDIO_SAMPLES 4096
+#define AUDIO_SAMPLES 256
 #define SAMPLERATE 22050
 
 #ifdef __EMSCRIPTEN__

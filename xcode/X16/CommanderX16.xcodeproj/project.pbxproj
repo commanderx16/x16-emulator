@@ -20,6 +20,7 @@
 		A15D4B4C23C75B3700BC90E8 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
 		A1805B3723BCCF2C00D2B9F0 /* libc.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = A1805B3623BCCF2B00D2B9F0 /* libc.tbd */; };
 		A1805B3B23BCD23200D2B9F0 /* rom.bin in Resources */ = {isa = PBXBuildFile; fileRef = A1805B3923BCD23200D2B9F0 /* rom.bin */; };
+		A190E77723CBD0AC00328EB6 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD779EDD0E26BA1200F39101 /* CoreAudio.framework */; };
 		A19B6B9F23BCFFB600797D89 /* InputViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A19B6B9D23BCFFB600797D89 /* InputViewController.m */; };
 		A19B6BA023BCFFB600797D89 /* InputViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = A19B6B9E23BCFFB600797D89 /* InputViewController.xib */; };
 		A1A7949B23BF8D7000D813EF /* GameControlViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A1A7949923BF8D7000D813EF /* GameControlViewController.m */; };
@@ -50,7 +51,6 @@
 		A1D09D6223C1D463009373CD /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1D09D6123C1D463009373CD /* Images.xcassets */; };
 		FA8B4B97196703B400F8EB7C /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA8B4B96196703B400F8EB7C /* CoreMotion.framework */; };
 		FAE0E9651BAF967F0098DFA4 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAE0E9641BAF967F0098DFA4 /* GameController.framework */; };
-		FD779EDE0E26BA1200F39101 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD779EDD0E26BA1200F39101 /* CoreAudio.framework */; };
 		FD77A0850E26BDB800F39101 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD77A0840E26BDB800F39101 /* AudioToolbox.framework */; };
 		FDB8BFC60E5A0F6A00980157 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FDB8BFC50E5A0F6A00980157 /* CoreGraphics.framework */; };
 /* End PBXBuildFile section */
@@ -239,6 +239,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A190E77723CBD0AC00328EB6 /* CoreAudio.framework in Frameworks */,
 				A1194D7123BF9DBD00EE8ED5 /* Metal.framework in Frameworks */,
 				A1805B3723BCCF2C00D2B9F0 /* libc.tbd in Frameworks */,
 				A15D4B4A23C75B3400BC90E8 /* QuartzCore.framework in Frameworks */,
@@ -247,7 +248,6 @@
 				A15D4B4C23C75B3700BC90E8 /* UIKit.framework in Frameworks */,
 				1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */,
 				A15D4B4823C75B3200BC90E8 /* OpenGLES.framework in Frameworks */,
-				FD779EDE0E26BA1200F39101 /* CoreAudio.framework in Frameworks */,
 				A127A02923C5EAFF00CA3665 /* JoyStickView.framework in Frameworks */,
 				A127A02E23C5EB9300CA3665 /* libSDL2.a in Frameworks */,
 				FD77A0850E26BDB800F39101 /* AudioToolbox.framework in Frameworks */,
@@ -670,7 +670,10 @@
 				LLVM_LTO = YES_THIN;
 				MTL_ENABLE_MODULES = YES;
 				MTL_FAST_MATH = YES;
-				OTHER_CFLAGS = "-ffast-math";
+				OTHER_CFLAGS = (
+					"-ffast-math",
+					"-DWITH_YM2151",
+				);
 				"OTHER_LDFLAGS[arch=*]" = "-lobjc";
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthewpearce.commanderx16;
 				PRODUCT_NAME = CommanderX16;
@@ -706,7 +709,10 @@
 				LLVM_LTO = YES_THIN;
 				MTL_ENABLE_MODULES = YES;
 				MTL_FAST_MATH = YES;
-				OTHER_CFLAGS = "-ffast-math";
+				OTHER_CFLAGS = (
+					"-ffast-math",
+					"-DWITH_YM2151",
+				);
 				"OTHER_LDFLAGS[arch=*]" = "-lobjc";
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthewpearce.commanderx16;
 				PRODUCT_NAME = CommanderX16;
