@@ -21,6 +21,7 @@
 		A1805B3723BCCF2C00D2B9F0 /* libc.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = A1805B3623BCCF2B00D2B9F0 /* libc.tbd */; };
 		A1805B3B23BCD23200D2B9F0 /* rom.bin in Resources */ = {isa = PBXBuildFile; fileRef = A1805B3923BCD23200D2B9F0 /* rom.bin */; };
 		A190E77723CBD0AC00328EB6 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD779EDD0E26BA1200F39101 /* CoreAudio.framework */; };
+		A190E78823CC74C000328EB6 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = A190E77E23CC74C000328EB6 /* README.md */; };
 		A19B6B9F23BCFFB600797D89 /* InputViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A19B6B9D23BCFFB600797D89 /* InputViewController.m */; };
 		A19B6BA023BCFFB600797D89 /* InputViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = A19B6B9E23BCFFB600797D89 /* InputViewController.xib */; };
 		A1A7949B23BF8D7000D813EF /* GameControlViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A1A7949923BF8D7000D813EF /* GameControlViewController.m */; };
@@ -170,6 +171,7 @@
 		A162BDEF23C4EDD800796247 /* JoyStickView.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = JoyStickView.xcodeproj; path = ../Frameworks/JoyStickView/JoyStickView.xcodeproj; sourceTree = "<group>"; };
 		A1805B3623BCCF2B00D2B9F0 /* libc.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libc.tbd; path = usr/lib/libc.tbd; sourceTree = SDKROOT; };
 		A1805B3923BCD23200D2B9F0 /* rom.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; name = rom.bin; path = ../../rom.bin; sourceTree = "<group>"; };
+		A190E77E23CC74C000328EB6 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../../README.md; sourceTree = "<group>"; };
 		A19B6B9C23BCFFB600797D89 /* InputViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = InputViewController.h; sourceTree = "<group>"; };
 		A19B6B9D23BCFFB600797D89 /* InputViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = InputViewController.m; sourceTree = "<group>"; };
 		A19B6B9E23BCFFB600797D89 /* InputViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = InputViewController.xib; sourceTree = "<group>"; };
@@ -270,6 +272,7 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
+				A190E77E23CC74C000328EB6 /* README.md */,
 				A162BDD523C4ED7A00796247 /* Frameworks */,
 				29B97315FDCFA39411CA2CEA /* Sources */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
@@ -592,6 +595,7 @@
 				A1D09D6223C1D463009373CD /* Images.xcassets in Resources */,
 				A1C5FABF23BCC71600897B0F /* x16emu-template.html in Resources */,
 				A1C5FABE23BCC71600897B0F /* WebAssembly.md in Resources */,
+				A190E78823CC74C000328EB6 /* README.md in Resources */,
 				A19B6BA023BCFFB600797D89 /* InputViewController.xib in Resources */,
 				A1A7949C23BF8D7000D813EF /* GameControlViewController.xib in Resources */,
 			);

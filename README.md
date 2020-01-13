@@ -221,6 +221,9 @@ Effectively keyboard routines only work when the debugger is running normally. S
 iPad
 ----
 
+
+### Release 0.1
+
 * Files are saved in the $HOME/Documents folder
 * On-screen joystick and external Gamecontrollers can be accessed by using a Long Press on the main window and pressing the appropriate button
 * Function keys, a reset button and "ESC" button are available on the on-sceen keyboard
@@ -231,10 +234,13 @@ iPad
         4. The emulator will open and load the PRG
         5. "RUN" will be displayed when it has loaded and is ready to go. Press ENTER at this point
 * BASIC Code can be pasted by tapping the "Paste" Icon on the software keyboard
+* Sound is now supported by default
 
 TODO:
 * BAS files are not yet able to be loaded from the Files app
-* Sound support
+* Mouse support
+* Improve and optimise UI
+* Implement command line parameters in UI such as uart and debugging tools
 
 Wiki
 ----
