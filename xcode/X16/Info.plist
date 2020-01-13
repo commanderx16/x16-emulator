@@ -50,7 +50,6 @@
 				<string>com.matthewpearce.bin</string>
 			</array>
 		</dict>
-		<dict/>
 	</array>
 	<key>CFBundleExecutable</key>
 	<string>${EXECUTABLE_NAME}</string>
