@@ -9,7 +9,6 @@
 #define ios_functions_h
 
 #include <stdio.h>
-#include "memory.h"
 #include "rom_symbols.h"
 #include "utf8.h"
 #include "glue.h"

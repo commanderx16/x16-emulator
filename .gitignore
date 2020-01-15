@@ -68,3 +68,9 @@ xcode/X16/__MACOSX/SDL/Xcode-iOS/Template/SDL iOS Application/.____PROJECTNAME__
 xcode/X16/__MACOSX/SDL/Xcode-iOS/Test/._TestiPhoneOS.xcodeproj
 xcode/X16/__MACOSX/SDL/Xcode/SDL/._SDL.xcodeproj
 xcode/X16/__MACOSX/SDL/Xcode/SDLTest/._SDLTest.xcodeproj
+xcode/Frameworks/SDL/test/.testmultiaudio.c.swp
+xcode/Frameworks/SDL/test/testaudioinfo
+xcode/Frameworks/SDL/test/testmultiaudio
+xcode/Frameworks/SDL/Xcode-iOS/Demos/Demos.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+xcode/Frameworks/SDL/Xcode-iOS/Demos/Demos.xcodeproj/xcuserdata/mpe18.xcuserdatad/xcschemes/xcschememanagement.plist
+xcode/Frameworks/SDL/Xcode/SDL/SDL.xcodeproj/xcuserdata/mpe18.xcuserdatad/xcschemes/xcschememanagement.plist

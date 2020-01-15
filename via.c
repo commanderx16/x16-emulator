@@ -8,10 +8,15 @@
 #include <stdlib.h>
 #include "via.h"
 #include "ps2.h"
-#include "memory.h"
-//XXX
 #include "glue.h"
 #include "joystick.h"
+#if __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
+#include "ios_functions.h"
+#include "memory.h"
+#endif
+#endif
 
 //
 // VIA#1

@@ -17,7 +17,6 @@
 #endif
 #include "cpu/fake6502.h"
 #include "disasm.h"
-#include "memory.h"
 #include "video.h"
 #include "via.h"
 #include "ps2.h"
@@ -27,6 +26,7 @@
 #include "sdcard.h"
 #include "loadsave.h"
 #include "glue.h"
+//#include "memory.h"
 #include "debugger.h"
 #include "utf8.h"
 #include "joystick.h"
@@ -36,11 +36,11 @@
 #include "ym2151.h"
 #endif
 
-//show keyboard first time through for iOS
 #if __APPLE__
 #include <TargetConditionals.h>
 #if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
 #include "ios_functions.h"
+#include "memory.h"
 #endif
 #endif
 

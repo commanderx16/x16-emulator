@@ -16,7 +16,12 @@
 
 #include "glue.h"
 #include "disasm.h"
+#if __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
 #include "memory.h"
+#endif
+#endif
 #include "video.h"
 #include "cpu/fake6502.h"
 #include "debugger.h"
