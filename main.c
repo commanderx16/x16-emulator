@@ -26,7 +26,7 @@
 #include "sdcard.h"
 #include "loadsave.h"
 #include "glue.h"
-//#include "memory.h"
+#include "memory.h"
 #include "debugger.h"
 #include "utf8.h"
 #include "joystick.h"
@@ -40,7 +40,6 @@
 #include <TargetConditionals.h>
 #if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
 #include "ios_functions.h"
-#include "memory.h"
 #endif
 #endif
 

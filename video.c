@@ -10,12 +10,7 @@
 #include "gif.h"
 #include "vera_spi.h"
 #include "vera_uart.h"
-#if __APPLE__
-#include <TargetConditionals.h>
-#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
 #include "memory.h"
-#endif
-#endif
 #include <limits.h>
 
 #ifdef __EMSCRIPTEN__
