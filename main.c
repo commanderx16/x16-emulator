@@ -338,12 +338,18 @@ usage()
 	printf("\tChoose what type of joystick to use, e.g. -joy2 SNES\n");
 #ifdef WITH_YM2151
 	printf("-sound <output device>\n");
-	printf("\tSet the output device used for audio emulation");
+	printf("\tSet the output device used for audio emulation\n");
 #endif
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
 	printf("\tcan be specified.\n");
+#endif
+#ifdef WITH_SOCKETS
+	printf("-ipaddress [<address>]\n");
+	printf("\tSpecify an ip address to connect UART to\n");
+	printf("-port [<port>]\n");
+	printf("\tSpecify a port number to connect UART to\n");
 #endif
 	printf("\n");
 	exit(1);
@@ -437,8 +443,13 @@ main(int argc, char **argv)
 	bool run_test = false;
 	int test_number = 0;
 
+#ifdef WITH_SOCKETS
+	char *uart_in_path = "socket";
+	char *uart_out_path = "socket";
+#else
 	char *uart_in_path = NULL;
 	char *uart_out_path = NULL;
+#endif
 
 	run_after_load = false;
 
@@ -724,7 +735,8 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 #endif
-		} else if (!strcmp(argv[0], "-uart-in")) {
+		}
+		else if (!strcmp(argv[0], "-uart-in")) {
 			argc--;
 			argv++;
 			if (!argc || argv[0][0] == '-') {
@@ -742,7 +754,29 @@ main(int argc, char **argv)
 			uart_out_path = argv[0];
 			argc--;
 			argv++;
-		} else {
+		}
+#ifdef WITH_SOCKETS
+		else if (!strcmp(argv[0], "-ipaddress")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			ip_address = argv[0];
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-port")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			port = atoi(argv[0]);
+			argc--;
+			argv++;
+		}
+#endif
+		else {
 			usage();
 		}
 	}
@@ -764,6 +798,15 @@ main(int argc, char **argv)
 		}
 	}
 
+#ifdef WITH_SOCKETS
+	if (uart_in_path) {
+		printf("Using %s!\n", uart_in_path);
+	}
+
+	if (uart_out_path) {
+		printf("Using: %s!\n", uart_out_path);
+	}
+#else
 	if (uart_in_path) {
 		uart_in_file = fopen(uart_in_path, "r");
 		if (!uart_in_file) {
@@ -779,7 +822,8 @@ main(int argc, char **argv)
 			exit(1);
 		}
 	}
-
+#endif
+	
 	prg_override_start = -1;
 	if (prg_path) {
 		char *comma = strchr(prg_path, ',');

@@ -1,4 +1,3 @@
-
 # the mingw32 path on macOS installed through homebrew
 MINGW32=/usr/local/Cellar/mingw-w64/6.0.0_2/toolchain-i686/i686-w64-mingw32
 # the Windows SDL2 path on macOS installed through ./configure --prefix=... && make && make install
@@ -42,6 +41,13 @@ ifeq ($(WITH_YM2151),1)
 OBJS += extern/src/ym2151.o
 HEADERS += extern/src/ym2151.h
 CFLAGS += -DWITH_YM2151
+endif
+
+ifeq ($(WITH_SOCKETS),1)
+OBJS += socketuart/uartqueue.o socketuart/socketclient.o 
+HEADERS += socketuart/uartqueue.h socketuart/Socketclient.h
+CFLAGS += -DWITH_SOCKETS -Isocketuart -pthread
+LDFLAGS += -pthread
 endif
 
 ifneq ("$(wildcard ./rom_labels.h)","")
@@ -141,4 +147,4 @@ package_linux:
 	rm -rf $(TMPDIR_NAME)
 
 clean:
-	rm -f *.o cpu/*.o extern/src/*.o x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem
+	rm -f *.o cpu/*.o extern/src/*.o socketuart/*.o x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem

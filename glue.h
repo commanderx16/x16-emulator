@@ -58,6 +58,11 @@ extern gif_recorder_state_t record_gif;
 extern char *gif_path;
 extern uint8_t keymap;
 
+#ifdef WITH_SOCKETS
+extern char *ip_address;;
+extern int port;
+#endif
+
 extern void machine_dump();
 extern void machine_reset();
 extern void machine_paste();
