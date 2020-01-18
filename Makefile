@@ -44,7 +44,7 @@ CFLAGS += -DWITH_YM2151
 endif
 
 ifeq ($(WITH_SOCKETS),1)
-OBJS += socketuart/uartqueue.o socketuart/socketclient.o 
+OBJS += socketuart/uartqueue.o socketuart/socketclient.o
 HEADERS += socketuart/uartqueue.h socketuart/Socketclient.h
 CFLAGS += -DWITH_SOCKETS -Isocketuart -pthread
 LDFLAGS += -pthread
@@ -54,7 +54,6 @@ ifneq ("$(wildcard ./rom_labels.h)","")
 HEADERS+=rom_labels.h
 endif
 
-
 all: $(OBJS) $(HEADERS)
 	$(CC) -o $(OUTPUT) $(OBJS) $(LDFLAGS)
 %.o: %.c
@@ -62,7 +61,6 @@ all: $(OBJS) $(HEADERS)
 
 cpu/tables.h cpu/mnemonics.h: cpu/buildtables.py cpu/6502.opcodes cpu/65c02.opcodes
 	cd cpu && python buildtables.py
-
 
 # WebASssembly/emscripten target
 #

@@ -1,6 +1,6 @@
 //
-//  socketclient.c
-//  CommanderX16
+//	socketclient.c
+//	CommanderX16
 //
 //	; (C)2020 Matthew Pearce, License: 2-clause BSD//
 
@@ -36,8 +36,8 @@ void socket_connect() {
 	their_addr.sin_addr.s_addr = inet_addr(ip_address);
 
 	struct timeval timeout;
-    timeout.tv_sec = 1;
-    timeout.tv_usec = 0;
+	timeout.tv_sec = 1;
+	timeout.tv_usec = 0;
 	setsockopt (sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
 	setsockopt (sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
 
@@ -49,7 +49,7 @@ void socket_connect() {
 	}
 }
 
-void *processmessages(void *vargp)  {
+void *processmessages(void *vargp) {
 
 	for(;;) {
 
@@ -68,7 +68,7 @@ void *processmessages(void *vargp)  {
 
 size_t socket_write(uint8_t in_value) {
 
-	size_t bytes_sent =  send(sockfd, &in_value, sizeof(in_value), 0);
+	size_t bytes_sent = send(sockfd, &in_value, sizeof(in_value), 0);
 	return bytes_sent;
 }
 
