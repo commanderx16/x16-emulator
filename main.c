@@ -97,7 +97,7 @@ uint16_t trace_address = 0;
 #endif
 
 int instruction_counter;
-FILE *prg_file ;
+SDL_RWops *prg_file ;
 int prg_override_start = -1;
 bool run_after_load = false;
 
@@ -191,19 +191,19 @@ machine_dump()
 		}
 		index++;
 	}
-	FILE *f = fopen(filename, "wb");
+	SDL_RWops *f = SDL_RWFromFile(filename, "wb");
 	if (!f) {
 		printf("Cannot write to %s!\n", filename);
 		return;
 	}
 
 	if (dump_cpu) {
-		fwrite(&a, sizeof(uint8_t), 1, f);
-		fwrite(&x, sizeof(uint8_t), 1, f);
-		fwrite(&y, sizeof(uint8_t), 1, f);
-		fwrite(&sp, sizeof(uint8_t), 1, f);
-		fwrite(&status, sizeof(uint8_t), 1, f);
-		fwrite(&pc, sizeof(uint16_t), 1, f);
+	    SDL_RWwrite(f, &a, sizeof(uint8_t), 1);
+        SDL_RWwrite(f, &x, sizeof(uint8_t), 1);
+        SDL_RWwrite(f, &y, sizeof(uint8_t), 1);
+        SDL_RWwrite(f, &sp, sizeof(uint8_t), 1);
+        SDL_RWwrite(f, &status, sizeof(uint8_t), 1);
+        SDL_RWwrite(f, &pc, sizeof(uint16_t), 1);
 	}
 	memory_save(f, dump_ram, dump_bank);
 
@@ -211,7 +211,7 @@ machine_dump()
 		video_save(f);
 	}
 
-	fclose(f);
+	SDL_RWclose(f);
 	printf("Dumped system to %s.\n", filename);
 }
 
@@ -802,17 +802,17 @@ main(int argc, char **argv)
 		}
 	}
 
-	FILE *f = fopen(rom_path, "rb");
+	SDL_RWops *f = SDL_RWFromFile(rom_path, "rb");
 	if (!f) {
 		printf("Cannot open %s!\n", rom_path);
 		exit(1);
 	}
-	int rom_size = fread(ROM, 1, ROM_SIZE, f);
+	size_t rom_size = SDL_RWread(f, ROM, ROM_SIZE, 1);
 	(void)rom_size;
-	fclose(f);
+	SDL_RWclose(f);
 
 	if (sdcard_path) {
-		sdcard_file = fopen(sdcard_path, "rb");
+		sdcard_file = SDL_RWFromFile(sdcard_path, "rb");
 		if (!sdcard_file) {
 			printf("Cannot open %s!\n", sdcard_path);
 			exit(1);
@@ -820,7 +820,7 @@ main(int argc, char **argv)
 	}
 
 	if (uart_in_path) {
-		uart_in_file = fopen(uart_in_path, "r");
+		uart_in_file = SDL_RWFromFile(uart_in_path, "r");
 		if (!uart_in_file) {
 			printf("Cannot open %s!\n", uart_in_path);
 			exit(1);
@@ -828,7 +828,7 @@ main(int argc, char **argv)
 	}
 
 	if (uart_out_path) {
-		uart_out_file = fopen(uart_out_path, "w");
+		uart_out_file = SDL_RWFromFile(uart_out_path, "w");
 		if (!uart_out_file) {
 			printf("Cannot open %s!\n", uart_out_path);
 			exit(1);
@@ -843,7 +843,7 @@ main(int argc, char **argv)
 			*comma = 0;
 		}
 
-		prg_file = fopen(prg_path, "rb");
+		prg_file = SDL_RWFromFile(prg_path, "rb");
 		if (!prg_file) {
 			printf("Cannot open %s!\n", prg_path);
 			exit(1);
@@ -851,19 +851,19 @@ main(int argc, char **argv)
 	}
 
 	if (bas_path) {
-		FILE *bas_file = fopen(bas_path, "r");
+		SDL_RWops *bas_file = SDL_RWFromFile(bas_path, "r");
 		if (!bas_file) {
 			printf("Cannot open %s!\n", bas_path);
 			exit(1);
 		}
 		paste_text = paste_text_data;
-		size_t paste_size = fread(paste_text, 1, sizeof(paste_text_data) - 1, bas_file);
+		size_t paste_size = SDL_RWread(bas_file, paste_text, 1, sizeof(paste_text_data) - 1);
 		if (run_after_load) {
 			strncpy(paste_text + paste_size, "\rRUN\r", sizeof(paste_text_data) - paste_size);
 		} else {
 			paste_text[paste_size] = 0;
 		}
-		fclose(bas_file);
+		SDL_RWclose(bas_file);
 	}
 
 	if (run_geos) {
@@ -1149,16 +1149,18 @@ emulator_loop(void *param)
 			// as soon as BASIC starts reading a line...
 			if (prg_file) {
 				// ...inject the app into RAM
-				uint8_t start_lo = fgetc(prg_file);
-				uint8_t start_hi = fgetc(prg_file);
+				uint8_t start_lo;
+				SDL_RWread(prg_file, &start_lo, sizeof(start_lo), 1);
+				uint8_t start_hi;
+                SDL_RWread(prg_file, &start_hi, sizeof(start_hi), 1);
 				uint16_t start;
 				if (prg_override_start >= 0) {
 					start = prg_override_start;
 				} else {
 					start = start_hi << 8 | start_lo;
 				}
-				uint16_t end = start + fread(RAM + start, 1, 65536-start, prg_file);
-				fclose(prg_file);
+				uint16_t end = start + SDL_RWread(prg_file, RAM + start, 1, 65536-start);
+				SDL_RWclose(prg_file);
 				prg_file = NULL;
 				if (start == 0x0801) {
 					// set start of variables

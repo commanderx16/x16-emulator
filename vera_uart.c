@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <SDL.h>
 #include "glue.h"
 
 #define BITS_PER_BYTE 9 /* 8N1 is 9 bits */
@@ -14,13 +15,26 @@ static uint8_t byte_in;
 static float countdown_in;
 static float countdown_out;
 
-FILE *uart_in_file = NULL;
-FILE *uart_out_file = NULL;
+SDL_RWops *uart_in_file = NULL;
+SDL_RWops *uart_out_file = NULL;
 
 static bool
 txbusy()
 {
 	return countdown_out > 0;
+}
+
+bool
+check_eof(SDL_RWops *f)
+{
+    char c;
+    size_t result = SDL_RWread(f, &c, sizeof(c), 1);
+    if (result == 0) {
+        return true;
+    } else {
+        SDL_RWseek(f, -1, RW_SEEK_CUR); // Undo the advancement of the stream.
+        return false;
+    }
 }
 
 static bool
@@ -32,7 +46,7 @@ data_available()
 	if (!uart_in_file) {
 		return false;
 	}
-	if (feof(uart_in_file)) {
+	if (check_eof(uart_in_file)) {
 		return false;
 	}
 	return true;
@@ -42,7 +56,7 @@ static void
 cache_next_char()
 {
 	if (uart_in_file) {
-		byte_in = fgetc(uart_in_file);
+		SDL_RWread(uart_in_file, &byte_in, sizeof(byte_in), 1);
 	}
 }
 
@@ -103,7 +117,7 @@ vera_uart_write(uint8_t reg, uint8_t value)
 			} else {
 				//printf("UART write: $%02x\n", value);
 				if (uart_out_file) {
-					fputc(value, uart_out_file);
+					SDL_RWwrite(uart_in_file, &value, sizeof(value), 1);
 				}
 				countdown_out = bauddiv * BITS_PER_BYTE;
 			}

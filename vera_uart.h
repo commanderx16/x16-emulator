@@ -4,8 +4,8 @@
 
 #include <inttypes.h>
 
-extern FILE *uart_in_file;
-extern FILE *uart_out_file;
+extern SDL_RWops *uart_in_file;
+extern SDL_RWops *uart_out_file;
 
 void vera_uart_init();
 void vera_uart_step();

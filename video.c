@@ -828,14 +828,14 @@ video_get_irq_out()
 //
 
 void
-video_save(FILE *f)
+video_save(SDL_RWops *f)
 {
-	fwrite(&video_ram[0], sizeof(uint8_t), sizeof(video_ram), f);
-	fwrite(&reg_composer[0], sizeof(uint8_t), sizeof(reg_composer), f);
-	fwrite(&palette[0], sizeof(uint8_t), sizeof(palette), f);
-	fwrite(&reg_layer[0][0], sizeof(uint8_t), sizeof(reg_layer), f);
-	fwrite(&reg_sprites[0], sizeof(uint8_t), sizeof(reg_sprites), f);
-	fwrite(&sprite_data[0], sizeof(uint8_t), sizeof(sprite_data), f);
+	SDL_RWwrite(f, &video_ram[0], sizeof(uint8_t), sizeof(video_ram));
+	SDL_RWwrite(f, &reg_composer[0], sizeof(uint8_t), sizeof(reg_composer));
+	SDL_RWwrite(f, &palette[0], sizeof(uint8_t), sizeof(palette));
+	SDL_RWwrite(f, &reg_layer[0][0], sizeof(uint8_t), sizeof(reg_layer));
+	SDL_RWwrite(f, &reg_sprites[0], sizeof(uint8_t), sizeof(reg_sprites));
+	SDL_RWwrite(f, &sprite_data[0], sizeof(uint8_t), sizeof(sprite_data));
 }
 
 bool
