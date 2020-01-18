@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define MAX_ITEMS 16384
 int get_outgoing_queue_length(void);
 int get_incoming_queue_length(void);
 uint8_t get_outgoing_value(void);

@@ -55,12 +55,11 @@ void *processmessages(void *vargp) {
 
 		if (get_outgoing_queue_length() > 0) {
 			uint8_t value = get_outgoing_value();
-			size_t bytes_written = socket_write(value);
-			if (bytes_written <= 0) {
-				insert_outgoing_value(value);
-			}
+			socket_write(value);
 		} else {
-			insert_incoming_value(socket_read());
+			if (get_incoming_queue_length() < MAX_ITEMS) {
+				insert_incoming_value(socket_read());
+			}
 		}
 	}
 }
