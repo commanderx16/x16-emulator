@@ -1175,6 +1175,5 @@ emulator_loop(void *param)
 			}
 		}
 	}
-
 	return 0;
 }
