@@ -71,6 +71,8 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 	* `V`: Video RAM and registers (128 KiB VRAM, 32 B composer registers, 512 B pallete, 16 B layer0 registers, 16 B layer1 registers, 16 B sprite registers, 2 KiB sprite attributes)
 * When compiled with `WITH_YM2151`, `-sound` can be used to specify the output sound device.
 * When compiled with `#define TRACE`, `-trace` will enable an instruction trace on stdout.
+* When compiled with `WITH_SOCKETS`, `-ipaddress` can be used to specify an ip address to connect UART to and 
+`-port` can be used to specify a port number to connect UART to. The socket is accessed as Device #2 within the emulator which must be started after the host service has started.
 
 Run `x16emu -h` to see all command line options.
 
