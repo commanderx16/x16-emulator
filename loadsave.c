@@ -223,7 +223,7 @@ SAVE()
 
 	char c = start & 0xff;
 	SDL_RWwrite(f, &c, sizeof(c), 1);
-	c = start >> 8;+
+	c = start >> 8;
     SDL_RWwrite(f, &c, sizeof(c), 1);
 
 	SDL_RWwrite(f, RAM + start, 1, end - start);
