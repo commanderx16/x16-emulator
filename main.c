@@ -877,9 +877,7 @@ main(int argc, char **argv)
 	video_init(window_scale, scale_quality);
 
 	joystick_init();
-
 	machine_reset();
-
 	instruction_counter = 0;
 
 #ifdef __EMSCRIPTEN__
