@@ -823,7 +823,7 @@ main(int argc, char **argv)
 		}
 	}
 #endif
-	
+
 	prg_override_start = -1;
 	if (prg_path) {
 		char *comma = strchr(prg_path, ',');
