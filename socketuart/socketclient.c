@@ -32,11 +32,11 @@ int port = 80;
 
 void socket_connect() {
 
-	#ifdef __WIN32__
-	   WORD versionWanted = MAKEWORD(1, 1);
-	   WSADATA wsaData;
-	   WSAStartup(versionWanted, &wsaData);
-	#endif
+#ifdef __WIN32__
+	WORD versionWanted = MAKEWORD(1, 1);
+	WSADATA wsaData;
+	WSAStartup(versionWanted, &wsaData);
+#endif
 
 	struct sockaddr_in their_addr;
 
