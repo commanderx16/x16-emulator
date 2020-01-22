@@ -23,7 +23,7 @@ endif
 ifeq ($(CROSS_COMPILE_WINDOWS),1)
 	LDFLAGS+=-L$(MINGW32)/lib
 	# this enables printf() to show, but also forces a console window
-	LDFLAGS+=-Wl,--subsystem,console
+	LDFLAGS+=-Wl,--subsystem,console,-lws2_32
 	CC=i686-w64-mingw32-gcc
 endif
 

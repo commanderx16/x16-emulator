@@ -6,15 +6,20 @@
 
 #include "socketclient.h"
 
-#include <sys/types.h>
+#ifdef __WIN32__
+#include <winsock2.h>
+#else
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>	//inet_addr
 #include <netdb.h>
+#endif
+
+#include <sys/types.h>
 #include <unistd.h>
 #include <pthread.h>
 #include "uartqueue.h"
 #include <string.h>
-#include <arpa/inet.h>	//inet_addr
 #include <sys/time.h>
 
 int sockfd;
@@ -26,6 +31,12 @@ char *ip_address = "127.0.0.1";
 int port = 80;
 
 void socket_connect() {
+
+	#ifdef __WIN32__
+	   WORD versionWanted = MAKEWORD(1, 1);
+	   WSADATA wsaData;
+	   WSAStartup(versionWanted, &wsaData);
+	#endif
 
 	struct sockaddr_in their_addr;
 
@@ -67,7 +78,11 @@ void *processmessages(void *vargp) {
 
 size_t socket_write(uint8_t in_value) {
 
+#ifdef __WIN32__
+	size_t bytes_sent = send(sockfd, (const char *)&in_value, sizeof(in_value), 0);
+#else
 	size_t bytes_sent = send(sockfd, &in_value, sizeof(in_value), 0);
+#endif
 	return bytes_sent;
 }
 
