@@ -15,6 +15,8 @@
 #include "uartqueue.h"
 #include <string.h>
 #include <arpa/inet.h>	//inet_addr
+#include <stdlib.h>
+#include <sys/time.h>
 
 char *convert_char(uint8_t *a);
 int sockfd;
