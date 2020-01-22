@@ -1,5 +1,4 @@
 
-WITH_SOCKETS=1
 # the mingw32 path on macOS installed through homebrew
 MINGW32=/usr/local/Cellar/mingw-w64/6.0.0_2/toolchain-i686/i686-w64-mingw32
 # the Windows SDL2 path on macOS installed through ./configure --prefix=... && make && make install
@@ -54,6 +53,12 @@ endif
 
 ifneq ("$(wildcard ./rom_labels.h)","")
 HEADERS+=rom_labels.h
+endif
+
+ifeq ($(WITH_SOCKETS),1)
+ifdef EMSCRIPTEN
+$(error Sockets not supported on web client)
+endif
 endif
 
 all: $(OBJS) $(HEADERS)
