@@ -2,7 +2,7 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
-#define _XOPEN_SOURCE   600
+#define _XOPEN_SOURCE	600
 #define _POSIX_C_SOURCE 1
 #include <stdlib.h>
 #include <stdbool.h>
@@ -35,7 +35,7 @@
 #include "ym2151.h"
 #endif
 
-#define AUDIO_SAMPLES 4096
+#define AUDIO_SAMPLES 1024
 #define SAMPLERATE 22050
 
 #ifdef __EMSCRIPTEN__
@@ -410,7 +410,7 @@ init_audio()
 	}
 
 	// init YM2151 emulation. 4 MHz clock
-	YM_Create(4000000);
+	YM_Create(7159090);
 	YM_init(have.freq, 60);
 
 	// start playback
@@ -471,7 +471,7 @@ main(int argc, char **argv)
 			int kb = atoi(argv[0]);
 			bool found = false;
 			for (int cmp = 8; cmp <= 2048; cmp *= 2) {
-				if (kb == cmp)  {
+				if (kb == cmp)	{
 					found = true;
 				}
 			}
