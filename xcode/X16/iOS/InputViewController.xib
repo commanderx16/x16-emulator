@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="15702" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="ipad12_9rounded" orientation="landscape" layout="fullscreen" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="15704"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="InputViewController">
+            <connections>
+                <outlet property="view" destination="i5M-Pr-FkT" id="sfx-zR-JGt"/>
+            </connections>
+        </placeholder>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <view autoresizesSubviews="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" translatesAutoresizingMaskIntoConstraints="NO" id="i5M-Pr-FkT">
+            <rect key="frame" x="0.0" y="0.0" width="580" height="120"/>
+            <subviews>
+                <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="equalSpacing" spacing="10" id="SWP-M3-bJk">
+                    <rect key="frame" x="20" y="14.166666666666686" width="539.5" height="93.5"/>
+                    <autoresizingMask key="autoresizingMask"/>
+                    <subviews>
+                        <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="85" translatesAutoresizingMaskIntoConstraints="NO" id="QCM-sa-wkO">
+                            <rect key="frame" x="0.0" y="0.0" width="539.5" height="42"/>
+                            <subviews>
+                                <button opaque="NO" tag="60" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oxf-zH-AjY">
+                                    <rect key="frame" x="0.0" y="0.0" width="40" height="42"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="close">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="closeWindow:" destination="-1" eventType="touchUpInside" id="lVi-Dg-1Yn"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="58" contentMode="scaleToFill" horizontalCompressionResistancePriority="751" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="HQa-m2-46C">
+                                    <rect key="frame" x="125" y="0.0" width="40" height="42"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-keyboard-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="toggleKeyboard:" destination="-1" eventType="touchUpInside" id="Rlo-3c-mSq"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="59" contentMode="scaleToFill" horizontalCompressionResistancePriority="752" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="mbZ-Yl-Ug0">
+                                    <rect key="frame" x="250" y="0.0" width="39.5" height="42"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-joystick-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="showGamePad:" destination="-1" eventType="touchUpInside" id="P9b-Na-VmF"/>
+                                        <action selector="showGamePad:" destination="-2" eventType="touchUpInside" id="dhy-Nw-VTu"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="bCt-ee-9sQ">
+                                    <rect key="frame" x="374.5" y="0.0" width="40" height="42"/>
+                                    <state key="normal" image="icons8-game-controller-500"/>
+                                    <connections>
+                                        <action selector="startControllerSearch:" destination="-1" eventType="touchUpInside" id="cf5-cu-myC"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="41" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="DS0-P6-4v3">
+                                    <rect key="frame" x="499.5" y="0.0" width="40" height="42"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-restart-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="reset:" destination="-1" eventType="touchUpInside" id="8lv-vz-GiB"/>
+                                    </connections>
+                                </button>
+                            </subviews>
+                        </stackView>
+                        <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" translatesAutoresizingMaskIntoConstraints="NO" id="Xuc-qc-QnR">
+                            <rect key="frame" x="0.0" y="52" width="539.5" height="41.5"/>
+                            <subviews>
+                                <button opaque="NO" tag="41" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="jzD-bS-4ed">
+                                    <rect key="frame" x="0.0" y="0.0" width="41.5" height="41.5"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-esc-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="cBS-R3-Kkv"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="58" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="UTk-ow-Q0x">
+                                    <rect key="frame" x="41.5" y="0.0" width="41.5" height="41.5"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-f1-key-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="mhG-2h-4cI"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="59" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="CKh-ee-bTh">
+                                    <rect key="frame" x="83" y="0.0" width="41.5" height="41.5"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-f2-key-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="MOr-fK-lUz"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="60" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Cjr-oE-9XQ">
+                                    <rect key="frame" x="124.5" y="0.0" width="41.5" height="41.5"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-f3-key-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="gMU-r3-jbk"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="61" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="HAz-1S-zkI">
+                                    <rect key="frame" x="166" y="0.0" width="41.5" height="41.5"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-f4-key-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="Myo-T9-BpT"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="62" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="db5-zl-W54">
+                                    <rect key="frame" x="207.5" y="0.0" width="41.5" height="41.5"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-f5-key-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="UVe-TW-sRL"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="63" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Yok-Y0-3Dz">
+                                    <rect key="frame" x="249" y="0.0" width="41.5" height="41.5"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-f6-key-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="yi8-g8-GWE"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="64" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oVO-Z9-7A5">
+                                    <rect key="frame" x="290.5" y="0.0" width="41.5" height="41.5"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-f7-key-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="Efc-r9-Cjj"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="65" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="FBD-TB-6Ab">
+                                    <rect key="frame" x="332" y="0.0" width="41.5" height="41.5"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-f8-key-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="sv3-X2-hhg"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="66" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="CUi-Z2-QCS">
+                                    <rect key="frame" x="373.5" y="0.0" width="41.5" height="41.5"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-f9-key-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="1rd-vp-HfU"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="67" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="9X6-VY-B4X">
+                                    <rect key="frame" x="415" y="0.0" width="41.5" height="41.5"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-f10-key-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="Dyv-io-v0g"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="68" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="1Fq-o4-IFT">
+                                    <rect key="frame" x="456.5" y="0.0" width="41.5" height="41.5"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-f11-key-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="RIX-rw-HNi"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" tag="69" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Oq8-rH-oA8">
+                                    <rect key="frame" x="498" y="0.0" width="41.5" height="41.5"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                    <state key="normal" image="icons8-f12-key-500">
+                                        <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="titleShadowColor" white="0.75" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </state>
+                                    <connections>
+                                        <action selector="buttonPressed:" destination="-1" eventType="touchUpInside" id="kWZ-dc-T8l"/>
+                                    </connections>
+                                </button>
+                            </subviews>
+                        </stackView>
+                    </subviews>
+                    <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                </stackView>
+            </subviews>
+            <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+            <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
+            <viewLayoutGuide key="safeArea" id="Q5M-cg-NOt"/>
+            <point key="canvasLocation" x="257.39385065885796" y="-219.43359375"/>
+        </view>
+    </objects>
+    <resources>
+        <image name="close" width="42" height="42"/>
+        <image name="icons8-esc-500" width="41.5" height="41.5"/>
+        <image name="icons8-f1-key-500" width="41.5" height="41.5"/>
+        <image name="icons8-f10-key-500" width="41.5" height="41.5"/>
+        <image name="icons8-f11-key-500" width="41.5" height="41.5"/>
+        <image name="icons8-f12-key-500" width="41.5" height="41.5"/>
+        <image name="icons8-f2-key-500" width="41.5" height="41.5"/>
+        <image name="icons8-f3-key-500" width="41.5" height="41.5"/>
+        <image name="icons8-f4-key-500" width="41.5" height="41.5"/>
+        <image name="icons8-f5-key-500" width="41.5" height="41.5"/>
+        <image name="icons8-f6-key-500" width="41.5" height="41.5"/>
+        <image name="icons8-f7-key-500" width="41.5" height="41.5"/>
+        <image name="icons8-f8-key-500" width="41.5" height="41.5"/>
+        <image name="icons8-f9-key-500" width="41.5" height="41.5"/>
+        <image name="icons8-game-controller-500" width="41.5" height="41.5"/>
+        <image name="icons8-joystick-500" width="41.5" height="41.5"/>
+        <image name="icons8-keyboard-500" width="41.5" height="41.5"/>
+        <image name="icons8-restart-500" width="41.5" height="41.5"/>
+    </resources>
+</document>

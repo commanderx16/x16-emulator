@@ -3,7 +3,6 @@
 // All rights reserved. License: 2-clause BSD
 
 #include "video.h"
-#include "memory.h"
 #include "ps2.h"
 #include "glue.h"
 #include "debugger.h"
@@ -11,7 +10,7 @@
 #include "gif.h"
 #include "vera_spi.h"
 #include "vera_uart.h"
-
+#include "memory.h"
 #include <limits.h>
 
 #ifdef __EMSCRIPTEN__
@@ -933,6 +932,14 @@ video_update()
 			mouse_x = event.motion.x;
 			mouse_y = event.motion.y;
 		}
+#if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
+		if (event.type == SDL_DROPFILE) {	   // In case if dropped file
+			char* dropped_filedir;
+			dropped_filedir = event.drop.file;
+			receiveFile(dropped_filedir);
+			SDL_free(dropped_filedir);	  // Free dropped_filedir memory
+		}
+#endif
 	}
 	return true;
 }

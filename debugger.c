@@ -13,9 +13,11 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <SDL.h>
+
 #include "glue.h"
 #include "disasm.h"
 #include "memory.h"
+
 #include "video.h"
 #include "cpu/fake6502.h"
 #include "debugger.h"

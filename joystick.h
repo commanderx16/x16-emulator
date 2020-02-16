@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <SDL.h>
+
 #include "glue.h"
 #include "via.h"
 

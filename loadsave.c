@@ -9,9 +9,15 @@
 #include <dirent.h>
 #include <unistd.h>
 #include "glue.h"
+
 #include "memory.h"
+
 #include "video.h"
 #include "rom_symbols.h"
+
+#if __APPLE__
+#include <TargetConditionals.h>
+#endif
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -51,7 +57,17 @@ create_directory_listing(uint8_t *data)
 	*data++ = 'C';
 	*data++ = 0;
 
-	if (!(dirp = opendir("."))) {
+	#if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
+	char filename[255];
+	//use correct file location for ios
+	strcpy(filename,getenv("HOME"));
+	//concatenating the path string returned from HOME
+	strcat(filename,"/Documents/.");
+	#else
+	const char *filename = ".";
+	#endif
+
+	if (!(dirp = opendir(filename))) {
 		return 0;
 	}
 	while ((dp = readdir(dirp))) {
@@ -132,7 +148,19 @@ LOAD()
 		RAM[STATUS] = 0;
 		a = 0;
 	} else {
-		FILE *f = fopen(filename, "rb");
+		#if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
+		//use correct file location for ios
+		char full_filename[255];
+		//concatenating the path string returned from HOME
+		strcpy(full_filename, getenv("HOME"));
+		strcat(full_filename, "/Documents/");
+		strcat(full_filename, filename);
+		#else
+		char *full_filename = filename;
+		#endif
+
+		FILE *f = fopen(full_filename, "rb");
+
 		if (!f) {
 			a = 4; // FNF
 			RAM[STATUS] = a;
@@ -209,8 +237,20 @@ SAVE()
 		a = 0;
 		return;
 	}
+	//use correct file location for ios
+	#if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
+	//use correct file location for ios
+	char full_filename[255];
+	//concatenating the path string returned from HOME
+	strcpy(full_filename, getenv("HOME"));
+	strcat(full_filename, "/Documents/");
+	strcat(full_filename, filename);
+	#else
+	char *full_filename = filename;
+	#endif
 
-	FILE *f = fopen(filename, "wb");
+	FILE *f = fopen(full_filename, "wb");
+
 	if (!f) {
 		a = 4; // FNF
 		RAM[STATUS] = a;

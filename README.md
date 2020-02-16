@@ -25,6 +25,14 @@ You can build a ROM image yourself using the [build instructions][x16rom-build] 
 
 Install SDL2 using `brew install sdl2`.
 
+### iPad Build
+
+Using Xcode open the project file in the emulator Xcode directory.
+A copy of the framework source required is included as a zip file (Frameworks.zip).
+Extract it in place before building.
+
+Choose your device or simulator and press run.
+
 ### Linux Build
 
 The SDL2 development package is available as a distribution package with most major versions of Linux:
@@ -162,7 +170,6 @@ The emulator will interpret filenames relative to the directory it was started i
 
 To avoid incompatibility problems between the PETSCII and ASCII encodings, use lower case filenames on the host side, and unshifted filenames on the X16 side.
 
-
 Dealing with BASIC Programs
 ---------------------------
 
@@ -211,6 +218,29 @@ When `-debug` is selected the No-Operation $FF will break into the debugger auto
 
 Effectively keyboard routines only work when the debugger is running normally. Single stepping through keyboard code will not work at present.
 
+iPad
+----
+
+
+### Release 0.1
+
+* Files are saved in the $HOME/Documents folder
+* On-screen joystick and external Gamecontrollers can be accessed by using a Long Press on the main window and pressing the appropriate button
+* Function keys, a reset button and "ESC" button are available on the on-sceen keyboard
+* To run PRG files:
+        1. Browse to the file in the "File App"
+        2. Select any BIN files you need and open them with the X16 app
+        3. Select the PRG file you wish to run.
+        4. The emulator will open and load the PRG
+        5. "RUN" will be displayed when it has loaded and is ready to go. Press ENTER at this point
+* BASIC Code can be pasted by tapping the "Paste" Icon on the software keyboard
+* Sound is now supported by default
+
+TODO:
+* BAS files are not yet able to be loaded from the Files app
+* Mouse support
+* Improve and optimise UI
+* Implement command line parameters in UI such as uart and debugging tools
 
 Wiki
 ----

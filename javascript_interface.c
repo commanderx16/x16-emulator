@@ -7,6 +7,10 @@
 #include <string.h>
 #include "glue.h"
 
+#ifdef WITH_YM2151
+void init_audio(void);
+#endif
+
 char javascript_text_data[65536];
 
 void

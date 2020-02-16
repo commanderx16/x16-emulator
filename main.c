@@ -2,8 +2,9 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
-#define _XOPEN_SOURCE   600
+#define _XOPEN_SOURCE	600
 #define _POSIX_C_SOURCE 1
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -16,7 +17,6 @@
 #endif
 #include "cpu/fake6502.h"
 #include "disasm.h"
-#include "memory.h"
 #include "video.h"
 #include "via.h"
 #include "ps2.h"
@@ -26,6 +26,7 @@
 #include "sdcard.h"
 #include "loadsave.h"
 #include "glue.h"
+#include "memory.h"
 #include "debugger.h"
 #include "utf8.h"
 #include "joystick.h"
@@ -35,7 +36,14 @@
 #include "ym2151.h"
 #endif
 
-#define AUDIO_SAMPLES 4096
+#if __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
+#include "ios_functions.h"
+#endif
+#endif
+
+#define AUDIO_SAMPLES 256
 #define SAMPLERATE 22050
 
 #ifdef __EMSCRIPTEN__
@@ -478,6 +486,14 @@ void closeAudio()
 }
 #endif
 
+#if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
+int HandleAppEvents(void *userdata, SDL_Event *event)
+{
+//TODO: App events to be handled here if backgrounding support is needed.
+	return 1;
+}
+#endif
+
 int
 main(int argc, char **argv)
 {
@@ -526,7 +542,7 @@ main(int argc, char **argv)
 			int kb = atoi(argv[0]);
 			bool found = false;
 			for (int cmp = 8; cmp <= 2048; cmp *= 2) {
-				if (kb == cmp)  {
+				if (kb == cmp)	{
 					found = true;
 				}
 			}
@@ -888,6 +904,14 @@ main(int argc, char **argv)
 	video_init(window_scale, scale_quality);
 
 	joystick_init();
+
+// first time through for iOS
+#if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
+	SDL_SetEventFilter(HandleAppEvents, NULL);
+	createIosMessageObserver();
+#endif
+	//Allow text entry on touch
+	SDL_StartTextInput();
 
 	machine_reset();
 

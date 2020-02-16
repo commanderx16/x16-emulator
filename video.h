@@ -8,7 +8,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#if __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
+#include "ios_functions.h"
+#endif
+#endif
+
 #include <SDL.h>
+
 #include "glue.h"
 
 bool video_init(int window_scale, char *quality);
