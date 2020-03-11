@@ -157,7 +157,7 @@ video_init(int window_scale, char *quality)
 	video_reset();
 
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, quality);
-	SDL_CreateWindowAndRenderer(SCREEN_WIDTH * window_scale, SCREEN_HEIGHT * window_scale, 0, &window, &renderer);
+	SDL_CreateWindowAndRenderer(SCREEN_WIDTH * window_scale, SCREEN_HEIGHT * window_scale, SDL_WINDOW_ALLOW_HIGHDPI, &window, &renderer);
 #ifndef __MORPHOS__
 	SDL_SetWindowResizable(window, true);
 #endif
