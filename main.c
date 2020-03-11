@@ -1044,6 +1044,8 @@ emulator_loop(void *param)
 		for (uint8_t i = 0; i < clocks; i++) {
 			ps2_step(0);
 			ps2_step(1);
+			via1_step();
+			via2_step();
 			spi_step();
 			joystick_step();
 			vera_spi_step();
@@ -1097,7 +1099,7 @@ emulator_loop(void *param)
 #endif
 		}
 
-		if (video_get_irq_out()) {
+		if (video_get_irq_out() || via1_get_irq_out() || via2_get_irq_out()) {
 			if (!(status & 4)) {
 //				printf("IRQ!\n");
 				irq6502();

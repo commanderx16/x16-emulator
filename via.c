@@ -13,6 +13,14 @@
 #include "glue.h"
 #include "joystick.h"
 
+#define VIA_IFR_CA2 1
+#define VIA_IFR_CA1 2
+#define VIA_IFR_SR  4
+#define VIA_IFR_CB2 8
+#define VIA_IFR_CB1 16
+#define VIA_IFR_T2  32
+#define VIA_IFR_T1  64
+
 //
 // VIA#1
 //
@@ -35,6 +43,17 @@ via1_init()
 	// default banks are 0
 	memory_set_ram_bank(0);
 	memory_set_rom_bank(0);
+}
+
+void
+via1_step()
+{
+}
+
+bool
+via1_get_irq_out()
+{
+	return false;
 }
 
 uint8_t
@@ -85,10 +104,31 @@ via1_write(uint8_t reg, uint8_t value)
 
 static uint8_t via2registers[16];
 static uint8_t via2pb_in;
+static uint8_t via2ifr;
+static uint8_t via2ier;
 
 void
 via2_init()
 {
+	via2ier = 0;
+}
+
+void
+via2_step()
+{
+	static bool old_clk_out;
+	if (ps2_port[0].clk_out != old_clk_out) {
+		if (!ps2_port[0].clk_out) { // falling edge
+			via2ifr |= VIA_IFR_CA1;
+		}
+	}
+	old_clk_out = ps2_port[0].clk_out;
+}
+
+bool
+via2_get_irq_out()
+{
+	return !!(via2ifr & via2ier);
 }
 
 uint8_t
@@ -102,12 +142,23 @@ via2_read(uint8_t reg)
 			(via2registers[2] & PS2_DATA_MASK ? 0 : ps2_port[1].data_out);
 		return value;
 	} else if (reg == 1) { // PA
+		// reading PA clears clear CA1
+		via2ifr &= ~VIA_IFR_CA1;
+
 		uint8_t value =
 			(via2registers[3] & PS2_CLK_MASK ? 0 : ps2_port[0].clk_out << 1) |
 			(via2registers[3] & PS2_DATA_MASK ? 0 : ps2_port[0].data_out);
 			value = value | (joystick1_data ? JOY_DATA1_MASK : 0) |
 							(joystick2_data ? JOY_DATA2_MASK : 0);
 		return value;
+	} else if (reg == 13) { // IFR
+		uint8_t val = via2ifr;
+		if (val) {
+			val |= 0x80;
+		}
+		return val;
+	} else if (reg == 14) { // IER
+		return via2ier;
 	} else {
 		return via2registers[reg];
 	}
@@ -128,6 +179,15 @@ via2_write(uint8_t reg, uint8_t value)
 		ps2_port[0].data_in = via2registers[3] & PS2_DATA_MASK ? via2registers[1] & PS2_DATA_MASK : 1;
 		joystick_latch = via2registers[1] & JOY_LATCH_MASK;
 		joystick_clock = via2registers[1] & JOY_CLK_MASK;
+	} else if (reg == 13) { // IFR
+		// do nothing
+	} else if (reg == 14) { // IER
+		via2ier = value;
+	}
+
+	// reading PA clears clear CA1
+	if (reg == 1) { // PA
+		via2ifr &= ~VIA_IFR_CA1;
 	}
 }
 
