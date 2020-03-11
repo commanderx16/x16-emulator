@@ -53,8 +53,8 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 		if (address >= 0x9f00 && address < 0x9f20) {
 			// TODO: sound
 			return 0;
-		} else if (address >= 0x9f20 && address < 0x9f28) {
-			return video_read(address & 7, debugOn);
+		} else if (address >= 0x9f20 && address < 0x9f40) {
+			return video_read(address & 0x1f, debugOn);
 		} else if (address >= 0x9f40 && address < 0x9f60) {
 			// TODO: character LCD
 			return 0;
@@ -97,7 +97,7 @@ write6502(uint16_t address, uint8_t value)
 		if (address >= 0x9f00 && address < 0x9f20) {
 			// TODO: sound
 		} else if (address >= 0x9f20 && address < 0x9f40) {
-			video_write(address & 7, value);
+			video_write(address & 0x1f, value);
 		} else if (address >= 0x9f40 && address < 0x9f60) {
 			// TODO: character LCD
 		} else if (address >= 0x9f60 && address < 0x9f70) {
