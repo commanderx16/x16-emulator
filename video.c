@@ -595,8 +595,11 @@ render_layer_line(uint8_t layer, uint16_t y)
 
 			// convert tile byte to indexed color
 			if (props->bits_per_pixel == 1) {
-				bool bit = (s >> (7 - xx)) & 1;
-				col_index = bit ? fg_color : bg_color;
+                col_index = (s >> (7 - (xx & 7))) & 1;
+
+                if (props->text_mode) {
+                    col_index = col_index ? fg_color : bg_color;
+                }
 			} else if (props->bits_per_pixel == 2) {
 				col_index = (s >> (6 - ((xx & 3) << 1))) & 3;
 			} else if (props->bits_per_pixel == 4) {
