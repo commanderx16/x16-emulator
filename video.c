@@ -73,7 +73,7 @@ static uint8_t sprite_data[128][8];
 
 // I/O registers
 static uint32_t io_addr[2];
-static uint8_t io_rddata;
+static uint8_t io_rddata[2];
 static uint8_t io_inc[2];
 static uint8_t io_addrsel;
 static uint8_t io_dcsel;
@@ -116,7 +116,8 @@ video_reset()
 	memset(io_inc, 0, sizeof(io_inc));
 	io_addrsel = 0;
 	io_dcsel = 0;
-	io_rddata = 0;
+	io_rddata[0] = 0;
+	io_rddata[1] = 0;
 
 	ien = 0;
 	isr = 0;
@@ -1024,16 +1025,13 @@ uint8_t video_read(uint8_t reg, bool debugOn) {
 		case 0x03:
 		case 0x04: {
 			if (debugOn) {
-				return reg == 3 ? io_rddata : 0;
+				return io_rddata[reg - 3];
 			}
 
 			uint32_t address = get_and_inc_address(reg - 3);
-			if (reg == 4) {
-				return 0;
-			}
 
-			uint8_t value = io_rddata;
-			io_rddata     = video_space_read(io_addr[0]);
+			uint8_t value = io_rddata[reg - 3];
+			io_rddata[reg - 3] = video_space_read(io_addr[reg - 3]);
 
 			if (log_video) {
 				printf("READ  video_space[$%X] = $%02X\n", address, value);
@@ -1084,22 +1082,16 @@ void video_write(uint8_t reg, uint8_t value) {
 	switch (reg & 0x1F) {
 		case 0x00:
 			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x1ff00) | value;
-			if (io_addrsel == 0) {
-				io_rddata = video_space_read(io_addr[0]);
-			}
+            io_rddata[io_addrsel] = video_space_read(io_addr[io_addrsel]);
 			break;
 		case 0x01:
 			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x100ff) | (value << 8);
-			if (io_addrsel == 0) {
-				io_rddata = video_space_read(io_addr[0]);
-			}
+            io_rddata[io_addrsel] = video_space_read(io_addr[io_addrsel]);
 			break;
 		case 0x02:
 			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x0ffff) | ((value & 0x1) << 16);
 			io_inc[io_addrsel]  = value >> 3;
-			if (io_addrsel == 0) {
-				io_rddata = video_space_read(io_addr[0]);
-			}
+            io_rddata[io_addrsel] = video_space_read(io_addr[io_addrsel]);
 			break;
 		case 0x03:
 		case 0x04: {
@@ -1109,9 +1101,7 @@ void video_write(uint8_t reg, uint8_t value) {
 			}
 			video_space_write(address, value);
 
-			if (reg == 3) {
-				io_rddata = video_space_read(io_addr[0]);
-			}
+            io_rddata[reg - 3] = video_space_read(io_addr[reg - 3]);
 			break;
 		}
 		case 0x05:
