@@ -30,12 +30,11 @@
 #include "joystick.h"
 #include "utf8_encode.h"
 #include "rom_symbols.h"
-#ifdef WITH_YM2151
 #include "ym2151.h"
-#endif
+#include "vera_audio.h"
 
 #define AUDIO_SAMPLES 4096
-#define SAMPLERATE 22050
+#define SAMPLERATE (25000000 / 512)
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -100,10 +99,8 @@ FILE *prg_file ;
 int prg_override_start = -1;
 bool run_after_load = false;
 
-#ifdef WITH_YM2151
 const char *audio_dev_name = NULL;
-SDL_AudioDeviceID audio_dev = 0;
-#endif
+static SDL_AudioDeviceID audio_dev = 0;
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -385,10 +382,8 @@ usage()
 	printf("\tChoose what type of joystick to use, e.g. -joy1 SNES\n");
 	printf("-joy2 {NES | SNES}\n");
 	printf("\tChoose what type of joystick to use, e.g. -joy2 SNES\n");
-#ifdef WITH_YM2151
 	printf("-sound <output device>\n");
 	printf("\tSet the output device used for audio emulation");
-#endif
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
@@ -408,11 +403,15 @@ usage_keymap()
 	exit(1);
 }
 
-#ifdef WITH_YM2151
+/*
 void audioCallback(void* userdata, Uint8 *stream, int len)
 {
-	YM_stream_update((uint16_t*) stream, len / 4);
+    psg_render((int16_t *)stream, len / 4);
+
+    // TODO: perform mixing
+	// YM_stream_update((uint16_t*) stream, len / 4);
 }
+*/
 
 void usageSound()
 {
@@ -443,7 +442,7 @@ init_audio()
 	want.format = AUDIO_S16SYS;
 	want.channels = 2;
 	want.samples = AUDIO_SAMPLES;
-	want.callback = audioCallback;
+	want.callback = NULL;   //audioCallback;
 	want.userdata = NULL;
 
 	if (audio_dev > 0)
@@ -458,6 +457,8 @@ init_audio()
 		exit(-1);
 	}
 
+    vera_audio_init(audio_dev);
+
 	// init YM2151 emulation. 4 MHz clock
 	YM_Create(4000000);
 	YM_init(have.freq, 60);
@@ -470,7 +471,6 @@ void closeAudio()
 {
 	SDL_CloseAudioDevice(audio_dev);
 }
-#endif
 
 int
 main(int argc, char **argv)
@@ -759,7 +759,6 @@ main(int argc, char **argv)
 			}
 			argc--;
 			argv++;
-#ifdef WITH_YM2151
 		} else if (!strcmp(argv[0], "-sound")) {
 			argc--;
 			argv++;
@@ -769,7 +768,6 @@ main(int argc, char **argv)
 			audio_dev_name = argv[0];
 			argc--;
 			argv++;
-#endif
 		} else {
 			usage();
 		}
@@ -831,15 +829,9 @@ main(int argc, char **argv)
 		snprintf(paste_text, sizeof(paste_text_data), "TEST %d\r", test_number);
 	}
 
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER
-#ifdef WITH_YM2151
-		| SDL_INIT_AUDIO
-#endif
-		);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
 
-#ifdef WITH_YM2151
 	init_audio();
-#endif
 
 	memory_init();
 	video_init(window_scale, scale_quality);
@@ -856,9 +848,7 @@ main(int argc, char **argv)
 	emulator_loop(NULL);
 #endif
 
-#ifdef WITH_YM2151
 	closeAudio();
-#endif
 	video_end();
 	SDL_Quit();
 
@@ -1006,6 +996,7 @@ emulator_loop(void *param)
 			vera_spi_step();
 			new_frame |= video_step(MHZ);
 		}
+        vera_audio_render(clocks);
 
 		instruction_counter++;
 

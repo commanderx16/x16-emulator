@@ -1,5 +1,6 @@
 // Commander X16 Emulator
 // Copyright (c) 2019 Michael Steil
+// Copyright (c) 2020 Frank van den Hoef
 // All rights reserved. License: 2-clause BSD
 
 #include "video.h"
@@ -10,6 +11,7 @@
 #include "keyboard.h"
 #include "gif.h"
 #include "vera_spi.h"
+#include "vera_psg.h"
 
 #include <limits.h>
 
@@ -1005,7 +1007,7 @@ video_space_write(uint32_t address, uint8_t value)
 	video_ram[address & 0x1FFFF] = value;
 
 	if (address >= ADDR_PSG_START && address < ADDR_PSG_END) {
-		// TBD
+        psg_writereg(address & 0x3f, value);
 	} else if (address >= ADDR_PALETTE_START && address < ADDR_PALETTE_END) {
 		palette[address & 0x1ff] = value;
 		video_palette.dirty = true;
