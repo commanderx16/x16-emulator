@@ -12,6 +12,7 @@
 #include "gif.h"
 #include "vera_spi.h"
 #include "vera_psg.h"
+#include "vera_pcm.h"
 
 #include <limits.h>
 
@@ -154,6 +155,9 @@ video_reset()
 
 	scan_pos_x = 0;
 	scan_pos_y = 0;
+
+    psg_reset();
+    pcm_reset();
 }
 
 bool
@@ -819,7 +823,8 @@ video_step(float mhz)
 bool
 video_get_irq_out()
 {
-	return isr > 0;
+    uint8_t tmp_isr = isr | (pcm_is_fifo_almost_empty() ? 8 : 0);
+	return (tmp_isr & ien) != 0;
 }
 
 //
@@ -1045,7 +1050,7 @@ uint8_t video_read(uint8_t reg, bool debugOn) {
 		}
 		case 0x05: return (io_dcsel << 1) | io_addrsel;
 		case 0x06: return ((irq_line & 1) << 7) | (ien & 0xF);
-		case 0x07: return isr;
+		case 0x07: return isr | (pcm_is_fifo_almost_empty() ? 8 : 0);
 		case 0x08: return irq_line & 0xFF;
 
 		case 0x09:
@@ -1069,8 +1074,8 @@ uint8_t video_read(uint8_t reg, bool debugOn) {
 		case 0x19:
 		case 0x1A: return reg_layer[1][reg - 0x14];
 
-		case 0x1B: break;	// TODO
-		case 0x1C: break;	// TODO
+		case 0x1B: return pcm_read_ctrl();
+		case 0x1C: return pcm_read_rate();
 		case 0x1D: return 0;
 
 		case 0x1E:
@@ -1160,12 +1165,9 @@ void video_write(uint8_t reg, uint8_t value) {
 			refresh_layer_properties(1);
 			break;
 
-		case 0x1B:
-			break;
-		case 0x1C:
-			break;
-		case 0x1D:
-			break;
+		case 0x1B: pcm_write_ctrl(value); break;
+		case 0x1C: pcm_write_rate(value); break;
+		case 0x1D: pcm_write_fifo(value); break;
 
 		case 0x1E:
 		case 0x1F:
