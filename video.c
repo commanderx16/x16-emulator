@@ -1,5 +1,6 @@
 // Commander X16 Emulator
 // Copyright (c) 2019 Michael Steil
+// Copyright (c) 2020 Frank van den Hoef
 // All rights reserved. License: 2-clause BSD
 
 #include "video.h"
@@ -10,7 +11,8 @@
 #include "keyboard.h"
 #include "gif.h"
 #include "vera_spi.h"
-#include "vera_uart.h"
+#include "vera_psg.h"
+#include "vera_pcm.h"
 
 #include <limits.h>
 
@@ -20,22 +22,12 @@
 
 #define ADDR_VRAM_START     0x00000
 #define ADDR_VRAM_END       0x20000
-#define ADDR_COMPOSER_START 0xF0000
-#define ADDR_COMPOSER_END   0xF1000
-#define ADDR_PALETTE_START  0xF1000
-#define ADDR_PALETTE_END    0xF2000
-#define ADDR_LAYER1_START   0xF2000
-#define ADDR_LAYER1_END     0xF3000
-#define ADDR_LAYER2_START   0xF3000
-#define ADDR_LAYER2_END     0xF4000
-#define ADDR_SPRITES_START  0xF4000
-#define ADDR_SPRITES_END    0xF5000
-#define ADDR_SPRDATA_START  0xF5000
-#define ADDR_SPRDATA_END    0xF6000
-#define ADDR_SPI_START      0xF7000
-#define ADDR_SPI_END        0xF8000
-#define ADDR_UART_START     0xF8000
-#define ADDR_UART_END       0xF9000
+#define ADDR_PSG_START      0x1F9C0
+#define ADDR_PSG_END        0x1FA00
+#define ADDR_PALETTE_START  0x1FA00
+#define ADDR_PALETTE_END    0x1FC00
+#define ADDR_SPRDATA_START  0x1FC00
+#define ADDR_SPRDATA_END    0x20000
 
 #define NUM_SPRITES 128
 
@@ -55,7 +47,7 @@
 #define TITLE_SAFE_X 0.067
 #define TITLE_SAFE_Y 0.05
 
-// visible area we're darwing
+// visible area we're drawing
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 
@@ -80,19 +72,22 @@ static bool is_fullscreen = false;
 
 static uint8_t video_ram[0x20000];
 static uint8_t palette[256 * 2];
-static uint8_t sprite_data[256][8];
+static uint8_t sprite_data[128][8];
 
 // I/O registers
 static uint32_t io_addr[2];
+static uint8_t io_rddata[2];
 static uint8_t io_inc[2];
-bool io_addrsel;
+static uint8_t io_addrsel;
+static uint8_t io_dcsel;
 
-static uint8_t ien = 0;
-static uint8_t isr = 0;
+static uint8_t ien;
+static uint8_t isr;
 
-static uint8_t reg_layer[2][16];
-static uint8_t reg_sprites[16];
-static uint8_t reg_composer[32];
+static uint16_t irq_line;
+
+static uint8_t reg_layer[2][7];
+static uint8_t reg_composer[8];
 
 static uint8_t layer_line[2][SCREEN_WIDTH];
 static uint8_t sprite_line_col[SCREEN_WIDTH];
@@ -123,17 +118,23 @@ video_reset()
 	memset(io_addr, 0, sizeof(io_addr));
 	memset(io_inc, 0, sizeof(io_inc));
 	io_addrsel = 0;
+	io_dcsel = 0;
+	io_rddata[0] = 0;
+	io_rddata[1] = 0;
+
+	ien = 0;
+	isr = 0;
+	irq_line = 0;
 
 	// init Layer registers
 	memset(reg_layer, 0, sizeof(reg_layer));
-
-	// init sprite registers
-	memset(reg_sprites, 0, sizeof(reg_sprites));
 
 	// init composer registers
 	memset(reg_composer, 0, sizeof(reg_composer));
 	reg_composer[1] = 128; // hscale = 1.0
 	reg_composer[2] = 128; // vscale = 1.0
+	reg_composer[5] = 640 >> 2;
+	reg_composer[7] = 480 >> 1;
 
 	// init sprite data
 	memset(sprite_data, 0, sizeof(sprite_data));
@@ -147,8 +148,16 @@ video_reset()
 
 	refresh_palette();
 
+	// fill video RAM with random data
+	for (int i = 0; i < 128 * 1024; i++) {
+		video_ram[i] = rand();
+	}
+
 	scan_pos_x = 0;
 	scan_pos_y = 0;
+
+    psg_reset();
+    pcm_reset();
 }
 
 bool
@@ -196,13 +205,12 @@ video_init(int window_scale, char *quality)
 
 struct video_layer_properties
 {
-	bool enabled;
-
-	uint8_t mode;
+	uint8_t color_depth;
 	uint32_t map_base;
 	uint32_t tile_base;
 
 	bool text_mode;
+	bool text_mode_256c;
 	bool tile_mode;
 	bool bitmap_mode;
 
@@ -260,19 +268,20 @@ void refresh_layer_properties(uint8_t layer)
 	uint16_t prev_layerw_max = props->layerw_max;
 	uint16_t prev_hscroll = props->hscroll;
 
-	props->enabled = reg_layer[layer][0] & 1;
-
-	props->mode = reg_layer[layer][0] >> 5;
-	props->map_base = reg_layer[layer][2] << 2 | reg_layer[layer][3] << 10;
-	props->tile_base = reg_layer[layer][4] << 2 | reg_layer[layer][5] << 10;
-
-	props->text_mode = (props->mode == 0) || (props->mode == 1);
-	props->tile_mode = (props->mode == 2) || (props->mode == 3) || (props->mode == 4);
-	props->bitmap_mode = (props->mode == 5) || (props->mode == 6) || (props->mode == 7);
+	props->color_depth    = reg_layer[layer][0] & 0x3;
+	props->map_base       = reg_layer[layer][1] << 9;
+	props->tile_base      = (reg_layer[layer][2] & 0xFC) << 9;
+	props->bitmap_mode    = (reg_layer[layer][0] & 0x4) != 0;
+	props->text_mode      = (props->color_depth == 0) && !props->bitmap_mode;
+	props->text_mode_256c = (reg_layer[layer][0] & 8) != 0;
+	props->tile_mode      = !props->bitmap_mode && !props->text_mode;
 
 	if (!props->bitmap_mode) {
-		props->hscroll = reg_layer[layer][6] | (reg_layer[layer][7] & 0xf) << 8;
-		props->vscroll = reg_layer[layer][8] | (reg_layer[layer][9] & 0xf) << 8;
+		props->hscroll = reg_layer[layer][3] | (reg_layer[layer][4] & 0xf) << 8;
+		props->vscroll = reg_layer[layer][5] | (reg_layer[layer][6] & 0xf) << 8;
+	} else {
+		props->hscroll = 0;
+		props->vscroll = 0;
 	}
 
 	props->mapw = 0;
@@ -281,14 +290,14 @@ void refresh_layer_properties(uint8_t layer)
 	props->tileh = 0;
 
 	if (props->tile_mode || props->text_mode) {
-		props->mapw = 1 << ((reg_layer[layer][1] & 3) + 5);
-		props->maph = 1 << (((reg_layer[layer][1] >> 2) & 3) + 5);
-		// Scale the tiles or text characters arccording to TILEW and TILEH.
-		props->tilew = 1 << (((reg_layer[layer][1] >> 4) & 1) + 3);
-		props->tileh = 1 << (((reg_layer[layer][1] >> 5) & 1) + 3);
+		props->mapw = 1 << (((reg_layer[layer][0] >> 4) & 3) + 5);
+		props->maph = 1 << (((reg_layer[layer][0] >> 6) & 3) + 5);
+		// Scale the tiles or text characters according to TILEW and TILEH.
+		props->tilew = 1 << ((reg_layer[layer][2] & 1) + 3);
+		props->tileh = 1 << (((reg_layer[layer][2] >> 1) & 1) + 3);
 	} else if (props->bitmap_mode) {
 		// bitmap mode is basically tiled mode with a single huge tile
-		props->tilew = ((reg_layer[layer][1] >> 4) & 1) ? 640 : 320;
+		props->tilew = (reg_layer[layer][2] & 1) ? 640 : 320;
 		props->tileh = SCREEN_HEIGHT;
 	}
 
@@ -323,17 +332,7 @@ void refresh_layer_properties(uint8_t layer)
 		props->max_eff_x = max_eff_x;
 	}
 
-	props->bits_per_pixel = 0;
-	if ((props->mode == 0) || (props->mode == 1)) {
-		props->bits_per_pixel = 1;
-	} else if ((props->mode == 2) || (props->mode == 5)) {
-		props->bits_per_pixel = 2;
-	} else if ((props->mode == 3) || (props->mode == 6)) {
-		props->bits_per_pixel = 4;
-	} else if ((props->mode == 4) || (props->mode == 7)) {
-		props->bits_per_pixel = 8;
-	}
-
+	props->bits_per_pixel = 1 << props->color_depth;
 	props->tile_size = (props->tilew * props->bits_per_pixel * props->tileh) >> 3;
 }
 
@@ -355,7 +354,7 @@ struct video_sprite_properties
 	uint16_t palette_offset;
 };
 
-struct video_sprite_properties sprite_properties[256];
+struct video_sprite_properties sprite_properties[128];
 
 void refresh_sprite_properties(uint16_t sprite)
 {
@@ -424,7 +423,7 @@ static void refresh_palette() {
 static void
 render_sprite_line(uint16_t y)
 {
-	if (!(reg_sprites[0] & 1)) {
+	if (!(reg_composer[0] & 0x40)) {
 		// sprites disabled
 		sprite_line_empty = true;
 		return;
@@ -505,7 +504,9 @@ render_layer_line(uint8_t layer, uint16_t y)
 {
 	struct video_layer_properties *props = &layer_properties[layer];
 
-	if (!props->enabled) {
+	bool enabled = (reg_composer[0] & (layer ? 0x20 : 0x10)) != 0;
+
+	if (!enabled) {
 		layer_line_empty[layer] = true;
 	} else {
 		layer_line_empty[layer] = false;
@@ -555,7 +556,7 @@ render_layer_line(uint8_t layer, uint16_t y)
 			// extract all information from the map
 			if (props->bitmap_mode) {
 				tile_index = 0;
-				palette_offset = reg_layer[layer][7] & 0xf;
+				palette_offset = reg_layer[layer][4] & 0xf;
 			} else {
 				uint32_t map_addr = calc_layer_map_addr(props, eff_x, eff_y) - map_addr_begin;
 
@@ -565,7 +566,7 @@ render_layer_line(uint8_t layer, uint16_t y)
 				if (props->text_mode) {
 					tile_index = byte0;
 
-					if (props->mode == 0) {
+					if (!props->text_mode_256c) {
 						fg_color = byte1 & 15;
 						bg_color = byte1 >> 4;
 					} else {
@@ -600,8 +601,11 @@ render_layer_line(uint8_t layer, uint16_t y)
 
 			// convert tile byte to indexed color
 			if (props->bits_per_pixel == 1) {
-				bool bit = (s >> (7 - xx)) & 1;
-				col_index = bit ? fg_color : bg_color;
+                col_index = (s >> (7 - (xx & 7))) & 1;
+
+                if (props->text_mode) {
+                    col_index = col_index ? fg_color : bg_color;
+                }
 			} else if (props->bits_per_pixel == 2) {
 				col_index = (s >> (6 - ((xx & 3) << 1))) & 3;
 			} else if (props->bits_per_pixel == 4) {
@@ -645,10 +649,10 @@ render_line(uint16_t y)
 	uint8_t out_mode = reg_composer[0] & 3;
 
 	uint8_t border_color = reg_composer[3];
-	uint16_t hstart = reg_composer[4] | (reg_composer[8] & 3) << 8;
-	uint16_t hstop = reg_composer[5] | ((reg_composer[8] >> 2) & 3) << 8;
-	uint16_t vstart = reg_composer[6] | ((reg_composer[8] >> 4) & 1) << 8;
-	uint16_t vstop = reg_composer[7] | ((reg_composer[8] >> 5) & 1) << 8;
+	uint16_t hstart = reg_composer[4] << 2;
+	uint16_t hstop = reg_composer[5] << 2;
+	uint16_t vstart = reg_composer[6] << 1;
+	uint16_t vstop = reg_composer[7] << 1;
 
 	int eff_y = (reg_composer[2] * (y - vstart)) / 128;
 	render_sprite_line(eff_y);
@@ -807,7 +811,6 @@ video_step(float mhz)
 		}
 		if (ien & 2) { // LINE IRQ
 			y = scan_pos_y - front_porch;
-			uint16_t irq_line = reg_composer[9] | (reg_composer[10] & 1) << 8;
 			if (y < SCREEN_HEIGHT && y == irq_line) {
 				isr |= 2;
 			}
@@ -820,7 +823,8 @@ video_step(float mhz)
 bool
 video_get_irq_out()
 {
-	return isr > 0;
+    uint8_t tmp_isr = isr | (pcm_is_fifo_almost_empty() ? 8 : 0);
+	return (tmp_isr & ien) != 0;
 }
 
 //
@@ -834,7 +838,6 @@ video_save(FILE *f)
 	fwrite(&reg_composer[0], sizeof(uint8_t), sizeof(reg_composer), f);
 	fwrite(&palette[0], sizeof(uint8_t), sizeof(palette), f);
 	fwrite(&reg_layer[0][0], sizeof(uint8_t), sizeof(reg_layer), f);
-	fwrite(&reg_sprites[0], sizeof(uint8_t), sizeof(reg_sprites), f);
 	fwrite(&sprite_data[0], sizeof(uint8_t), sizeof(sprite_data), f);
 }
 
@@ -954,13 +957,30 @@ video_end()
 }
 
 
+static const int increments[32] = {
+	0,   0,
+	1,   -1,
+	2,   -2,
+	4,   -4,
+	8,   -8,
+	16,  -16,
+	32,  -32,
+	64,  -64,
+	128, -128,
+	256, -256,
+	512, -512,
+	40,  -40,
+	80,  -80,
+	160, -160,
+	320, -320,
+	640, -640,
+};
+
 uint32_t
 get_and_inc_address(uint8_t sel)
 {
 	uint32_t address = io_addr[sel];
-	if (io_inc[sel]) {
-		io_addr[sel] += 1 << (io_inc[sel] - 1);
-	}
+	io_addr[sel] += increments[io_inc[sel]];
 	return address;
 }
 
@@ -971,27 +991,7 @@ get_and_inc_address(uint8_t sel)
 static uint8_t
 video_space_read(uint32_t address)
 {
-	if (address >= ADDR_VRAM_START && address < ADDR_VRAM_END) {
-		return video_ram[address];
-	} else if (address >= ADDR_LAYER1_START && address < ADDR_LAYER1_END) {
-		return reg_layer[0][address & 0xf];
-	} else if (address >= ADDR_LAYER2_START && address < ADDR_LAYER2_END) {
-		return reg_layer[1][address & 0xf];
-	} else if (address >= ADDR_SPRITES_START && address < ADDR_SPRITES_END) {
-		return reg_sprites[address & 0xf];
-	} else if (address >= ADDR_COMPOSER_START && address < ADDR_COMPOSER_END) {
-		return reg_composer[address & 0x1f];
-	} else if (address >= ADDR_PALETTE_START && address < ADDR_PALETTE_END) {
-		return palette[address & 0x1ff];
-	} else if (address >= ADDR_SPRDATA_START && address < ADDR_SPRDATA_END) {
-		return sprite_data[(address >> 3) & 0xff][address & 0x7];
-	} else if (address >= ADDR_SPI_START && address < ADDR_SPI_END) {
-		return vera_spi_read(address & 1);
-	} else if (address >= ADDR_UART_START && address < ADDR_UART_END) {
-		return vera_uart_read(address & 3);
-	} else {
-		return 0xFF; // unassigned
-	}
+	return video_ram[address & 0x1FFFF];
 }
 
 static void
@@ -1009,31 +1009,16 @@ video_space_read_range(uint8_t* dest, uint32_t address, uint32_t size)
 void
 video_space_write(uint32_t address, uint8_t value)
 {
-	if (address >= ADDR_VRAM_START && address < ADDR_VRAM_END) {
-		video_ram[address] = value;
-	} else if (address >= ADDR_LAYER1_START && address < ADDR_LAYER1_END) {
-		reg_layer[0][address & 0xf] = value;
-		refresh_layer_properties(0);
-	} else if (address >= ADDR_LAYER2_START && address < ADDR_LAYER2_END) {
-		reg_layer[1][address & 0xf] = value;
-		refresh_layer_properties(1);
-	} else if (address >= ADDR_SPRITES_START && address < ADDR_SPRITES_END) {
-		reg_sprites[address & 0xf] = value;
-	} else if (address >= ADDR_COMPOSER_START && address < ADDR_COMPOSER_END) {
-		reg_composer[address & 0x1f] = value;
-		video_palette.dirty = true;
+	video_ram[address & 0x1FFFF] = value;
+
+	if (address >= ADDR_PSG_START && address < ADDR_PSG_END) {
+        psg_writereg(address & 0x3f, value);
 	} else if (address >= ADDR_PALETTE_START && address < ADDR_PALETTE_END) {
 		palette[address & 0x1ff] = value;
 		video_palette.dirty = true;
 	} else if (address >= ADDR_SPRDATA_START && address < ADDR_SPRDATA_END) {
-		sprite_data[(address >> 3) & 0xff][address & 0x7] = value;
-		refresh_sprite_properties((address >> 3) & 0xff);
-	} else if (address >= ADDR_SPI_START && address < ADDR_SPI_END) {
-		vera_spi_write(address & 1, value);
-	} else if (address >= ADDR_UART_START && address < ADDR_UART_END) {
-		vera_uart_write(address & 1, value);
-	} else {
-		// unassigned, do nothing
+		sprite_data[(address >> 3) & 0x7f][address & 0x7] = value;
+		refresh_sprite_properties((address >> 3) & 0x7f);
 	}
 }
 
@@ -1042,71 +1027,151 @@ video_space_write(uint32_t address, uint8_t value)
 //
 // if debugOn, read without any side effects (registers & memory unchanged)
 
-uint8_t
-video_read(uint8_t reg, bool debugOn)
-{
-	switch (reg) {
-		case 0:
-			return io_addr[io_addrsel] & 0xff;
-		case 1:
-			return (io_addr[io_addrsel] >> 8) & 0xff;
-		case 2:
-			return (io_addr[io_addrsel] >> 16) | (io_inc[io_addrsel] << 4);
-		case 3:
-		case 4: {
-			uint32_t address = debugOn ? io_addr[reg - 3] : get_and_inc_address(reg - 3);
-			uint8_t value = video_space_read(address);
+uint8_t video_read(uint8_t reg, bool debugOn) {
+	switch (reg & 0x1F) {
+		case 0x00: return io_addr[io_addrsel] & 0xff;
+		case 0x01: return (io_addr[io_addrsel] >> 8) & 0xff;
+		case 0x02: return (io_addr[io_addrsel] >> 16) | (io_inc[io_addrsel] << 3);
+		case 0x03:
+		case 0x04: {
+			if (debugOn) {
+				return io_rddata[reg - 3];
+			}
+
+			uint32_t address = get_and_inc_address(reg - 3);
+
+			uint8_t value = io_rddata[reg - 3];
+			io_rddata[reg - 3] = video_space_read(io_addr[reg - 3]);
+
 			if (log_video) {
 				printf("READ  video_space[$%X] = $%02X\n", address, value);
 			}
 			return value;
 		}
-		case 5:
-			return io_addrsel;
-		case 6:
-			return ien;
-		case 7:
-			return isr;
-		default:
-			return 0;
+		case 0x05: return (io_dcsel << 1) | io_addrsel;
+		case 0x06: return ((irq_line & 1) << 7) | (ien & 0xF);
+		case 0x07: return isr | (pcm_is_fifo_almost_empty() ? 8 : 0);
+		case 0x08: return irq_line & 0xFF;
+
+		case 0x09:
+		case 0x0A:
+		case 0x0B:
+		case 0x0C: return reg_composer[reg - 0x09 + (io_dcsel ? 4 : 0)];
+
+		case 0x0D:
+		case 0x0E:
+		case 0x0F:
+		case 0x10:
+		case 0x11:
+		case 0x12:
+		case 0x13: return reg_layer[0][reg - 0x0D];
+
+		case 0x14:
+		case 0x15:
+		case 0x16:
+		case 0x17:
+		case 0x18:
+		case 0x19:
+		case 0x1A: return reg_layer[1][reg - 0x14];
+
+		case 0x1B: return pcm_read_ctrl();
+		case 0x1C: return pcm_read_rate();
+		case 0x1D: return 0;
+
+		case 0x1E:
+		case 0x1F: return vera_spi_read(reg & 1);
 	}
+	return 0;
 }
 
-void
-video_write(uint8_t reg, uint8_t value)
-{
-//	printf("ioregisters[%d] = $%02X\n", reg, value);
-	switch (reg) {
-		case 0:
-			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0xfff00) | value;
+void video_write(uint8_t reg, uint8_t value) {
+	// if (reg > 4) {
+	// 	printf("ioregisters[0x%02X] = 0x%02X\n", reg, value);
+	// }
+	//	printf("ioregisters[%d] = $%02X\n", reg, value);
+	switch (reg & 0x1F) {
+		case 0x00:
+			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x1ff00) | value;
+            io_rddata[io_addrsel] = video_space_read(io_addr[io_addrsel]);
 			break;
-		case 2:
-			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x0ffff) | ((value & 0xf) << 16);
-			io_inc[io_addrsel] = value >> 4;
+		case 0x01:
+			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x100ff) | (value << 8);
+            io_rddata[io_addrsel] = video_space_read(io_addr[io_addrsel]);
 			break;
-		case 1:
-			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0xf00ff) | (value << 8);
+		case 0x02:
+			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x0ffff) | ((value & 0x1) << 16);
+			io_inc[io_addrsel]  = value >> 3;
+            io_rddata[io_addrsel] = video_space_read(io_addr[io_addrsel]);
 			break;
-		case 3:
-		case 4: {
+		case 0x03:
+		case 0x04: {
 			uint32_t address = get_and_inc_address(reg - 3);
 			if (log_video) {
 				printf("WRITE video_space[$%X] = $%02X\n", address, value);
 			}
 			video_space_write(address, value);
+
+            io_rddata[reg - 3] = video_space_read(io_addr[reg - 3]);
 			break;
 		}
-		case 5:
+		case 0x05:
 			if (value & 0x80) {
 				video_reset();
 			}
+			io_dcsel = (value >> 1) & 1;
 			io_addrsel = value & 1;
 			break;
-		case 6:
-			ien = value;
+		case 0x06:
+			irq_line = (irq_line & 0xFF) | ((value >> 7) << 8);
+			ien = value & 0xF;
 			break;
-		case 7:
+		case 0x07:
 			isr &= value ^ 0xff;
+			break;
+		case 0x08:
+			break;
+
+		case 0x09:
+		case 0x0A:
+		case 0x0B:
+		case 0x0C: {
+			int i = reg - 0x09 + (io_dcsel ? 4 : 0);
+			reg_composer[i] = value;
+			if (i == 0) {
+				video_palette.dirty = true;
+			}
+			break;
+		}
+
+		case 0x0D:
+		case 0x0E:
+		case 0x0F:
+		case 0x10:
+		case 0x11:
+		case 0x12:
+		case 0x13:
+			reg_layer[0][reg - 0x0D] = value;
+			refresh_layer_properties(0);
+			break;
+
+		case 0x14:
+		case 0x15:
+		case 0x16:
+		case 0x17:
+		case 0x18:
+		case 0x19:
+		case 0x1A:
+			reg_layer[1][reg - 0x14] = value;
+			refresh_layer_properties(1);
+			break;
+
+		case 0x1B: pcm_write_ctrl(value); break;
+		case 0x1C: pcm_write_rate(value); break;
+		case 0x1D: pcm_write_fifo(value); break;
+
+		case 0x1E:
+		case 0x1F:
+			vera_spi_write(reg & 1, value);
 			break;
 	}
 }
