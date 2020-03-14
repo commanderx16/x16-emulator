@@ -6,5 +6,8 @@
 
 #include <SDL.h>
 
-void vera_audio_init(SDL_AudioDeviceID dev);
-void vera_audio_render(int cpu_clocks);
+void audio_init(const char *dev_name);
+void audio_close(void);
+void audio_render(int cpu_clocks);
+
+void audio_usage(void);

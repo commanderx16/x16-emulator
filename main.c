@@ -31,10 +31,7 @@
 #include "utf8_encode.h"
 #include "rom_symbols.h"
 #include "ym2151.h"
-#include "vera_audio.h"
-
-#define AUDIO_SAMPLES 4096
-#define SAMPLERATE (25000000 / 512)
+#include "audio.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -98,9 +95,6 @@ int instruction_counter;
 FILE *prg_file ;
 int prg_override_start = -1;
 bool run_after_load = false;
-
-const char *audio_dev_name = NULL;
-static SDL_AudioDeviceID audio_dev = 0;
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -403,75 +397,6 @@ usage_keymap()
 	exit(1);
 }
 
-/*
-void audioCallback(void* userdata, Uint8 *stream, int len)
-{
-    psg_render((int16_t *)stream, len / 4);
-
-    // TODO: perform mixing
-	// YM_stream_update((uint16_t*) stream, len / 4);
-}
-*/
-
-void usageSound()
-{
-	// SDL_GetAudioDeviceName doesn't work if audio isn't initialized.
-	// Since argument parsing happens before initializing SDL, ensure the
-	// audio subsystem is initialized before printing audio device names.
-	SDL_InitSubSystem(SDL_INIT_AUDIO);
-
-	// List all available sound devices
-	printf("The following sound output devices are available:\n");
-	const int sounds = SDL_GetNumAudioDevices(0);
-	for (int i=0; i < sounds; ++i) {
-		printf("\t%s\n", SDL_GetAudioDeviceName(i, 0));
-	}
-
-	SDL_Quit();
-	exit(1);
-}
-
-void
-init_audio()
-{
-	SDL_AudioSpec want;
-	SDL_AudioSpec have;
-
-	// setup SDL audio
-	want.freq = SAMPLERATE;
-	want.format = AUDIO_S16SYS;
-	want.channels = 2;
-	want.samples = AUDIO_SAMPLES;
-	want.callback = NULL;   //audioCallback;
-	want.userdata = NULL;
-
-	if (audio_dev > 0)
-	{
-		SDL_CloseAudioDevice(audio_dev);
-	}
-
-	audio_dev = SDL_OpenAudioDevice(audio_dev_name, 0, &want, &have, 9 /* freq | samples */);
-	if ( audio_dev <= 0 ){
-		fprintf(stderr, "SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
-		if (audio_dev_name != NULL) usageSound();
-		exit(-1);
-	}
-
-    vera_audio_init(audio_dev);
-
-	// init YM2151 emulation. 4 MHz clock
-	YM_Create(4000000);
-	YM_init(have.freq, 60);
-
-	// start playback
-	SDL_PauseAudioDevice(audio_dev, 0);
-}
-
-void closeAudio()
-{
-	SDL_CloseAudioDevice(audio_dev);
-}
-
 int
 main(int argc, char **argv)
 {
@@ -485,6 +410,8 @@ main(int argc, char **argv)
 	bool run_geos = false;
 	bool run_test = false;
 	int test_number = 0;
+
+    const char *audio_dev_name = NULL;
 
 	run_after_load = false;
 
@@ -763,7 +690,7 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			if (!argc || argv[0][0] == '-') {
-				usageSound();
+				audio_usage();
 			}
 			audio_dev_name = argv[0];
 			argc--;
@@ -831,7 +758,7 @@ main(int argc, char **argv)
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
 
-	init_audio();
+	audio_init(audio_dev_name);
 
 	memory_init();
 	video_init(window_scale, scale_quality);
@@ -848,7 +775,7 @@ main(int argc, char **argv)
 	emulator_loop(NULL);
 #endif
 
-	closeAudio();
+	audio_close();
 	video_end();
 	SDL_Quit();
 
@@ -996,7 +923,7 @@ emulator_loop(void *param)
 			vera_spi_step();
 			new_frame |= video_step(MHZ);
 		}
-        vera_audio_render(clocks);
+        audio_render(clocks);
 
 		instruction_counter++;
 
