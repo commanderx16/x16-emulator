@@ -1,0 +1,79 @@
+# http://clang.llvm.org/docs/ClangFormatStyleOptions.html
+
+BasedOnStyle: LLVM
+AccessModifierOffset: -4
+AlignAfterOpenBracket: AlwaysBreak
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignEscapedNewlinesLeft: true
+AlignOperands: true
+AlignTrailingComments: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterDefinitionReturnType: All
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: true
+# AlwaysBreakTemplateDeclarations (bool)
+# BinPackArguments (bool)
+BinPackParameters: true
+# BraceWrapping (BraceWrappingFlags)
+# BreakAfterJavaFieldAnnotations (bool)
+# BreakBeforeBinaryOperators (BinaryOperatorStyle)
+BreakBeforeBraces: Linux
+# BreakBeforeTernaryOperators (bool)
+# BreakConstructorInitializersBeforeComma (bool)
+# BreakStringLiterals (bool)
+ColumnLimit: 0
+# CommentPragmas (std::string)
+# ConstructorInitializerAllOnOneLineOrOnePerLine (bool)
+# ConstructorInitializerIndentWidth (unsigned)
+# ContinuationIndentWidth (unsigned)
+# Cpp11BracedListStyle (bool)
+DerivePointerAlignment: false
+# DisableFormat (bool)
+# ExperimentalAutoDetectBinPacking (bool)
+# ForEachMacros (std::vector<std::string>)
+# IncludeCategories (std::vector<IncludeCategory>)
+# IncludeIsMainRegex (std::string)
+IndentCaseLabels: true
+IndentWidth: 4
+# IndentWrappedFunctionNames (bool)
+# JavaScriptQuotes (JavaScriptQuoteStyle)
+# KeepEmptyLinesAtTheStartOfBlocks (bool)
+# Language (LanguageKind)
+# MacroBlockBegin (std::string)
+# MacroBlockEnd (std::string)
+# MaxEmptyLinesToKeep (unsigned)
+NamespaceIndentation: All
+# ObjCBlockIndentWidth (unsigned)
+# ObjCSpaceAfterProperty (bool)
+# ObjCSpaceBeforeProtocolList (bool)
+# PenaltyBreakBeforeFirstCallParameter (unsigned)
+# PenaltyBreakComment (unsigned)
+# PenaltyBreakFirstLessLess (unsigned)
+# PenaltyBreakString (unsigned)
+# PenaltyExcessCharacter (unsigned)
+# PenaltyReturnTypeOnItsOwnLine: 1000
+PointerAlignment: Right
+# ReflowComments (bool)
+SortIncludes: false
+# SpaceAfterCStyleCast (bool)
+# SpaceAfterTemplateKeyword (bool)
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+# SpacesBeforeTrailingComments (unsigned)
+# SpacesInAngles (bool)
+SpacesInCStyleCastParentheses: false
+# SpacesInContainerLiterals (bool)
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+# Standard (LanguageStandard)
+TabWidth: 4
+UseTab: ForIndentation
+
+IndentPPDirectives: AfterHash
