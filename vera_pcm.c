@@ -5,7 +5,7 @@
 #include "vera_pcm.h"
 #include <stdio.h>
 
-static uint8_t  fifo[4095];
+static uint8_t  fifo[4096 - 1]; // Actual hardware FIFO is 4kB, but you can only use 4095 bytes.
 static unsigned fifo_wridx;
 static unsigned fifo_rdidx;
 static unsigned fifo_cnt;
