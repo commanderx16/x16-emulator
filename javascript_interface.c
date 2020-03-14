@@ -28,7 +28,7 @@ j2c_start_audio()
 {
 
 #ifdef WITH_YM2151
-	init_audio();
+	//init_audio();
 #endif
 
 }
