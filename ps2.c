@@ -63,15 +63,23 @@ ps2_buffer_remove(int i)
 }
 
 void
+ps2_init(int i)
+{
+	ps2_port[i].clk_out = 1;
+	ps2_port[i].data_out = 1;
+}
+
+void
 ps2_step(int i)
 {
-	if (!ps2_port[i].clk_in && ps2_port[i].data_in) { // communication inhibited
-		ps2_port[i].clk_out = 0;
-		ps2_port[i].data_out = 0;
+//	if (i==1) printf("PS2[%d]: %d/%d\n", i, ps2_port[i].clk_in, ps2_port[i].data_in);
+	if (!ps2_port[i].clk_in && ps2_port[i].data_in) { // CLK=0, DATA=1: communication inhibited
+		ps2_port[i].clk_out = 1;
+		ps2_port[i].data_out = 1;
 		state[i].sending = false;
-//		printf("PS2[%d]: STATE: communication inhibited.\n", i);
+		if (i==1) printf("PS2[%d]: STATE: communication inhibited.\n", i);
 		return;
-	} else if (ps2_port[i].clk_in && ps2_port[i].data_in) { // idle state
+	} else if (ps2_port[i].clk_in && ps2_port[i].data_in) { // CLK=1, DATA=1: idle state
 //		printf("PS2[%d]: STATE: idle\n", i);
 		if (!state[i].sending) {
 			// get next byte
@@ -80,17 +88,26 @@ ps2_step(int i)
 				if (current_byte < 0) {
 					// we have nothing to send
 					ps2_port[i].clk_out = 1;
-					ps2_port[i].data_out = 0;
-//					printf("PS2[%d]: nothing to send.\n", i);
+					ps2_port[i].data_out = 1;
+//					if (i==1) printf("PS2[%d]: nothing to send.\n", i);
 					return;
 				}
 				state[i].current_byte = current_byte;
-//				printf("PS2[%d]: current_byte: %x\n", i, state[i].current_byte);
+				if (i==1) printf("PS2[%d]: current_byte: %x\n", i, state[i].current_byte);
 				state[i].has_byte = true;
 			}
 
 			state[i].data_bits = state[i].current_byte << 1 | (1 - __builtin_parity(state[i].current_byte)) << 9 | (1 << 10);
-//			printf("PS2[%d]: data_bits: %x\n", i, state[i].data_bits);
+			if (i==1) {
+				printf("PS2[%d]: data_bits: ", i);
+				for (int j = 10; j >= 0; j--) {
+					if (j == 9 || j == 8 || j == 0) {
+						printf("-");
+					}
+					printf("%d", (state[i].data_bits >> j) & 1);
+				}
+				printf("(0x%x)\n", state[i].data_bits);
+			}
 			state[i].bit_index = 0;
 			state[i].send_state = 0;
 			state[i].sending = true;
@@ -99,7 +116,7 @@ ps2_step(int i)
 		if (state[i].send_state <= HOLD) {
 			ps2_port[i].clk_out = 0; // data ready
 			ps2_port[i].data_out = state[i].data_bits & 1;
-//			printf("PS2[%d]: [%d]sending #%d: %x\n", i, state[i].send_state, state[i].bit_index, state[i].data_bits & 1);
+			/*if (state[i].send_state == 0)*/ if (i==1) printf("PS2[%d]: [%d]sending #%d: %x\n", i, state[i].send_state, state[i].bit_index, state[i].data_bits & 1);
 			if (state[i].send_state == 0 && state[i].bit_index == 10) {
 				// we have sent the last bit, if the host
 				// inhibits now, we'll send the next byte
@@ -111,7 +128,7 @@ ps2_step(int i)
 			}
 			state[i].send_state++;
 		} else if (state[i].send_state <= 2 * HOLD) {
-//			printf("PS2[%d]: [%d]not ready\n", i, state[i].send_state);
+			/*if (state[i].send_state == HOLD + 1)*/ if (i==1) printf("PS2[%d]: [%d]not ready\n", i, state[i].send_state);
 			ps2_port[i].clk_out = 1; // not ready
 			ps2_port[i].data_out = 0;
 			if (state[i].send_state == 2 * HOLD) {
@@ -127,9 +144,9 @@ ps2_step(int i)
 			}
 		}
 	} else {
-//		printf("PS2[%d]: Warning: unknown PS/2 bus state: CLK_IN=%d, DATA_IN=%d\n", i, ps2_port[i].clk_in, ps2_port[i].data_in);
-		ps2_port[i].clk_out = 0;
-		ps2_port[i].data_out = 0;
+		if (i==1) printf("PS2[%d]: Warning: unknown PS/2 bus state: CLK_IN=%d, DATA_IN=%d\n", i, ps2_port[i].clk_in, ps2_port[i].data_in);
+		ps2_port[i].clk_out = 1;
+		ps2_port[i].data_out = 1;
 	}
 }
 

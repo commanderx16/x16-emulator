@@ -21,6 +21,7 @@ extern ps2_port_t ps2_port[2];
 
 bool ps2_buffer_can_fit(int i, int n);
 void ps2_buffer_add(int i, uint8_t byte);
+void ps2_init(int i);
 void ps2_step(int i);
 
 // fake mouse

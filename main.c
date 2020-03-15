@@ -221,6 +221,8 @@ machine_reset()
 	spi_init();
 	vera_spi_init();
 	vera_uart_init();
+	ps2_init(0);
+	ps2_init(1);
 	via1_init();
 	via2_init();
 	video_reset();
@@ -1002,6 +1004,8 @@ emulator_loop(void *param)
 				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 			}
 
+			printf(" $7f:%02x $1000:%02x,%02x,%02x,%02x", RAM[0x7f], RAM[0x1000], RAM[0x1001], RAM[0x1002], RAM[0x1003]);
+
 #if 0
 			printf(" ---");
 			for (int i = 0; i < 6; i++) {
@@ -1099,11 +1103,27 @@ emulator_loop(void *param)
 #endif
 		}
 
-		if (video_get_irq_out() || via1_get_irq_out() || via2_get_irq_out()) {
+		if (video_get_irq_out()) {
 			if (!(status & 4)) {
 //				printf("IRQ!\n");
 				irq6502();
 			}
+		}
+		static int inhibited_irq_counter;
+		if (via1_get_irq_out() || via2_get_irq_out()) {
+			if (!(status & 4)) {
+				printf("IRQ!\n");
+				irq6502();
+				inhibited_irq_counter = 0;
+			} else {
+				printf("~IRQ!\n");
+				inhibited_irq_counter++;
+				if (inhibited_irq_counter > 10) {
+					printf("WARNING: PS/2 IRQ inhibited for %d cycles!\n", inhibited_irq_counter);
+				}
+			}
+		} else {
+			inhibited_irq_counter = 0;
 		}
 
 #if 0

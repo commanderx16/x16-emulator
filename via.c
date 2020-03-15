@@ -116,18 +116,32 @@ via2_init()
 void
 via2_step()
 {
-	static bool old_clk_out;
-	if (ps2_port[0].clk_out != old_clk_out) {
+	static bool old_clk_out_0;
+	if (ps2_port[0].clk_out != old_clk_out_0) {
+//		printf("KBD IRQ? CLK is now %d\n", ps2_port[0].clk_out);
 		if (!ps2_port[0].clk_out) { // falling edge
+			printf("NEW KBD IRQ\n");
 			via2ifr |= VIA_IFR_CA1;
 		}
 	}
-	old_clk_out = ps2_port[0].clk_out;
+	old_clk_out_0 = ps2_port[0].clk_out;
+
+//	printf("ps2_port[1].clk_out = %d\n", ps2_port[1].clk_out);
+	static bool old_clk_out_1;
+	if (ps2_port[1].clk_out != old_clk_out_1) {
+//		printf("MSE IRQ? CLK is now %d\n", ps2_port[1].clk_out);
+		if (!ps2_port[1].clk_out) { // falling edge
+			printf("NEW MSE IRQ\n");
+			via2ifr |= VIA_IFR_CB1;
+		}
+	}
+	old_clk_out_1 = ps2_port[1].clk_out;
 }
 
 bool
 via2_get_irq_out()
 {
+//	if (!!(via2ifr & via2ier)) printf("YYY %d\n", !!(via2ifr & via2ier));
 	return !!(via2ifr & via2ier);
 }
 
@@ -137,12 +151,19 @@ via2_read(uint8_t reg)
 	// DDR=0 (input)  -> take input bit
 	// DDR=1 (output) -> take output bit
 	if (reg == 0) { // PB
+		// reading PB clears clear CB1
+		if (via2ifr & VIA_IFR_CB1) {
+			printf("clearing IRQ\n");
+		}
+		via2ifr &= ~VIA_IFR_CB1;
+
 		uint8_t value =
 			(via2registers[2] & PS2_CLK_MASK ? 0 : ps2_port[1].clk_out << 1) |
 			(via2registers[2] & PS2_DATA_MASK ? 0 : ps2_port[1].data_out);
 		return value;
 	} else if (reg == 1) { // PA
 		// reading PA clears clear CA1
+//		printf("1CLEAR IRQ\n");
 		via2ifr &= ~VIA_IFR_CA1;
 
 		uint8_t value =
@@ -185,8 +206,14 @@ via2_write(uint8_t reg, uint8_t value)
 		via2ier = value;
 	}
 
+	// reading PB clears clear CB1
+	if (reg == 0) { // PA
+		via2ifr &= ~VIA_IFR_CB1;
+	}
+
 	// reading PA clears clear CA1
 	if (reg == 1) { // PA
+//		printf("2CLEAR IRQ\n");
 		via2ifr &= ~VIA_IFR_CA1;
 	}
 }
