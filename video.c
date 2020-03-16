@@ -156,8 +156,8 @@ video_reset()
 	scan_pos_x = 0;
 	scan_pos_y = 0;
 
-    psg_reset();
-    pcm_reset();
+	psg_reset();
+	pcm_reset();
 }
 
 bool
@@ -601,11 +601,11 @@ render_layer_line(uint8_t layer, uint16_t y)
 
 			// convert tile byte to indexed color
 			if (props->bits_per_pixel == 1) {
-                col_index = (s >> (7 - (xx & 7))) & 1;
+				col_index = (s >> (7 - (xx & 7))) & 1;
 
-                if (props->text_mode) {
-                    col_index = col_index ? fg_color : bg_color;
-                }
+				if (props->text_mode) {
+					col_index = col_index ? fg_color : bg_color;
+				}
 			} else if (props->bits_per_pixel == 2) {
 				col_index = (s >> (6 - ((xx & 3) << 1))) & 3;
 			} else if (props->bits_per_pixel == 4) {
@@ -823,7 +823,7 @@ video_step(float mhz)
 bool
 video_get_irq_out()
 {
-    uint8_t tmp_isr = isr | (pcm_is_fifo_almost_empty() ? 8 : 0);
+	uint8_t tmp_isr = isr | (pcm_is_fifo_almost_empty() ? 8 : 0);
 	return (tmp_isr & ien) != 0;
 }
 
@@ -1012,7 +1012,7 @@ video_space_write(uint32_t address, uint8_t value)
 	video_ram[address & 0x1FFFF] = value;
 
 	if (address >= ADDR_PSG_START && address < ADDR_PSG_END) {
-        psg_writereg(address & 0x3f, value);
+		psg_writereg(address & 0x3f, value);
 	} else if (address >= ADDR_PALETTE_START && address < ADDR_PALETTE_END) {
 		palette[address & 0x1ff] = value;
 		video_palette.dirty = true;
@@ -1092,16 +1092,16 @@ void video_write(uint8_t reg, uint8_t value) {
 	switch (reg & 0x1F) {
 		case 0x00:
 			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x1ff00) | value;
-            io_rddata[io_addrsel] = video_space_read(io_addr[io_addrsel]);
+			io_rddata[io_addrsel] = video_space_read(io_addr[io_addrsel]);
 			break;
 		case 0x01:
 			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x100ff) | (value << 8);
-            io_rddata[io_addrsel] = video_space_read(io_addr[io_addrsel]);
+			io_rddata[io_addrsel] = video_space_read(io_addr[io_addrsel]);
 			break;
 		case 0x02:
 			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x0ffff) | ((value & 0x1) << 16);
 			io_inc[io_addrsel]  = value >> 3;
-            io_rddata[io_addrsel] = video_space_read(io_addr[io_addrsel]);
+			io_rddata[io_addrsel] = video_space_read(io_addr[io_addrsel]);
 			break;
 		case 0x03:
 		case 0x04: {
@@ -1111,7 +1111,7 @@ void video_write(uint8_t reg, uint8_t value) {
 			}
 			video_space_write(address, value);
 
-            io_rddata[reg - 3] = video_space_read(io_addr[reg - 3]);
+			io_rddata[reg - 3] = video_space_read(io_addr[reg - 3]);
 			break;
 		}
 		case 0x05:
