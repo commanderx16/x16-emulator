@@ -9,24 +9,26 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define SAMPLERATE (25000000 / 512)
 #define SAMPLES_PER_BUFFER (256)
-#define NUM_BUFFERS (8) // Increase this if your computer is too slow, this will result in more audio latency.
 
 static SDL_AudioDeviceID audio_dev;
 static int               vera_clks = 0;
 static int               cpu_clks  = 0;
-static int16_t           buffers[NUM_BUFFERS][2 * SAMPLES_PER_BUFFER];
-static int               rdidx   = 0;
-static int               wridx   = 0;
-static int               buf_cnt = 0;
+static int16_t **        buffers;
+static int               rdidx    = 0;
+static int               wridx    = 0;
+static int               buf_cnt  = 0;
+static int               num_bufs = 0;
 
 static void
 audio_callback(void *userdata, Uint8 *stream, int len)
 {
-	if (len != sizeof(buffers[0])) {
-		printf("Audio buffer size mismatch! (expected: %zu, got: %d)\n", sizeof(buffers[0]), len);
+	int expected = 2 * SAMPLES_PER_BUFFER * sizeof(int16_t);
+	if (len != expected) {
+		printf("Audio buffer size mismatch! (expected: %d, got: %d)\n", expected, len);
 		return;
 	}
 
@@ -36,15 +38,34 @@ audio_callback(void *userdata, Uint8 *stream, int len)
 	}
 
 	memcpy(stream, buffers[rdidx++], len);
-	if (rdidx == NUM_BUFFERS) {
+	if (rdidx == num_bufs) {
 		rdidx = 0;
 	}
 	buf_cnt--;
 }
 
 void
-audio_init(const char *dev_name)
+audio_init(const char *dev_name, int num_audio_buffers)
 {
+	if (audio_dev > 0) {
+		audio_close();
+	}
+
+	// Set number of buffers
+	num_bufs = num_audio_buffers;
+	if (num_bufs < 3) {
+		num_bufs = 3;
+	}
+	if (num_bufs > 1024) {
+		num_bufs = 1024;
+	}
+
+	// Allocate audio buffers
+	buffers = malloc(num_bufs * sizeof(*buffers));
+	for (int i = 0; i < num_bufs; i++) {
+		buffers[i] = malloc(2 * SAMPLES_PER_BUFFER * sizeof(buffers[0][0]));
+	}
+
 	SDL_AudioSpec desired;
 	SDL_AudioSpec obtained;
 
@@ -56,11 +77,7 @@ audio_init(const char *dev_name)
 	desired.channels = 2;
 	desired.callback = audio_callback;
 
-	if (audio_dev > 0) {
-		SDL_CloseAudioDevice(audio_dev);
-	}
-
-	audio_dev = SDL_OpenAudioDevice(dev_name, 0, &desired, &obtained, 9 /* freq | samples */);
+	audio_dev = SDL_OpenAudioDevice(dev_name, 0, &desired, &obtained, 0);
 	if (audio_dev <= 0) {
 		fprintf(stderr, "SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
 		if (dev_name != NULL) {
@@ -81,6 +98,19 @@ void
 audio_close(void)
 {
 	SDL_CloseAudioDevice(audio_dev);
+	audio_dev = 0;
+
+	// Free audio buffers
+	if (buffers != NULL) {
+		for (int i = 0; i < num_bufs; i++) {
+			if (buffers[i] != NULL) {
+				free(buffers[i]);
+				buffers[i] = NULL;
+			}
+		}
+		free(buffers);
+		buffers = NULL;
+	}
 }
 
 void
@@ -108,7 +138,7 @@ audio_render(int cpu_clocks)
 
 			bool buf_available;
 			SDL_LockAudioDevice(audio_dev);
-			buf_available = buf_cnt < NUM_BUFFERS;
+			buf_available = buf_cnt < num_bufs;
 			SDL_UnlockAudioDevice(audio_dev);
 
 			if (buf_available) {
@@ -120,7 +150,7 @@ audio_render(int cpu_clocks)
 
 				SDL_LockAudioDevice(audio_dev);
 				wridx++;
-				if (wridx == NUM_BUFFERS) {
+				if (wridx == num_bufs) {
 					wridx = 0;
 				}
 				buf_cnt++;

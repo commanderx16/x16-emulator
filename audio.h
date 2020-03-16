@@ -6,7 +6,7 @@
 
 #include <SDL.h>
 
-void audio_init(const char *dev_name);
+void audio_init(const char *dev_name, int num_audio_buffers);
 void audio_close(void);
 void audio_render(int cpu_clocks);
 

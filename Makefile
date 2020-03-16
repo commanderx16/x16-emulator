@@ -45,7 +45,6 @@ HEADERS = disasm.h cpu/fake6502.h glue.h memory.h video.h audio.h vera_pcm.h ver
 
 OBJS += extern/src/ym2151.o
 HEADERS += extern/src/ym2151.h
-CFLAGS += -DWITH_YM2151
 
 ifneq ("$(wildcard ./rom_labels.h)","")
 HEADERS+=rom_labels.h
