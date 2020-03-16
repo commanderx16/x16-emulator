@@ -377,7 +377,11 @@ usage()
 	printf("-joy2 {NES | SNES}\n");
 	printf("\tChoose what type of joystick to use, e.g. -joy2 SNES\n");
 	printf("-sound <output device>\n");
-	printf("\tSet the output device used for audio emulation");
+	printf("\tSet the output device used for audio emulation\n");
+	printf("-abufs <number of audio buffers>\n");
+	printf("\tSet the number of audio buffers used for playback. (default: 8)\n");
+	printf("\tIncreasing this will reduce stutter on slower computers,\n");
+	printf("\tbut will increase audio latency.\n");
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
@@ -410,6 +414,7 @@ main(int argc, char **argv)
 	bool run_geos = false;
 	bool run_test = false;
 	int test_number = 0;
+    int audio_buffers = 8;
 
     const char *audio_dev_name = NULL;
 
@@ -695,6 +700,15 @@ main(int argc, char **argv)
 			audio_dev_name = argv[0];
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-abufs")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			audio_buffers = (int)strtol(argv[0], NULL, 10);
+			argc--;
+			argv++;
 		} else {
 			usage();
 		}
@@ -758,7 +772,7 @@ main(int argc, char **argv)
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
 
-	audio_init(audio_dev_name);
+	audio_init(audio_dev_name, audio_buffers);
 
 	memory_init();
 	video_init(window_scale, scale_quality);
