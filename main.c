@@ -414,9 +414,9 @@ main(int argc, char **argv)
 	bool run_geos = false;
 	bool run_test = false;
 	int test_number = 0;
-    int audio_buffers = 8;
+	int audio_buffers = 8;
 
-    const char *audio_dev_name = NULL;
+	const char *audio_dev_name = NULL;
 
 	run_after_load = false;
 
@@ -937,7 +937,7 @@ emulator_loop(void *param)
 			vera_spi_step();
 			new_frame |= video_step(MHZ);
 		}
-        audio_render(clocks);
+		audio_render(clocks);
 
 		instruction_counter++;
 
