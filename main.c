@@ -1004,7 +1004,9 @@ emulator_loop(void *param)
 				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 			}
 
-			printf(" $7f:%02x $1000:%02x,%02x,%02x,%02x", RAM[0x7f], RAM[0x1000], RAM[0x1001], RAM[0x1002], RAM[0x1003]);
+			printf(" byte:%02x (%d) p:%d", RAM[0x9001], RAM[0x9000], RAM[0x9002]);
+
+//			printf(" $7f:%02x $1000:%02x,%02x,%02x,%02x", RAM[0x7f], RAM[0x1000], RAM[0x1001], RAM[0x1002], RAM[0x1003]);
 
 #if 0
 			printf(" ---");
@@ -1103,28 +1105,19 @@ emulator_loop(void *param)
 #endif
 		}
 
-		if (video_get_irq_out()) {
+		if (video_get_irq_out() || via1_get_irq_out()) {
 			if (!(status & 4)) {
 //				printf("IRQ!\n");
 				irq6502();
 			}
 		}
-		static int inhibited_irq_counter;
-		if (via1_get_irq_out() || via2_get_irq_out()) {
-			if (!(status & 4)) {
-				printf("IRQ!\n");
-				irq6502();
-				inhibited_irq_counter = 0;
-			} else {
-				printf("~IRQ!\n");
-				inhibited_irq_counter++;
-				if (inhibited_irq_counter > 10) {
-					printf("WARNING: PS/2 IRQ inhibited for %d cycles!\n", inhibited_irq_counter);
-				}
-			}
-		} else {
-			inhibited_irq_counter = 0;
+		static bool prev_nmi = false;
+		bool new_nmi = via2_get_irq_out();
+		if (!prev_nmi && new_nmi) {
+			printf("NMI!\n");
+			nmi6502();
 		}
+		prev_nmi = new_nmi;
 
 #if 0
 		if (clockticks6502 >= 5 * MHZ * 1000 * 1000) {

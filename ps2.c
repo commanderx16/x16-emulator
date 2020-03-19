@@ -10,6 +10,8 @@
 
 #define PS2_BUFFER_SIZE 32
 
+uint8_t GLOBAL_byte;
+
 static struct {
 	bool sending;
 	bool has_byte;
@@ -58,6 +60,7 @@ ps2_buffer_remove(int i)
 	} else {
 		uint8_t byte = state[i].buffer.data[state[i].buffer.read];
 		state[i].buffer.read = (state[i].buffer.read + 1) % PS2_BUFFER_SIZE;
+		GLOBAL_byte = byte;
 		return byte;
 	}
 }
