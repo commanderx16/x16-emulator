@@ -140,9 +140,9 @@ LOAD()
 			status |= 1;
 			return;
 		}
-
 		uint8_t start_lo = SDL_ReadU8(f);
 		uint8_t start_hi = SDL_ReadU8(f);
+
 		uint16_t start;
 		if (!RAM[SA]) {
 			start = override_start;
