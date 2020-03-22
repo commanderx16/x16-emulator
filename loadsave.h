@@ -7,5 +7,6 @@
 
 void LOAD();
 void SAVE();
+size_t readBanked(FILE* f, uint16_t start);
 
 #endif

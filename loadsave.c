@@ -16,6 +16,8 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+extern uint16_t num_ram_banks;
+
 static int
 create_directory_listing(uint8_t *data)
 {
@@ -113,6 +115,25 @@ create_directory_listing(uint8_t *data)
 	return data - data_start;
 }
 
+size_t readBanked(FILE* f, uint16_t start)
+{
+	size_t bytes_read;
+	uint32_t bank = 0;
+	while(1) {
+		size_t len = 0xc000 - start;
+		bytes_read = fread(RAM + (bank << 13) + start, 1, len, f);
+		if(bytes_read < len) break;
+
+		// wrap into the next bank
+		start = 0xa000;
+		bank++;
+
+		// stop loading if file is too big
+		if (num_ram_banks == bank) break;
+	}
+	return bytes_read;
+}
+
 void
 LOAD()
 {
@@ -166,19 +187,13 @@ LOAD()
 		} else if(start < 0x9f00) {
 			// Fixed RAM
 			bytes_read = fread(RAM + start, 1, 0x9f00 - start, f);
+			// skip IO area and continue in banked RAM, if file is larger
+			readBanked(f, 0xa000);
 		} else if(start < 0xa000) {
 			// IO addresses
 		} else if(start < 0xc000) {
 			// banked RAM
-			while(1) {
-				size_t len = 0xc000 - start;
-				bytes_read = fread(RAM + ((uint16_t)memory_get_ram_bank() << 13) + start, 1, len, f);
-				if(bytes_read < len) break;
-
-				// Wrap into the next bank
-				start = 0xa000;
-				memory_set_ram_bank(1 + memory_get_ram_bank());
-			}
+			bytes_read = readBanked(f, start);
 		} else {
 			// ROM
 		}
