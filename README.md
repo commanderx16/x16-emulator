@@ -272,12 +272,15 @@ Release Notes
 
 ### Release 37 ("Geneva")
 
-* VERA 0.9 register layout
-* Audio
+* VERA 0.9 register layout [Frank van den Hoef]
+* audio [Frank van den Hoef]
     * VERA PCM and PSG audio support
     * YM2151 support is now enabled by default
-    * Added `-abufs` to specify number of audio buffers
-* Removed UART
+    * added `-abufs` to specify number of audio buffers
+* removed UART [Frank van den Hoef]
+* added window icon [Nigel Stewart]
+* fixed access to paths with non-ASCII characters on Windows [Serentty]
+* SDL HiDPI hint to fix mouse scaling [Edward Kmett]
 
 ### Release 36 ("Berlin")
 
