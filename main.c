@@ -1004,7 +1004,10 @@ emulator_loop(void *param)
 				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 			}
 
-			printf(" byte:%02x (%d) p:%d", RAM[0x9001], RAM[0x9000], RAM[0x9002]);
+//			printf(" byte:%02x (%d) p:%d", RAM[0x9001], RAM[0x9000], RAM[0x9002]);
+
+			printf(" r: %d w: %d q: %02x:%02x:%02x:%02x:...\n", RAM[0x90fe], RAM[0x90ff], RAM[0x9800], RAM[0x9801], RAM[0x9802], RAM[0x9803]);
+
 
 //			printf(" $7f:%02x $1000:%02x,%02x,%02x,%02x", RAM[0x7f], RAM[0x1000], RAM[0x1001], RAM[0x1002], RAM[0x1003]);
 

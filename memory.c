@@ -211,9 +211,9 @@ emu_write(uint8_t reg, uint8_t value)
 		case 15: {
 			extern uint8_t GLOBAL_byte;
 			printf("debug current_byte:   %x\n", value);
-			if (value != GLOBAL_byte) {
-				printf("DIFFERENCE!! %x %x\n", GLOBAL_byte, value);
-			}
+//			if (value != GLOBAL_byte) {
+//				printf("DIFFERENCE!! %x %x\n", GLOBAL_byte, value);
+//			}
 			break;
 		}
 		default: printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);

@@ -142,6 +142,16 @@ bool
 via2_get_irq_out()
 {
 //	if (!!(via2ifr & via2ier)) printf("YYY %d\n", !!(via2ifr & via2ier));
+	static int count;
+	if (((via2ifr & via2ier) & (VIA_IFR_CA1 | VIA_IFR_CB1)) == (VIA_IFR_CA1 | VIA_IFR_CB1)) {
+		printf("BOTH SOURCES!\n");
+		count++;
+		if (count > 100) {
+			printf("BOTHBOTH!\n");
+		}
+	} else {
+		count = 0;
+	}
 	return !!(via2ifr & via2ier);
 }
 
@@ -203,7 +213,11 @@ via2_write(uint8_t reg, uint8_t value)
 	} else if (reg == 13) { // IFR
 		// do nothing
 	} else if (reg == 14) { // IER
-		via2ier = value;
+		if (value & 0x80) { // set
+			via2ier |= (value & 0x7f);
+		} else { // clear
+			via2ier &= ~(value & 0x7f);
+		}
 	}
 
 	// reading PB clears clear CB1
