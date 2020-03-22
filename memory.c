@@ -124,13 +124,13 @@ write6502(uint16_t address, uint8_t value)
 //
 
 void
-memory_save(FILE *f, bool dump_ram, bool dump_bank)
+memory_save(SDL_RWops *f, bool dump_ram, bool dump_bank)
 {
 	if (dump_ram) {
-		fwrite(&RAM[0], sizeof(uint8_t), 0xa000, f);
+		SDL_RWwrite(f, &RAM[0], sizeof(uint8_t), 0xa000);
 	}
 	if (dump_bank) {
-		fwrite(&RAM[0xa000], sizeof(uint8_t), (num_ram_banks * 8192), f);
+		SDL_RWwrite(f, &RAM[0xa000], sizeof(uint8_t), (num_ram_banks * 8192));
 	}
 }
 
