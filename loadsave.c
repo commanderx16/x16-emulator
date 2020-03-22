@@ -185,7 +185,7 @@ LOAD()
 			// ROM
 		}
 
-	    SDL_RWclose(f);
+		SDL_RWclose(f);
 
 		uint16_t end = start + bytes_read;
 		x = end & 0xff;

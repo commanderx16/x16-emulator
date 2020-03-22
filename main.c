@@ -190,12 +190,12 @@ machine_dump()
 	}
 
 	if (dump_cpu) {
-	    SDL_RWwrite(f, &a, sizeof(uint8_t), 1);
-        SDL_RWwrite(f, &x, sizeof(uint8_t), 1);
-        SDL_RWwrite(f, &y, sizeof(uint8_t), 1);
-        SDL_RWwrite(f, &sp, sizeof(uint8_t), 1);
-        SDL_RWwrite(f, &status, sizeof(uint8_t), 1);
-        SDL_RWwrite(f, &pc, sizeof(uint16_t), 1);
+		SDL_RWwrite(f, &a, sizeof(uint8_t), 1);
+		SDL_RWwrite(f, &x, sizeof(uint8_t), 1);
+		SDL_RWwrite(f, &y, sizeof(uint8_t), 1);
+		SDL_RWwrite(f, &sp, sizeof(uint8_t), 1);
+		SDL_RWwrite(f, &status, sizeof(uint8_t), 1);
+		SDL_RWwrite(f, &pc, sizeof(uint16_t), 1);
 	}
 	memory_save(f, dump_ram, dump_bank);
 

@@ -85,7 +85,7 @@ sdcard_handle(uint8_t inbyte)
 					read_block_respose[1] = 0xfe;
 //					printf("Reading LBA %d\n", lba);
 					SDL_RWseek(sdcard_file, lba * 512, SEEK_SET);
-                    size_t bytes_read = SDL_RWread(sdcard_file, &read_block_respose[2], 1, 512);
+					size_t bytes_read = SDL_RWread(sdcard_file, &read_block_respose[2], 1, 512);
 					if (bytes_read != 512) {
 						printf("Warning: short read!\n");
 					}
