@@ -13,6 +13,7 @@
 #include "vera_spi.h"
 #include "vera_psg.h"
 #include "vera_pcm.h"
+#include "icon.h"
 
 #include <limits.h>
 
@@ -178,6 +179,7 @@ video_init(int window_scale, char *quality)
 									SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	SDL_SetWindowTitle(window, "Commander X16");
+	SDL_SetWindowIcon(window, CommanderX16Icon());
 
 	SDL_ShowCursor(SDL_DISABLE);
 

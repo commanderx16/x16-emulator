@@ -41,7 +41,7 @@ matrix:
       language: python
       script:
         - python -m pip install editorconfig-checker
-        - editorconfig-checker
+        - editorconfig-checker -exclude "\\.xcf$"
     - name: WebAssembly
       os: linux
       addons:
