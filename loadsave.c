@@ -140,10 +140,9 @@ LOAD()
 			status |= 1;
 			return;
 		}
-		uint8_t start_lo;
-		SDL_RWread(f, &start_lo, sizeof(start_lo), 1);
-		uint8_t start_hi;
-        SDL_RWread(f, &start_hi, sizeof(start_hi), 1);
+
+		uint8_t start_lo = SDL_ReadU8(f);
+		uint8_t start_hi = SDL_ReadU8(f);
 		uint16_t start;
 		if (!RAM[SA]) {
 			start = override_start;
@@ -221,10 +220,8 @@ SAVE()
 		return;
 	}
 
-	char c = start & 0xff;
-	SDL_RWwrite(f, &c, sizeof(c), 1);
-	c = start >> 8;
-    SDL_RWwrite(f, &c, sizeof(c), 1);
+	SDL_WriteU8(f, start & 0xff);
+	SDL_WriteU8(f, start >> 8);
 
 	SDL_RWwrite(f, RAM + start, 1, end - start);
 	SDL_RWclose(f);

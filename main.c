@@ -1039,10 +1039,8 @@ emulator_loop(void *param)
 			// as soon as BASIC starts reading a line...
 			if (prg_file) {
 				// ...inject the app into RAM
-				uint8_t start_lo;
-				SDL_RWread(prg_file, &start_lo, sizeof(start_lo), 1);
-				uint8_t start_hi;
-                SDL_RWread(prg_file, &start_hi, sizeof(start_hi), 1);
+				uint8_t start_lo = SDL_ReadU8(prg_file);
+				uint8_t start_hi = SDL_ReadU8(prg_file);
 				uint16_t start;
 				if (prg_override_start >= 0) {
 					start = prg_override_start;
