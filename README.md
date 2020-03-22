@@ -270,13 +270,14 @@ Known Issues
 Release Notes
 -------------
 
-### Release 37
+### Release 37 ("Geneva")
 
 * VERA 0.9 register layout
 * Audio
     * VERA PCM and PSG audio support
     * YM2151 support is now enabled by default
     * Added `-abufs` to specify number of audio buffers
+* Removed UART
 
 ### Release 36 ("Berlin")
 
