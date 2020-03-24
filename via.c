@@ -67,24 +67,13 @@ via_create(int i, via_iofunc_t iofunc)
 	return via;
 }
 
-static void
-via_state(uint8_t in, uint8_t out, uint8_t ddr, uint8_t *pinstate)
+static uint8_t
+via_port_state(uint8_t in, uint8_t out, uint8_t ddr)
 {
 	// DDR=0 (input)  -> take input bit
 	// DDR=1 (output) -> take output bit
 
-	// |   ddr   |   out   |   in    | pinstate |
-	// |---------|---------|---------|----------|
-	// |    0 in |    0    |    0    |    0     |
-	// |    0 in |    0    |    1    |    1     |
-	// |    0 in |    1    |    0    |    0     |
-	// |    0 in |    1    |    1    |    1     |
-	// |    1 out|    0    |    0    |    0     |
-	// |    1 out|    0    |    1    |    0     |
-	// |    1 out|    1    |    0    |    1     |
-	// |    1 out|    1    |    1    |    1     |
-
-	*pinstate =
+	return
 		(out & ddr) | // outputs will read back the same
 		(in & ~ddr);  // inputs  will read from wire
 }
@@ -93,40 +82,43 @@ void
 via_step(via_state_t *via)
 {
 	uint8_t pa_in = via->iofunc.get_pa();
-	via_state(pa_in, via->pa_out, via->ddra, &via->pa_pinstate);
+	via->pa_pinstate = via_port_state(pa_in, via->pa_out, via->ddra);
 	via->iofunc.set_pa(via->pa_pinstate);
 	if (via->i == 2) {
-		printf("[%d]: pa_in: %x, via->pa_out: %x, via->ddra: %x, via->pa_pinstate: %x\n", via->i, pa_in, via->pa_out, via->ddra, via->pa_pinstate);
+//		printf("[%d]: pa_in: %x, via->pa_out: %x, via->ddra: %x, via->pa_pinstate: %x\n", via->i, pa_in, via->pa_out, via->ddra, via->pa_pinstate);
 	}
 
 	uint8_t pb_in = via->iofunc.get_pb();
-	via_state(pb_in, via->pb_out, via->ddrb, &via->pb_pinstate);
+	via->pb_pinstate = via_port_state(pb_in, via->pb_out, via->ddrb);
 	via->iofunc.set_pb(via->pb_pinstate);
 //	if (via->i == 1) {
 //		printf("[%d]: pb_in: %x, via->pb_out: %x, via->ddrb: %x, via->pb_pinstate: %x\n", via->i, pb_in, via->pb_out, via->ddrb, via->pb_pinstate);
 //	}
 
-	static bool old_ca1;
-	bool ca1 = via->iofunc.get_ca1();
-	if (ca1 != old_ca1) {
-		printf("KBD IRQ? CLK is now %d\n", ca1);
-		if (!ca1) { // falling edge
-			printf("NEW KBD IRQ\n");
-			via->ifr |= VIA_IFR_CA1;
-		}
-	}
-	old_ca1 = ca1;
 
-	static bool old_cb1;
-	bool cb1 = via->iofunc.get_cb1();
-	if (cb1 != old_cb1) {
-//		printf("MSE IRQ? CLK is now %d\n", cb1);
-		if (!cb1) { // falling edge
-			printf("NEW MSE IRQ\n");
-			via->ifr |= VIA_IFR_CB1;
+	if (via->i == 2) {
+		static bool old_ca1;
+		bool ca1 = via->iofunc.get_ca1();
+		if (ca1 != old_ca1) {
+			printf("KBD IRQ? CLK is now %d\n", ca1);
+			if (!ca1) { // falling edge
+				printf("NEW KBD IRQ\n");
+				via->ifr |= VIA_IFR_CA1;
+			}
 		}
+		old_ca1 = ca1;
+
+		static bool old_cb1;
+		bool cb1 = via->iofunc.get_cb1();
+		if (cb1 != old_cb1) {
+	//		printf("MSE IRQ? CLK is now %d\n", cb1);
+			if (!cb1) { // falling edge
+				printf("NEW MSE IRQ\n");
+				via->ifr |= VIA_IFR_CB1;
+			}
+		}
+		old_cb1 = cb1;
 	}
-	old_cb1 = cb1;
 }
 
 bool
