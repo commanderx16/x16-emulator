@@ -93,17 +93,8 @@ via1_write(uint8_t reg, uint8_t value)
 //
 // VIA#2
 //
-// PA0 PS/2 DAT
-// PA1 PS/2 CLK
-// PA2 LCD backlight
-// PA3 NESJOY latch (for both joysticks)
-// PA4 NESJOY joy1 data
-// PA5 NESJOY joy1 CLK
-// PA6 NESJOY joy2 data
-// PA7 NESJOY joy2 CLK
 
 static uint8_t via2registers[16];
-static uint8_t via2pb_in;
 static uint8_t via2ifr;
 static uint8_t via2ier;
 
@@ -293,22 +284,4 @@ via2_write(uint8_t reg, uint8_t value)
 //		printf("2CLEAR IRQ\n");
 		via2ifr &= ~VIA_IFR_CA1;
 	}
-}
-
-uint8_t
-via2_pb_get_out()
-{
-	return via2ddrb /* DDR  */ & via2registers[0]; /* PB */
-}
-
-void
-via2_pb_set_in(uint8_t value)
-{
-	via2pb_in = value;
-}
-
-void
-via2_sr_set(uint8_t value)
-{
-	via2registers[10] = value;
 }

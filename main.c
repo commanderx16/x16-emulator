@@ -20,7 +20,6 @@
 #include "video.h"
 #include "via.h"
 #include "ps2.h"
-#include "spi.h"
 #include "vera_spi.h"
 #include "vera_uart.h"
 #include "sdcard.h"
@@ -218,7 +217,6 @@ machine_dump()
 void
 machine_reset()
 {
-	spi_init();
 	vera_spi_init();
 	vera_uart_init();
 	ps2_init(0);
@@ -1055,7 +1053,6 @@ emulator_loop(void *param)
 			ps2_step(1);
 			via1_step();
 			via2_step();
-			spi_step();
 			joystick_step();
 			vera_spi_step();
 			vera_uart_step();
