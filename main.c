@@ -18,6 +18,7 @@
 #include "disasm.h"
 #include "memory.h"
 #include "video.h"
+#include "io.h"
 #include "via.h"
 #include "ps2.h"
 #include "vera_spi.h"
@@ -217,6 +218,7 @@ machine_dump()
 void
 machine_reset()
 {
+	io_init();
 	vera_spi_init();
 	vera_uart_init();
 	ps2_init(0);

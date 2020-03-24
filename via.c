@@ -7,11 +7,10 @@
 #include <time.h>
 #include <stdlib.h>
 #include "via.h"
-#include "ps2.h"
+#include "io.h"
 #include "memory.h"
 //XXX
 #include "glue.h"
-#include "joystick.h"
 
 #define VIA_IFR_CA2 1
 #define VIA_IFR_CA1 2
@@ -94,37 +93,42 @@ via1_write(uint8_t reg, uint8_t value)
 // VIA#2
 //
 
-static uint8_t via2registers[16];
-static uint8_t via2ifr;
-static uint8_t via2ier;
+typedef struct {
+	uint8_t registers[16];
 
-static uint8_t via2pa_out;
-static uint8_t via2pb_out;
-static uint8_t via2pa_pinstate;
-static uint8_t via2pb_pinstate;
-static uint8_t via2pa_readback;
-static uint8_t via2pb_readback;
-static uint8_t via2ddra;
-static uint8_t via2ddrb;
+	uint8_t ifr;
+	uint8_t ier;
+
+	uint8_t pa_out;
+	uint8_t pb_out;
+	uint8_t pa_pinstate;
+	uint8_t pb_pinstate;
+	uint8_t pa_readback;
+	uint8_t pb_readback;
+	uint8_t ddra;
+	uint8_t ddrb;
+}  via_state_t;
+
+static via_state_t *via;
 
 void
-via2_init()
+via_init()
 {
-	via2ier = 0;
+	via = calloc(1, sizeof(via_state_t));
+
+	via->ier = 0;
 
 	// DDR to input
-	via2ddrb = 0;
-	via2ddra = 0;
-
-	ps2_port[0].clk_in = 1;
-	ps2_port[0].data_in = 1;
-	ps2_port[1].clk_in = 1;
-	ps2_port[1].data_in = 1;
+	via->ddrb = 0;
+	via->ddra = 0;
 }
 
 void
-via2_state(uint8_t in, uint8_t out, uint8_t ddr, uint8_t *pinstate, uint8_t *readback)
+via_state(uint8_t in, uint8_t out, uint8_t ddr, uint8_t *pinstate, uint8_t *readback)
 {
+	// DDR=0 (input)  -> take input bit
+	// DDR=1 (output) -> take output bit
+
 	// driving state (0 = pulled, 1 = passive)
 	uint8_t driving = (ddr & out) | ~ddr;
 
@@ -136,73 +140,45 @@ via2_state(uint8_t in, uint8_t out, uint8_t ddr, uint8_t *pinstate, uint8_t *rea
 }
 
 void
-via2_step()
+via_step()
 {
-	uint8_t pa_in =
-		(ps2_port[0].data_out << 0) | // PA0 PS/2 DAT
-		(ps2_port[0].clk_out  << 1) | // PA1 PS/2 CLK
-		(1                    << 2) | // PA2 LCD backlight
-		(1                    << 3) | // PA3 NESJOY latch (for both joysticks)
-		(joystick1_data       << 4) | // PA4 NESJOY joy1 data
-		(1                    << 5) | // PA5 NESJOY CLK (for both joysticks)
-		(joystick2_data       << 6) | // PA6 NESJOY joy2 data
-		(1                    << 7);  // PA7
+	uint8_t pa_in = via2_get_pa();
+	via_state(pa_in, via->pa_out, via->ddra, &via->pa_pinstate, &via->pa_readback);
+	via2_set_pa(via->pa_pinstate);
 
-	via2_state(pa_in, via2pa_out, via2ddra, &via2pa_pinstate, &via2pa_readback);
-
-	ps2_port[0].data_in = !!(via2pa_pinstate >> 0);
-	ps2_port[0].clk_in  = !!(via2pa_pinstate >> 1);
-	joystick_latch      = !!(via2pa_pinstate >> 3);
-	joystick_clock      = !!(via2pa_pinstate >> 5);
-
-	uint8_t pb_in =
-		(ps2_port[1].data_out << 0) | // PA0 PS/2 DAT
-		(ps2_port[1].clk_out  << 1) | // PA1 PS/2 CLK
-		(1                    << 2) | // PA2
-		(1                    << 3) | // PA3
-		(1                    << 4) | // PA4
-		(1                    << 5) | // PA5
-		(1                    << 6) | // PA6
-		(1                    << 7);  // PA7
-
-	via2_state(pb_in, via2pb_out, via2ddrb, &via2pb_pinstate, &via2pb_readback);
-
-	ps2_port[1].data_in = !!(via2pb_pinstate >> 0);
-	ps2_port[1].clk_in  = !!(via2pb_pinstate >> 1);
+	uint8_t pb_in = via2_get_pb();
+	via_state(pb_in, via->pb_out, via->ddrb, &via->pb_pinstate, &via->pb_readback);
+	via2_set_pb(via->pb_pinstate);
 
 	static bool old_ca1;
-	bool ca1 = ps2_port[0].clk_out;
+	bool ca1 = via2_get_ca1();
 	if (ca1 != old_ca1) {
-		if (!ps2_port[0].clk_in) {
-			printf("self-NMI? before: %d, now: %d\n", old_ca1, ca1);
-		}
 //		printf("KBD IRQ? CLK is now %d\n", ca1);
 		if (!ca1) { // falling edge
 			printf("NEW KBD IRQ\n");
-			via2ifr |= VIA_IFR_CA1;
+			via->ifr |= VIA_IFR_CA1;
 		}
 	}
 	old_ca1 = ca1;
 
-//	printf("ps2_port[1].clk_out = %d\n", ps2_port[1].clk_out);
 	static bool old_cb1;
-	bool cb1 = ps2_port[1].clk_out;
+	bool cb1 = via2_get_cb1();
 	if (cb1 != old_cb1) {
 //		printf("MSE IRQ? CLK is now %d\n", cb1);
 		if (!cb1) { // falling edge
 			printf("NEW MSE IRQ\n");
-			via2ifr |= VIA_IFR_CB1;
+			via->ifr |= VIA_IFR_CB1;
 		}
 	}
 	old_cb1 = cb1;
 }
 
 bool
-via2_get_irq_out()
+via_get_irq_out()
 {
-//	if (!!(via2ifr & via2ier)) printf("YYY %d\n", !!(via2ifr & via2ier));
+//	if (!!(via->ifr & via->ier)) printf("YYY %d\n", !!(via->ifr & via->ier));
 	static int count;
-	if (((via2ifr & via2ier) & (VIA_IFR_CA1 | VIA_IFR_CB1)) == (VIA_IFR_CA1 | VIA_IFR_CB1)) {
+	if (((via->ifr & via->ier) & (VIA_IFR_CA1 | VIA_IFR_CB1)) == (VIA_IFR_CA1 | VIA_IFR_CB1)) {
 		printf("BOTH SOURCES!\n");
 		count++;
 		if (count > 100) {
@@ -211,77 +187,103 @@ via2_get_irq_out()
 	} else {
 		count = 0;
 	}
-	return !!(via2ifr & via2ier);
+	return !!(via->ifr & via->ier);
 }
 
 uint8_t
-via2_read(uint8_t reg)
+via_read(uint8_t reg)
 {
-	// DDR=0 (input)  -> take input bit
-	// DDR=1 (output) -> take output bit
-
 	if (reg == 0) { // PB
 		// reading PB clears clear CB1
-		if (via2ifr & VIA_IFR_CB1) {
+		if (via->ifr & VIA_IFR_CB1) {
 			printf("clearing IRQ\n");
 		}
-		via2ifr &= ~VIA_IFR_CB1;
+		via->ifr &= ~VIA_IFR_CB1;
 
-		return via2pb_readback;
+		return via->pb_readback;
 	} else if (reg == 1) { // PA
 		// reading PA clears clear CA1
 //		printf("1CLEAR IRQ\n");
-		via2ifr &= ~VIA_IFR_CA1;
+		via->ifr &= ~VIA_IFR_CA1;
 
-		return via2pa_readback;
+		return via->pa_readback;
 	} else if (reg == 2) { // DDRB
-		return via2ddrb;
+		return via->ddrb;
 	} else if (reg == 3) { // DDRA
-		return via2ddra;
+		return via->ddra;
 	} else if (reg == 13) { // IFR
-		uint8_t val = via2ifr;
+		uint8_t val = via->ifr;
 		if (val) {
 			val |= 0x80;
 		}
 		return val;
 	} else if (reg == 14) { // IER
-		return via2ier;
+		return via->ier;
 	} else {
-		return via2registers[reg];
+		return via->registers[reg];
 	}
 }
 
 void
-via2_write(uint8_t reg, uint8_t value)
+via_write(uint8_t reg, uint8_t value)
 {
-	via2registers[reg] = value;
+	via->registers[reg] = value;
 
 	if (reg == 0) { // PB
-		via2pb_out = value;
+		via->pb_out = value;
 	} else if (reg == 1) { // PA
-		via2pa_out = value;
+		via->pa_out = value;
 	} else if (reg == 2) { // DDRB
-		via2ddrb = value;
+		via->ddrb = value;
 	} else if (reg == 3) { // DDRBA
-		via2ddra = value;
+		via->ddra = value;
 	} else if (reg == 13) { // IFR
 		// do nothing
 	} else if (reg == 14) { // IER
 		if (value & 0x80) { // set
-			via2ier |= (value & 0x7f);
+			via->ier |= (value & 0x7f);
 		} else { // clear
-			via2ier &= ~(value & 0x7f);
+			via->ier &= ~(value & 0x7f);
 		}
 	}
 
 	// reading PB clears clear CB1
 	if (reg == 0) { // PA
-		via2ifr &= ~VIA_IFR_CB1;
+		via->ifr &= ~VIA_IFR_CB1;
 	}
 
 	// reading PA clears clear CA1
 	if (reg == 1) { // PA
 //		printf("2CLEAR IRQ\n");
-		via2ifr &= ~VIA_IFR_CA1;
+		via->ifr &= ~VIA_IFR_CA1;
 	}
+}
+
+bool
+via2_get_irq_out()
+{
+	return via_get_irq_out();
+}
+
+void
+via2_init()
+{
+	return via_init();
+}
+uint8_t
+via2_read(uint8_t reg)
+{
+	return via_read(reg);
+}
+
+void
+via2_write(uint8_t reg, uint8_t value)
+{
+	via_write(reg, value);
+}
+
+void
+via2_step()
+{
+	via_step();
 }

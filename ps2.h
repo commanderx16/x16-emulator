@@ -6,6 +6,7 @@
 #define _PS2_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define PS2_DATA_MASK 1
 #define PS2_CLK_MASK 2
