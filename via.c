@@ -107,35 +107,52 @@ static uint8_t via2pb_in;
 static uint8_t via2ifr;
 static uint8_t via2ier;
 
+static uint8_t via2ddra;
+static uint8_t via2ddrb;
+
 void
 via2_init()
 {
 	via2ier = 0;
+
+	// DDR to input
+	via2ddrb = 0;
+	via2ddra = 0;
+
+	ps2_port[0].clk_in = 1;
+	ps2_port[0].data_in = 1;
+	ps2_port[1].clk_in = 1;
+	ps2_port[1].data_in = 1;
 }
 
 void
 via2_step()
 {
-	static bool old_clk_out_0;
-	if (ps2_port[0].clk_out != old_clk_out_0) {
-//		printf("KBD IRQ? CLK is now %d\n", ps2_port[0].clk_out);
-		if (!ps2_port[0].clk_out) { // falling edge
+	static bool old_ca1;
+	bool ca1 = ps2_port[0].clk_out;
+	if (ca1 != old_ca1) {
+		if (!ps2_port[0].clk_in) {
+			printf("self-NMI? before: %d, now: %d\n", old_ca1, ca1);
+		}
+//		printf("KBD IRQ? CLK is now %d\n", ca1);
+		if (!ca1) { // falling edge
 			printf("NEW KBD IRQ\n");
 			via2ifr |= VIA_IFR_CA1;
 		}
 	}
-	old_clk_out_0 = ps2_port[0].clk_out;
+	old_ca1 = ca1;
 
 //	printf("ps2_port[1].clk_out = %d\n", ps2_port[1].clk_out);
-	static bool old_clk_out_1;
-	if (ps2_port[1].clk_out != old_clk_out_1) {
-//		printf("MSE IRQ? CLK is now %d\n", ps2_port[1].clk_out);
-		if (!ps2_port[1].clk_out) { // falling edge
+	static bool old_cb1;
+	bool cb1 = ps2_port[1].clk_out;
+	if (cb1 != old_cb1) {
+//		printf("MSE IRQ? CLK is now %d\n", cb1);
+		if (!cb1) { // falling edge
 			printf("NEW MSE IRQ\n");
 			via2ifr |= VIA_IFR_CB1;
 		}
 	}
-	old_clk_out_1 = ps2_port[1].clk_out;
+	old_cb1 = cb1;
 }
 
 bool
@@ -160,6 +177,17 @@ via2_read(uint8_t reg)
 {
 	// DDR=0 (input)  -> take input bit
 	// DDR=1 (output) -> take output bit
+
+	uint8_t pa =
+		(via2ddra & PS2_CLK_MASK ? 0 : ps2_port[0].clk_out << 1) |
+		(via2ddra & PS2_DATA_MASK ? 0 : ps2_port[0].data_out);
+	pa = pa | (joystick1_data ? JOY_DATA1_MASK : 0) |
+		(joystick2_data ? JOY_DATA2_MASK : 0);
+
+	uint8_t pb =
+		(via2ddrb & PS2_CLK_MASK ? 0 : ps2_port[1].clk_out << 1) |
+		(via2ddrb & PS2_DATA_MASK ? 0 : ps2_port[1].data_out);
+
 	if (reg == 0) { // PB
 		// reading PB clears clear CB1
 		if (via2ifr & VIA_IFR_CB1) {
@@ -167,21 +195,17 @@ via2_read(uint8_t reg)
 		}
 		via2ifr &= ~VIA_IFR_CB1;
 
-		uint8_t value =
-			(via2registers[2] & PS2_CLK_MASK ? 0 : ps2_port[1].clk_out << 1) |
-			(via2registers[2] & PS2_DATA_MASK ? 0 : ps2_port[1].data_out);
-		return value;
+		return pb;
 	} else if (reg == 1) { // PA
 		// reading PA clears clear CA1
 //		printf("1CLEAR IRQ\n");
 		via2ifr &= ~VIA_IFR_CA1;
 
-		uint8_t value =
-			(via2registers[3] & PS2_CLK_MASK ? 0 : ps2_port[0].clk_out << 1) |
-			(via2registers[3] & PS2_DATA_MASK ? 0 : ps2_port[0].data_out);
-			value = value | (joystick1_data ? JOY_DATA1_MASK : 0) |
-							(joystick2_data ? JOY_DATA2_MASK : 0);
-		return value;
+		return pa;
+	} else if (reg == 2) { // DDRB
+		return via2ddrb;
+	} else if (reg == 3) { // DDRA
+		return via2ddra;
 	} else if (reg == 13) { // IFR
 		uint8_t val = via2ifr;
 		if (val) {
@@ -202,12 +226,12 @@ via2_write(uint8_t reg, uint8_t value)
 
 	if (reg == 0 || reg == 2) {
 		// PB
-		ps2_port[1].clk_in = via2registers[2] & PS2_CLK_MASK ? via2registers[0] & PS2_CLK_MASK : 1;
-		ps2_port[1].data_in = via2registers[2] & PS2_DATA_MASK ? via2registers[0] & PS2_DATA_MASK : 1;
+		ps2_port[1].clk_in = via2ddrb & PS2_CLK_MASK ? via2registers[0] & PS2_CLK_MASK : 1;
+		ps2_port[1].data_in = via2ddrb & PS2_DATA_MASK ? via2registers[0] & PS2_DATA_MASK : 1;
 	} else if (reg == 1 || reg == 3) {
 		// PA
-		ps2_port[0].clk_in = via2registers[3] & PS2_CLK_MASK ? via2registers[1] & PS2_CLK_MASK : 1;
-		ps2_port[0].data_in = via2registers[3] & PS2_DATA_MASK ? via2registers[1] & PS2_DATA_MASK : 1;
+		ps2_port[0].clk_in = via2ddra & PS2_CLK_MASK ? via2registers[1] & PS2_CLK_MASK : 1;
+		ps2_port[0].data_in = via2ddra & PS2_DATA_MASK ? via2registers[1] & PS2_DATA_MASK : 1;
 		joystick_latch = via2registers[1] & JOY_LATCH_MASK;
 		joystick_clock = via2registers[1] & JOY_CLK_MASK;
 	} else if (reg == 13) { // IFR
@@ -235,7 +259,7 @@ via2_write(uint8_t reg, uint8_t value)
 uint8_t
 via2_pb_get_out()
 {
-	return via2registers[2] /* DDR  */ & via2registers[0]; /* PB */
+	return via2ddrb /* DDR  */ & via2registers[0]; /* PB */
 }
 
 void
