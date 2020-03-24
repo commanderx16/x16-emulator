@@ -84,10 +84,10 @@ via2_get_pa()
 void
 via2_set_pa(uint8_t pinstate)
 {
-	ps2_port[0].data_in = !!(pinstate >> 0);
-	ps2_port[0].clk_in  = !!(pinstate >> 1);
-	joystick_latch      = !!(pinstate >> 3);
-	joystick_clock      = !!(pinstate >> 5);
+	ps2_port[0].data_in = (pinstate >> 0) & 1;
+	ps2_port[0].clk_in  = (pinstate >> 1) & 1;
+	joystick_latch      = (pinstate >> 3) & 1;
+	joystick_clock      = (pinstate >> 5) & 1;
 }
 
 uint8_t
@@ -107,21 +107,19 @@ via2_get_pb()
 void
 via2_set_pb(uint8_t pinstate)
 {
-	ps2_port[1].data_in = !!(pinstate >> 0);
-	ps2_port[1].clk_in  = !!(pinstate >> 1);
+	ps2_port[1].data_in = (pinstate >> 0) & 1;
+	ps2_port[1].clk_in  = (pinstate >> 1) & 1;
 }
 
 bool
 via2_get_ca1()
 {
-	return ps2_port[0].clk_out;
-//	return !!(via2pa_pinstate >> 1);
+	return !(!ps2_port[0].clk_out | !ps2_port[0].clk_in);
 }
 
 bool
 via2_get_cb1()
 {
-	return ps2_port[1].clk_out;
-//	return !!(via2pb_pinstate >> 1);
+	return !(!ps2_port[1].clk_out | !ps2_port[1].clk_in);
 }
 

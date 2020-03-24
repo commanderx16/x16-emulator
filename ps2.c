@@ -72,23 +72,27 @@ ps2_init(int i)
 	ps2_port[i].data_out = 1;
 }
 
-int ps2_debug = 1 | 2;
-//int ps2_debug = 0;
+//int ps2_debug = 1 | 2;
+int ps2_debug = 0;
 
 #define PS2_DEBUG (ps2_debug & (1 << i))
 
 void
 ps2_step(int i)
 {
-//	if (PS2_DEBUG) printf("PS2[%d]: %d/%d\n", i, ps2_port[i].clk_in, ps2_port[i].data_in);
-	if (!ps2_port[i].clk_in && ps2_port[i].data_in) {
+	// if we're pulling a wire to 0, assume it's 1
+	bool clk_in = (!ps2_port[i].clk_out) ? 1 : ps2_port[i].clk_in;
+	bool data_in = (!ps2_port[i].data_out) ? 1 : ps2_port[i].data_in;
+
+//	if (PS2_DEBUG) printf("PS2[%d]: %d/%d\n", i, clk_in, data_in);
+	if (!clk_in && data_in) {
 		// CLK=0, DATA=1: communication inhibited
 		ps2_port[i].clk_out = 1;
 		ps2_port[i].data_out = 1;
 		state[i].sending = false;
 		if (PS2_DEBUG) printf("PS2[%d]: STATE: communication inhibited.\n", i);
 		return;
-	} else if (ps2_port[i].clk_in && ps2_port[i].data_in) {
+	} else if (clk_in && data_in) {
 		// CLK=1, DATA=1: idle state
 //		printf("PS2[%d]: STATE: idle\n", i);
 		if (!state[i].sending) {
@@ -153,11 +157,11 @@ ps2_step(int i)
 				state[i].send_state++;
 			}
 		}
-	} else if (!ps2_port[i].clk_in && !ps2_port[i].data_in) {
+	} else if (!clk_in && !data_in) {
 		// CLK=0, DATA=0: reset state
 		if (PS2_DEBUG) printf("PS2[%d]: RESET state\n", i);
 	} else {
-		if (i==0) printf("PS2[%d]: Warning: unknown PS/2 bus state: CLK_IN=%d, DATA_IN=%d\n", i, ps2_port[i].clk_in, ps2_port[i].data_in);
+		if (PS2_DEBUG) printf("PS2[%d]: Warning: unknown PS/2 bus state: CLK_IN=%d, DATA_IN=%d\n", i, clk_in, data_in);
 		ps2_port[i].clk_out = 1;
 		ps2_port[i].data_out = 1;
 	}
