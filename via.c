@@ -107,6 +107,12 @@ static uint8_t via2pb_in;
 static uint8_t via2ifr;
 static uint8_t via2ier;
 
+static uint8_t via2pa_out;
+static uint8_t via2pb_out;
+static uint8_t via2pa_pinstate;
+static uint8_t via2pb_pinstate;
+static uint8_t via2pa_readback;
+static uint8_t via2pb_readback;
 static uint8_t via2ddra;
 static uint8_t via2ddrb;
 
@@ -126,8 +132,53 @@ via2_init()
 }
 
 void
+via2_state(uint8_t in, uint8_t out, uint8_t ddr, uint8_t *pinstate, uint8_t *readback)
+{
+	// driving state (0 = pulled, 1 = passive)
+	uint8_t driving = (ddr & out) | ~ddr;
+
+	// mix in internal state (open collector)
+	*pinstate = ~(~in | ~driving);
+
+	// value as read on PA register (*out* will read back our own value)
+	*readback = (ddr & driving) | (~ddr & *pinstate);
+}
+
+void
 via2_step()
 {
+	uint8_t pa_in =
+		(ps2_port[0].data_out << 0) | // PA0 PS/2 DAT
+		(ps2_port[0].clk_out  << 1) | // PA1 PS/2 CLK
+		(1                    << 2) | // PA2 LCD backlight
+		(1                    << 3) | // PA3 NESJOY latch (for both joysticks)
+		(joystick1_data       << 4) | // PA4 NESJOY joy1 data
+		(1                    << 5) | // PA5 NESJOY CLK (for both joysticks)
+		(joystick2_data       << 6) | // PA6 NESJOY joy2 data
+		(1                    << 7);  // PA7
+
+	via2_state(pa_in, via2pa_out, via2ddra, &via2pa_pinstate, &via2pa_readback);
+
+	ps2_port[0].data_in = !!(via2pa_pinstate >> 0);
+	ps2_port[0].clk_in  = !!(via2pa_pinstate >> 1);
+	joystick_latch      = !!(via2pa_pinstate >> 3);
+	joystick_clock      = !!(via2pa_pinstate >> 5);
+
+	uint8_t pb_in =
+		(ps2_port[1].data_out << 0) | // PA0 PS/2 DAT
+		(ps2_port[1].clk_out  << 1) | // PA1 PS/2 CLK
+		(1                    << 2) | // PA2
+		(1                    << 3) | // PA3
+		(1                    << 4) | // PA4
+		(1                    << 5) | // PA5
+		(1                    << 6) | // PA6
+		(1                    << 7);  // PA7
+
+	via2_state(pb_in, via2pb_out, via2ddrb, &via2pb_pinstate, &via2pb_readback);
+
+	ps2_port[1].data_in = !!(via2pb_pinstate >> 0);
+	ps2_port[1].clk_in  = !!(via2pb_pinstate >> 1);
+
 	static bool old_ca1;
 	bool ca1 = ps2_port[0].clk_out;
 	if (ca1 != old_ca1) {
@@ -178,16 +229,6 @@ via2_read(uint8_t reg)
 	// DDR=0 (input)  -> take input bit
 	// DDR=1 (output) -> take output bit
 
-	uint8_t pa =
-		(via2ddra & PS2_CLK_MASK ? 0 : ps2_port[0].clk_out << 1) |
-		(via2ddra & PS2_DATA_MASK ? 0 : ps2_port[0].data_out);
-	pa = pa | (joystick1_data ? JOY_DATA1_MASK : 0) |
-		(joystick2_data ? JOY_DATA2_MASK : 0);
-
-	uint8_t pb =
-		(via2ddrb & PS2_CLK_MASK ? 0 : ps2_port[1].clk_out << 1) |
-		(via2ddrb & PS2_DATA_MASK ? 0 : ps2_port[1].data_out);
-
 	if (reg == 0) { // PB
 		// reading PB clears clear CB1
 		if (via2ifr & VIA_IFR_CB1) {
@@ -195,13 +236,13 @@ via2_read(uint8_t reg)
 		}
 		via2ifr &= ~VIA_IFR_CB1;
 
-		return pb;
+		return via2pb_readback;
 	} else if (reg == 1) { // PA
 		// reading PA clears clear CA1
 //		printf("1CLEAR IRQ\n");
 		via2ifr &= ~VIA_IFR_CA1;
 
-		return pa;
+		return via2pa_readback;
 	} else if (reg == 2) { // DDRB
 		return via2ddrb;
 	} else if (reg == 3) { // DDRA
@@ -224,16 +265,14 @@ via2_write(uint8_t reg, uint8_t value)
 {
 	via2registers[reg] = value;
 
-	if (reg == 0 || reg == 2) {
-		// PB
-		ps2_port[1].clk_in = via2ddrb & PS2_CLK_MASK ? via2registers[0] & PS2_CLK_MASK : 1;
-		ps2_port[1].data_in = via2ddrb & PS2_DATA_MASK ? via2registers[0] & PS2_DATA_MASK : 1;
-	} else if (reg == 1 || reg == 3) {
-		// PA
-		ps2_port[0].clk_in = via2ddra & PS2_CLK_MASK ? via2registers[1] & PS2_CLK_MASK : 1;
-		ps2_port[0].data_in = via2ddra & PS2_DATA_MASK ? via2registers[1] & PS2_DATA_MASK : 1;
-		joystick_latch = via2registers[1] & JOY_LATCH_MASK;
-		joystick_clock = via2registers[1] & JOY_CLK_MASK;
+	if (reg == 0) { // PB
+		via2pb_out = value;
+	} else if (reg == 1) { // PA
+		via2pa_out = value;
+	} else if (reg == 2) { // DDRB
+		via2ddrb = value;
+	} else if (reg == 3) { // DDRBA
+		via2ddra = value;
 	} else if (reg == 13) { // IFR
 		// do nothing
 	} else if (reg == 14) { // IER
