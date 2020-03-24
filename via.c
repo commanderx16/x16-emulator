@@ -44,6 +44,9 @@ typedef struct {
 	uint8_t pb_pinstate;
 	uint8_t ddra;
 	uint8_t ddrb;
+
+	bool old_ca1;
+	bool old_cb1;
 }  via_state_t;
 
 via_state_t *
@@ -96,29 +99,23 @@ via_step(via_state_t *via)
 //	}
 
 
-	if (via->i == 2) {
-		static bool old_ca1;
-		bool ca1 = via->iofunc.get_ca1();
-		if (ca1 != old_ca1) {
-			printf("KBD IRQ? CLK is now %d\n", ca1);
-			if (!ca1) { // falling edge
-				printf("NEW KBD IRQ\n");
-				via->ifr |= VIA_IFR_CA1;
-			}
+	bool ca1 = via->iofunc.get_ca1();
+	if (ca1 != via->old_ca1) {
+		if (!ca1) { // falling edge
+			printf("NEW CA1 IRQ\n");
+			via->ifr |= VIA_IFR_CA1;
 		}
-		old_ca1 = ca1;
-
-		static bool old_cb1;
-		bool cb1 = via->iofunc.get_cb1();
-		if (cb1 != old_cb1) {
-	//		printf("MSE IRQ? CLK is now %d\n", cb1);
-			if (!cb1) { // falling edge
-				printf("NEW MSE IRQ\n");
-				via->ifr |= VIA_IFR_CB1;
-			}
-		}
-		old_cb1 = cb1;
 	}
+	via->old_ca1 = ca1;
+
+	bool cb1 = via->iofunc.get_cb1();
+	if (cb1 != via->old_cb1) {
+		if (!cb1) { // falling edge
+			printf("NEW CB1 IRQ\n");
+			via->ifr |= VIA_IFR_CB1;
+		}
+	}
+	via->old_cb1 = cb1;
 }
 
 bool
