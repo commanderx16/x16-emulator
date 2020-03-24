@@ -94,6 +94,17 @@ via1_write(uint8_t reg, uint8_t value)
 //
 
 typedef struct {
+	uint8_t (*get_pa)();
+	void (*set_pa)(uint8_t);
+	uint8_t (*get_pb)();
+	void (*set_pb)(uint8_t);
+	bool (*get_ca1)();
+	bool (*get_cb1)();
+}  via_iofunc_t;
+
+typedef struct {
+	via_iofunc_t iofunc;
+
 	uint8_t registers[16];
 
 	uint8_t ifr;
@@ -109,21 +120,25 @@ typedef struct {
 	uint8_t ddrb;
 }  via_state_t;
 
-static via_state_t *via;
+static via_state_t *via2;
 
-void
-via_init()
+via_state_t *
+via_create(via_iofunc_t iofunc)
 {
-	via = calloc(1, sizeof(via_state_t));
+	via_state_t *via = calloc(1, sizeof(via_state_t));
+
+	via->iofunc = iofunc;
 
 	via->ier = 0;
 
 	// DDR to input
 	via->ddrb = 0;
 	via->ddra = 0;
+
+	return via;
 }
 
-void
+static void
 via_state(uint8_t in, uint8_t out, uint8_t ddr, uint8_t *pinstate, uint8_t *readback)
 {
 	// DDR=0 (input)  -> take input bit
@@ -140,18 +155,18 @@ via_state(uint8_t in, uint8_t out, uint8_t ddr, uint8_t *pinstate, uint8_t *read
 }
 
 void
-via_step()
+via_step(via_state_t *via)
 {
-	uint8_t pa_in = via2_get_pa();
+	uint8_t pa_in = via->iofunc.get_pa();
 	via_state(pa_in, via->pa_out, via->ddra, &via->pa_pinstate, &via->pa_readback);
-	via2_set_pa(via->pa_pinstate);
+	via->iofunc.set_pa(via->pa_pinstate);
 
-	uint8_t pb_in = via2_get_pb();
+	uint8_t pb_in = via->iofunc.get_pb();
 	via_state(pb_in, via->pb_out, via->ddrb, &via->pb_pinstate, &via->pb_readback);
-	via2_set_pb(via->pb_pinstate);
+	via->iofunc.set_pb(via->pb_pinstate);
 
 	static bool old_ca1;
-	bool ca1 = via2_get_ca1();
+	bool ca1 = via->iofunc.get_ca1();
 	if (ca1 != old_ca1) {
 //		printf("KBD IRQ? CLK is now %d\n", ca1);
 		if (!ca1) { // falling edge
@@ -162,7 +177,7 @@ via_step()
 	old_ca1 = ca1;
 
 	static bool old_cb1;
-	bool cb1 = via2_get_cb1();
+	bool cb1 = via->iofunc.get_cb1();
 	if (cb1 != old_cb1) {
 //		printf("MSE IRQ? CLK is now %d\n", cb1);
 		if (!cb1) { // falling edge
@@ -174,7 +189,7 @@ via_step()
 }
 
 bool
-via_get_irq_out()
+via_get_irq_out(via_state_t *via)
 {
 //	if (!!(via->ifr & via->ier)) printf("YYY %d\n", !!(via->ifr & via->ier));
 	static int count;
@@ -191,7 +206,7 @@ via_get_irq_out()
 }
 
 uint8_t
-via_read(uint8_t reg)
+via_read(via_state_t *via, uint8_t reg)
 {
 	if (reg == 0) { // PB
 		// reading PB clears clear CB1
@@ -225,7 +240,7 @@ via_read(uint8_t reg)
 }
 
 void
-via_write(uint8_t reg, uint8_t value)
+via_write(via_state_t *via, uint8_t reg, uint8_t value)
 {
 	via->registers[reg] = value;
 
@@ -259,31 +274,39 @@ via_write(uint8_t reg, uint8_t value)
 	}
 }
 
-bool
-via2_get_irq_out()
-{
-	return via_get_irq_out();
-}
-
 void
 via2_init()
 {
-	return via_init();
+	via_iofunc_t iofunc;
+	iofunc.get_pa = via2_get_pa;
+	iofunc.set_pa = via2_set_pa;
+	iofunc.get_pb = via2_get_pb;
+	iofunc.set_pb = via2_set_pb;
+	iofunc.get_ca1 = via2_get_ca1;
+	iofunc.get_cb1 = via2_get_cb1;
+	via2 = via_create(iofunc);
 }
+
+bool
+via2_get_irq_out()
+{
+	return via_get_irq_out(via2);
+}
+
 uint8_t
 via2_read(uint8_t reg)
 {
-	return via_read(reg);
+	return via_read(via2, reg);
 }
 
 void
 via2_write(uint8_t reg, uint8_t value)
 {
-	via_write(reg, value);
+	via_write(via2, reg, value);
 }
 
 void
 via2_step()
 {
-	via_step();
+	via_step(via2);
 }
