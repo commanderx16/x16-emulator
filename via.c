@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include "via.h"
 #include "io.h"
-#include "memory.h"
 //XXX
 #include "glue.h"
 
@@ -20,79 +19,6 @@
 #define VIA_IFR_T2  32
 #define VIA_IFR_T1  64
 
-//
-// VIA#1
-//
-// PA0-7 RAM bank
-// PB0-2 ROM bank
-// PB3   IECATT0
-// PB4   IECCLK0
-// PB5   IECDAT0
-// PB6   IECCLK
-// PB7   IECDAT
-// CB1   IECSRQ
-
-static uint8_t via1registers[16];
-
-void
-via1_init()
-{
-	srand(time(NULL));
-
-	// default banks are 0
-	memory_set_ram_bank(0);
-	memory_set_rom_bank(0);
-}
-
-void
-via1_step()
-{
-}
-
-bool
-via1_get_irq_out()
-{
-	return false;
-}
-
-uint8_t
-via1_read(uint8_t reg)
-{
-	switch (reg) {
-		case 0:
-			return memory_get_rom_bank(); // PB: ROM bank, IEC
-		case 1:
-			return memory_get_ram_bank(); // PA: RAM bank
-		case 4:
-		case 5:
-		case 8:
-		case 9:
-			// timer A and B: return random numbers for RND(0)
-			// XXX TODO: these should be real timers :)
-			return rand() & 0xff;
-		default:
-			return via1registers[reg];
-	}
-}
-
-void
-via1_write(uint8_t reg, uint8_t value)
-{
-	via1registers[reg] = value;
-	if (reg == 0) { // PB: ROM bank, IEC
-		memory_set_rom_bank(value & 7);
-		// TODO: IEC
-	} else if (reg == 1) { // PA: RAM bank
-		memory_set_ram_bank(value);
-	} else {
-		// TODO
-	}
-}
-
-//
-// VIA#2
-//
-
 typedef struct {
 	uint8_t (*get_pa)();
 	void (*set_pa)(uint8_t);
@@ -103,6 +29,8 @@ typedef struct {
 }  via_iofunc_t;
 
 typedef struct {
+	int i; // VIA#
+
 	via_iofunc_t iofunc;
 
 	uint8_t registers[16];
@@ -120,20 +48,23 @@ typedef struct {
 	uint8_t ddrb;
 }  via_state_t;
 
-static via_state_t *via2;
-
 via_state_t *
-via_create(via_iofunc_t iofunc)
+via_create(int i, via_iofunc_t iofunc)
 {
 	via_state_t *via = calloc(1, sizeof(via_state_t));
 
+	via->i = i;
 	via->iofunc = iofunc;
 
-	via->ier = 0;
+	// output 0
+	via->pa_out = 0;
+	via->pb_out = 0;
 
 	// DDR to input
 	via->ddrb = 0;
 	via->ddra = 0;
+
+	via->ier = 0;
 
 	return via;
 }
@@ -144,14 +75,29 @@ via_state(uint8_t in, uint8_t out, uint8_t ddr, uint8_t *pinstate, uint8_t *read
 	// DDR=0 (input)  -> take input bit
 	// DDR=1 (output) -> take output bit
 
-	// driving state (0 = pulled, 1 = passive)
-	uint8_t driving = (ddr & out) | ~ddr;
+//	// driving state (0 = pulled down, 1 = passive)
+//	uint8_t driving = (ddr & out) | ~ddr;
+//	printf("driving: %x\n", driving);
 
-	// mix in internal state (open collector)
-	*pinstate = ~(~in | ~driving);
+	// mix in internal state
+
+	// |   ddr   |   out   |   in    | pinstate |
+	// |---------|---------|---------|----------|
+	// |    0 in |    0    |    0    |    0     |
+	// |    0 in |    0    |    1    |    1     |
+	// |    0 in |    1    |    0    |    0     |
+	// |    0 in |    1    |    1    |    1     |
+	// |    1 out|    0    |    0    |    0     |
+	// |    1 out|    0    |    1    |    0     |
+	// |    1 out|    1    |    0    |    1     |
+	// |    1 out|    1    |    1    |    1     |
+
+	*pinstate =
+		(out & ddr) | // VIA    drives wire to 1
+		(in & !ddr);  // device drives wire to 1
 
 	// value as read on PA register (*out* will read back our own value)
-	*readback = (ddr & driving) | (~ddr & *pinstate);
+	*readback = (ddr & out) | (~ddr & *pinstate);
 }
 
 void
@@ -164,6 +110,9 @@ via_step(via_state_t *via)
 	uint8_t pb_in = via->iofunc.get_pb();
 	via_state(pb_in, via->pb_out, via->ddrb, &via->pb_pinstate, &via->pb_readback);
 	via->iofunc.set_pb(via->pb_pinstate);
+	if (via->i == 1) {
+		printf("[%d]: pb_in: %x, via->pb_out: %x, via->ddrb: %x, via->pb_pinstate: %x, via->pb_readback: %x\n", via->i, pb_in, via->pb_out, via->ddrb, via->pb_pinstate, via->pb_readback);
+	}
 
 	static bool old_ca1;
 	bool ca1 = via->iofunc.get_ca1();
@@ -208,34 +157,40 @@ via_get_irq_out(via_state_t *via)
 uint8_t
 via_read(via_state_t *via, uint8_t reg)
 {
-	if (reg == 0) { // PB
-		// reading PB clears clear CB1
-		if (via->ifr & VIA_IFR_CB1) {
-			printf("clearing IRQ\n");
-		}
-		via->ifr &= ~VIA_IFR_CB1;
+	switch (reg) {
+		case 0: // PB
+			// reading PB clears clear CB1
+			if (via->ifr & VIA_IFR_CB1) {
+				printf("clearing IRQ\n");
+			}
+			via->ifr &= ~VIA_IFR_CB1;
 
-		return via->pb_readback;
-	} else if (reg == 1) { // PA
-		// reading PA clears clear CA1
-//		printf("1CLEAR IRQ\n");
-		via->ifr &= ~VIA_IFR_CA1;
+			return via->pb_readback;
+		case 1: // PA
+			// reading PA clears clear CA1
+			//		printf("1CLEAR IRQ\n");
+			via->ifr &= ~VIA_IFR_CA1;
 
-		return via->pa_readback;
-	} else if (reg == 2) { // DDRB
-		return via->ddrb;
-	} else if (reg == 3) { // DDRA
-		return via->ddra;
-	} else if (reg == 13) { // IFR
-		uint8_t val = via->ifr;
-		if (val) {
-			val |= 0x80;
+			return via->pa_readback;
+		case 2: // DDRB
+			return via->ddrb;
+		case 3: // DDRA
+			return via->ddra;
+		case 9:
+			// timer A and B: return random numbers for RND(0)
+			// XXX TODO: these should be real timers :)
+			return rand() & 0xff;
+		case 13: { // IFR
+			uint8_t val = via->ifr;
+			if (val) {
+				val |= 0x80;
+			}
+			return val;
 		}
-		return val;
-	} else if (reg == 14) { // IER
-		return via->ier;
-	} else {
-		return via->registers[reg];
+		case 14: // IER
+			return via->ier;
+		default:
+			return via->registers[reg];
 	}
 }
 
@@ -244,22 +199,29 @@ via_write(via_state_t *via, uint8_t reg, uint8_t value)
 {
 	via->registers[reg] = value;
 
-	if (reg == 0) { // PB
-		via->pb_out = value;
-	} else if (reg == 1) { // PA
-		via->pa_out = value;
-	} else if (reg == 2) { // DDRB
-		via->ddrb = value;
-	} else if (reg == 3) { // DDRBA
-		via->ddra = value;
-	} else if (reg == 13) { // IFR
-		// do nothing
-	} else if (reg == 14) { // IER
-		if (value & 0x80) { // set
-			via->ier |= (value & 0x7f);
-		} else { // clear
-			via->ier &= ~(value & 0x7f);
-		}
+	switch (reg) {
+		case 0: // PB
+			via->pb_out = value;
+			break;
+		case 1: // PA
+			via->pa_out = value;
+			break;
+		case 2: // DDRB
+			via->ddrb = value;
+			break;
+		case 3: // DDRBA
+			via->ddra = value;
+			break;
+		case 13: // IFR
+			// do nothing
+			break;
+		case 14: // IER
+			if (value & 0x80) { // set
+				via->ier |= (value & 0x7f);
+			} else { // clear
+				via->ier &= ~(value & 0x7f);
+			}
+		break;
 	}
 
 	// reading PB clears clear CB1
@@ -274,17 +236,71 @@ via_write(via_state_t *via, uint8_t reg, uint8_t value)
 	}
 }
 
+
+
+static via_state_t *via1;
+
+void
+via1_init()
+{
+	srand(time(NULL));
+
+	via_iofunc_t iofunc = {
+		via1_get_pa,
+		via1_set_pa,
+		via1_get_pb,
+		via1_set_pb,
+		via1_get_ca1,
+		via1_get_cb1
+	};
+	via1 = via_create(1, iofunc);
+}
+
+void
+via1_step()
+{
+	via_step(via1);
+}
+
+bool
+via1_get_irq_out()
+{
+	return via_get_irq_out(via1);
+}
+
+uint8_t
+via1_read(uint8_t reg)
+{
+	return via_read(via1, reg);
+}
+
+void
+via1_write(uint8_t reg, uint8_t value)
+{
+	via_write(via1, reg, value);
+}
+
+
+static via_state_t *via2;
+
 void
 via2_init()
 {
-	via_iofunc_t iofunc;
-	iofunc.get_pa = via2_get_pa;
-	iofunc.set_pa = via2_set_pa;
-	iofunc.get_pb = via2_get_pb;
-	iofunc.set_pb = via2_set_pb;
-	iofunc.get_ca1 = via2_get_ca1;
-	iofunc.get_cb1 = via2_get_cb1;
-	via2 = via_create(iofunc);
+	via_iofunc_t iofunc = {
+		via2_get_pa,
+		via2_set_pa,
+		via2_get_pb,
+		via2_set_pb,
+		via2_get_ca1,
+		via2_get_cb1
+	};
+	via2 = via_create(2, iofunc);
+}
+
+void
+via2_step()
+{
+	via_step(via2);
 }
 
 bool
@@ -303,10 +319,4 @@ void
 via2_write(uint8_t reg, uint8_t value)
 {
 	via_write(via2, reg, value);
-}
-
-void
-via2_step()
-{
-	via_step(via2);
 }

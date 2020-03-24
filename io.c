@@ -2,6 +2,8 @@
 // Copyright (c) 2020 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
+#include "io.h"
+#include "memory.h"
 #include "ps2.h"
 #include "joystick.h"
 
@@ -10,6 +12,60 @@ io_init()
 {
 
 }
+
+//
+// VIA#1
+//
+
+// PA0-7 RAM bank
+// PB0-2 ROM bank
+// PB3   IECATT0
+// PB4   IECCLK0
+// PB5   IECDAT0
+// PB6   IECCLK
+// PB7   IECDAT
+// CB1   IECSRQ
+
+uint8_t
+via1_get_pa()
+{
+	return 0;
+}
+
+void
+via1_set_pa(uint8_t pinstate)
+{
+	memory_set_ram_bank(pinstate);
+}
+
+uint8_t
+via1_get_pb()
+{
+	return 0;
+}
+
+void
+via1_set_pb(uint8_t pinstate)
+{
+	memory_set_rom_bank(pinstate & 7);
+}
+
+bool
+via1_get_ca1()
+{
+	return true; // nothing connected
+}
+
+bool
+via1_get_cb1()
+{
+	return true; // nothing connected
+}
+
+
+//
+// VIA#2
+//
 
 uint8_t
 via2_get_pa()

@@ -72,8 +72,8 @@ ps2_init(int i)
 	ps2_port[i].data_out = 1;
 }
 
-int ps2_debug = 1 | 2;
-//int ps2_debug = 0;
+//int ps2_debug = 1 | 2;
+int ps2_debug = 0;
 
 #define PS2_DEBUG (ps2_debug & (1 << i))
 
