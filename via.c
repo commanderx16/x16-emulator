@@ -29,7 +29,7 @@ typedef struct {
 }  via_iofunc_t;
 
 typedef struct {
-	int i; // VIA#
+	int i; // VIA number for debugging
 
 	via_iofunc_t iofunc;
 
@@ -42,8 +42,6 @@ typedef struct {
 	uint8_t pb_out;
 	uint8_t pa_pinstate;
 	uint8_t pb_pinstate;
-	uint8_t pa_readback;
-	uint8_t pb_readback;
 	uint8_t ddra;
 	uint8_t ddrb;
 }  via_state_t;
@@ -70,16 +68,10 @@ via_create(int i, via_iofunc_t iofunc)
 }
 
 static void
-via_state(uint8_t in, uint8_t out, uint8_t ddr, uint8_t *pinstate, uint8_t *readback)
+via_state(uint8_t in, uint8_t out, uint8_t ddr, uint8_t *pinstate)
 {
 	// DDR=0 (input)  -> take input bit
 	// DDR=1 (output) -> take output bit
-
-//	// driving state (0 = pulled down, 1 = passive)
-//	uint8_t driving = (ddr & out) | ~ddr;
-//	printf("driving: %x\n", driving);
-
-	// mix in internal state
 
 	// |   ddr   |   out   |   in    | pinstate |
 	// |---------|---------|---------|----------|
@@ -93,31 +85,31 @@ via_state(uint8_t in, uint8_t out, uint8_t ddr, uint8_t *pinstate, uint8_t *read
 	// |    1 out|    1    |    1    |    1     |
 
 	*pinstate =
-		(out & ddr) | // VIA    drives wire to 1
-		(in & !ddr);  // device drives wire to 1
-
-	// value as read on PA register (*out* will read back our own value)
-	*readback = (ddr & out) | (~ddr & *pinstate);
+		(out & ddr) | // outputs will read back the same
+		(in & ~ddr);  // inputs  will read from wire
 }
 
 void
 via_step(via_state_t *via)
 {
 	uint8_t pa_in = via->iofunc.get_pa();
-	via_state(pa_in, via->pa_out, via->ddra, &via->pa_pinstate, &via->pa_readback);
+	via_state(pa_in, via->pa_out, via->ddra, &via->pa_pinstate);
 	via->iofunc.set_pa(via->pa_pinstate);
+	if (via->i == 2) {
+		printf("[%d]: pa_in: %x, via->pa_out: %x, via->ddra: %x, via->pa_pinstate: %x\n", via->i, pa_in, via->pa_out, via->ddra, via->pa_pinstate);
+	}
 
 	uint8_t pb_in = via->iofunc.get_pb();
-	via_state(pb_in, via->pb_out, via->ddrb, &via->pb_pinstate, &via->pb_readback);
+	via_state(pb_in, via->pb_out, via->ddrb, &via->pb_pinstate);
 	via->iofunc.set_pb(via->pb_pinstate);
-	if (via->i == 1) {
-		printf("[%d]: pb_in: %x, via->pb_out: %x, via->ddrb: %x, via->pb_pinstate: %x, via->pb_readback: %x\n", via->i, pb_in, via->pb_out, via->ddrb, via->pb_pinstate, via->pb_readback);
-	}
+//	if (via->i == 1) {
+//		printf("[%d]: pb_in: %x, via->pb_out: %x, via->ddrb: %x, via->pb_pinstate: %x\n", via->i, pb_in, via->pb_out, via->ddrb, via->pb_pinstate);
+//	}
 
 	static bool old_ca1;
 	bool ca1 = via->iofunc.get_ca1();
 	if (ca1 != old_ca1) {
-//		printf("KBD IRQ? CLK is now %d\n", ca1);
+		printf("KBD IRQ? CLK is now %d\n", ca1);
 		if (!ca1) { // falling edge
 			printf("NEW KBD IRQ\n");
 			via->ifr |= VIA_IFR_CA1;
@@ -165,13 +157,13 @@ via_read(via_state_t *via, uint8_t reg)
 			}
 			via->ifr &= ~VIA_IFR_CB1;
 
-			return via->pb_readback;
+			return via->pb_pinstate;
 		case 1: // PA
 			// reading PA clears clear CA1
 			//		printf("1CLEAR IRQ\n");
 			via->ifr &= ~VIA_IFR_CA1;
 
-			return via->pa_readback;
+			return via->pa_pinstate;
 		case 2: // DDRB
 			return via->ddrb;
 		case 3: // DDRA
