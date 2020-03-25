@@ -35,15 +35,18 @@ typedef struct {
 
 	uint8_t registers[16];
 
-	uint8_t ifr;
-	uint8_t ier;
 
-	uint8_t pa_out;
-	uint8_t pb_out;
+	uint8_t pb_out; // 0
+	uint8_t pa_out; // 1
+	uint8_t ddrb;   // 2
+	uint8_t ddra;   // 3
+
+	uint8_t pcr;    // 12
+	uint8_t ifr;    // 13
+	uint8_t ier;    // 14
+
 	uint8_t pa_pinstate;
 	uint8_t pb_pinstate;
-	uint8_t ddra;
-	uint8_t ddrb;
 
 	bool old_ca1;
 	bool old_cb1;
@@ -100,8 +103,9 @@ via_step(via_state_t *via)
 
 
 	bool ca1 = via->iofunc.get_ca1();
-	if (ca1 != via->old_ca1) {
-		if (!ca1) { // falling edge
+	if (via->ier & VIA_IFR_CA1 && ca1 != via->old_ca1) {
+		bool ca1_int_ctrl = via->pcr & 1; // 0: falling, 1: raising
+		if (ca1 == ca1_int_ctrl) {
 			printf("NEW CA1 IRQ\n");
 			via->ifr |= VIA_IFR_CA1;
 		}
@@ -109,13 +113,14 @@ via_step(via_state_t *via)
 	via->old_ca1 = ca1;
 
 	bool cb1 = via->iofunc.get_cb1();
-	if (cb1 != via->old_cb1) {
-		if (!cb1) { // falling edge
+	if (via->ier & VIA_IFR_CB1 && cb1 != via->old_cb1) {
+		bool cb1_int_ctrl = (via->pcr >> 4) & 1; // 0: falling, 1: raising
+		if (cb1 == cb1_int_ctrl) {
 			printf("NEW CB1 IRQ\n");
 			via->ifr |= VIA_IFR_CB1;
 		}
 	}
-	via->old_cb1 = cb1;
+	via->old_ca1 = ca1;
 }
 
 bool
@@ -161,6 +166,8 @@ via_read(via_state_t *via, uint8_t reg)
 			// timer A and B: return random numbers for RND(0)
 			// XXX TODO: these should be real timers :)
 			return rand() & 0xff;
+		case 12: // PCR
+			return via->pcr;
 		case 13: { // IFR
 			uint8_t val = via->ifr;
 			if (val) {
@@ -192,6 +199,9 @@ via_write(via_state_t *via, uint8_t reg, uint8_t value)
 			break;
 		case 3: // DDRBA
 			via->ddra = value;
+			break;
+		case 12: // PCR
+			via->pcr = value;
 			break;
 		case 13: // IFR
 			// do nothing
