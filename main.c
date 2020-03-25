@@ -78,6 +78,7 @@ bool log_speed = false;
 bool log_keyboard = false;
 int log_ps2 = 0;
 int log_via = 0;
+bool log_irq = false;
 bool dump_cpu = false;
 bool dump_ram = true;
 bool dump_bank = true;
@@ -626,7 +627,7 @@ main(int argc, char **argv)
 				usage();
 			}
 			for (char *p = argv[0]; *p; p++) {
-				switch (tolower(*p)) {
+				switch (*p) {
 					case 'k':
 						log_keyboard = true;
 						break;
@@ -647,7 +648,7 @@ main(int argc, char **argv)
 						}
 						break;
 					}
-					case 'i': { // VIA
+					case 'V': { // VIA
 						char num = *(++p);
 						if (num == '1') {
 							log_via |= 1; // VIA#1
@@ -658,6 +659,9 @@ main(int argc, char **argv)
 						}
 						break;
 					}
+					case 'i':
+						log_irq = true;
+						break;
 					default:
 						usage();
 				}
@@ -1133,14 +1137,18 @@ emulator_loop(void *param)
 
 		if (video_get_irq_out() || via1_get_irq_out()) {
 			if (!(status & 4)) {
-//				printf("IRQ!\n");
+				if (log_irq) {
+					printf("IRQ!\n");
+				}
 				irq6502();
 			}
 		}
 		static bool prev_nmi = false;
 		bool new_nmi = via2_get_irq_out();
 		if (!prev_nmi && new_nmi) {
-			printf("NMI!\n");
+			if (log_irq) {
+				printf("NMI!\n");
+			}
 			nmi6502();
 		}
 		prev_nmi = new_nmi;

@@ -93,21 +93,21 @@ via_step(via_state_t *via)
 	via->pa_pinstate = via_port_state(pa_in, via->pa_out, via->ddra);
 	via->iofunc.set_pa(via->pa_pinstate);
 	if (VIA_DEBUG) {
-		printf("[%d]: pa_in: %x, via->pa_out: %x, via->ddra: %x, via->pa_pinstate: %x\n", via->i, pa_in, via->pa_out, via->ddra, via->pa_pinstate);
+		printf("[VIA#%d/PA] in: %x, out: %x, ddr: %x, pinstate: %x\n", via->i, pa_in, via->pa_out, via->ddra, via->pa_pinstate);
 	}
 
 	uint8_t pb_in = via->iofunc.get_pb();
 	via->pb_pinstate = via_port_state(pb_in, via->pb_out, via->ddrb);
 	via->iofunc.set_pb(via->pb_pinstate);
 	if (VIA_DEBUG) {
-		printf("[%d]: pb_in: %x, via->pb_out: %x, via->ddrb: %x, via->pb_pinstate: %x\n", via->i, pb_in, via->pb_out, via->ddrb, via->pb_pinstate);
+		printf("[VIA#%d/PB] in: %x, out: %x, ddr: %x, pinstate: %x\n", via->i, pb_in, via->pb_out, via->ddrb, via->pb_pinstate);
 	}
 
 	bool ca1 = via->iofunc.get_ca1();
 	if (via->ier & VIA_IFR_CA1 && ca1 != via->old_ca1) {
 		bool ca1_int_ctrl = via->pcr & 1; // 0: falling, 1: raising
 		if (ca1 == ca1_int_ctrl) {
-			if (VIA_DEBUG) printf("NEW CA1 IRQ\n");
+			if (VIA_DEBUG) printf("[VIA#%d]: NEW CA1 IRQ\n", via->i);
 			via->ifr |= VIA_IFR_CA1;
 		}
 	}
@@ -117,11 +117,11 @@ via_step(via_state_t *via)
 	if (via->ier & VIA_IFR_CB1 && cb1 != via->old_cb1) {
 		bool cb1_int_ctrl = (via->pcr >> 4) & 1; // 0: falling, 1: raising
 		if (cb1 == cb1_int_ctrl) {
-			if (VIA_DEBUG) printf("NEW CB1 IRQ\n");
+			if (VIA_DEBUG) printf("[VIA#%d]: NEW CB1 IRQ\n", via->i);
 			via->ifr |= VIA_IFR_CB1;
 		}
 	}
-	via->old_ca1 = ca1;
+	via->old_cb1 = cb1;
 }
 
 bool
@@ -148,15 +148,17 @@ via_read(via_state_t *via, uint8_t reg)
 	switch (reg) {
 		case 0: // PB
 			// reading PB clears clear CB1
-			if (via->ifr & VIA_IFR_CB1) {
-				printf("clearing IRQ\n");
+			if (VIA_DEBUG && (via->ifr & VIA_IFR_CB1)) {
+				 printf("clearing CB1 IRQ\n");
 			}
 			via->ifr &= ~VIA_IFR_CB1;
 
 			return via->pb_pinstate;
 		case 1: // PA
 			// reading PA clears clear CA1
-			//		printf("1CLEAR IRQ\n");
+			if (VIA_DEBUG && (via->ifr & VIA_IFR_CA1)) {
+				 printf("clearing CA1 IRQ\n");
+			}
 			via->ifr &= ~VIA_IFR_CA1;
 
 			return via->pa_pinstate;
