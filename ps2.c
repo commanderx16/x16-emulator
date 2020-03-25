@@ -5,10 +5,13 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "ps2.h"
+#include "glue.h"
 
 #define HOLD 25 * 8 /* 25 x ~3 cycles at 8 MHz = 75µs */
 
 #define PS2_BUFFER_SIZE 32
+
+#define PS2_DEBUG (log_ps2 & (1 << i))
 
 uint8_t GLOBAL_byte;
 
@@ -71,12 +74,6 @@ ps2_init(int i)
 	ps2_port[i].clk_out = 1;
 	ps2_port[i].data_out = 1;
 }
-
-int ps2_debug = 1;
-//int ps2_debug = 1 | 2;
-//int ps2_debug = 0;
-
-#define PS2_DEBUG (ps2_debug & (1 << i))
 
 void
 ps2_step(int i)

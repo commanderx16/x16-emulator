@@ -19,6 +19,8 @@
 #define VIA_IFR_T2  32
 #define VIA_IFR_T1  64
 
+#define VIA_DEBUG (log_via & (1 << (via->i - 1)))
+
 typedef struct {
 	uint8_t (*get_pa)();
 	void (*set_pa)(uint8_t);
@@ -90,23 +92,22 @@ via_step(via_state_t *via)
 	uint8_t pa_in = via->iofunc.get_pa();
 	via->pa_pinstate = via_port_state(pa_in, via->pa_out, via->ddra);
 	via->iofunc.set_pa(via->pa_pinstate);
-	if (via->i == 2) {
-//		printf("[%d]: pa_in: %x, via->pa_out: %x, via->ddra: %x, via->pa_pinstate: %x\n", via->i, pa_in, via->pa_out, via->ddra, via->pa_pinstate);
+	if (VIA_DEBUG) {
+		printf("[%d]: pa_in: %x, via->pa_out: %x, via->ddra: %x, via->pa_pinstate: %x\n", via->i, pa_in, via->pa_out, via->ddra, via->pa_pinstate);
 	}
 
 	uint8_t pb_in = via->iofunc.get_pb();
 	via->pb_pinstate = via_port_state(pb_in, via->pb_out, via->ddrb);
 	via->iofunc.set_pb(via->pb_pinstate);
-//	if (via->i == 1) {
-//		printf("[%d]: pb_in: %x, via->pb_out: %x, via->ddrb: %x, via->pb_pinstate: %x\n", via->i, pb_in, via->pb_out, via->ddrb, via->pb_pinstate);
-//	}
-
+	if (VIA_DEBUG) {
+		printf("[%d]: pb_in: %x, via->pb_out: %x, via->ddrb: %x, via->pb_pinstate: %x\n", via->i, pb_in, via->pb_out, via->ddrb, via->pb_pinstate);
+	}
 
 	bool ca1 = via->iofunc.get_ca1();
 	if (via->ier & VIA_IFR_CA1 && ca1 != via->old_ca1) {
 		bool ca1_int_ctrl = via->pcr & 1; // 0: falling, 1: raising
 		if (ca1 == ca1_int_ctrl) {
-			printf("NEW CA1 IRQ\n");
+			if (VIA_DEBUG) printf("NEW CA1 IRQ\n");
 			via->ifr |= VIA_IFR_CA1;
 		}
 	}
@@ -116,7 +117,7 @@ via_step(via_state_t *via)
 	if (via->ier & VIA_IFR_CB1 && cb1 != via->old_cb1) {
 		bool cb1_int_ctrl = (via->pcr >> 4) & 1; // 0: falling, 1: raising
 		if (cb1 == cb1_int_ctrl) {
-			printf("NEW CB1 IRQ\n");
+			if (VIA_DEBUG) printf("NEW CB1 IRQ\n");
 			via->ifr |= VIA_IFR_CB1;
 		}
 	}
@@ -126,16 +127,17 @@ via_step(via_state_t *via)
 bool
 via_get_irq_out(via_state_t *via)
 {
-//	if (!!(via->ifr & via->ier)) printf("YYY %d\n", !!(via->ifr & via->ier));
 	static int count;
-	if (((via->ifr & via->ier) & (VIA_IFR_CA1 | VIA_IFR_CB1)) == (VIA_IFR_CA1 | VIA_IFR_CB1)) {
-		printf("BOTH SOURCES!\n");
-		count++;
-		if (count > 100) {
-			printf("BOTHBOTH!\n");
+	if (VIA_DEBUG) {
+		if (((via->ifr & via->ier) & (VIA_IFR_CA1 | VIA_IFR_CB1)) == (VIA_IFR_CA1 | VIA_IFR_CB1)) {
+			printf("BOTH SOURCES!\n");
+			count++;
+			if (count > 100) {
+				printf("BOTHBOTH!\n");
+			}
+		} else {
+			count = 0;
 		}
-	} else {
-		count = 0;
 	}
 	return !!(via->ifr & via->ier);
 }

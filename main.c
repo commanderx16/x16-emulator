@@ -76,6 +76,8 @@ uint16_t num_ram_banks = 64; // 512 KB default
 bool log_video = false;
 bool log_speed = false;
 bool log_keyboard = false;
+int log_ps2 = 0;
+int log_via = 0;
 bool dump_cpu = false;
 bool dump_ram = true;
 bool dump_bank = true;
@@ -634,6 +636,28 @@ main(int argc, char **argv)
 					case 'v':
 						log_video = true;
 						break;
+					case 'p': { // PS/2
+						char port = *(++p);
+						if (port == '0') {
+							log_ps2 |= 1; // keyboard
+						} else if (port == '1') {
+							log_ps2 |= 2; // mouse
+						} else {
+							usage();
+						}
+						break;
+					}
+					case 'i': { // VIA
+						char num = *(++p);
+						if (num == '1') {
+							log_via |= 1; // VIA#1
+						} else if (num == '2') {
+							log_via |= 2; // VIA#2
+						} else {
+							usage();
+						}
+						break;
+					}
 					default:
 						usage();
 				}
