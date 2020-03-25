@@ -176,7 +176,7 @@ via_read(via_state_t *via, uint8_t reg)
 			return val;
 		}
 		case 14: // IER
-			return via->ier;
+			return via->ier | 0x80;
 		default:
 			return via->registers[reg];
 	}

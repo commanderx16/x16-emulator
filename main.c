@@ -1051,10 +1051,10 @@ emulator_loop(void *param)
 		uint8_t clocks = clockticks6502 - old_clockticks6502;
 		bool new_frame = false;
 		for (uint8_t i = 0; i < clocks; i++) {
-			ps2_step(0);
-			ps2_step(1);
 			via1_step();
 			via2_step();
+			ps2_step(0);
+			ps2_step(1);
 			joystick_step();
 			vera_spi_step();
 			vera_uart_step();
