@@ -209,7 +209,7 @@ emu_write(uint8_t reg, uint8_t value)
 		case 4: save_on_exit = v; break;
 		case 5: emu_recorder_set((gif_recorder_command_t) value); break;
 		case 15: {
-			extern uint8_t GLOBAL_byte;
+//			extern uint8_t GLOBAL_byte;
 			printf("debug current_byte:   %x\n", value);
 //			if (value != GLOBAL_byte) {
 //				printf("DIFFERENCE!! %x %x\n", GLOBAL_byte, value);

@@ -19,6 +19,7 @@ matrix:
         homebrew:
           packages:
             - sdl2
+          update: true
       script: make clean all
     - name: Windows (macOS cross-compilation)
       os: osx
@@ -27,6 +28,7 @@ matrix:
         homebrew:
           packages:
             - mingw-w64
+          update: true
       before_script:
         - mkdir -p /tmp/sdl2
         - wget https://www.libsdl.org/release/SDL2-devel-2.0.10-mingw.tar.gz
