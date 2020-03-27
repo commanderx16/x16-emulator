@@ -22,7 +22,6 @@
 #include "video.h"
 #include "via.h"
 #include "ps2.h"
-#include "spi.h"
 #include "vera_spi.h"
 #include "sdcard.h"
 #include "loadsave.h"
@@ -210,7 +209,6 @@ machine_dump()
 void
 machine_reset()
 {
-	spi_init();
 	vera_spi_init();
 	via1_init();
 	via2_init();
@@ -934,7 +932,6 @@ emulator_loop(void *param)
 		for (uint8_t i = 0; i < clocks; i++) {
 			ps2_step(0);
 			ps2_step(1);
-			spi_step();
 			joystick_step();
 			vera_spi_step();
 			new_frame |= video_step(MHZ);

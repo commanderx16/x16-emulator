@@ -42,7 +42,7 @@ vera_spi_read(uint8_t reg)
 	switch (reg) {
 		case 0:
 			result = received_byte;
-            // printf("VERA SPI RX: %02x\n", result);
+			// printf("VERA SPI RX: %02x\n", result);
 			break;
 		case 1:
 			result = busy << 7 | ss;
@@ -67,12 +67,8 @@ vera_spi_write(uint8_t reg, uint8_t value)
 			}
 			break;
 		case 1:
-			if (ss != (value & 1)) {
-				ss = value & 1;
-				if (ss) {
-					sdcard_select();
-				}
-			}
+			sdcard_select((value & 1) != 0);
+			ss = (value & 1) != 0;
 			break;
 	}
 }
