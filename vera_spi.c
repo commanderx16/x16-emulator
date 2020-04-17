@@ -4,12 +4,14 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include "vera_spi.h"
 #include "sdcard.h"
 
-bool    ss;
-bool    busy;
-uint8_t sending_byte, received_byte;
-int     outcounter;
+static bool    autotx;
+static bool    ss;
+static bool    busy;
+static uint8_t sending_byte, received_byte;
+static int     outcounter;
 
 void
 vera_spi_init()
@@ -42,22 +44,20 @@ vera_spi_read(uint8_t reg)
 	switch (reg) {
 		case 0:
 			result = received_byte;
-			// printf("VERA SPI RX: %02x\n", result);
+			if (autotx) {
+				vera_spi_write(0, 0xFF);
+			}
 			break;
 		case 1:
 			result = busy << 7 | ss;
 			break;
 	}
-	// printf("VERA SPI %02x -> %02x\n", reg, result);
-
 	return result;
 }
 
 void
 vera_spi_write(uint8_t reg, uint8_t value)
 {
-	// printf("VERA SPI %02x = %02x\n", reg, value);
-
 	switch (reg) {
 		case 0:
 			if (ss && !busy) {
@@ -67,8 +67,9 @@ vera_spi_write(uint8_t reg, uint8_t value)
 			}
 			break;
 		case 1:
-			sdcard_select((value & 1) != 0);
-			ss = (value & 1) != 0;
+			ss     = (value & 1) != 0;
+			autotx = (value & 4) != 0;
+			sdcard_select(ss);
 			break;
 	}
 }
