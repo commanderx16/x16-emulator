@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include "sdcard.h"
 
-// #define VERBOSE
+// #define VERBOSE 1
 
 // MMC/SD command (SPI mode)
 enum {
@@ -54,7 +54,7 @@ sdcard_select(bool select)
 {
 	selected  = select;
 	rxbuf_idx = 0;
-#ifdef VERBOSE
+#if defined(VERBOSE) && VERBOSE >= 2
 	printf("*** SD card select: %u\n", select);
 #endif
 }
@@ -124,7 +124,7 @@ sdcard_handle(uint8_t inbyte)
 
 			last_cmd = rxbuf[0];
 
-#ifdef VERBOSE
+#if defined(VERBOSE) && VERBOSE >= 2
 			printf("*** SD %sCMD%d -> Response:", (rxbuf[0] & 0x80) ? "A" : "", rxbuf[0] & 0x3F);
 #endif
 			switch (rxbuf[0]) {
@@ -200,7 +200,7 @@ sdcard_handle(uint8_t inbyte)
 			}
 			response_counter = 0;
 
-#ifdef VERBOSE
+#if defined(VERBOSE) && VERBOSE >= 2
 			for (int i = 0; i < (response_length < 16 ? response_length : 16); i++) {
 				printf(" %02X", response[i]);
 			}
