@@ -17,6 +17,21 @@
 
 #include <limits.h>
 
+#define max(a,b)             \
+({                           \
+    __typeof__ (a) _a = (a); \
+    __typeof__ (b) _b = (b); \
+    _a > _b ? _a : _b;       \
+})
+
+#define min(a,b)             \
+({                           \
+    __typeof__ (a) _a = (a); \
+    __typeof__ (b) _b = (b); \
+    _a < _b ? _a : _b;       \
+})
+
+
 #ifdef __EMSCRIPTEN__
 #include "emscripten.h"
 #endif
@@ -255,7 +270,7 @@ calc_layer_eff_y(struct video_layer_properties *props, int y)
 	return (y + props->vscroll) & (props->layerh_max);
 }
 
-static uint32_t
+static inline uint32_t
 calc_layer_map_addr(struct video_layer_properties *props, int eff_x, int eff_y)
 {
 	return props->map_base + (eff_y / props->tileh * props->mapw + eff_x / props->tilew) * 2;
@@ -496,18 +511,19 @@ render_sprite_line(uint16_t y)
 	}
 }
 
-static inline const uint8_t convert_tile_byte_to_indexed_color(const struct video_layer_properties* props, const int xx, const uint8_t s) {
+static inline const uint8_t convert_tile_byte_to_indexed_color(uint8_t bits_per_pixel, const int xx, const uint8_t s) {
 	// convert tile byte to indexed color
-	if (props->bits_per_pixel == 1) {
+	if (bits_per_pixel == 1) {
 		return (s >> (7 - (xx & 7))) & 1;
-	} else if (props->bits_per_pixel == 2) {
+	} else if (bits_per_pixel == 2) {
 		return (s >> (6 - ((xx & 3) << 1))) & 3;
-	} else if (props->bits_per_pixel == 4) {
+	} else if (bits_per_pixel == 4) {
 		return (s >> (4 - ((xx & 1) << 2))) & 0xf;
-	} else if (props->bits_per_pixel == 8) {
+	} else if (bits_per_pixel == 8) {
 		return s;
+	} else {
+		return 0;
 	}
-	return 0;
 }
 
 
@@ -532,11 +548,11 @@ static void render_layer_line_bitmap(uint8_t layer, uint16_t y, struct video_lay
 
 		// Apply Palette Offset
 		if (palette_offset) {
-			uint8_t col_index = convert_tile_byte_to_indexed_color(props, xx, s);
+			uint8_t col_index = convert_tile_byte_to_indexed_color(props->bits_per_pixel, xx, s);
 			if (col_index > 0 && col_index < 16) col_index += palette_offset << 4; // Note: Should this be an assert?
 			layer_line[layer][x] = col_index;
 		} else {
-			layer_line[layer][x] = convert_tile_byte_to_indexed_color(props, xx, s);
+			layer_line[layer][x] = convert_tile_byte_to_indexed_color(props->bits_per_pixel, xx, s);
 		}
 	}
 }
@@ -582,19 +598,19 @@ render_layer_line_text_mode(uint8_t layer, uint16_t y, struct video_layer_proper
 			if (!props->text_mode_256c) {
 				uint8_t fg_color = byte1 & 15;
 				uint8_t bg_color = byte1 >> 4;
-				layer_line[layer][x] = convert_tile_byte_to_indexed_color(props, xx, s) ? fg_color : bg_color;
+				layer_line[layer][x] = convert_tile_byte_to_indexed_color(props->bits_per_pixel, xx, s) ? fg_color : bg_color;
 			} else {
 				uint8_t fg_color = byte1;
-				layer_line[layer][x] = convert_tile_byte_to_indexed_color(props, xx, s) ? fg_color : 0;
+				layer_line[layer][x] = convert_tile_byte_to_indexed_color(props->bits_per_pixel, xx, s) ? fg_color : 0;
 			}
 		} else {
-			layer_line[layer][x] = convert_tile_byte_to_indexed_color(props, xx, s);
+			layer_line[layer][x] = convert_tile_byte_to_indexed_color(props->bits_per_pixel, xx, s);
 		}
 	}
 }
 
 static void
-render_layer_line(uint8_t layer, uint16_t y, struct video_layer_properties *props)
+render_layer_line_tile(uint8_t layer, uint16_t y, struct video_layer_properties *props)
 {
 	// Load in tile bytes if not in bitmap mode.
 	uint8_t tile_bytes[512]; // max 256 tiles, 2 bytes each.
@@ -610,7 +626,6 @@ render_layer_line(uint8_t layer, uint16_t y, struct video_layer_properties *prop
 	for (int x = 0; x < SCREEN_WIDTH; x++) {
 		// Scrolling
 		int eff_x = calc_layer_eff_x(props, x);
-		int eff_y = calc_layer_eff_y(props, y);
 
 		int xx = eff_x & props->tilew_max;
 		int yy = eff_y & props->tileh_max;
@@ -644,83 +659,19 @@ render_layer_line(uint8_t layer, uint16_t y, struct video_layer_properties *prop
 		uint32_t tile_offset = tile_start + y_add + x_add;
 		uint8_t s = video_space_read(props->tile_base + tile_offset);
 
-		layer_line[layer][x] = convert_tile_byte_to_indexed_color(props, xx, s);
+		layer_line[layer][x] = convert_tile_byte_to_indexed_color(props->bits_per_pixel, xx, s);
 
 		// Apply Palette Offset
 		if (palette_offset) {
-			uint8_t col_index = convert_tile_byte_to_indexed_color(props, xx, s);
+			uint8_t col_index = convert_tile_byte_to_indexed_color(props->bits_per_pixel, xx, s);
 			if (col_index > 0 && col_index < 16) col_index += palette_offset << 4; // Note: Should this be an assert?
 			layer_line[layer][x] = col_index;
 		} else {
-			layer_line[layer][x] = convert_tile_byte_to_indexed_color(props, xx, s);
+			layer_line[layer][x] = convert_tile_byte_to_indexed_color(props->bits_per_pixel, xx, s);
 		}
 	}
 
 }
-/*
-
-static void
-render_layer_line(uint8_t layer, uint16_t y, struct video_layer_properties *props)
-{
-	// Load in tile bytes if not in bitmap mode.
-	uint8_t tile_bytes[512]; // max 256 tiles, 2 bytes each.
-	int eff_y = calc_layer_eff_y(props, y);
-	uint32_t map_addr_begin = calc_layer_map_addr(props, props->min_eff_x, eff_y);
-	uint32_t map_addr_end = calc_layer_map_addr(props, props->max_eff_x, eff_y);
-	int size = (map_addr_end - map_addr_begin) + 2;
-
-	video_space_read_range(tile_bytes, map_addr_begin, size);
-
-	// Render tile line.
-	int yy = eff_y & props->tileh_max;
-
-	for (int x = 0; x < SCREEN_WIDTH; x++) {
-		// Scrolling
-		int eff_x = calc_layer_eff_x(props, x);
-
-		int xx = eff_x & props->tilew_max;
-
-
-		// extract all information from the map
-		uint32_t map_addr = calc_layer_map_addr(props, eff_x, eff_y) - map_addr_begin;
-
-		uint8_t byte0 = tile_bytes[map_addr];
-		uint8_t byte1 = tile_bytes[map_addr + 1];
-
-		uint16_t tile_index = byte0 | ((byte1 & 3) << 8);
-
-		// Tile Flipping
-		bool vflip = (byte1 >> 3) & 1;
-		bool hflip = (byte1 >> 2) & 1;
-		if (vflip) {
-			yy = yy ^ (props->tileh - 1);
-		}
-		if (hflip) {
-			xx = xx ^ (props->tilew - 1);
-		}
-
-		uint8_t palette_offset = byte1 >> 4;
-
-		// offset within tilemap of the current tile
-		uint32_t tile_start = tile_index * props->tile_size;
-		// additional bytes to reach the correct line of the tile
-		uint32_t y_add = (yy * props->tilew * props->bits_per_pixel) >> 3;
-		// additional bytes to reach the correct column of the tile
-		uint16_t x_add = (xx * props->bits_per_pixel) >> 3;
-		uint32_t tile_offset = tile_start + y_add + x_add;
-		uint8_t s = video_space_read(props->tile_base + tile_offset);
-
-		// Apply Palette Offset
-		if (palette_offset) {
-			uint8_t col_index = convert_tile_byte_to_indexed_color(props, xx, s);
-			if (col_index > 0 && col_index < 16) col_index += palette_offset << 4; // Note: Should this be an assert?
-			layer_line[layer][x] = col_index;
-		} else {
-			layer_line[layer][x] = convert_tile_byte_to_indexed_color(props, xx, s);
-		}
-	}
-
-}*/
 
 static inline uint8_t calculate_line_col_index(uint8_t spr_zindex, uint8_t spr_col_index, uint8_t l1_col_index, uint8_t l2_col_index)
 {
@@ -766,13 +717,13 @@ render_line(uint16_t y)
 		struct video_layer_properties *props = &layer_properties[0];
 		if (props->bitmap_mode) render_layer_line_bitmap(0, eff_y, props);
 		else if (props->text_mode) render_layer_line_text_mode(0, eff_y, props);
-		else render_layer_line(0, eff_y, props);
+		else render_layer_line_tile(0, eff_y, props);
 	}
 	if (!layer_line_empty[1]) {
 		struct video_layer_properties *props = &layer_properties[1];
 		if (props->bitmap_mode) render_layer_line_bitmap(1, eff_y, props);
 		else if (props->text_mode) render_layer_line_text_mode(1, eff_y, props);
-		else render_layer_line(1, eff_y, props);
+		else render_layer_line_tile(1, eff_y, props);
 	}
 
 	uint8_t col_line[SCREEN_WIDTH];
@@ -786,16 +737,17 @@ render_line(uint16_t y)
 		uint8_t spr_col_index = 0;
 		uint8_t l1_col_index = 0;
 		uint8_t l2_col_index = 0;
-		uint8_t spr_zindex = 0;
 
 		// Calculate color without border.
 		for (uint16_t x = 0; x < SCREEN_WIDTH; x += 1) {
 			const int eff_x = (reg_composer[1] * (x - hstart)) / 128; // What is this 128, should this be SCREEN_WIDTH?
 
+			uint8_t spr_zindex = sprite_line_z[eff_x];
+
 			if (!sprite_line_empty) spr_col_index = sprite_line_col[eff_x];
 			if (!layer_line_empty[0]) l1_col_index = layer_line[0][eff_x];
 			if (!layer_line_empty[1]) l2_col_index = layer_line[1][eff_x];
-			spr_zindex = sprite_line_z[eff_x];
+
 			col_line[x] = calculate_line_col_index(spr_zindex, spr_col_index, l1_col_index, l2_col_index);
 		}
 
