@@ -25,4 +25,18 @@ void video_update_title(const char* window_title);
 uint8_t via1_read(uint8_t reg);
 void via1_write(uint8_t reg, uint8_t value);
 
+#define max(a,b)             \
+({                           \
+    __typeof__ (a) _a = (a); \
+    __typeof__ (b) _b = (b); \
+    _a > _b ? _a : _b;       \
+})
+
+#define min(a,b)             \
+({                           \
+    __typeof__ (a) _a = (a); \
+    __typeof__ (b) _b = (b); \
+    _a < _b ? _a : _b;       \
+})
+
 #endif
