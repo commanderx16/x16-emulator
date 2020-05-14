@@ -512,9 +512,9 @@ static inline const uint8_t convert_tile_byte_to_indexed_color(const struct vide
 
 
 static void render_layer_line_bitmap(uint8_t layer, uint16_t y, struct video_layer_properties *props) {
-	const uint16_t yy = y % props->tileh;
+	const int yy = y % props->tileh;
 
-	uint16_t xx = 0;
+	int xx = 0;
 	for (int x = 0; x < SCREEN_WIDTH; x++, xx++) {
 		// Scrolling
 		if (xx == props->tilew) xx = 0;
@@ -525,9 +525,10 @@ static void render_layer_line_bitmap(uint8_t layer, uint16_t y, struct video_lay
 		uint16_t x_add = (xx * props->bits_per_pixel) >> 3;
 		uint32_t tile_offset = y_add + x_add;
 		uint8_t s = video_space_read(props->tile_base + tile_offset);
-		uint8_t palette_offset = reg_layer[layer][4] & 0xf;
 
 		// col_index ? fg_color : bg_color; both fg_color and bg_color are zero - I assume text mode isn't possible in bitmap mode?
+
+		uint8_t palette_offset = reg_layer[layer][4] & 0xf;
 
 		// Apply Palette Offset
 		if (palette_offset) {
@@ -597,6 +598,72 @@ render_layer_line(uint8_t layer, uint16_t y, struct video_layer_properties *prop
 {
 	// Load in tile bytes if not in bitmap mode.
 	uint8_t tile_bytes[512]; // max 256 tiles, 2 bytes each.
+
+	int eff_y = calc_layer_eff_y(props, y);
+	uint32_t map_addr_begin = calc_layer_map_addr(props, props->min_eff_x, eff_y);
+	uint32_t map_addr_end = calc_layer_map_addr(props, props->max_eff_x, eff_y);
+	int size = (map_addr_end - map_addr_begin) + 2;
+
+	video_space_read_range(tile_bytes, map_addr_begin, size);
+
+	// Render tile line.
+	for (int x = 0; x < SCREEN_WIDTH; x++) {
+		// Scrolling
+		int eff_x = calc_layer_eff_x(props, x);
+		int eff_y = calc_layer_eff_y(props, y);
+
+		int xx = eff_x & props->tilew_max;
+		int yy = eff_y & props->tileh_max;
+
+		// extract all information from the map
+		uint32_t map_addr = calc_layer_map_addr(props, eff_x, eff_y) - map_addr_begin;
+
+		uint8_t byte0 = tile_bytes[map_addr];
+		uint8_t byte1 = tile_bytes[map_addr + 1];
+
+		uint16_t tile_index = byte0 | ((byte1 & 3) << 8);
+
+		// Tile Flipping
+		bool vflip = (byte1 >> 3) & 1;
+		bool hflip = (byte1 >> 2) & 1;
+		if (vflip) {
+			yy = yy ^ (props->tileh - 1);
+		}
+		if (hflip) {
+			xx = xx ^ (props->tilew - 1);
+		}
+
+		uint8_t palette_offset = byte1 >> 4;
+
+		// offset within tilemap of the current tile
+		uint32_t tile_start = tile_index * props->tile_size;
+		// additional bytes to reach the correct line of the tile
+		uint32_t y_add = (yy * props->tilew * props->bits_per_pixel) >> 3;
+		// additional bytes to reach the correct column of the tile
+		uint16_t x_add = (xx * props->bits_per_pixel) >> 3;
+		uint32_t tile_offset = tile_start + y_add + x_add;
+		uint8_t s = video_space_read(props->tile_base + tile_offset);
+
+		layer_line[layer][x] = convert_tile_byte_to_indexed_color(props, xx, s);
+
+		// Apply Palette Offset
+		if (palette_offset) {
+			uint8_t col_index = convert_tile_byte_to_indexed_color(props, xx, s);
+			if (col_index > 0 && col_index < 16) col_index += palette_offset << 4; // Note: Should this be an assert?
+			layer_line[layer][x] = col_index;
+		} else {
+			layer_line[layer][x] = convert_tile_byte_to_indexed_color(props, xx, s);
+		}
+	}
+
+}
+/*
+
+static void
+render_layer_line(uint8_t layer, uint16_t y, struct video_layer_properties *props)
+{
+	// Load in tile bytes if not in bitmap mode.
+	uint8_t tile_bytes[512]; // max 256 tiles, 2 bytes each.
 	int eff_y = calc_layer_eff_y(props, y);
 	uint32_t map_addr_begin = calc_layer_map_addr(props, props->min_eff_x, eff_y);
 	uint32_t map_addr_end = calc_layer_map_addr(props, props->max_eff_x, eff_y);
@@ -610,6 +677,7 @@ render_layer_line(uint8_t layer, uint16_t y, struct video_layer_properties *prop
 	for (int x = 0; x < SCREEN_WIDTH; x++) {
 		// Scrolling
 		int eff_x = calc_layer_eff_x(props, x);
+
 		int xx = eff_x & props->tilew_max;
 
 
@@ -652,7 +720,7 @@ render_layer_line(uint8_t layer, uint16_t y, struct video_layer_properties *prop
 		}
 	}
 
-}
+}*/
 
 static inline uint8_t calculate_line_col_index(uint8_t spr_zindex, uint8_t spr_col_index, uint8_t l1_col_index, uint8_t l2_col_index)
 {
