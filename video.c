@@ -1131,6 +1131,7 @@ void video_write(uint8_t reg, uint8_t value) {
 			isr &= value ^ 0xff;
 			break;
 		case 0x08:
+			irq_line = (irq_line & 0xff00) | value;
 			break;
 
 		case 0x09:
