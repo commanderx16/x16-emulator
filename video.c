@@ -618,7 +618,7 @@ render_layer_line_tile(uint8_t layer, uint16_t y)
 		if (tile_change_index == 0) {
 			// extract all information from the map
 			uint32_t map_addr = calc_layer_map_addr_base2(props, eff_x, eff_y) - map_addr_begin;
-			tile_change_index = 16;
+			tile_change_index = props->tilew;
 
 			uint8_t byte0 = tile_bytes[map_addr];
 			uint8_t byte1 = tile_bytes[map_addr + 1];
