@@ -593,52 +593,76 @@ render_layer_line_tile(uint8_t layer, uint16_t y)
 		video_space_read_range(tile_bytes, map_addr_begin, size);
 	}
 
+	// -------------------
+
+	uint8_t palette_offset = 0;
+	uint16_t tile_index = 0;
+	uint32_t tile_start = 0;
+	uint32_t tile_offset = 0;
+
+	bool vflip = false;
+	bool hflip = false;
+	int hflip_value = 0;
+	int yy = 0;
+	uint32_t y_add = 0;
+
+	int tile_change_index = 0;
+
+	inline void calc_tile_change_index_iteration(int eff_x) {
+		// extract all information from the map
+		uint32_t map_addr = calc_layer_map_addr_base2(props, eff_x, eff_y) - map_addr_begin;
+		tile_change_index = 16;
+
+		uint8_t byte0 = tile_bytes[map_addr];
+		uint8_t byte1 = tile_bytes[map_addr + 1];
+
+		// Tile Flipping
+		vflip = (byte1 >> 3) & 1;
+		hflip = (byte1 >> 2) & 1;
+
+		yy = eff_y & props->tileh_max;
+		if (vflip) {
+			yy = yy ^ (props->tileh_max);
+		}
+		if (hflip) {
+			hflip_value = (props->tilew_max);
+		} else {
+			hflip_value = 0;
+		}
+		// additional bytes to reach the correct line of the tile
+		y_add = (yy << (props->tilew_log2 + props->color_depth)) >> 3;
+
+		tile_index = byte0 | ((byte1 & 3) << 8);
+		// offset within tilemap of the current tile
+		tile_start = tile_index << props->tile_size_log2;
+		tile_offset = props->tile_base + tile_start + y_add;
+
+		palette_offset = byte1 & 0b11110000;
+	}
+	// -------------------
+
 	// Render tile line.
 	for (int x = 0; x < SCREEN_WIDTH; x++) {
 		int eff_x = calc_layer_eff_x(props, x);
 
 		int xx = eff_x & props->tilew_max;
-		int yy = eff_y & props->tileh_max;
 
-		uint16_t tile_index     = 0;
-		uint8_t  palette_offset = 0;
-
-		// extract all information from the map
-		uint32_t map_addr = calc_layer_map_addr_base2(props, eff_x, eff_y) - map_addr_begin;
-
-		uint8_t byte0 = tile_bytes[map_addr];
-		uint8_t byte1 = tile_bytes[map_addr + 1];
-
-		tile_index = byte0 | ((byte1 & 3) << 8);
-
-		// Tile Flipping
-		bool vflip = (byte1 >> 3) & 1;
-		bool hflip = (byte1 >> 2) & 1;
-		if (vflip) {
-			yy = yy ^ (props->tileh_max);
+		if (tile_change_index == 0) {
+			calc_tile_change_index_iteration(eff_x);
 		}
-		if (hflip) {
-			xx = xx ^ (props->tilew_max);
-		}
+		tile_change_index -= 1;
 
-		palette_offset = byte1 >> 4;
+		xx = xx ^ hflip_value;
 
-		// offset within tilemap of the current tile
-		uint32_t tile_start = tile_index << props->tile_size_log2;
-		// additional bytes to reach the correct line of the tile
-		uint32_t y_add = (yy << (props->tilew_log2 + props->color_depth)) >> 3;
 		// additional bytes to reach the correct column of the tile
 		uint16_t x_add       = (xx << props->color_depth) >> 3;
-		uint32_t tile_offset = tile_start + y_add + x_add;
-		uint8_t  s           = video_space_read(props->tile_base + tile_offset);
+		uint8_t  s           = video_space_read(tile_offset + x_add);
 
 		// convert tile byte to indexed color
 		uint8_t col_index = (s >> (props->first_color_pos - ((xx & props->color_fields_max) << props->color_depth))) & props->color_mask;
 
 		// Apply Palette Offset
-		if (palette_offset && col_index > 0 && col_index < 16) {
-			col_index += palette_offset << 4;
-		}
+		col_index += palette_offset;
 		layer_line[layer][x] = col_index;
 	}
 }
@@ -647,18 +671,19 @@ render_layer_line_tile(uint8_t layer, uint16_t y)
 static void
 render_layer_line_bitmap(uint8_t layer, uint16_t y)
 {
-	struct video_layer_properties *props = &layer_properties[layer];
+	const struct video_layer_properties *props = &layer_properties[layer];
 
-	int yy = y % props->tileh;
+	const int yy = y % props->tileh;
 	// additional bytes to reach the correct line of the tile
-	uint32_t y_add = (yy * props->tilew * props->bits_per_pixel) >> 3;
+	const uint32_t y_add = (yy * props->tilew * props->bits_per_pixel) >> 3;
+
+	// extract all information from the map
+	uint8_t palette_offset = (reg_layer[layer][4] & 0xf) << 4;
+	if (props->color_mask >= 16) palette_offset = 0;
 
 	// Render tile line.
-	for (int x = 0; x < SCREEN_WIDTH; x++) {
-		int xx = x % props->tilew;
-
-		// extract all information from the map
-		uint8_t palette_offset = reg_layer[layer][4] & 0xf;
+	for (int x = 0, xx = 0; x < SCREEN_WIDTH; x++, xx++) {
+		if (xx == props->tilew) xx = 0;
 
 		// additional bytes to reach the correct column of the tile
 		uint16_t x_add = (xx * props->bits_per_pixel) >> 3;
@@ -669,9 +694,7 @@ render_layer_line_bitmap(uint8_t layer, uint16_t y)
 		uint8_t col_index = (s >> (props->first_color_pos - ((xx & props->color_fields_max) << props->color_depth))) & props->color_mask;
 
 		// Apply Palette Offset
-		if (palette_offset && col_index > 0 && col_index < 16) {
-			col_index += palette_offset << 4;
-		}
+		col_index += palette_offset;
 		layer_line[layer][x] = col_index;
 	}
 }
