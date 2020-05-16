@@ -607,38 +607,6 @@ render_layer_line_tile(uint8_t layer, uint16_t y)
 	uint32_t y_add = 0;
 
 	int tile_change_index = 0;
-
-	inline void calc_tile_change_index_iteration(int eff_x) {
-		// extract all information from the map
-		uint32_t map_addr = calc_layer_map_addr_base2(props, eff_x, eff_y) - map_addr_begin;
-		tile_change_index = 16;
-
-		uint8_t byte0 = tile_bytes[map_addr];
-		uint8_t byte1 = tile_bytes[map_addr + 1];
-
-		// Tile Flipping
-		vflip = (byte1 >> 3) & 1;
-		hflip = (byte1 >> 2) & 1;
-
-		yy = eff_y & props->tileh_max;
-		if (vflip) {
-			yy = yy ^ (props->tileh_max);
-		}
-		if (hflip) {
-			hflip_value = (props->tilew_max);
-		} else {
-			hflip_value = 0;
-		}
-		// additional bytes to reach the correct line of the tile
-		y_add = (yy << (props->tilew_log2 + props->color_depth)) >> 3;
-
-		tile_index = byte0 | ((byte1 & 3) << 8);
-		// offset within tilemap of the current tile
-		tile_start = tile_index << props->tile_size_log2;
-		tile_offset = props->tile_base + tile_start + y_add;
-
-		palette_offset = byte1 & 0b11110000;
-	}
 	// -------------------
 
 	// Render tile line.
@@ -648,7 +616,35 @@ render_layer_line_tile(uint8_t layer, uint16_t y)
 		int xx = eff_x & props->tilew_max;
 
 		if (tile_change_index == 0) {
-			calc_tile_change_index_iteration(eff_x);
+			// extract all information from the map
+			uint32_t map_addr = calc_layer_map_addr_base2(props, eff_x, eff_y) - map_addr_begin;
+			tile_change_index = 16;
+
+			uint8_t byte0 = tile_bytes[map_addr];
+			uint8_t byte1 = tile_bytes[map_addr + 1];
+
+			// Tile Flipping
+			vflip = (byte1 >> 3) & 1;
+			hflip = (byte1 >> 2) & 1;
+
+			yy = eff_y & props->tileh_max;
+			if (vflip) {
+				yy = yy ^ (props->tileh_max);
+			}
+			if (hflip) {
+				hflip_value = (props->tilew_max);
+			} else {
+				hflip_value = 0;
+			}
+			// additional bytes to reach the correct line of the tile
+			y_add = (yy << (props->tilew_log2 + props->color_depth)) >> 3;
+
+			tile_index = byte0 | ((byte1 & 3) << 8);
+			// offset within tilemap of the current tile
+			tile_start = tile_index << props->tile_size_log2;
+			tile_offset = props->tile_base + tile_start + y_add;
+
+			palette_offset = byte1 & 0b11110000;
 		}
 		tile_change_index -= 1;
 
