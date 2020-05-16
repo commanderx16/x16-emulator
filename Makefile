@@ -10,13 +10,12 @@ else
 	SDL2CONFIG=sdl2-config
 endif
 
-CFLAGS=-std=c99 -O3 -Wall -Werror -march=native -mcpu=native -mtune=native $(shell $(SDL2CONFIG) --cflags) -Iextern/include -Iextern/src
-CFLAGS+=-march=native -mcpu=native -mtune=native -DNDEBUG -flto -fexpensive-optimizations
-LDFLAGS=$(shell $(SDL2CONFIG) --libs) -lm -flto
+CFLAGS=-std=c99 -O3 -Wall -Werror -g $(shell $(SDL2CONFIG) --cflags) -Iextern/include -Iextern/src
+LDFLAGS=$(shell $(SDL2CONFIG) --libs) -lm
 
 
 ifdef TRACE
- CFLAGS+=-D TRACE
+	CFLAGS+=-D TRACE
 endif
 
 OUTPUT=x16emu
