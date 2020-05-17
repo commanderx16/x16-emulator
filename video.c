@@ -889,12 +889,12 @@ render_line(uint16_t y)
 }
 
 bool
-video_step(float mhz)
+video_step()
 {
 	uint8_t out_mode = reg_composer[0] & 3;
 
 	bool new_frame = false;
-	float advance = ((out_mode & 2) ? NTSC_PIXEL_FREQ :  VGA_PIXEL_FREQ) / mhz;
+	float advance = ((out_mode & 2) ? NTSC_PIXEL_FREQ / MHZ :  VGA_PIXEL_FREQ / MHZ);
 	scan_pos_x += advance;
 	if (scan_pos_x > SCAN_WIDTH) {
 		scan_pos_x -= SCAN_WIDTH;
