@@ -429,6 +429,9 @@ static void DEBUGRenderCmdLine(int x, int width, int height) {
 // *******************************************************************************************
 
 static void DEBUGRenderData(int y,int data) {
+#define MAX_REGISTERS 16
+   int reg = 0;
+   
 	while (y < DBG_HEIGHT-2) {									// To bottom of screen
 		DEBUGAddress(DBG_MEMX, y, (uint8_t)currentBank, data & 0xFFFF, col_label);	// Show label.
 
@@ -437,6 +440,18 @@ static void DEBUGRenderData(int y,int data) {
 			DEBUGNumber(DBG_MEMX+8+i*3,y,byte,2, col_data);
 			DEBUGWrite(dbgRenderer, DBG_MEMX+33+i,y,byte, col_data);
 		}
+
+      if( reg < MAX_REGISTERS ) {
+         // Zero page registers
+         char lbl[6];
+         sprintf( lbl, "R%d", reg );
+         DEBUGString( dbgRenderer, DBG_ZP_REG, y, lbl, col_label );
+         int reg_addr = 2 + reg * 2;
+         int n = real_read6502(reg_addr+1, true, currentBank) * 256 + real_read6502(reg_addr, true, currentBank);
+         DEBUGNumber( DBG_ZP_REG+5, y, n, 4, col_data );
+         reg++;
+      }
+
 		y++;
 		data += 8;
 	}
