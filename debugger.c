@@ -428,9 +428,16 @@ static void DEBUGRenderCmdLine(int x, int width, int height) {
 //
 // *******************************************************************************************
 
+#define MAX_REGISTERS 20
+static int    oldRegisters[MAX_REGISTERS];
+static char * oldRegChange[MAX_REGISTERS];
+static int    oldRegisterPC = 0;
+
 static void DEBUGRenderData(int y,int data) {
-#define MAX_REGISTERS 16
+#define LAST_R 15
+
    int reg = 0;
+   int y_start = y;
    
 	while (y < DBG_HEIGHT-2) {									// To bottom of screen
 		DEBUGAddress(DBG_MEMX, y, (uint8_t)currentBank, data & 0xFFFF, col_label);	// Show label.
@@ -441,20 +448,36 @@ static void DEBUGRenderData(int y,int data) {
 			DEBUGWrite(dbgRenderer, DBG_MEMX+33+i,y,byte, col_data);
 		}
 
-      if( reg < MAX_REGISTERS ) {
+      if( reg < MAX_REGISTERS && ((y-y_start) % 5) != 0 ) {
          // Zero page registers
          char lbl[6];
-         sprintf( lbl, "R%d", reg );
+         if( reg <= LAST_R )
+            sprintf( lbl, "R%d", reg );
+         else
+            sprintf( lbl, "x%d", reg );
          DEBUGString( dbgRenderer, DBG_ZP_REG, y, lbl, col_label );
          int reg_addr = 2 + reg * 2;
          int n = real_read6502(reg_addr+1, true, currentBank) * 256 + real_read6502(reg_addr, true, currentBank);
          DEBUGNumber( DBG_ZP_REG+5, y, n, 4, col_data );
+
+         if( oldRegChange[reg] != NULL )
+            DEBUGString( dbgRenderer, DBG_ZP_REG+9, y, oldRegChange[reg], col_data );
+
+         if( oldRegisterPC != pc ) {
+            oldRegChange[reg] = (n != oldRegisters[reg]) ? "*" : " ";
+            oldRegisters[reg]=n;
+         }
          reg++;
       }
 
 		y++;
 		data += 8;
 	}
+
+   if( oldRegisterPC != pc ) {
+      oldRegisterPC = pc;
+   }
+
 }
 
 // *******************************************************************************************
