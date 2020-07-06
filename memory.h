@@ -16,6 +16,7 @@ uint8_t read6502(uint16_t address);
 uint8_t real_read6502(uint16_t address, bool debugOn, uint8_t bank);
 
 void memory_init();
+void memory_reset();
 
 void memory_save(SDL_RWops *f, bool dump_ram, bool dump_bank);
 

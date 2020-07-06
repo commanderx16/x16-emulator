@@ -22,7 +22,6 @@
 #include "video.h"
 #include "via.h"
 #include "ps2.h"
-#include "spi.h"
 #include "vera_spi.h"
 #include "sdcard.h"
 #include "loadsave.h"
@@ -215,6 +214,7 @@ machine_dump()
 void
 machine_reset()
 {
+	memory_reset();
 	vera_spi_init();
 	via1_init();
 	via2_init();
@@ -682,24 +682,47 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			if (!strcmp(argv[0], "NES")) {
-				joy1_mode = NES;
+				joy_mode[0] = NES;
 				argc--;
 				argv++;
 			} else if (!strcmp(argv[0], "SNES")) {
-				joy1_mode = SNES;
+				joy_mode[0] = SNES;
 				argc--;
 				argv++;
 			}
-
 		} else if (!strcmp(argv[0], "-joy2")){
 			argc--;
 			argv++;
 			if (!strcmp(argv[0], "NES")){
-				joy2_mode = NES;
+				joy_mode[1] = NES;
 				argc--;
 				argv++;
 			} else if (!strcmp(argv[0], "SNES")){
-				joy2_mode = SNES;
+				joy_mode[1] = SNES;
+				argc--;
+				argv++;
+			}
+		} else if (!strcmp(argv[0], "-joy3")){
+			argc--;
+			argv++;
+			if (!strcmp(argv[0], "NES")){
+				joy_mode[2] = NES;
+				argc--;
+				argv++;
+			} else if (!strcmp(argv[0], "SNES")){
+				joy_mode[2] = SNES;
+				argc--;
+				argv++;
+			}
+		} else if (!strcmp(argv[0], "-joy4")){
+			argc--;
+			argv++;
+			if (!strcmp(argv[0], "NES")){
+				joy_mode[3] = NES;
+				argc--;
+				argv++;
+			} else if (!strcmp(argv[0], "SNES")){
+				joy_mode[3] = SNES;
 				argc--;
 				argv++;
 			}
