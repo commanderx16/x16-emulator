@@ -15,7 +15,7 @@
 #define MHZ 8
 
 #define NUM_MAX_RAM_BANKS 256
-#define NUM_ROM_BANKS 8
+#define NUM_ROM_BANKS 32
 
 #define RAM_SIZE (0xa000 + num_ram_banks * 8192) /* $0000-$9FFF + banks at $A000-$BFFF */
 #define ROM_SIZE (NUM_ROM_BANKS * 16384)   /* banks at $C000-$FFFF */
