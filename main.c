@@ -215,6 +215,7 @@ machine_dump()
 void
 machine_reset()
 {
+	memory_reset();
 	vera_spi_init();
 	via1_init();
 	via2_init();

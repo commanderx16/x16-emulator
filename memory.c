@@ -24,10 +24,22 @@ bool led_status;
 
 #define DEVICE_EMULATOR (0x9fb0)
 
+uint8_t cpuio_read(uint8_t reg);
+void cpuio_write(uint8_t reg, uint8_t value);
+
 void
 memory_init()
 {
 	RAM = calloc(RAM_SIZE, sizeof(uint8_t));
+	memory_reset();
+}
+
+void
+memory_reset()
+{
+	// default banks are 0
+	memory_set_ram_bank(0);
+	memory_set_rom_bank(0);
 }
 
 static uint8_t
@@ -49,7 +61,9 @@ read6502(uint16_t address) {
 uint8_t
 real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 {
-	if (address < 0x9f00) { // RAM
+	if (address < 2) { // CPU I/O ports
+		return cpuio_read(address);
+	} else if (address < 0x9f00) { // RAM
 		return RAM[address];
 	} else if (address < 0xa000) { // I/O
 		if (address >= 0x9f00 && address < 0x9f20) {
@@ -91,7 +105,9 @@ void
 write6502(uint16_t address, uint8_t value)
 {
 	static uint8_t lastAudioAdr = 0;
-	if (address < 0x9f00) { // RAM
+	if (address < 2) { // CPU I/O ports
+		cpuio_write(address, value);
+	} else if (address < 0x9f00) { // RAM
 		RAM[address] = value;
 	} else if (address < 0xa000) { // I/O
 		if (address >= 0x9f00 && address < 0x9f20) {
@@ -165,6 +181,31 @@ uint8_t
 memory_get_rom_bank()
 {
 	return rom_bank;
+}
+
+uint8_t
+cpuio_read(uint8_t reg)
+{
+	switch (reg) {
+		case 0:
+			return memory_get_ram_bank();
+		case 1:
+			return memory_get_rom_bank();
+	}
+	return 0; // to make the compiler happy
+}
+
+void
+cpuio_write(uint8_t reg, uint8_t value)
+{
+	switch (reg) {
+		case 0:
+			memory_set_ram_bank(value);
+			break;
+		case 1:
+			memory_set_rom_bank(value);
+			break;
+	}
 }
 
 // Control the GIF recorder
