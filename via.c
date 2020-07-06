@@ -31,20 +31,16 @@ void
 via1_init()
 {
 	srand(time(NULL));
-
-	// default banks are 0
-	memory_set_ram_bank(0);
-	memory_set_rom_bank(0);
 }
 
 uint8_t
 via1_read(uint8_t reg)
 {
 	switch (reg) {
-		case 0:
-			return memory_get_rom_bank(); // PB: ROM bank, IEC
-		case 1:
-			return memory_get_ram_bank(); // PA: RAM bank
+//		case 0:
+//			return memory_get_rom_bank(); // PB: ROM bank, IEC
+//		case 1:
+//			return memory_get_ram_bank(); // PA: RAM bank
 		case 4:
 		case 5:
 		case 8:
@@ -62,10 +58,10 @@ via1_write(uint8_t reg, uint8_t value)
 {
 	via1registers[reg] = value;
 	if (reg == 0) { // PB: ROM bank, IEC
-		memory_set_rom_bank(value & 7);
+//		memory_set_rom_bank(value & 7);
 		// TODO: IEC
 	} else if (reg == 1) { // PA: RAM bank
-		memory_set_ram_bank(value);
+//		memory_set_ram_bank(value);
 	} else {
 		// TODO
 	}

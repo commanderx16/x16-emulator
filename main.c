@@ -210,6 +210,7 @@ machine_dump()
 void
 machine_reset()
 {
+	memory_reset();
 	spi_init();
 	vera_spi_init();
 	via1_init();
