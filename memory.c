@@ -62,28 +62,24 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 	} else if (address < 0x9f00) { // RAM
 		return RAM[address];
 	} else if (address < 0xa000) { // I/O
-		if (address >= 0x9f00 && address < 0x9f20) {
-			// TODO: sound
-			return 0;
+		if (address >= 0x9f00 && address < 0x9f10) {
+			return via1_read(address & 0xf);
+		} else if (address >= 0x9f10 && address < 0x9f20) {
+			return via2_read(address & 0xf);
 		} else if (address >= 0x9f20 && address < 0x9f40) {
 			return video_read(address & 0x1f, debugOn);
 		} else if (address >= 0x9f40 && address < 0x9f60) {
-			// TODO: character LCD
+			// TODO:
+			//   $9F40 & $9F41: YM2151
+			//   $9F42 & $9F43: SAA1099P
+			//   $9F44: RTC ADDR
+			//   $9F46: RTC DATA
 			return 0;
-		} else if (address >= 0x9f60 && address < 0x9f70) {
-			return via1_read(address & 0xf);
-		} else if (address >= 0x9f70 && address < 0x9f80) {
-			return via2_read(address & 0xf);
-		} else if (address >= 0x9f80 && address < 0x9fa0) {
-			// TODO: RTC
-			return 0;
-		} else if (address >= 0x9fa0 && address < 0x9fb0) {
-			// fake mouse
-			return mouse_read(address & 0x1f);
 		} else if (address >= 0x9fb0 && address < 0x9fc0) {
 			// emulator state
 			return emu_read(address & 0xf, debugOn);
 		} else {
+			// future expansion
 			return 0;
 		}
 	} else if (address < 0xc000) { // banked RAM
@@ -106,25 +102,25 @@ write6502(uint16_t address, uint8_t value)
 	} else if (address < 0x9f00) { // RAM
 		RAM[address] = value;
 	} else if (address < 0xa000) { // I/O
-		if (address >= 0x9f00 && address < 0x9f20) {
-			// TODO: sound
+		if (address >= 0x9f00 && address < 0x9f10) {
+			via1_write(address & 0xf, value);
+		} else if (address >= 0x9f10 && address < 0x9f20) {
+			via2_write(address & 0xf, value);
 		} else if (address >= 0x9f20 && address < 0x9f40) {
 			video_write(address & 0x1f, value);
 		} else if (address >= 0x9f40 && address < 0x9f60) {
-			// TODO: character LCD
-		} else if (address >= 0x9f60 && address < 0x9f70) {
-			via1_write(address & 0xf, value);
-		} else if (address >= 0x9f70 && address < 0x9f80) {
-			via2_write(address & 0xf, value);
-		} else if (address >= 0x9f80 && address < 0x9fa0) {
-			// TODO: RTC
+			if (address == 0x9f40) {
+				lastAudioAdr = value;
+			} else if (address == 0x9f41) {
+				YM_write_reg(lastAudioAdr, value);
+			}
+			// TODO:
+			//   $9F42 & $9F43: SAA1099P
+			//   $9F44: RTC ADDR
+			//   $9F46: RTC DATA
 		} else if (address >= 0x9fb0 && address < 0x9fc0) {
 			// emulator state
 			emu_write(address & 0xf, value);
-		} else if (address == 0x9fe0) {
-			lastAudioAdr = value;
-		} else if (address == 0x9fe1) {
-			YM_write_reg(lastAudioAdr, value);
 		} else {
 			// future expansion
 		}
