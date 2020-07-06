@@ -22,7 +22,6 @@
 #include "video.h"
 #include "via.h"
 #include "ps2.h"
-#include "spi.h"
 #include "vera_spi.h"
 #include "sdcard.h"
 #include "loadsave.h"
