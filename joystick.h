@@ -14,10 +14,12 @@
 #include "glue.h"
 #include "via.h"
 
-#define JOY_LATCH_MASK 0x08
-#define JOY_DATA1_MASK 0x10
-#define JOY_CLK_MASK 0x20
-#define JOY_DATA2_MASK 0x40
+#define JOY_LATCH_MASK 0x04
+#define JOY_CLK_MASK   0x08
+#define JOY_DATA3_MASK 0x10
+#define JOY_DATA2_MASK 0x20
+#define JOY_DATA1_MASK 0x40
+#define JOY_DATA0_MASK 0x80
 
 enum joy_status { NES=0, NONE=1, SNES=0xF };
 extern enum joy_status joy1_mode;
