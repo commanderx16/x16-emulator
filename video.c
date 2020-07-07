@@ -93,6 +93,8 @@ static uint8_t reg_composer[8];
 static uint8_t layer_line[2][SCREEN_WIDTH];
 static uint8_t sprite_line_col[SCREEN_WIDTH];
 static uint8_t sprite_line_z[SCREEN_WIDTH];
+static uint8_t sprite_line_mask[SCREEN_WIDTH];
+static uint8_t sprite_line_collisions;
 static bool layer_line_enable[2];
 static bool sprite_line_enable;
 
@@ -153,6 +155,8 @@ video_reset()
 	for (int i = 0; i < 128 * 1024; i++) {
 		video_ram[i] = rand();
 	}
+
+	sprite_line_collisions = 0;
 
 	scan_pos_x = 0;
 	scan_pos_y = 0;
@@ -355,6 +359,7 @@ refresh_layer_properties(const uint8_t layer)
 struct video_sprite_properties
 {
 	int8_t sprite_zdepth;
+	uint8_t sprite_collision_mask;
 
 	int16_t sprite_x;
 	int16_t sprite_y;
@@ -380,6 +385,7 @@ refresh_sprite_properties(const uint16_t sprite)
 	struct video_sprite_properties* props = &sprite_properties[sprite];
 
 	props->sprite_zdepth = (sprite_data[sprite][6] >> 2) & 3;
+	props->sprite_collision_mask = sprite_data[sprite][6] & 0xf0;
 
 	props->sprite_x = sprite_data[sprite][2] | (sprite_data[sprite][3] & 3) << 8;
 	props->sprite_y = sprite_data[sprite][4] | (sprite_data[sprite][5] & 3) << 8;
@@ -459,8 +465,16 @@ expand_4bpp_data(uint8_t *dst, const uint8_t *src, int dst_size)
 static void
 render_sprite_line(const uint16_t y)
 {
-	memset(sprite_line_col, 0, SCREEN_WIDTH);
+	if (!(reg_composer[0] & 0x40)) {
+		// sprites disabled
+		sprite_line_empty = true;
+		return;
+	}
+  
+	sprite_line_empty = false;
+  memset(sprite_line_col, 0, SCREEN_WIDTH);
 	memset(sprite_line_z, 0, SCREEN_WIDTH);
+	memset(sprite_line_mask, 0, SCREEN_WIDTH);
 
 	uint16_t sprite_budget = 800 + 1;
 	for (int i = 0; i < NUM_SPRITES; i++) {
@@ -513,7 +527,10 @@ render_sprite_line(const uint16_t y)
 
 			// palette offset
 			if (col_index > 0) {
-				if (props->sprite_zdepth > sprite_line_z[line_x]) {
+				sprite_line_collisions |= sprite_line_mask[line_x] & props->sprite_collision_mask;
+				sprite_line_mask[line_x] |= props->sprite_collision_mask;
+
+        if (props->sprite_zdepth > sprite_line_z[line_x]) {
 					sprite_line_col[line_x] = col_index + props->palette_offset;
 					sprite_line_z[line_x] = props->sprite_zdepth;
 				}
@@ -772,16 +789,16 @@ static uint8_t calculate_line_col_index(uint8_t spr_zindex, uint8_t spr_col_inde
 	uint8_t col_index = 0;
 	switch (spr_zindex) {
 		case 3:
-			col_index = spr_col_index ?: l2_col_index ?: l1_col_index;
+			col_index = spr_col_index ? spr_col_index : (l2_col_index ? l2_col_index : l1_col_index);
 			break;
 		case 2:
-			col_index = l2_col_index ?: spr_col_index ?: l1_col_index;
+			col_index = l2_col_index ? l2_col_index : (spr_col_index ? spr_col_index : l1_col_index);
 			break;
 		case 1:
-			col_index = l2_col_index ?: l1_col_index ?: spr_col_index;
+			col_index = l2_col_index ? l2_col_index : (l1_col_index ? l1_col_index : spr_col_index);
 			break;
 		case 0:
-			col_index = l2_col_index ?: l1_col_index;
+			col_index = l2_col_index ? l2_col_index : l1_col_index;
 			break;
 	}
 	return col_index;
@@ -886,22 +903,22 @@ render_line(uint16_t y)
 				switch (spr_zindex[0]) {
 					case 3:
 						for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-							col_index[i] = spr_col_index[i] ?: l2_col_index[i] ?: l1_col_index[i];
+							col_index[i] = spr_col_index[i] ? spr_col_index[i] : (l2_col_index[i] ? l2_col_index[i] : l1_col_index[i]);
 						}
 						break;
 					case 2:
 						for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-							col_index[i] = l2_col_index[i] ?: spr_col_index[i] ?: l1_col_index[i];
+							col_index[i] = l2_col_index[i] ? l2_col_index[i] : (spr_col_index[i] ? spr_col_index[i] : l1_col_index[i]);
 						}
 						break;
 					case 1:
 						for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-							col_index[i] = l2_col_index[i] ?: l1_col_index[i] ?: spr_col_index[i];
+							col_index[i] = l2_col_index[i] ? l2_col_index[i] : (l1_col_index[i] ? l1_col_index[i] : spr_col_index[i]);
 						}
 						break;
 					case 0:
 						for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-							col_index[i] = l2_col_index[i] ?: l1_col_index[i];
+							col_index[i] = l2_col_index[i] ? l2_col_index[i] : l1_col_index[i];
 						}
 						break;
 				}
@@ -976,6 +993,15 @@ video_step(float mhz)
 			render_line(y);
 		}
 		scan_pos_y++;
+		if (scan_pos_y == SCREEN_HEIGHT) {
+			if (ien & 4) {
+				if (sprite_line_collisions != 0) {
+					isr |= 4;
+				}
+				isr = (isr & 0xf) | sprite_line_collisions;
+			}
+			sprite_line_collisions = 0;
+		}
 		if (scan_pos_y == SCAN_HEIGHT) {
 			scan_pos_y = 0;
 			new_frame = true;
@@ -1223,7 +1249,7 @@ uint8_t video_read(uint8_t reg, bool debugOn) {
 			return value;
 		}
 		case 0x05: return (io_dcsel << 1) | io_addrsel;
-		case 0x06: return ((irq_line & 1) << 7) | (ien & 0xF);
+		case 0x06: return ((irq_line & 0x100) >> 1) | (ien & 0xF);
 		case 0x07: return isr | (pcm_is_fifo_almost_empty() ? 8 : 0);
 		case 0x08: return irq_line & 0xFF;
 
@@ -1303,6 +1329,7 @@ void video_write(uint8_t reg, uint8_t value) {
 			isr &= value ^ 0xff;
 			break;
 		case 0x08:
+			irq_line = (irq_line & 0x100) | value;
 			break;
 
 		case 0x09:
