@@ -1051,7 +1051,7 @@ uint8_t video_read(uint8_t reg, bool debugOn) {
 			return value;
 		}
 		case 0x05: return (io_dcsel << 1) | io_addrsel;
-		case 0x06: return ((irq_line & 1) << 7) | (ien & 0xF);
+		case 0x06: return ((irq_line & 0x100) >> 1) | (ien & 0xF);
 		case 0x07: return isr | (pcm_is_fifo_almost_empty() ? 8 : 0);
 		case 0x08: return irq_line & 0xFF;
 
@@ -1131,6 +1131,7 @@ void video_write(uint8_t reg, uint8_t value) {
 			isr &= value ^ 0xff;
 			break;
 		case 0x08:
+			irq_line = (irq_line & 0x100) | value;
 			break;
 
 		case 0x09:
