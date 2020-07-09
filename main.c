@@ -77,6 +77,7 @@ bool dump_cpu = false;
 bool dump_ram = true;
 bool dump_bank = true;
 bool dump_vram = false;
+bool warp_mode = false;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
@@ -84,9 +85,12 @@ char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
 char *scale_quality = "best";
+
+int frames;
+int32_t sdlTicks_base;
+int32_t last_perf_update;
+int32_t perf_frame_count;
 char window_title[30];
-int32_t last_perf_update = 0;
-int32_t perf_frame_count = 0;
 
 #ifdef TRACE
 bool trace_mode = false;
@@ -227,6 +231,58 @@ machine_paste(char *s)
 	}
 }
 
+void
+timing_init() {
+	frames = 0;
+	sdlTicks_base = SDL_GetTicks();
+	last_perf_update = 0;
+	perf_frame_count = 0;
+}
+
+void
+timing_update()
+{
+	frames++;
+	int32_t sdlTicks = SDL_GetTicks() - sdlTicks_base;
+	int32_t diff_time = 1000 * frames / 60 - sdlTicks;
+	if (!warp_mode && diff_time > 0) {
+		usleep(1000 * diff_time);
+	}
+
+	if (sdlTicks - last_perf_update > 5000) {
+		int32_t frameCount = frames - perf_frame_count;
+		int perf = frameCount / 3;
+
+		if (perf < 100 || warp_mode) {
+			sprintf(window_title, "Commander X16 (%d%%)", perf);
+			video_update_title(window_title);
+		} else {
+			video_update_title("Commander X16");
+		}
+
+		perf_frame_count = frames;
+		last_perf_update = sdlTicks;
+	}
+
+	if (log_speed) {
+		float frames_behind = -((float)diff_time / 16.666666);
+		int load = (int)((1 + frames_behind) * 100);
+		printf("Load: %d%%\n", load > 100 ? 100 : load);
+
+		if ((int)frames_behind > 0) {
+			printf("Rendering is behind %d frames.\n", -(int)frames_behind);
+		} else {
+		}
+	}
+}
+
+void
+machine_toggle_warp()
+{
+	warp_mode = !warp_mode;
+	timing_init();
+}
+
 uint8_t
 iso8859_15_from_unicode(uint32_t c)
 {
@@ -348,6 +404,8 @@ usage()
 	printf("\ton the load address.\n");
 	printf("-geos\n");
 	printf("\tLaunch GEOS at startup.\n");
+	printf("-warp\n");
+	printf("\tEnable warp mode, run emulator as fast as possible.\n");
 	printf("-echo [{iso|raw}]\n");
 	printf("\tPrint all KERNAL output to the host's stdout.\n");
 	printf("\tBy default, everything but printable ASCII characters get\n");
@@ -524,6 +582,10 @@ main(int argc, char **argv)
 			sdcard_path = argv[0];
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-warp")) {
+			argc--;
+			argv++;
+			warp_mode = true;
 		} else if (!strcmp(argv[0], "-echo")) {
 			argc--;
 			argv++;
@@ -783,6 +845,8 @@ main(int argc, char **argv)
 
 	machine_reset();
 
+	timing_init();
+
 	instruction_counter = 0;
 
 #ifdef __EMSCRIPTEN__
@@ -948,39 +1012,7 @@ emulator_loop(void *param)
 				break;
 			}
 
-			static int frames = 0;
-			frames++;
-			int32_t sdlTicks = SDL_GetTicks();
-			int32_t diff_time = 1000 * frames / 60 - sdlTicks;
-			if (diff_time > 0) {
-				usleep(1000 * diff_time);
-			}
-
-			if (sdlTicks - last_perf_update > 5000) {
-				int32_t frameCount = frames - perf_frame_count;
-				int perf = frameCount / 3;
-
-				if (perf < 100) {
-					sprintf(window_title, "Commander X16 (%d%%)", perf);
-					video_update_title(window_title);
-				} else {
-					video_update_title("Commander X16");
-				}
-
-				perf_frame_count = frames;
-				last_perf_update = sdlTicks;
-			}
-
-			if (log_speed) {
-				float frames_behind = -((float)diff_time / 16.666666);
-				int load = (int)((1 + frames_behind) * 100);
-				printf("Load: %d%%\n", load > 100 ? 100 : load);
-
-				if ((int)frames_behind > 0) {
-					printf("Rendering is behind %d frames.\n", -(int)frames_behind);
-				} else {
-				}
-			}
+			timing_update();
 #ifdef __EMSCRIPTEN__
 			// After completing a frame we yield back control to the browser to stay responsive
 			return 0;
