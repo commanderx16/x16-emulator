@@ -80,28 +80,28 @@ static void asl() {
 
 static void bcc() {
     if ((status & FLAG_CARRY) == 0) {
-        oldpc = pc;
+        uint16_t oldpc = pc;
         pc += reladdr;
-        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; //check if jump crossed a page boundary
-            else clockticks6502++;
+	clockticks6502 += 1;
+        clockticks6502 += ((oldpc & 0xFF00) != (pc & 0xFF00)); //check if jump crossed a page boundary
     }
 }
 
 static void bcs() {
     if ((status & FLAG_CARRY) == FLAG_CARRY) {
-        oldpc = pc;
+        uint16_t oldpc = pc;
         pc += reladdr;
-        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; //check if jump crossed a page boundary
-            else clockticks6502++;
+	clockticks6502 += 1;
+        clockticks6502 += ((oldpc & 0xFF00) != (pc & 0xFF00)); //check if jump crossed a page boundary
     }
 }
 
 static void beq() {
     if ((status & FLAG_ZERO) == FLAG_ZERO) {
-        oldpc = pc;
+        uint16_t oldpc = pc;
         pc += reladdr;
-        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; //check if jump crossed a page boundary
-            else clockticks6502++;
+	clockticks6502 += 1;
+        clockticks6502 += ((oldpc & 0xFF00) != (pc & 0xFF00)); //check if jump crossed a page boundary
     }
 }
 
@@ -115,28 +115,28 @@ static void bit() {
 
 static void bmi() {
     if ((status & FLAG_SIGN) == FLAG_SIGN) {
-        oldpc = pc;
+        uint16_t oldpc = pc;
         pc += reladdr;
-        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; //check if jump crossed a page boundary
-            else clockticks6502++;
+	clockticks6502 += 1;
+        clockticks6502 += ((oldpc & 0xFF00) != (pc & 0xFF00)); //check if jump crossed a page boundary
     }
 }
 
 static void bne() {
     if ((status & FLAG_ZERO) == 0) {
-        oldpc = pc;
+        uint16_t oldpc = pc;
         pc += reladdr;
-        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; //check if jump crossed a page boundary
-            else clockticks6502++;
+	clockticks6502 += 1;
+        clockticks6502 += ((oldpc & 0xFF00) != (pc & 0xFF00)); //check if jump crossed a page boundary
     }
 }
 
 static void bpl() {
     if ((status & FLAG_SIGN) == 0) {
-        oldpc = pc;
+        uint16_t oldpc = pc;
         pc += reladdr;
-        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; //check if jump crossed a page boundary
-            else clockticks6502++;
+	clockticks6502 += 1;
+        clockticks6502 += ((oldpc & 0xFF00) != (pc & 0xFF00)); //check if jump crossed a page boundary
     }
 }
 
@@ -153,19 +153,19 @@ static void brk() {
 
 static void bvc() {
     if ((status & FLAG_OVERFLOW) == 0) {
-        oldpc = pc;
+        uint16_t oldpc = pc;
         pc += reladdr;
-        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; //check if jump crossed a page boundary
-            else clockticks6502++;
+	clockticks6502 += 1;
+        clockticks6502 += ((oldpc & 0xFF00) != (pc & 0xFF00)); //check if jump crossed a page boundary
     }
 }
 
 static void bvs() {
     if ((status & FLAG_OVERFLOW) == FLAG_OVERFLOW) {
-        oldpc = pc;
+        uint16_t oldpc = pc;
         pc += reladdr;
-        if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; //check if jump crossed a page boundary
-            else clockticks6502++;
+	clockticks6502 += 1;
+        clockticks6502 += ((oldpc & 0xFF00) != (pc & 0xFF00)); //check if jump crossed a page boundary
     }
 }
 
