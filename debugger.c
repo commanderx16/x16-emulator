@@ -27,6 +27,7 @@ static void DEBUGNumber(int x,int y,int n,int w, SDL_Color colour);
 static void DEBUGAddress(int x, int y, int bank, int addr, SDL_Color colour);
 
 static void DEBUGRenderData(int y,int data);
+static void DEBUGRenderZeroPageRegisters(int y);
 static int DEBUGRenderRegisters(void);
 static void DEBUGRenderCode(int lines,int initialPC);
 static void DEBUGRenderStack(int bytesCount);
@@ -80,6 +81,8 @@ static void DEBUGExecCmd();
 #define DBGSCANKEY_SHOW	SDL_SCANCODE_TAB 						// Show screen key.
 																// *** MUST BE SCAN CODES ***
 
+#define DBGMAX_ZERO_PAGE_REGISTERS 20
+
 enum DBG_CMD { CMD_DUMP_MEM='m', CMD_DISASM='d', CMD_SET_BANK='b', CMD_SET_REGISTER='r' };
 
 // RGB colours
@@ -102,6 +105,10 @@ int stepBreakPoint = -1;										// Single step break.
 char cmdLine[64]= "";											// command line buffer
 int currentPosInLine= 0;										// cursor position in the buffer (NOT USED _YET_)
 int currentLineLen= 0;											// command line buffer length
+
+int    oldRegisters[DBGMAX_ZERO_PAGE_REGISTERS];      // Old ZP Register values, for change detection
+char * oldRegChange[DBGMAX_ZERO_PAGE_REGISTERS];      // Change notification flags for output
+int    oldRegisterTicks = 0;                          // Last PC when change notification was run
 
 //
 //		This flag controls
@@ -402,6 +409,7 @@ void DEBUGRenderDisplay(int width, int height) {
 	DEBUGRenderRegisters();							// Draw register name and values.
 	DEBUGRenderCode(20, currentPC);							// Render 6502 disassembly.
 	DEBUGRenderData(21, currentData);
+   DEBUGRenderZeroPageRegisters(21);
 	DEBUGRenderStack(20);
 
 	DEBUGRenderCmdLine(xPos, rc.w, height);
@@ -422,6 +430,48 @@ static void DEBUGRenderCmdLine(int x, int width, int height) {
 	sprintf(buffer, ">%s", cmdLine);
 	DEBUGString(dbgRenderer, 0, DBG_HEIGHT-1, buffer, col_cmdLine);
 }
+// *******************************************************************************************
+//
+//									 Render Zero Page Registers
+//
+// *******************************************************************************************
+
+static void DEBUGRenderZeroPageRegisters(int y) {
+#define LAST_R 15
+   int reg = 0;
+   int y_start = y;
+   char lbl[6];
+   while (reg < DBGMAX_ZERO_PAGE_REGISTERS) {
+      if (((y-y_start) % 5) != 0) {           // Break registers into groups of 5, easier to locate
+         if (reg <= LAST_R)
+            sprintf( lbl, "R%d", reg );
+         else
+            sprintf( lbl, "x%d", reg );
+
+         DEBUGString(dbgRenderer, DBG_ZP_REG, y, lbl, col_label);
+
+         int reg_addr = 2 + reg * 2;
+         int n = real_read6502(reg_addr+1, true, currentBank)*256+real_read6502(reg_addr, true, currentBank);
+         
+         DEBUGNumber(DBG_ZP_REG+5, y, n, 4, col_data);
+
+         if (oldRegChange[reg] != NULL)
+            DEBUGString(dbgRenderer, DBG_ZP_REG+9, y, oldRegChange[reg], col_data);
+
+         if (oldRegisterTicks != clockticks6502) {   // change detection only when the emulated CPU changes
+            oldRegChange[reg] = n != oldRegisters[reg] ? "*" : " ";
+            oldRegisters[reg]=n;
+         }
+         reg++;
+      }
+      y++;
+   }
+
+   if (oldRegisterTicks != clockticks6502) {
+      oldRegisterTicks = clockticks6502;
+   }
+}
+
 // *******************************************************************************************
 //
 //									 Render Data Area
