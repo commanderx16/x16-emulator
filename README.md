@@ -53,6 +53,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-geos` launches GEOS at startup.
 * `-scale` scales video output to an integer multiple of 640x480
 * `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
+* `-warp` causes the emulator to run as fast as possible, possibly faster than a real X16.
 * `-gif <filename>[,wait]` to record the screen into a GIF. See below for more info.
 * `-quality` change image scaling algorithm quality
 	* `nearest`: nearest pixel sampling
@@ -119,10 +120,11 @@ The following keys can be used for controlling games:
 Functions while running
 -----------------------
 
-* `Ctrl + R` will reset the computer.
-* `Ctrl + V` will paste the clipboard by injecting key presses.
-* `Ctrl + S` will save a system dump (configurable with `-dump`) to disk.
-* `Ctrl + Return` will toggle full screen mode.
+* `Ctrl` + `R` will reset the computer.
+* `Ctrl` + `V` will paste the clipboard by injecting key presses.
+* `Ctrl` + `S` will save a system dump (configurable with `-dump`) to disk.
+* `Ctrl` + `F` and `Ctrl` + `Return` will toggle full screen mode.
+* `Ctrl` + `=` and `Ctrl` + `+` will toggle warp mode.
 
 On the Mac, use the `Cmd` key instead.
 
