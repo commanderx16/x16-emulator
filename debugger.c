@@ -510,9 +510,9 @@ static void DEBUGRenderZeroPageRegisters(int y) {
    while (reg < DBGMAX_ZERO_PAGE_REGISTERS) {
       if (((y-y_start) % 5) != 0) {           // Break registers into groups of 5, easier to locate
          if (reg <= LAST_R)
-            sprintf( lbl, "R%d", reg );
+            sprintf(lbl, "R%d", reg);
          else
-            sprintf( lbl, "x%d", reg );
+            sprintf(lbl, "x%d", reg);
 
          DEBUGString(dbgRenderer, DBG_ZP_REG, y, lbl, col_label);
 
