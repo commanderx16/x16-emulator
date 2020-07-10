@@ -2,6 +2,13 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
+// This emulates
+// * setting and getting the date and time
+// * binary/BCD and 12h/24h modes
+// * RAM
+// It does not emulate the timer, IRQ,
+// and various other settings yet.
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
@@ -24,7 +31,7 @@ static uint8_t year;
 
 static bool h24; // 12/24h: 0 = AM/PM, 1 = 24h
 static bool dm;  // data mode: 0 = BCD, 1 = binary
-static uint8_t rtc_ram[0x4d];
+static uint8_t rtc_ram[0x80];
 
 static uint8_t
 encode_byte(uint8_t in)
@@ -164,10 +171,6 @@ rtc_read(uint8_t reg)
 {
 	reg = reg & 0x7f;
 
-	if (reg >= 0x33) {
-		return rtc_ram[reg - 0x33];
-	}
-
 	switch (reg) {
 		case 0:
 			return encode_byte(seconds);
@@ -191,19 +194,15 @@ rtc_read(uint8_t reg)
 			return encode_byte(year);
 		case 0xb: // control B
 			return dm << 2 | h24 << 1;
+		default:
+			return rtc_ram[reg];
 	}
-	return 0;
 }
 
 void
 rtc_write(uint8_t reg, uint8_t value)
 {
 	reg = reg & 0x7f;
-
-	if (reg >= 0x33) {
-		rtc_ram[reg - 0x33] = value;
-		return;
-	}
 
 	switch (reg) {
 		case 0:
@@ -239,6 +238,9 @@ rtc_write(uint8_t reg, uint8_t value)
 		case 0xb: // control B
 			dm = !!(value & 4);
 			h24 = !!(value & 2);
+			break;
+		default:
+			rtc_ram[reg] = value;
 			break;
 	}
 }
