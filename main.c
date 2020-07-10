@@ -24,6 +24,7 @@
 #include "ps2.h"
 #include "vera_spi.h"
 #include "sdcard.h"
+#include "rtc.h"
 #include "loadsave.h"
 #include "glue.h"
 #include "debugger.h"
@@ -219,6 +220,7 @@ machine_reset()
 	via1_init();
 	via2_init();
 	video_reset();
+	rtc_init();
 	reset6502();
 }
 
@@ -1011,6 +1013,7 @@ emulator_loop(void *param)
 			vera_spi_step();
 			new_frame |= video_step(MHZ);
 		}
+		rtc_step(clocks);
 		audio_render(clocks);
 
 		instruction_counter++;

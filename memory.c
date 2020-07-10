@@ -13,6 +13,7 @@
 #include "ym2151.h"
 #include "ps2.h"
 #include "cpu/fake6502.h"
+#include "rtc.h"
 
 uint8_t ram_bank;
 uint8_t rom_bank;
@@ -21,6 +22,8 @@ uint8_t *RAM;
 uint8_t ROM[ROM_SIZE];
 
 bool led_status;
+static uint8_t addr_ym = 0;
+static uint8_t addr_rtc = 0;
 
 #define DEVICE_EMULATOR (0x9fb0)
 
@@ -73,11 +76,9 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 		} else if (address >= 0x9f20 && address < 0x9f40) {
 			return video_read(address & 0x1f, debugOn);
 		} else if (address >= 0x9f40 && address < 0x9f60) {
-			// TODO:
-			//   $9F40 & $9F41: YM2151
-			//   $9F42 & $9F43: SAA1099P
-			//   $9F44: RTC ADDR
-			//   $9F46: RTC DATA
+			if (address == 0x9f46) { // RTC data
+				return rtc_read(addr_rtc);
+			}
 			return 0;
 		} else if (address >= 0x9fb0 && address < 0x9fc0) {
 			// emulator state
@@ -100,7 +101,6 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 void
 write6502(uint16_t address, uint8_t value)
 {
-	static uint8_t lastAudioAdr = 0;
 	if (address < 2) { // CPU I/O ports
 		cpuio_write(address, value);
 	} else if (address < 0x9f00) { // RAM
@@ -113,15 +113,17 @@ write6502(uint16_t address, uint8_t value)
 		} else if (address >= 0x9f20 && address < 0x9f40) {
 			video_write(address & 0x1f, value);
 		} else if (address >= 0x9f40 && address < 0x9f60) {
-			if (address == 0x9f40) {
-				lastAudioAdr = value;
-			} else if (address == 0x9f41) {
-				YM_write_reg(lastAudioAdr, value);
+			if (address == 0x9f40) {        // YM address
+				addr_ym = value;
+			} else if (address == 0x9f41) { // YM data
+				YM_write_reg(addr_ym, value);
+			} else if (address == 0x9f44) { // RTC address
+				addr_rtc = value;
+			} else if (address == 0x9f46) { // RTC data
+				rtc_write(addr_rtc, value);
 			}
 			// TODO:
 			//   $9F42 & $9F43: SAA1099P
-			//   $9F44: RTC ADDR
-			//   $9F46: RTC DATA
 		} else if (address >= 0x9fb0 && address < 0x9fc0) {
 			// emulator state
 			emu_write(address & 0xf, value);
