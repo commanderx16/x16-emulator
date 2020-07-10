@@ -100,6 +100,7 @@ static bool sprite_line_enable;
 
 float scan_pos_x;
 uint16_t scan_pos_y;
+int frame_count = 0;
 
 static uint8_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT * 4];
 
@@ -818,6 +819,13 @@ render_line(uint16_t y)
 	if (sprite_line_enable) {
 		render_sprite_line(eff_y);
 	}
+
+	if (warp_mode && (frame_count & 63)) {
+		// sprites were needed for the collision IRQ, but we can skip
+		// everything else if we're in warp mode, most of the time
+		return;
+	}
+
 	if (layer_line_enable[0]) {
 		if (layer_properties[0].text_mode) {
 			render_layer_line_text(0, eff_y);
@@ -998,6 +1006,7 @@ video_step(float mhz)
 		if (scan_pos_y == SCAN_HEIGHT) {
 			scan_pos_y = 0;
 			new_frame = true;
+			frame_count++;
 			if (ien & 1) { // VSYNC IRQ
 				isr |= 1;
 			}
