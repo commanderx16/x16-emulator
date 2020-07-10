@@ -30,7 +30,7 @@ static uint8_t
 encode_byte(uint8_t in)
 {
 	if (!dm) {
-		in = ((in / 10) << 4) | (in & 10);
+		in = ((in / 10) << 4) | (in % 10);
 	}
 	return in;
 }
@@ -38,7 +38,7 @@ encode_byte(uint8_t in)
 static uint8_t
 encode_byte_hour(uint8_t h)
 {
-	static bool pm = false;
+	bool pm = false;
 
 	if (!h24) {
 		// AM/PM
@@ -66,7 +66,7 @@ decode_byte(uint8_t in)
 static uint8_t
 decode_byte_hour(uint8_t h)
 {
-	static bool pm = false;
+	bool pm = false;
 
 	if (!h24) {
 		pm = (h >> 7);
@@ -86,6 +86,9 @@ decode_byte_hour(uint8_t h)
 void
 rtc_init()
 {
+	dm = true;
+	h24 = true;
+
 	seconds = 0;
 	seconds_alarm = 0;
 	minutes = 0;
@@ -205,24 +208,34 @@ rtc_write(uint8_t reg, uint8_t value)
 	switch (reg) {
 		case 0:
 			seconds = decode_byte(value);
+			break;
 		case 1:
 			seconds_alarm = decode_byte(value);
+			break;
 		case 2:
 			minutes = decode_byte(value);
+			break;
 		case 3:
 			minutes_alarm = decode_byte(value);
+			break;
 		case 4:
 			hours = decode_byte_hour(value);
+			break;
 		case 5:
 			hours_alarm = decode_byte_hour(value);
+			break;
 		case 6:
 			day_of_week = decode_byte(value);
+			break;
 		case 7:
 			day = decode_byte(value);
+			break;
 		case 8:
 			month = decode_byte(value);
+			break;
 		case 9:
 			year = decode_byte(value);
+			break;
 		case 0xb: // control B
 			dm = !!(value & 4);
 			h24 = !!(value & 2);
