@@ -11,6 +11,7 @@
 #include "video.h"
 #include "ym2151.h"
 #include "ps2.h"
+#include "cpu/fake6502.h"
 
 uint8_t ram_bank;
 uint8_t rom_bank;
@@ -221,6 +222,16 @@ emu_read(uint8_t reg, bool debugOn)
 		return save_on_exit ? 1 : 0;
 	} else if (reg == 5) {
 		return record_gif;
+
+	} else if (reg == 8) {
+		return (clockticks6502 >> 0) & 0xff;
+	} else if (reg == 9) {
+		return (clockticks6502 >> 8) & 0xff;
+	} else if (reg == 10) {
+		return (clockticks6502 >> 16) & 0xff;
+	} else if (reg == 11) {
+		return (clockticks6502 >> 24) & 0xff;
+
 	} else if (reg == 13) {
 		return keymap;
 	} else if (reg == 14) {
