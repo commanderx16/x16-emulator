@@ -1,3 +1,4 @@
+
 // *******************************************************************************************
 // *******************************************************************************************
 //
@@ -25,10 +26,12 @@ static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift);
 
 static void DEBUGNumber(int x,int y,int n,int w, SDL_Color colour);
 static void DEBUGAddress(int x, int y, int bank, int addr, SDL_Color colour);
+static void DEBUGVAddress(int x, int y, int addr, SDL_Color colour);
 
 static void DEBUGRenderData(int y,int data);
 static void DEBUGRenderZeroPageRegisters(int y);
 static int DEBUGRenderRegisters(void);
+static void DEBUGRenderVRAM(int y, int data);
 static void DEBUGRenderCode(int lines,int initialPC);
 static void DEBUGRenderStack(int bytesCount);
 static void DEBUGRenderCmdLine();
@@ -83,7 +86,10 @@ static void DEBUGExecCmd();
 
 #define DBGMAX_ZERO_PAGE_REGISTERS 20
 
-enum DBG_CMD { CMD_DUMP_MEM='m', CMD_DISASM='d', CMD_SET_BANK='b', CMD_SET_REGISTER='r' };
+#define DDUMP_RAM	0
+#define DDUMP_VERA	1
+
+enum DBG_CMD { CMD_DUMP_MEM='m', CMD_DUMP_VERA='v', CMD_DISASM='d', CMD_SET_BANK='b', CMD_SET_REGISTER='r', CMD_FILL_MEMORY='f' };
 
 // RGB colours
 const SDL_Color col_bkgnd= {0, 0, 0, 255};
@@ -101,6 +107,7 @@ int currentBank = -1;
 int currentMode = DMODE_RUN;									// Start running.
 int breakPoint = -1; 											// User Break
 int stepBreakPoint = -1;										// Single step break.
+int dumpmode          = DDUMP_RAM;
 
 char cmdLine[64]= "";											// command line buffer
 int currentPosInLine= 0;										// cursor position in the buffer (NOT USED _YET_)
@@ -268,11 +275,19 @@ static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift) {
 			break;
 
 		case SDLK_PAGEDOWN:
-			currentData= (currentData + 0xD0) & 0xFFFF;
+			if (dumpmode == DDUMP_RAM) {
+				currentData = (currentData + 0x128) & 0xFFFF;
+			} else {
+				currentData = (currentData + 0x250) & 0x1FFFF;
+			}
 			break;
 
 		case SDLK_PAGEUP:
-			currentData= (currentData - 0xD0) & 0xFFFF;
+			if (dumpmode == DDUMP_RAM) {
+				currentData = (currentData - 0x128) & 0xFFFF;
+			} else {
+				currentData = (currentData - 0x250) & 0x1FFFF;
+			}
 			break;
 
 		default:
@@ -319,7 +334,7 @@ static bool DEBUGBuildCmdLine(SDL_Keycode key) {
 }
 
 static void DEBUGExecCmd() {
-	int number, addr;
+	int number, addr, size, incr;
 	char reg[10];
 	char cmd;
 	char *line= ltrim(cmdLine);
@@ -339,6 +354,51 @@ static void DEBUGExecCmd() {
 				currentBank= (number & 0xFF0000) >> 16;
 			}
 			currentData= addr;
+			dumpmode    = DDUMP_RAM;
+			break;
+
+		case CMD_DUMP_VERA:
+			sscanf(line, "%x", &number);
+			addr = number & 0x1FFFF;
+			currentData = addr;
+			dumpmode    = DDUMP_VERA;
+			break;
+
+		case CMD_FILL_MEMORY:
+			size = 1;
+			sscanf(line, "%x %x %d %d", &addr, &number, &size, &incr);
+
+			if (dumpmode == DDUMP_RAM) {
+				addr &= 0xFFFF;
+				do {
+					if (addr >= 0xC000) {
+						// Nop.
+					} else if (addr >= 0xA000) {
+						RAM[0xa000 + (currentBank << 13) + addr - 0xa000] = number;
+					} else {
+						RAM[addr] = number;
+					}
+					if (incr) {
+						addr += incr;
+					} else {
+						++addr;
+					}
+					addr &= 0xFFFF;
+					--size;
+				} while (size > 0);
+			} else {
+				addr &= 0x1FFFF;
+				do {
+					video_space_write(addr, number);
+					if (incr) {
+						addr += incr;
+					} else {
+						++addr;
+					}
+					addr &= 0x1FFFF;
+					--size;
+				} while (size > 0);
+			}
 			break;
 
 		case CMD_DISASM:
@@ -410,6 +470,11 @@ void DEBUGRenderDisplay(int width, int height) {
 	DEBUGRenderCode(20, currentPC);							// Render 6502 disassembly.
 	DEBUGRenderData(21, currentData);
    DEBUGRenderZeroPageRegisters(21);
+	if (dumpmode == DDUMP_RAM) {
+		DEBUGRenderData(21, currentData);
+	} else {
+		DEBUGRenderVRAM(21, currentData);
+	}
 	DEBUGRenderStack(20);
 
 	DEBUGRenderCmdLine(xPos, rc.w, height);
@@ -430,6 +495,7 @@ static void DEBUGRenderCmdLine(int x, int width, int height) {
 	sprintf(buffer, ">%s", cmdLine);
 	DEBUGString(dbgRenderer, 0, DBG_HEIGHT-1, buffer, col_cmdLine);
 }
+
 // *******************************************************************************************
 //
 //									 Render Zero Page Registers
@@ -489,6 +555,22 @@ static void DEBUGRenderData(int y,int data) {
 		}
 		y++;
 		data += 8;
+	}
+}
+
+static void
+DEBUGRenderVRAM(int y, int data)
+{
+	while (y < DBG_HEIGHT - 2) {                                                   // To bottom of screen
+		DEBUGVAddress(DBG_MEMX, y, data & 0x1FFFF, col_label); // Show label.
+
+		for (int i = 0; i < 16; i++) {
+			int byte = video_space_read((data + i) & 0x1FFFF);
+			DEBUGNumber(DBG_MEMX + 6 + i * 3, y, byte, 2, col_data);
+//			DEBUGWrite(dbgRenderer, DBG_MEMX + 33 + i, y, byte, col_data);
+		}
+		y++;
+		data += 16;
 	}
 }
 
@@ -607,4 +689,10 @@ static void DEBUGAddress(int x, int y, int bank, int addr, SDL_Color colour) {
 
 	DEBUGNumber(x+3, y, addr, 4, colour);
 
+}
+
+static void
+DEBUGVAddress(int x, int y, int addr, SDL_Color colour)
+{
+	DEBUGNumber(x, y, addr, 5, colour);
 }
