@@ -468,10 +468,9 @@ void DEBUGRenderDisplay(int width, int height) {
 
 	DEBUGRenderRegisters();							// Draw register name and values.
 	DEBUGRenderCode(20, currentPC);							// Render 6502 disassembly.
-	DEBUGRenderData(21, currentData);
-   DEBUGRenderZeroPageRegisters(21);
 	if (dumpmode == DDUMP_RAM) {
 		DEBUGRenderData(21, currentData);
+		DEBUGRenderZeroPageRegisters(21);
 	} else {
 		DEBUGRenderVRAM(21, currentData);
 	}
