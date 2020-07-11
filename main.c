@@ -684,11 +684,11 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			if (!strcmp(argv[0], "NES")) {
-				joy1_mode = NES;
+				joy_mode[0] = NES;
 				argc--;
 				argv++;
 			} else if (!strcmp(argv[0], "SNES")) {
-				joy1_mode = SNES;
+				joy_mode[0] = SNES;
 				argc--;
 				argv++;
 			}
@@ -697,11 +697,11 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			if (!strcmp(argv[0], "NES")){
-				joy2_mode = NES;
+				joy_mode[1] = NES;
 				argc--;
 				argv++;
 			} else if (!strcmp(argv[0], "SNES")){
-				joy2_mode = SNES;
+				joy_mode[1] = SNES;
 				argc--;
 				argv++;
 			}
