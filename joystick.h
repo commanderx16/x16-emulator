@@ -21,10 +21,12 @@
 #define JOY_DATA1_MASK 0x40
 #define JOY_DATA0_MASK 0x80
 
-enum joy_status { NES=0, NONE=1, SNES=0xF };
-extern enum joy_status joy_mode[2];
+#define NUM_JOYSTICKS 4
+
+enum joy_status { NONE, NES, SNES };
+extern enum joy_status joy_mode[NUM_JOYSTICKS];
+extern bool joystick_data[NUM_JOYSTICKS];
 extern bool joystick_latch, joystick_clock;
-extern bool joystick_data[2];
 
 
 bool joystick_init(); //initialize SDL controllers

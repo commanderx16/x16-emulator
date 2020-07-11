@@ -692,7 +692,6 @@ main(int argc, char **argv)
 				argc--;
 				argv++;
 			}
-
 		} else if (!strcmp(argv[0], "-joy2")){
 			argc--;
 			argv++;
@@ -702,6 +701,30 @@ main(int argc, char **argv)
 				argv++;
 			} else if (!strcmp(argv[0], "SNES")){
 				joy_mode[1] = SNES;
+				argc--;
+				argv++;
+			}
+		} else if (!strcmp(argv[0], "-joy3")){
+			argc--;
+			argv++;
+			if (!strcmp(argv[0], "NES")){
+				joy_mode[2] = NES;
+				argc--;
+				argv++;
+			} else if (!strcmp(argv[0], "SNES")){
+				joy_mode[2] = SNES;
+				argc--;
+				argv++;
+			}
+		} else if (!strcmp(argv[0], "-joy4")){
+			argc--;
+			argv++;
+			if (!strcmp(argv[0], "NES")){
+				joy_mode[3] = NES;
+				argc--;
+				argv++;
+			} else if (!strcmp(argv[0], "SNES")){
+				joy_mode[3] = SNES;
 				argc--;
 				argv++;
 			}
