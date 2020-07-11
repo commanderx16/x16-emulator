@@ -55,8 +55,8 @@ via1_read(uint8_t reg)
 			(via1registers[3] & PS2_CLK_MASK ? 0 : ps2_port[0].clk_out << 1) |
 			(via1registers[3] & PS2_DATA_MASK ? 0 : ps2_port[0].data_out);
 			value = value |
-				(joystick1_data ? JOY_DATA0_MASK : 0) |
-				(joystick2_data ? JOY_DATA1_MASK : 0);
+				(joystick_data[0] ? JOY_DATA0_MASK : 0) |
+				(joystick_data[1] ? JOY_DATA1_MASK : 0);
 		return value;
 	} else if (reg == 4 || reg == 5 || reg == 8 || reg == 9) { // timer
 		// timer A and B: return random numbers for RND(0)
