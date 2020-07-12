@@ -100,7 +100,7 @@ sdcard_handle(uint8_t inbyte)
 					break;
 				}
 				case 0x40 + 58: {
-					static const uint8_t r[] = { 0, 0, 0, 0 };
+					static const uint8_t r[] = { 0, 0x40, 0, 0 };
 					response = r;
 					response_length = sizeof(r);
 					break;
