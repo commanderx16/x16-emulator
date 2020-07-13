@@ -29,5 +29,8 @@ void via1_write(uint8_t reg, uint8_t value);
 uint8_t video_space_read(uint32_t address);
 void video_space_write(uint32_t address, uint8_t value);
 
+bool video_is_tilemap_address(int addr);
+bool video_is_tiledata_address(int addr);
+bool video_is_special_address(int addr);
 
 #endif
