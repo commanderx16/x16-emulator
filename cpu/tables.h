@@ -34,7 +34,7 @@ static void (*optable[256])() = {
 /* 9 */      bcc,  sta,  sta,  nop,  sty,  sta,  stx,  nop,  tya,  sta,  txs,  nop,  stz,  sta,  stz,  nop, /* 9 */
 /* A */      ldy,  lda,  ldx,  nop,  ldy,  lda,  ldx,  nop,  tay,  lda,  tax,  nop,  ldy,  lda,  ldx,  nop, /* A */
 /* B */      bcs,  lda,  lda,  nop,  ldy,  lda,  ldx,  nop,  clv,  lda,  tsx,  nop,  ldy,  lda,  ldx,  nop, /* B */
-/* C */      cpy,  cmp,  nop,  nop,  cpy,  cmp,  dec,  nop,  iny,  cmp,  dex,  nop,  cpy,  cmp,  dec,  nop, /* C */
+/* C */      cpy,  cmp,  nop,  nop,  cpy,  cmp,  dec,  nop,  iny,  cmp,  dex,  wai,  cpy,  cmp,  dec,  nop, /* C */
 /* D */      bne,  cmp,  cmp,  nop,  nop,  cmp,  dec,  nop,  cld,  cmp,  phx,  nop,  nop,  cmp,  dec,  nop, /* D */
 /* E */      cpx,  sbc,  nop,  nop,  cpx,  sbc,  inc,  nop,  inx,  sbc,  nop,  nop,  cpx,  sbc,  inc,  nop, /* E */
 /* F */      beq,  sbc,  sbc,  nop,  nop,  sbc,  inc,  nop,  sed,  sbc,  plx,  nop,  nop,  sbc,  inc,  dbg  /* F */
@@ -54,7 +54,7 @@ static const uint32_t ticktable[256] = {
 /* 9 */       2,    6,    5,    2,    4,    4,    4,    2,    2,    5,    2,    2,    4,    5,    5,    2, /* 9 */
 /* A */       2,    6,    2,    2,    3,    3,    3,    2,    2,    2,    2,    2,    4,    4,    4,    2, /* A */
 /* B */       2,    5,    5,    2,    4,    4,    4,    2,    2,    4,    2,    2,    4,    4,    4,    2, /* B */
-/* C */       2,    6,    2,    2,    3,    3,    5,    2,    2,    2,    2,    2,    4,    4,    6,    2, /* C */
+/* C */       2,    6,    2,    2,    3,    3,    5,    2,    2,    2,    2,    3,    4,    4,    6,    2, /* C */
 /* D */       2,    5,    5,    2,    2,    4,    6,    2,    2,    4,    3,    2,    2,    4,    7,    2, /* D */
 /* E */       2,    6,    2,    2,    3,    3,    5,    2,    2,    2,    2,    2,    4,    4,    6,    2, /* E */
 /* F */       2,    5,    5,    2,    2,    4,    6,    2,    2,    4,    4,    2,    2,    4,    7,    1  /* F */

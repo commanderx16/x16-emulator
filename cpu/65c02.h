@@ -124,3 +124,13 @@ static void trb() {
 static void dbg() {
     DEBUGBreakToDebugger();                          // Invoke debugger.
 }
+
+// *******************************************************************************************
+//
+//                                     Wait for interrupt
+//
+// *******************************************************************************************
+
+static void wai() {
+	if (~status & FLAG_INTERRUPT) waiting = 1;
+}
