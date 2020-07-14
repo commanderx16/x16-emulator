@@ -27,21 +27,31 @@ int disasm(uint16_t pc, uint8_t *RAM, char *line, unsigned int max_line, bool de
 	//
 	//
 	int isBranch = (opcode == 0x80) || ((opcode & 0x1F) == 0x10);
-	int length = 1;
+	//
+	//		Ditto bbr and bbs, the "zero-page, relative" ops.
+	//		$0F,$1F,$2F,$3F,$4F,$5F,$6F,$7F,$8F,$9F,$AF,$BF,$CF,$DF,$EF,$FF
+	//
+	int isZprel  = (opcode & 0x0F) == 0x0F;
 
+	int length   = 1;
 	strncpy(line,mnemonic,max_line);
 
-	if (strstr(line,"%02x")) {
-		length = 2;
-		if (isBranch) {
-			snprintf(line, max_line, mnemonic, pc+2 + (int8_t)real_read6502(pc+1, debugOn, bank));
-		} else {
-			snprintf(line, max_line, mnemonic, real_read6502(pc+1, debugOn, bank));
+	if (isZprel) {
+		snprintf(line, max_line, mnemonic, real_read6502(pc + 1, debugOn, bank), pc + 3 + (int8_t)real_read6502(pc + 2, debugOn, bank));
+	    length = 3;
+	} else {
+		if (strstr(line, "%02x")) {
+			length = 2;
+			if (isBranch) {
+				snprintf(line, max_line, mnemonic, pc + 2 + (int8_t)real_read6502(pc + 1, debugOn, bank));
+			} else {
+				snprintf(line, max_line, mnemonic, real_read6502(pc + 1, debugOn, bank));
+			}
 		}
-	}
-	if (strstr(line,"%04x")) {
-		length = 3;
-		snprintf(line, max_line, mnemonic, real_read6502(pc+1, debugOn, bank) | real_read6502(pc+2, debugOn, bank)<<8);
+		if (strstr(line, "%04x")) {
+			length = 3;
+			snprintf(line, max_line, mnemonic, real_read6502(pc + 1, debugOn, bank) | real_read6502(pc + 2, debugOn, bank) << 8);
+		}
 	}
 	return length;
 }

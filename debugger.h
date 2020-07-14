@@ -26,7 +26,7 @@ void DEBUGFreeUI();
 #define DBG_WIDTH 		(60)									// Char cells across
 #define DBG_HEIGHT 		(60)
 
-#define DBG_ASMX 		(4)										// Disassembly starts here
+#define DBG_ASMX 		(1)										// Disassembly starts here
 #define DBG_LBLX 		(26) 									// Debug labels start here
 #define DBG_DATX		(30)									// Debug data starts here.
 #define DBG_STCK		(40)									// Debug stack starts here.
