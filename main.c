@@ -788,7 +788,7 @@ main(int argc, char **argv)
 	SDL_RWclose(f);
 
 	if (sdcard_path) {
-		sdcard_file = SDL_RWFromFile(sdcard_path, "rb");
+		sdcard_file = SDL_RWFromFile(sdcard_path, "r+b");
 		if (!sdcard_file) {
 			printf("Cannot open %s!\n", sdcard_path);
 			exit(1);
