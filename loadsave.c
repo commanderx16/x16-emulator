@@ -223,7 +223,11 @@ SAVE()
 	SDL_WriteU8(f, start & 0xff);
 	SDL_WriteU8(f, start >> 8);
 
-	SDL_RWwrite(f, RAM + start, 1, end - start);
+   if(start >= 0xa000 && start < 0xc000) {
+      SDL_RWwrite(f, RAM + ((uint16_t)memory_get_ram_bank() << 13) + start, 1, end - start);
+   } else {
+      SDL_RWwrite(f, RAM + start, 1, end - start);
+   }
 	SDL_RWclose(f);
 
 	status &= 0xfe;
