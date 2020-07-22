@@ -44,5 +44,7 @@ trb abso 6 $1c
 tsb zp 5 $04
 tsb abso 6 $0c
 
+wai imp 3 $cb
+
 dbg imp 1 $FF
 

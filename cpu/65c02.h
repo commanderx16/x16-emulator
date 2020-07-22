@@ -124,3 +124,80 @@ static void trb() {
 static void dbg() {
     DEBUGBreakToDebugger();                          // Invoke debugger.
 }
+
+// *******************************************************************************************
+//
+//                                     Wait for interrupt
+//
+// *******************************************************************************************
+
+static void wai() {
+	if (~status & FLAG_INTERRUPT) waiting = 1;
+}
+
+// *******************************************************************************************
+//
+//                                     BBR and BBS
+//
+// *******************************************************************************************
+static void bbr(uint16_t bitmask)
+{
+	if ((getvalue() & bitmask) == 0) {
+		oldpc = pc;
+		pc += reladdr;
+		if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; //check if jump crossed a page boundary
+		else clockticks6502++;
+	}
+}
+
+static void bbr0() { bbr(0x01); }
+static void bbr1() { bbr(0x02); }
+static void bbr2() { bbr(0x04); }
+static void bbr3() { bbr(0x08); }
+static void bbr4() { bbr(0x10); }
+static void bbr5() { bbr(0x20); }
+static void bbr6() { bbr(0x40); }
+static void bbr7() { bbr(0x80); }
+
+static void bbs(uint16_t bitmask)
+{
+	if ((getvalue() & bitmask) != 0) {
+		oldpc = pc;
+		pc += reladdr;
+		if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; //check if jump crossed a page boundary
+		else clockticks6502++;
+	}
+}
+
+static void bbs0() { bbs(0x01); }
+static void bbs1() { bbs(0x02); }
+static void bbs2() { bbs(0x04); }
+static void bbs3() { bbs(0x08); }
+static void bbs4() { bbs(0x10); }
+static void bbs5() { bbs(0x20); }
+static void bbs6() { bbs(0x40); }
+static void bbs7() { bbs(0x80); }
+
+// *******************************************************************************************
+//
+//                                     SMB and RMB
+//
+// *******************************************************************************************
+
+static void smb0() { putvalue(getvalue() | 0x01); }
+static void smb1() { putvalue(getvalue() | 0x02); }
+static void smb2() { putvalue(getvalue() | 0x04); }
+static void smb3() { putvalue(getvalue() | 0x08); }
+static void smb4() { putvalue(getvalue() | 0x10); }
+static void smb5() { putvalue(getvalue() | 0x20); }
+static void smb6() { putvalue(getvalue() | 0x40); }
+static void smb7() { putvalue(getvalue() | 0x80); }
+
+static void rmb0() { putvalue(getvalue() & ~0x01); }
+static void rmb1() { putvalue(getvalue() & ~0x02); }
+static void rmb2() { putvalue(getvalue() & ~0x04); }
+static void rmb3() { putvalue(getvalue() & ~0x08); }
+static void rmb4() { putvalue(getvalue() & ~0x10); }
+static void rmb5() { putvalue(getvalue() & ~0x20); }
+static void rmb6() { putvalue(getvalue() & ~0x40); }
+static void rmb7() { putvalue(getvalue() & ~0x80); }

@@ -100,3 +100,11 @@ static void indy() { // (indirect),Y
         penaltyaddr = 1;
     }
 }
+
+static void zprel() { // zero-page, relative for branch ops (8-bit immediatel value, sign-extended)
+	ea = (uint16_t)read6502(pc);
+	reladdr = (uint16_t)read6502(pc+1);
+	if (reladdr & 0x80) reladdr |= 0xFF00;
+
+	pc += 2;
+}
