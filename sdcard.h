@@ -7,6 +7,7 @@
 #include <SDL.h>
 
 extern SDL_RWops *sdcard_file;
+extern char *sdcard_dir;
 
 void sdcard_select();
 uint8_t sdcard_handle(uint8_t inbyte);

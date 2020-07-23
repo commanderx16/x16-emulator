@@ -392,6 +392,8 @@ usage()
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
 	printf("\tSpecify SD card image (partition map + FAT32)\n");
+    printf("-sdcard-dir <directory>\n");
+    printf("\tSpecify directory to mount as SD card\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
 	printf("\tLoad application from the local disk into RAM\n");
 	printf("\t(.PRG file with 2 byte start address header)\n");
@@ -471,6 +473,7 @@ main(int argc, char **argv)
 	char *prg_path = NULL;
 	char *bas_path = NULL;
 	char *sdcard_path = NULL;
+    char *sdcard_dir_path = NULL;
 	bool run_geos = false;
 	bool run_test = false;
 	int test_number = 0;
@@ -582,6 +585,15 @@ main(int argc, char **argv)
 			sdcard_path = argv[0];
 			argc--;
 			argv++;
+         } else if (!strcmp(argv[0], "-sdcard-dir")) {
+             argc--;
+             argv++;
+             if (!argc || argv[0][0] == '-') {
+                 usage();
+             }
+             sdcard_dir_path = argv[0];
+             argc--;
+             argv++;
 		} else if (!strcmp(argv[0], "-warp")) {
 			argc--;
 			argv++;
@@ -794,6 +806,12 @@ main(int argc, char **argv)
 			exit(1);
 		}
 	}
+    if (sdcard_dir_path) {
+        sdcard_dir = sdcard_dir_path;
+    }
+    else {
+        sdcard_dir = ".";
+    }
 
 	prg_override_start = -1;
 	if (prg_path) {

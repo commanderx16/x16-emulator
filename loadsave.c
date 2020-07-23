@@ -17,6 +17,19 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+char *sdcard_dir;
+
+static void convert_name(char *name, size_t length) {
+    for (size_t i = 0; i < length; i++) {
+        if (name[i] >= 'A' && name[i] <= 'Z') {
+            name[i] = name[i] - 'A' + 'a';
+        }
+        else if  (name[i] >= 'a' && name[i] <= 'z') {
+            name[i] = name[i] - 'a' + 'A';
+        }
+    }
+}
+
 static int
 create_directory_listing(uint8_t *data)
 {
@@ -40,9 +53,24 @@ create_directory_listing(uint8_t *data)
 	for (int i = 0; i < 16; i++) {
 		*data++ = ' ';
 	}
-	if (!(getcwd((char *)data - 16, 256))) {
-		return false;
-	}
+    if (strcmp(sdcard_dir, ".") == 0) {
+        if (!(getcwd((char *)data - 16, 256))) {
+            return false;
+        }
+    }
+    else {
+        char *name = strrchr(sdcard_dir, '/');
+        if (name == NULL) {
+            name = sdcard_dir;
+        }
+        else {
+            name += 1;
+        }
+        for (int i = 0; i < 16 && i < strlen(name); i++) {
+            data[i - 16] = name[i];
+        }
+    }
+    convert_name((char *)data - 16, 16);
 	*data++ = '"';
 	*data++ = ' ';
 	*data++ = '0';
@@ -52,12 +80,17 @@ create_directory_listing(uint8_t *data)
 	*data++ = 'C';
 	*data++ = 0;
 
-	if (!(dirp = opendir("."))) {
+	if (!(dirp = opendir(sdcard_dir))) {
 		return 0;
 	}
 	while ((dp = readdir(dirp))) {
+        if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0) {
+            continue;
+        }
+        char full_name[8192];
+        snprintf(full_name, sizeof(full_name), "%s/%s", sdcard_dir, dp->d_name);
 		size_t namlen = strlen(dp->d_name);
-		stat(dp->d_name, &st);
+		stat(full_name, &st);
 		file_size = (st.st_size + 255)/256;
 		if (file_size > 0xFFFF) {
 			file_size = 0xFFFF;
@@ -83,6 +116,7 @@ create_directory_listing(uint8_t *data)
 			namlen = 16; // TODO hack
 		}
 		memcpy(data, dp->d_name, namlen);
+        convert_name((char *)data, namlen);
 		data += namlen;
 		*data++ = '"';
 		for (int i = namlen; i < 16; i++) {
@@ -121,6 +155,7 @@ LOAD()
 	uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
 	memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
 	filename[len] = 0;
+    convert_name(filename, len);
 
 	uint16_t override_start = (x | (y << 8));
 
@@ -133,7 +168,9 @@ LOAD()
 		RAM[STATUS] = 0;
 		a = 0;
 	} else {
-		SDL_RWops *f = SDL_RWFromFile(filename, "rb");
+        char full_name[8192];
+        snprintf(full_name, sizeof(full_name), "%s/%s", sdcard_dir, filename);
+		SDL_RWops *f = SDL_RWFromFile(full_name, "rb");
 		if (!f) {
 			a = 4; // FNF
 			RAM[STATUS] = a;
@@ -203,6 +240,7 @@ SAVE()
 	uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
 	memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
 	filename[len] = 0;
+    convert_name(filename, len);
 
 	uint16_t start = RAM[a] | RAM[a + 1] << 8;
 	uint16_t end = x | y << 8;
@@ -212,7 +250,9 @@ SAVE()
 		return;
 	}
 
-	SDL_RWops *f = SDL_RWFromFile(filename, "wb");
+    char full_name[8192];
+    snprintf(full_name, sizeof(full_name), "%s/%s", sdcard_dir, filename);
+	SDL_RWops *f = SDL_RWFromFile(full_name, "wb");
 	if (!f) {
 		a = 4; // FNF
 		RAM[STATUS] = a;
@@ -230,4 +270,3 @@ SAVE()
 	RAM[STATUS] = 0;
 	a = 0;
 }
-
