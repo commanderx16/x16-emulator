@@ -1,24 +1,28 @@
+
 // DOM elements
 const statusElement = document.getElementById('status');
-const progressElement = document.getElementById('progress');
-const spinnerElement = document.getElementById('spinner');
 const output = document.getElementById('output');
 const canvas = document.getElementById('canvas');
 const code = document.getElementById('code');
+const progressElement = document.getElementById('progress');
+const spinnerElement = document.getElementById('spinner');
+const volumeElementFullScreen = document.getElementById('fullscreen_volume_icon');
+const volumeElement = document.getElementById('volume_icon');
 
 
-// Getting Audio Context
+// Audio Context Setup
 var audioContext;
 
 window.addEventListener('load', init, false);
 function init() {
-  try {
-    window.AudioContext = window.AudioContext||window.webkitAudioContext;
-    audioContext = new AudioContext();
-  }
-  catch(e) {
-      console.log("AudioContext not supported on this Browser.")
-  }
+
+    try {
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContext();
+    }
+    catch (e) {
+        console.log("AudioContext not supported on this Browser.")
+    }
 }
 
 //detecting keyboard layout...
@@ -48,49 +52,82 @@ if (layouts.includes(lang)) {
     lang = 'en-us';
 }
 
+var url = new URL(window.location.href);
+var manifest_link = url.searchParams.get("manifest");
+var isZipFile = false;
 
+if (manifest_link && manifest_link.endsWith('.zip')) {
+    isZipFile = true;
+}
+else if (manifest_link && !manifest_link.endsWith('/')) {
+    manifest_link = manifest_link + '/';
+}
+
+var emuArguments = ['-keymap', lang];
+
+if (manifest_link) {
+    openFs();
+}
 
 var Module = {
+
     preRun: [
-        function() { //Set the keyboard handling element (it's document by default). Keystrokes are stopped from propagating by emscripten, maybe there's an option to disable this?
+        function () { //Set the keyboard handling element (it's document by default). Keystrokes are stopped from propagating by emscripten, maybe there's an option to disable this?
             ENV.SDL_EMSCRIPTEN_KEYBOARD_ELEMENT = "#canvas";
+        },
+        function () {
+
+            if (manifest_link) {
+                if (isZipFile === true) {
+                    loadZip(manifest_link);
+                }
+                else {
+                    loadManifest();
+                }
+            }
         }
     ],
     postRun: [
-        function() {
+        function () {
             canvas.focus();
         }
     ],
-    arguments: [ //set key map to user's lang
-        '-keymap', lang
-    ],
-    print: (function() {
+    arguments: emuArguments,
+    print: (function () {
 
         if (output) output.value = ''; // clear browser cache
-        return function(text) {
+        return function (text) {
             if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
             logOutput(text);
         };
     })(),
-    printErr: function(text) {
+    printErr: function (text) {
         if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
 
-        logOutput("[error] " + text);
+        // filtering out some known issues for easier reporting from people who have startup problems
+        if (text.startsWith('wasm streaming compile failed:') ||
+            text.startsWith('falling back to ArrayBuffer instantiation') ||
+            text.startsWith('Calling stub instead of sigaction')) {
+            logOutput("[known behavior] " + text);
+            return;
+        }
+
+        logError(text);
 
 
     },
-    canvas: (function() {
+    canvas: (function () {
 
         // As a default initial behavior, pop up an alert when webgl context is lost. To make your
         // application robust, you may want to override this behavior before shipping!
         // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
-        canvas.addEventListener("webglcontextlost", function(e) {
+        canvas.addEventListener("webglcontextlost", function (e) {
             alert('WebGL context lost. You will need to reload the page.');
             e.preventDefault();
         }, false);
         return canvas;
     })(),
-    setStatus: function(text) {
+    setStatus: function (text) {
         if (!Module.setStatus.last) Module.setStatus.last = {
             time: Date.now(),
             text: ''
@@ -117,39 +154,146 @@ var Module = {
         logOutput(text);
     },
     totalDependencies: 0,
-    monitorRunDependencies: function(left) {
+    monitorRunDependencies: function (left) {
         this.totalDependencies = Math.max(this.totalDependencies, left);
         Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
     }
 };
 
-
-
-
 Module.setStatus('Downloading file...');
 logOutput('Downloading file...');
 
-window.onerror = function() {
-    Module.setStatus('Exception thrown, see JavaScript console');
+window.onerror = function () {
+    // Module.setStatus('Exception thrown, see JavaScript console');
     spinnerElement.style.display = 'none';
-    Module.setStatus = function(text) {
+    Module.setStatus = function (text) {
         if (text) Module.printErr('[post-exception status] ' + text);
     };
 };
 
+function loadZip(zipFileUrl) {
+    addRunDependency('load-zip');
+    fetch(zipFileUrl)
+        .then(function (response) {
+            if (response.status === 200 || response.status === 0) {
+                return Promise.resolve(response.blob());
+            } else {
+                return Promise.reject(new Error(response.statusText));
+                // todo error handling here, display to user
+            }
+        })
+        .then(JSZip.loadAsync)
+        .then(extractManifestFromBuffer)
+        .then(function () {
+            console.log("Starting Emulator...")
+            console.log("Emulator arguments: ", emuArguments)
+            removeRunDependency('load-zip');
+        });
+}
 
-function enableAudio(enable)
-{
-    if (enable === true)
-    {
-        if (audioContext && audioContext.state != "running")
-        {
-            audioContext.resume().then(() => {
-                console.log("Resumed Audio.")
-                Module.ccall("j2c_start_audio", "void", ["void"], []);
-              });
-        }
+function extractManifestFromBuffer(zip) {
+    if (zip.file("manifest.json") == null) {
+        logError("Unable to find manifest.json within: " + manifest_link);
+        return Promise.resolve();
     }
+    else {
+        return zip.file("manifest.json").async("uint8array")
+            .then(function (content) {
+                let manifestString = new TextDecoder("utf-8").decode(content);
+                let manifestObject = JSON.parse(manifestString);
+                console.log("Parsed manifest from zip:")
+                console.log(manifestObject);
+
+                if (manifestObject.start_bas && manifestObject.start_prg) {
+                    logError("start_bas and start_prg used in manifest");
+                    logError("This is likely an error, defaulting to start_bas")
+                }
+
+                if (manifestObject.start_bas) {
+                    console.log('Adding start BAS:', manifestObject.start_bas)
+                    if (!manifestObject.resources.includes(manifestObject.start_bas)) {
+                        logError("start_bas not found within resources entries");
+                    }
+                    else {
+                        emuArguments.push('-bas', manifestObject.start_bas, '-run');
+                    }
+
+                }
+                else if (manifestObject.start_prg) {
+                    console.log('Adding start PRG: ', manifestObject.start_prg)
+                    if (!manifestObject.resources.includes(manifestObject.start_prg)) {
+                        logError("start_prg not found within resources entries");
+                    }
+                    else {
+                        emuArguments.push('-prg', manifestObject.start_prg, '-run');
+                    }
+                }
+
+                let promises = [];
+                manifestObject.resources.forEach(function (element) {
+                    let fileName = element.replace(/^.*[\\\/]/, '');
+
+                    if (zip.file(fileName) == null) {
+                        logError("Unable to find resources entry: " + fileName);
+                        logError("This is likely an error, check resources section in manifest.")
+                    } else {
+                        promises.push(zip.file(fileName).async("uint8array").then(function (content) {
+                            console.log('Writing to emulator filesystem:', fileName);
+                            FS.writeFile(fileName, content);
+                        }));
+                    }
+                });
+                return Promise.all(promises);
+            })
+            .then((value) => {
+                console.log("Emulator filesystem loading complete.")
+            });
+    }
+}
+
+function loadManifest() {
+    addRunDependency('load-manifest');
+    fetch(manifest_link + 'manifest.json').then(function (response) {
+        return response.json();
+    }).then(function (manifest) {
+        if (manifest.start_bas) {
+            emuArguments.push('-bas', manifest.start_bas, '-run');
+        }
+        else if (manifest.start_prg) {
+            console.log('Adding start PRG: ', manifest.start_prg)
+            emuArguments.push('-prg', manifest.start_prg, '-run');
+        }
+        console.log("Loading from manifest:")
+        console.log(manifest);
+        manifest.resources.forEach(element => {
+            element = manifest_link + element;
+            let filename = element.replace(/^.*[\\\/]/, '')
+            FS.createPreloadedFile('/', filename, element, true, true);
+
+        });
+        removeRunDependency('load-manifest');
+    }).catch(function () {
+        console.log("Unable to read manifest. Check the manifest http parameter");
+    });
+}
+
+function toggleAudio() {
+    if (audioContext && audioContext.state != "running") {
+        audioContext.resume().then(() => {
+            volumeElement.innerHTML = "volume_up";
+            volumeElementFullScreen.innerHTML = "volume_up";
+            console.log("Resumed Audio.")
+            Module.ccall("j2c_start_audio", "void", ["bool"], [true]);
+        });
+    } else if (audioContext && audioContext.state == "running") {
+        audioContext.suspend().then(function () {
+            console.log("Stopped Audio.")
+            volumeElement.innerHTML = "volume_off";
+            volumeElementFullScreen.innerHTML = "volume_off";
+            Module.ccall("j2c_start_audio", "void", ["bool"], [false]);
+        });
+    }
+    canvas.focus();
 }
 
 function resetEmulator() {
@@ -159,10 +303,8 @@ function resetEmulator() {
 }
 
 function runCode() {
-    enableAudio(true);
     Module.ccall("j2c_paste", "void", ["string"], ['\nNEW\n' + code.value + '\nRUN\n']);
     canvas.focus();
-
 }
 
 function closeFs() {
@@ -182,6 +324,15 @@ function logOutput(text) {
     }
     console.log(text);
 }
+
+function logError(text) {
+    if (output) {
+        output.innerHTML += "[error] " + text + "\n";
+        output.parentElement.scrollTop = output.parentElement.scrollHeight; // focus on bottom
+    }
+    console.error(text);
+}
+
 
 
 function getFirstBrowserLanguage() {
