@@ -91,7 +91,7 @@ int frames;
 int32_t sdlTicks_base;
 int32_t last_perf_update;
 int32_t perf_frame_count;
-char window_title[30];
+char window_title[40];
 
 #ifdef TRACE
 bool trace_mode = false;
