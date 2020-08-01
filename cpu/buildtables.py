@@ -35,7 +35,7 @@ OPCODE_REGEX_STR = "^(?P<{actnCode}>\\w+)\\s+(?P<{addrMode}>\\w+)\\s+(?P<{mchnCy
 ADDR_MODE_HEADER = "static void (*addrtable[256])() = {"
 ACTN_CODE_HEADER = "static void (*optable[256])() = {"
 MCHN_CYCLES_HEADER = "static const uint32_t ticktable[256] = {"
-MNEMONICS_DISASSEM_HEADER = "static char *mnemonics[256] = {"
+MNEMONICS_DISASSEM_HEADER = "static const char *mnemonics[256] = {"
 TABLE_MAP = "/*{0:8}|  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  A  |  B  |  C  |  D  |  E  |  F  |{0:5}*/\n"
 
 #####################################
@@ -116,6 +116,7 @@ def generateTable(hFileName, header, element):
             " " if element == ACTN_KEY_STR else "")
         )
     hFileName.write("};\n")
+
 
 
 #######################################################################################################################
