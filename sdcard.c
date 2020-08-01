@@ -3,9 +3,15 @@
 // All rights reserved. License: 2-clause BSD
 
 #include <stdio.h>
+#include <stdbool.h>
 #include "sdcard.h"
 
 static int cmd_receive_counter;
+static int data_receive_counter;
+static int data_receive_mode = false;
+static int data_receive_triggered = false;
+static uint32_t write_lba;
+static uint8_t write_data[512];
 SDL_RWops *sdcard_file = NULL;
 
 void
@@ -29,16 +35,31 @@ sdcard_handle(uint8_t inbyte)
 		return 0xff;
 	}
 
-	if (cmd_receive_counter == 0 && inbyte == 0xff) {
+	 if (response && cmd_receive_counter == 0 && inbyte == 0xff) {
 		// send response data
-		if (response) {
-			outbyte = response[response_counter++];
-			if (response_counter == response_length) {
-				response = NULL;
-			}
-		} else {
-			outbyte = 0xff;
+		outbyte = response[response_counter++];
+		if (response_counter == response_length) {
+			response = NULL;
 		}
+	} else if (data_receive_mode) {
+		if (data_receive_triggered) {
+			write_data[data_receive_counter] = inbyte;
+			data_receive_counter++;
+			if (data_receive_counter == 512) {
+				SDL_RWseek(sdcard_file, write_lba * 512, RW_SEEK_SET);
+				size_t bytes_written = SDL_RWwrite(sdcard_file, write_data, 1, 512);
+				if (bytes_written != 512) {
+					printf("Warning: short write!\n");
+				}
+
+				data_receive_mode = false;
+			}
+		} else if (inbyte == 0xfe) {
+			data_receive_triggered = true;
+		}
+		outbyte = 0xff;
+	} else if (cmd_receive_counter == 0 && inbyte == 0xff) {
+		outbyte = 0xff;
 	} else {
 		cmd[cmd_receive_counter++] = inbyte;
 		if (cmd_receive_counter == 6) {
@@ -76,10 +97,10 @@ sdcard_handle(uint8_t inbyte)
 				case 0x40 + 17: {
 					// read block
 					uint32_t lba =
-					cmd[1] << 24 |
-					cmd[2] << 16 |
-					cmd[3] << 8 |
-					cmd[4];
+						cmd[1] << 24 |
+						cmd[2] << 16 |
+						cmd[3] << 8 |
+						cmd[4];
 					static uint8_t read_block_respose[2 + 512 + 2];
 					read_block_respose[0] = 0;
 					read_block_respose[1] = 0xfe;
@@ -93,6 +114,22 @@ sdcard_handle(uint8_t inbyte)
 					response_length = 2 + 512 + 2;
 					break;
 				}
+				case 0x40 + 24: {
+					// write block
+					write_lba =
+						cmd[1] << 24 |
+						cmd[2] << 16 |
+						cmd[3] << 8 |
+						cmd[4];
+
+					data_receive_mode = true;
+					data_receive_triggered = false;
+					data_receive_counter = 0;
+					static const uint8_t r[] = { 0 };
+					response = r;
+					response_length = sizeof(r);
+					break;
+				}
 				case 0x40 + 55: {
 					static const uint8_t r[] = { 1 };
 					response = r;
@@ -100,7 +137,7 @@ sdcard_handle(uint8_t inbyte)
 					break;
 				}
 				case 0x40 + 58: {
-					static const uint8_t r[] = { 0, 0, 0, 0 };
+					static const uint8_t r[] = { 0, 0x40, 0, 0 };
 					response = r;
 					response_length = sizeof(r);
 					break;
