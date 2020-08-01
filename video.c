@@ -397,10 +397,10 @@ refresh_sprite_properties(const uint16_t sprite)
 
 	// fix up negative coordinates
 	if (props->sprite_x >= 0x400 - props->sprite_width) {
-		props->sprite_x |= 0xff00 - 0x200;
+		props->sprite_x -= 0x400;
 	}
-	if (props->sprite_y >= 0x200 - props->sprite_height) {
-		props->sprite_y |= 0xff00 - 0x100;
+	if (props->sprite_y >= 0x400 - props->sprite_height) {
+		props->sprite_y -= 0x400;
 	}
 
 	props->hflip = sprite_data[sprite][6] & 1;
