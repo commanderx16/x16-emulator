@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "glue.h"
+#include "audio.h"
 
 char javascript_text_data[65536];
 
@@ -24,11 +25,10 @@ j2c_paste(char * buffer)
 }
 
 void
-j2c_start_audio()
+j2c_start_audio(bool start)
 {
-
-#ifdef WITH_YM2151
-	//init_audio();
-#endif
-
+	if (start)
+		audio_init(NULL, 8);
+	else
+		audio_close();
 }
