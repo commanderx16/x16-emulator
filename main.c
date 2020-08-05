@@ -781,6 +781,7 @@ main(int argc, char **argv)
 			printf("%s", VER_INFO);
 			argc--;
 			argv++;
+                        exit(0);
 		} else {
 			usage();
 		}
