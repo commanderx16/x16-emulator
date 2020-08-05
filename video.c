@@ -169,10 +169,17 @@ video_reset()
 bool
 video_init(int window_scale, char *quality)
 {
+	uint32_t window_flags = SDL_WINDOW_ALLOW_HIGHDPI;
+
+#ifdef __EMSCRIPTEN__
+	// Setting this flag would render the web canvas outside of its bounds on high dpi screens
+	window_flags &= ~SDL_WINDOW_ALLOW_HIGHDPI;
+#endif
+
 	video_reset();
 
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, quality);
-	SDL_CreateWindowAndRenderer(SCREEN_WIDTH * window_scale, SCREEN_HEIGHT * window_scale, SDL_WINDOW_ALLOW_HIGHDPI, &window, &renderer);
+	SDL_CreateWindowAndRenderer(SCREEN_WIDTH * window_scale, SCREEN_HEIGHT * window_scale, window_flags, &window, &renderer);
 #ifndef __MORPHOS__
 	SDL_SetWindowResizable(window, true);
 #endif
