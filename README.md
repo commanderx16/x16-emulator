@@ -209,7 +209,7 @@ The debugger keys are similar to the Microsoft Debugger shortcut keys, and work 
 |F12|is used to break back into the debugger. This does not happen if you do not have -debug|
 |TAB|when stopped, or single stepping, hides the debug information when pressed 			|
 
-When `-debug` is selected the No-Operation $FF will break into the debugger automatically.
+When `-debug` is selected the STP instruction (opcode $DB) will break into the debugger automatically.
 
 Effectively keyboard routines only work when the debugger is running normally. Single stepping through keyboard code will not work at present.
 
