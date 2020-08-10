@@ -14,6 +14,7 @@
 #include "vera_psg.h"
 #include "vera_pcm.h"
 #include "icon.h"
+#include "sdcard.h"
 
 #include <limits.h>
 
@@ -1103,6 +1104,16 @@ video_update()
 					consumed = true;
 				} else if (event.key.keysym.sym == SDLK_PLUS || event.key.keysym.sym == SDLK_EQUALS) {
 					machine_toggle_warp();
+					consumed = true;
+				} else if (event.key.keysym.sym == SDLK_d) {
+					if (sdcard_file) {
+						sdcard_attached = !sdcard_attached;
+						if (sdcard_attached) {
+							printf("SD card attached.\n");
+						} else {
+							printf("SD card detached.\n");
+						}
+					}
 					consumed = true;
 				}
 			}

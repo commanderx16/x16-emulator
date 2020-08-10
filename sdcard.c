@@ -13,6 +13,7 @@ static int data_receive_triggered = false;
 static uint32_t write_lba;
 static uint8_t write_data[512];
 SDL_RWops *sdcard_file = NULL;
+bool sdcard_attached = false;
 
 void
 sdcard_select()
@@ -46,6 +47,7 @@ sdcard_handle(uint8_t inbyte)
 			write_data[data_receive_counter] = inbyte;
 			data_receive_counter++;
 			if (data_receive_counter == 512) {
+				//printf("Writing LBA 0x%x\n", write_lba);
 				SDL_RWseek(sdcard_file, write_lba * 512, RW_SEEK_SET);
 				size_t bytes_written = SDL_RWwrite(sdcard_file, write_data, 1, 512);
 				if (bytes_written != 512) {
@@ -104,7 +106,7 @@ sdcard_handle(uint8_t inbyte)
 					static uint8_t read_block_respose[2 + 512 + 2];
 					read_block_respose[0] = 0;
 					read_block_respose[1] = 0xfe;
-//					printf("Reading LBA %d\n", lba);
+					printf("Reading LBA 0x%x\n", lba);
 					SDL_RWseek(sdcard_file, lba * 512, SEEK_SET);
 					size_t bytes_read = SDL_RWread(sdcard_file, &read_block_respose[2], 1, 512);
 					if (bytes_read != 512) {
