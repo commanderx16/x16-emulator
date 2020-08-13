@@ -8,7 +8,9 @@
 #include <SDL.h>
 
 extern SDL_RWops *sdcard_file;
-extern bool sdcard_attached;
+
+void sdcard_attach();
+void sdcard_detach();
 
 void sdcard_select(bool select);
 uint8_t sdcard_handle(uint8_t inbyte);

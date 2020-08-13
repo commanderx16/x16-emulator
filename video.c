@@ -1105,15 +1105,11 @@ video_update()
 				} else if (event.key.keysym.sym == SDLK_PLUS || event.key.keysym.sym == SDLK_EQUALS) {
 					machine_toggle_warp();
 					consumed = true;
+				} else if (event.key.keysym.sym == SDLK_a) {
+					sdcard_attach();
+					consumed = true;
 				} else if (event.key.keysym.sym == SDLK_d) {
-					if (sdcard_file) {
-						sdcard_attached = !sdcard_attached;
-						if (sdcard_attached) {
-							printf("SD card attached.\n");
-						} else {
-							printf("SD card detached.\n");
-						}
-					}
+					sdcard_detach();
 					consumed = true;
 				}
 			}

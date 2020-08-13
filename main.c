@@ -792,7 +792,7 @@ main(int argc, char **argv)
 			printf("Cannot open %s!\n", sdcard_path);
 			exit(1);
 		}
-		sdcard_attached = true;
+		sdcard_attach();
 	}
 
 	prg_override_start = -1;

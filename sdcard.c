@@ -43,12 +43,32 @@ static uint32_t lba;
 static uint8_t last_cmd;
 static bool is_acmd = false;
 static bool is_idle = true;
+static bool is_initialized = false;
 
 static const uint8_t *response = NULL;
 static int response_length = 0;
 static int response_counter = 0;
 
 static bool selected = false;
+
+void
+sdcard_attach()
+{
+	if (!sdcard_attached && sdcard_file) {
+		printf("SD card attached.\n");
+		sdcard_attached = true;
+		is_initialized = false;
+	}
+}
+
+void
+sdcard_detach()
+{
+	if (sdcard_attached) {
+		printf("SD card detached.\n");
+		sdcard_attached = false;
+	}
+}
 
 void
 sdcard_select(bool select)
@@ -67,6 +87,20 @@ set_response_r1(void)
 	r1 = is_idle ? 1 : 0;
 	response = &r1;
 	response_length = 1;
+}
+
+static void
+set_response_r2(void)
+{
+	if (is_initialized) {
+		static const uint8_t r2[] = {0x00, 0x00};
+		response = r2;
+		response_length = sizeof(r2);
+	} else {
+		static const uint8_t r2[] = {0x1F, 0xFF};
+		response = r2;
+		response_length = sizeof(r2);
+	}
 }
 
 static void
@@ -145,10 +179,16 @@ sdcard_handle(uint8_t inbyte)
 				case ACMD41: {
 					// SD_SEND_OP_COND: Sends host capacity support information and activated the card's initialization process
 					is_idle = false;
+					is_initialized = true;
 					set_response_r1();
 					break;
 				}
 
+				case CMD13: {
+					// SEND_STATUS: Asks the selected card to send its status register
+					set_response_r2();
+					break;
+				}
 				case CMD16: {
 					// SET_BLOCKLEN: In case of non-SDHC card, this sets the block length. Block length of SDHC/SDXC cards are fixed to 512 bytes.
 					set_response_r1();
