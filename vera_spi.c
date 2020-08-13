@@ -70,7 +70,7 @@ vera_spi_write(uint8_t reg, uint8_t value)
 			if (ss != (value & 1)) {
 				ss = value & 1;
 				if (ss) {
-					sdcard_select();
+					sdcard_select(ss);
 				}
 			}
 			autotx = !!(value & 8);
