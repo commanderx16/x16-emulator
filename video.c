@@ -1401,3 +1401,41 @@ video_update_title(const char* window_title)
 {
 	SDL_SetWindowTitle(window, window_title);
 }
+
+bool video_is_tilemap_address(int addr)
+{
+	for (int l = 0; l < 2; ++l) {
+		struct video_layer_properties *props = &layer_properties[l];
+		if (addr < props->map_base) {
+			continue;
+		}
+		if (addr >= props->map_base + (2 << (props->mapw_log2 + props->maph_log2))) {
+			continue;
+		}
+
+		return true;
+	}
+	return false;
+}
+
+bool video_is_tiledata_address(int addr)
+{
+	for (int l = 0; l < 2; ++l) {
+		struct video_layer_properties *props = &layer_properties[l];
+		if (addr < props->tile_base) {
+			continue;
+		}
+		int tile_size = props->tilew * props->tileh * props->bits_per_pixel / 8;
+		if (addr >= props->tile_base + tile_size * (props->bits_per_pixel == 1 ? 256 : 1024)) {
+			continue;
+		}
+
+		return true;
+	}
+	return false;
+}
+
+bool video_is_special_address(int addr)
+{
+	return addr >= 0x1F9C0;
+}
