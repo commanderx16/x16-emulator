@@ -1103,6 +1103,9 @@ emulator_loop(void *param)
 			}
 		}
 
+#if 0 // enable this for slow pasting
+		if (!(instruction_counter % 100000))
+#endif
 		while (pasting_bas && RAM[NDX] < 10) {
 			uint32_t c;
 			int e = 0;

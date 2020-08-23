@@ -1056,6 +1056,18 @@ video_update()
 {
 	static bool cmd_down = false;
 
+	// if LED is on, stamp red 8x4 square into top right of framebuffer
+	if (led_status) {
+		for (int y = 0; y < 4; y++) {
+			for (int x = SCREEN_WIDTH - 8; x < SCREEN_WIDTH; x++) {
+				framebuffer[(y * SCREEN_WIDTH + x) * 4 + 0] = 0x00;
+				framebuffer[(y * SCREEN_WIDTH + x) * 4 + 1] = 0x00;
+				framebuffer[(y * SCREEN_WIDTH + x) * 4 + 2] = 0xff;
+				framebuffer[(y * SCREEN_WIDTH + x) * 4 + 3] = 0x00;
+			}
+		}
+	}
+
 	SDL_UpdateTexture(sdlTexture, NULL, framebuffer, SCREEN_WIDTH * 4);
 
 	if (record_gif > RECORD_GIF_PAUSED) {
