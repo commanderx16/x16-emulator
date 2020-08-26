@@ -1,6 +1,6 @@
 
 # the mingw32 path on macOS installed through homebrew
-MINGW32=/usr/local/Cellar/mingw-w64/6.0.0_2/toolchain-i686/i686-w64-mingw32
+MINGW32=/usr/local/Cellar/mingw-w64/7.0.0_2/toolchain-i686/i686-w64-mingw32
 # the Windows SDL2 path on macOS installed through ./configure --prefix=... && make && make install
 WIN_SDL2=~/tmp/sdl2-win32
 
@@ -97,11 +97,14 @@ define add_extra_files_to_package
 	cp ../x16-rom/build/x16/rom.bin $(TMPDIR_NAME)
 	cp ../x16-rom/build/x16/kernal.sym  $(TMPDIR_NAME)
 	cp ../x16-rom/build/x16/keymap.sym  $(TMPDIR_NAME)
-	cp ../x16-rom/build/x16/cbdos.sym   $(TMPDIR_NAME)
+	cp ../x16-rom/build/x16/dos.sym     $(TMPDIR_NAME)
 	cp ../x16-rom/build/x16/geos.sym    $(TMPDIR_NAME)
 	cp ../x16-rom/build/x16/basic.sym   $(TMPDIR_NAME)
 	cp ../x16-rom/build/x16/monitor.sym $(TMPDIR_NAME)
 	cp ../x16-rom/build/x16/charset.sym $(TMPDIR_NAME)
+
+	# Empty SD card image
+	cp sdcard.img.zip $(TMPDIR_NAME)
 
 	# Documentation
 	mkdir $(TMPDIR_NAME)/docs

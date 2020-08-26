@@ -380,8 +380,8 @@ is_kernal()
 static void
 usage()
 {
-	printf("\nCommander X16 Emulator\tv.%s (%s)", VER, VER_NAME);
-	printf("(C)2019,2020 Michael Steil\n");
+	printf("\nCommander X16 Emulator r%s (%s)\n", VER, VER_NAME);
+	printf("(C)2019,2020 Michael Steil et al.\n");
 	printf("All rights reserved. License: 2-clause BSD\n\n");
 	printf("Usage: x16emu [option] ...\n\n");
 	printf("-rom <rom.bin>\n");
