@@ -34,6 +34,7 @@
 #include "rom_symbols.h"
 #include "ym2151.h"
 #include "audio.h"
+#include "version.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -379,7 +380,8 @@ is_kernal()
 static void
 usage()
 {
-	printf("\nCommander X16 Emulator  (C)2019 Michael Steil\n");
+	printf("\nCommander X16 Emulator\tv.%s (%s)", VER, VER_NAME);
+	printf("(C)2019,2020 Michael Steil\n");
 	printf("All rights reserved. License: 2-clause BSD\n\n");
 	printf("Usage: x16emu [option] ...\n\n");
 	printf("-rom <rom.bin>\n");
@@ -446,6 +448,8 @@ usage()
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
 	printf("\tcan be specified.\n");
 #endif
+	printf("-version\n");
+	printf("\tPrint additional version information the emulator and ROM.\n"); 
 	printf("\n");
 	exit(1);
 }
@@ -772,6 +776,11 @@ main(int argc, char **argv)
 			audio_buffers = (int)strtol(argv[0], NULL, 10);
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-version")){
+			printf("%s", VER_INFO);
+			argc--;
+			argv++;
+                        exit(0);
 		} else {
 			usage();
 		}
