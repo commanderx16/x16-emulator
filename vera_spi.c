@@ -28,7 +28,7 @@ vera_spi_step()
 		outcounter++;
 		if (outcounter == 8) {
 			busy = false;
-			if (sdcard_file) {
+			if (sdcard_attached) {
 				received_byte = sdcard_handle(sending_byte);
 			} else {
 				received_byte = 0xff;
@@ -70,7 +70,7 @@ vera_spi_write(uint8_t reg, uint8_t value)
 			if (ss != (value & 1)) {
 				ss = value & 1;
 				if (ss) {
-					sdcard_select();
+					sdcard_select(ss);
 				}
 			}
 			autotx = !!(value & 8);

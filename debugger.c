@@ -99,6 +99,11 @@ const SDL_Color col_data= {0, 255, 255, 255};
 const SDL_Color col_highlight= {255, 255, 0, 255};
 const SDL_Color col_cmdLine= {255, 255, 255, 255};
 
+const SDL_Color col_vram_tilemap = {0, 255, 255, 255};
+const SDL_Color col_vram_tiledata = {0, 255, 0, 255};
+const SDL_Color col_vram_special  = {255, 92, 92, 255};
+const SDL_Color col_vram_other  = {128, 128, 128, 255};
+
 int showDebugOnRender = 0;										// Used to trigger rendering in video.c
 int showFullDisplay = 0; 										// If non-zero show the whole thing.
 int currentPC = -1;												// Current PC value.
@@ -469,10 +474,9 @@ void DEBUGRenderDisplay(int width, int height) {
 
 	DEBUGRenderRegisters();							// Draw register name and values.
 	DEBUGRenderCode(20, currentPC);							// Render 6502 disassembly.
-	DEBUGRenderData(21, currentData);
-   DEBUGRenderZeroPageRegisters(21);
 	if (dumpmode == DDUMP_RAM) {
 		DEBUGRenderData(21, currentData);
+		DEBUGRenderZeroPageRegisters(21);
 	} else {
 		DEBUGRenderVRAM(21, currentData);
 	}
@@ -566,9 +570,18 @@ DEBUGRenderVRAM(int y, int data)
 		DEBUGVAddress(DBG_MEMX, y, data & 0x1FFFF, col_label); // Show label.
 
 		for (int i = 0; i < 16; i++) {
-			int byte = video_space_read((data + i) & 0x1FFFF);
-			DEBUGNumber(DBG_MEMX + 6 + i * 3, y, byte, 2, col_data);
-//			DEBUGWrite(dbgRenderer, DBG_MEMX + 33 + i, y, byte, col_data);
+			int addr = (data + i) & 0x1FFFF;
+			int byte = video_space_read(addr);
+
+			if (video_is_tilemap_address(addr)) {
+				DEBUGNumber(DBG_MEMX + 6 + i * 3, y, byte, 2, col_vram_tilemap);
+			} else if (video_is_tiledata_address(addr)) {
+				DEBUGNumber(DBG_MEMX + 6 + i * 3, y, byte, 2, col_vram_tiledata);
+			} else if (video_is_special_address(addr)) {
+				DEBUGNumber(DBG_MEMX + 6 + i * 3, y, byte, 2, col_vram_special);
+			} else {
+				DEBUGNumber(DBG_MEMX + 6 + i * 3, y, byte, 2, col_vram_other);
+			}
 		}
 		y++;
 		data += 16;

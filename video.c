@@ -14,6 +14,7 @@
 #include "vera_psg.h"
 #include "vera_pcm.h"
 #include "icon.h"
+#include "sdcard.h"
 
 #include <limits.h>
 
@@ -1055,6 +1056,18 @@ video_update()
 {
 	static bool cmd_down = false;
 
+	// if LED is on, stamp red 8x4 square into top right of framebuffer
+	if (led_status) {
+		for (int y = 0; y < 4; y++) {
+			for (int x = SCREEN_WIDTH - 8; x < SCREEN_WIDTH; x++) {
+				framebuffer[(y * SCREEN_WIDTH + x) * 4 + 0] = 0x00;
+				framebuffer[(y * SCREEN_WIDTH + x) * 4 + 1] = 0x00;
+				framebuffer[(y * SCREEN_WIDTH + x) * 4 + 2] = 0xff;
+				framebuffer[(y * SCREEN_WIDTH + x) * 4 + 3] = 0x00;
+			}
+		}
+	}
+
 	SDL_UpdateTexture(sdlTexture, NULL, framebuffer, SCREEN_WIDTH * 4);
 
 	if (record_gif > RECORD_GIF_PAUSED) {
@@ -1103,6 +1116,12 @@ video_update()
 					consumed = true;
 				} else if (event.key.keysym.sym == SDLK_PLUS || event.key.keysym.sym == SDLK_EQUALS) {
 					machine_toggle_warp();
+					consumed = true;
+				} else if (event.key.keysym.sym == SDLK_a) {
+					sdcard_attach();
+					consumed = true;
+				} else if (event.key.keysym.sym == SDLK_d) {
+					sdcard_detach();
 					consumed = true;
 				}
 			}
@@ -1393,4 +1412,42 @@ void
 video_update_title(const char* window_title)
 {
 	SDL_SetWindowTitle(window, window_title);
+}
+
+bool video_is_tilemap_address(int addr)
+{
+	for (int l = 0; l < 2; ++l) {
+		struct video_layer_properties *props = &layer_properties[l];
+		if (addr < props->map_base) {
+			continue;
+		}
+		if (addr >= props->map_base + (2 << (props->mapw_log2 + props->maph_log2))) {
+			continue;
+		}
+
+		return true;
+	}
+	return false;
+}
+
+bool video_is_tiledata_address(int addr)
+{
+	for (int l = 0; l < 2; ++l) {
+		struct video_layer_properties *props = &layer_properties[l];
+		if (addr < props->tile_base) {
+			continue;
+		}
+		int tile_size = props->tilew * props->tileh * props->bits_per_pixel / 8;
+		if (addr >= props->tile_base + tile_size * (props->bits_per_pixel == 1 ? 256 : 1024)) {
+			continue;
+		}
+
+		return true;
+	}
+	return false;
+}
+
+bool video_is_special_address(int addr)
+{
+	return addr >= 0x1F9C0;
 }
