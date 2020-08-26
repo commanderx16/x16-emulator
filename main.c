@@ -449,7 +449,7 @@ usage()
 	printf("\tcan be specified.\n");
 #endif
 	printf("-version\n");
-	printf("\tPrint additional version information the emulator and ROM.\n"); 
+	printf("\tPrint additional version information the emulator and ROM.\n");
 	printf("\n");
 	exit(1);
 }
@@ -780,7 +780,7 @@ main(int argc, char **argv)
 			printf("%s", VER_INFO);
 			argc--;
 			argv++;
-                        exit(0);
+			exit(0);
 		} else {
 			usage();
 		}

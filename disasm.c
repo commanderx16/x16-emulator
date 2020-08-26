@@ -38,7 +38,7 @@ int disasm(uint16_t pc, uint8_t *RAM, char *line, unsigned int max_line, bool de
 
 	if (isZprel) {
 		snprintf(line, max_line, mnemonic, real_read6502(pc + 1, debugOn, bank), pc + 3 + (int8_t)real_read6502(pc + 2, debugOn, bank));
-	    length = 3;
+		length = 3;
 	} else {
 		if (strstr(line, "%02x")) {
 			length = 2;

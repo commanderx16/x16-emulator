@@ -508,7 +508,7 @@ render_sprite_line(const uint16_t y)
 			// 8bpp
 			memcpy(unpacked_sprite_line, bitmap_data, props->sprite_width);
 		}
-		
+
 		for (uint16_t sx = 0; sx < props->sprite_width; ++sx) {
 			const uint16_t line_x = props->sprite_x + sx;
 			if (line_x >= SCREEN_WIDTH) {
@@ -532,7 +532,7 @@ render_sprite_line(const uint16_t y)
 				sprite_line_collisions |= sprite_line_mask[line_x] & props->sprite_collision_mask;
 				sprite_line_mask[line_x] |= props->sprite_collision_mask;
 
-        if (props->sprite_zdepth > sprite_line_z[line_x]) {
+			if (props->sprite_zdepth > sprite_line_z[line_x]) {
 					sprite_line_col[line_x] = col_index + props->palette_offset;
 					sprite_line_z[line_x] = props->sprite_zdepth;
 				}
