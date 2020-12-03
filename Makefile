@@ -12,7 +12,8 @@ endif
 
 CFLAGS=-std=c99 -O3 -Wall -Werror -g $(shell $(SDL2CONFIG) --cflags) -Iextern/include -Iextern/src
 LDFLAGS=$(shell $(SDL2CONFIG) --libs) -lm
-
+ODIR = obj
+SDIR = src
 
 ifdef TRACE
 	CFLAGS+=-D TRACE
@@ -31,6 +32,8 @@ ifeq ($(CROSS_COMPILE_WINDOWS),1)
 	CC=i686-w64-mingw32-gcc
 endif
 
+LDFLAGS+=-Wl,--subsystem,console
+
 ifdef EMSCRIPTEN
 	LDFLAGS+=--shell-file webassembly/x16emu-template.html --preload-file rom.bin -s TOTAL_MEMORY=32MB -s ASSERTIONS=1 -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1
 	# To the Javascript runtime exported functions
@@ -39,9 +42,16 @@ ifdef EMSCRIPTEN
 	OUTPUT=x16emu.html
 endif
 
-OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o vera_spi.o audio.o vera_pcm.o vera_psg.o sdcard.o main.o debugger.o javascript_interface.o joystick.o rendertext.o keyboard.o icon.o
+_OBJS = cpu/fake6502.o memory.o video.o ps2.o via.o loadsave.o vera_spi.o audio.o vera_pcm.o vera_psg.o \
+		sdcard.o main.o javascript_interface.o joystick.o keyboard.o icon.o \
+		debugger/debugger.o debugger/disasm.o debugger/rendertext.o debugger/commands.o debugger/symbols.o \
+		console/SDL_console.o console/internal.o console/DT_drawtext.o console/split.o \
+		iniparser/dictionary.o iniparser/iniparser.o
 
-HEADERS = disasm.h cpu/fake6502.h glue.h memory.h video.h audio.h vera_pcm.h vera_psg.h ps2.h via.h loadsave.h joystick.h keyboard.h
+OBJS = $(patsubst %,$(ODIR)/%,$(_OBJS))
+
+_HEADERS = debugger/disasm.h cpu/fake6502.h glue.h memory.h video.h audio.h vera_pcm.h vera_psg.h ps2.h via.h loadsave.h joystick.h keyboard.h
+HEADERS = $(patsubst %,$(SDIR)/%,$(_HEADERS))
 
 OBJS += extern/src/ym2151.o
 HEADERS += extern/src/ym2151.h
@@ -53,7 +63,7 @@ endif
 
 all: $(OBJS) $(HEADERS)
 	$(CC) -o $(OUTPUT) $(OBJS) $(LDFLAGS)
-%.o: %.c
+$(ODIR)/%.o: $(SDIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 cpu/tables.h cpu/mnemonics.h: cpu/buildtables.py cpu/6502.opcodes cpu/65c02.opcodes
@@ -152,4 +162,4 @@ package_linux:
 	rm -rf $(TMPDIR_NAME)
 
 clean:
-	rm -f *.o cpu/*.o extern/src/*.o x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem
+	rm -f $(ODIR)/*.o cpu/*.o extern/src/*.o x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem

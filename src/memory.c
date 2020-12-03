@@ -163,7 +163,7 @@ memory_get_ram_bank()
 void
 memory_set_rom_bank(uint8_t bank)
 {
-	rom_bank = bank & (NUM_ROM_BANKS - 1);;
+	rom_bank = bank & (NUM_ROM_BANKS - 1);
 }
 
 uint8_t
@@ -275,4 +275,15 @@ emu_read(uint8_t reg, bool debugOn)
 	}
 	if (!debugOn) printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
 	return -1;
+}
+
+/*
+	true if address is in EXISTING memory (RAM & ROM)
+*/
+bool isValidAddr(int bank, int addr) {
+	return 		addr < 0xA000
+				||
+				(addr < 0xC000 && (bank % num_ram_banks == bank))
+				||
+				(addr >= 0xc000 && (bank % NUM_ROM_BANKS == bank));
 }

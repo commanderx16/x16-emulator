@@ -4,6 +4,7 @@
 #include <ctype.h>
 #endif
 #include "rendertext.h"
+#include "../console/DT_drawtext.h"
 
 #define CHAR_WIDTH 5
 #define CHAR_HEIGHT 7
@@ -21,7 +22,7 @@ int textureInitialized = 0;
 // *******************************************************************************************
 // left trim string
 //
-char *ltrim(char *s)
+unsigned char *ltrim(unsigned char *s)
 {
 	while(isspace(*s)) s++;
 	return s;
@@ -168,24 +169,27 @@ void DEBUGInitChars(SDL_Renderer *renderer) {
 // *******************************************************************************************
 
 void DEBUGWrite(SDL_Renderer *renderer, int x, int y, int ch, SDL_Color colour) {
-	if (!textureInitialized) {
-		DEBUGInitChars(renderer);
-	}
-	SDL_SetTextureColorMod(fontTexture, colour.r, colour.g, colour.b);
-	ch-=0x20;
-	SDL_Rect srcRect = {
-		ch* CHAR_WIDTH,
-		0,
-		CHAR_WIDTH,
-		CHAR_HEIGHT
-	};
-	SDL_Rect dstRect = {
-		x*(CHAR_WIDTH+1) + xPos,
-		y*(CHAR_HEIGHT+1) + yPos,
-		CHAR_WIDTH,
-		CHAR_HEIGHT
-	};
-	SDL_RenderCopy(renderer, fontTexture, &srcRect, &dstRect);
+	// if (!textureInitialized) {
+	// 	DEBUGInitChars(renderer);
+	// }
+	// SDL_SetTextureColorMod(fontTexture, colour.r, colour.g, colour.b);
+	// ch-=0x20;
+	// SDL_Rect srcRect = {
+	// 	ch* CHAR_WIDTH,
+	// 	0,
+	// 	CHAR_WIDTH,
+	// 	CHAR_HEIGHT
+	// };
+	// SDL_Rect dstRect = {
+	// 	x*(CHAR_WIDTH+1) + xPos,
+	// 	y*(CHAR_HEIGHT+1) + yPos,
+	// 	CHAR_WIDTH,
+	// 	CHAR_HEIGHT
+	// };
+	// SDL_RenderCopy(renderer, fontTexture, &srcRect, &dstRect);
+	char buffer[3];
+	sprintf(buffer, "%c", ch);
+	DEBUGString(renderer, x, y, buffer, colour);
 }
 
 // *******************************************************************************************
@@ -195,7 +199,8 @@ void DEBUGWrite(SDL_Renderer *renderer, int x, int y, int ch, SDL_Color colour) 
 // *******************************************************************************************
 
 void DEBUGString(SDL_Renderer *renderer, int x, int y, char *s, SDL_Color colour) {
-	while (*s != '\0') {
-		DEBUGWrite(renderer, x++, y, *s++, colour);
-	}
+	int fontNum= 0;
+	int h= DT_FontHeight(fontNum);
+	int w= DT_FontWidth(fontNum);
+	DT_DrawText2(renderer, s, fontNum, x*(w+1), y*(h+1), colour);
 }

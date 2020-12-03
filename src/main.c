@@ -17,7 +17,7 @@
 #include <ctype.h>
 #endif
 #include "cpu/fake6502.h"
-#include "disasm.h"
+#include "debugger/disasm.h"
 #include "memory.h"
 #include "video.h"
 #include "via.h"
@@ -26,7 +26,7 @@
 #include "sdcard.h"
 #include "loadsave.h"
 #include "glue.h"
-#include "debugger.h"
+#include "debugger/debugger.h"
 #include "utf8.h"
 #include "joystick.h"
 #include "utf8_encode.h"
@@ -34,11 +34,31 @@
 #include "ym2151.h"
 #include "audio.h"
 #include "version.h"
+#include "iniparser/iniparser.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #include <pthread.h>
 #endif
+
+typedef struct {
+	int audio_buffers;
+	char rom_path[PATH_MAX];
+	char *prg_path;
+	char *bas_path;
+	char *sdcard_path;
+	char *audio_dev_name;
+	bool run_geos;
+	bool run_test;
+	int test_number;
+	int window_scale;
+	bool run_after_load;
+	char *scale_quality;
+	bool dump_cpu;
+	bool dump_ram;
+	bool dump_bank;
+	bool dump_vram;
+} Parms;
 
 void *emulator_loop(void *param);
 void emscripten_main_loop(void);
@@ -73,18 +93,12 @@ uint16_t num_ram_banks = 64; // 512 KB default
 bool log_video = false;
 bool log_speed = false;
 bool log_keyboard = false;
-bool dump_cpu = false;
-bool dump_ram = true;
-bool dump_bank = true;
-bool dump_vram = false;
 bool warp_mode = false;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
-int window_scale = 1;
-char *scale_quality = "best";
 
 int frames;
 int32_t sdlTicks_base;
@@ -100,7 +114,8 @@ uint16_t trace_address = 0;
 int instruction_counter;
 SDL_RWops *prg_file ;
 int prg_override_start = -1;
-bool run_after_load = false;
+
+Parms parms;
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -193,7 +208,7 @@ machine_dump()
 		return;
 	}
 
-	if (dump_cpu) {
+	if (parms.dump_cpu) {
 		SDL_RWwrite(f, &a, sizeof(uint8_t), 1);
 		SDL_RWwrite(f, &x, sizeof(uint8_t), 1);
 		SDL_RWwrite(f, &y, sizeof(uint8_t), 1);
@@ -201,9 +216,9 @@ machine_dump()
 		SDL_RWwrite(f, &status, sizeof(uint8_t), 1);
 		SDL_RWwrite(f, &pc, sizeof(uint16_t), 1);
 	}
-	memory_save(f, dump_ram, dump_bank);
+	memory_save(f, parms.dump_ram, parms.dump_bank);
 
-	if (dump_vram) {
+	if (parms.dump_vram) {
 		video_save(f);
 	}
 
@@ -380,77 +395,82 @@ is_kernal()
 static void
 usage()
 {
-	printf("\nCommander X16 Emulator r%s (%s)\n", VER, VER_NAME);
-	printf("(C)2019,2020 Michael Steil et al.\n");
-	printf("All rights reserved. License: 2-clause BSD\n\n");
-	printf("Usage: x16emu [option] ...\n\n");
-	printf("-rom <rom.bin>\n");
-	printf("\tOverride KERNAL/BASIC/* ROM file.\n");
-	printf("-ram <ramsize>\n");
-	printf("\tSpecify banked RAM size in KB (8, 16, 32, ..., 2048).\n");
-	printf("\tThe default is 512.\n");
-	printf("-keymap <keymap>\n");
-	printf("\tEnable a specific keyboard layout decode table.\n");
-	printf("-sdcard <sdcard.img>\n");
-	printf("\tSpecify SD card image (partition map + FAT32)\n");
-	printf("-prg <app.prg>[,<load_addr>]\n");
-	printf("\tLoad application from the local disk into RAM\n");
-	printf("\t(.PRG file with 2 byte start address header)\n");
-	printf("\tThe override load address is hex without a prefix.\n");
-	printf("-bas <app.txt>\n");
-	printf("\tInject a BASIC program in ASCII encoding through the\n");
-	printf("\tkeyboard.\n");
-	printf("-run\n");
-	printf("\tStart the -prg/-bas program using RUN or SYS, depending\n");
-	printf("\ton the load address.\n");
-	printf("-geos\n");
-	printf("\tLaunch GEOS at startup.\n");
-	printf("-warp\n");
-	printf("\tEnable warp mode, run emulator as fast as possible.\n");
-	printf("-echo [{iso|raw}]\n");
-	printf("\tPrint all KERNAL output to the host's stdout.\n");
-	printf("\tBy default, everything but printable ASCII characters get\n");
-	printf("\tescaped. \"iso\" will escape everything but non-printable\n");
-	printf("\tISO-8859-1 characters and convert the output to UTF-8.\n");
-	printf("\t\"raw\" will not do any substitutions.\n");
-	printf("\tWith the BASIC statement \"LIST\", this can be used\n");
-	printf("\tto detokenize a BASIC program.\n");
-	printf("-log {K|S|V}...\n");
-	printf("\tEnable logging of (K)eyboard, (S)peed, (V)ideo.\n");
-	printf("\tMultiple characters are possible, e.g. -log KS\n");
-	printf("-gif <file.gif>[,wait]\n");
-	printf("\tRecord a gif for the video output.\n");
-	printf("\tUse ,wait to start paused.\n");
-	printf("\tPOKE $9FB5,2 to start recording.\n");
-	printf("\tPOKE $9FB5,1 to capture a single frame.\n");
-	printf("\tPOKE $9FB5,0 to pause.\n");
-	printf("-scale {1|2|3|4}\n");
-	printf("\tScale output to an integer multiple of 640x480\n");
-	printf("-quality {nearest|linear|best}\n");
-	printf("\tScaling algorithm quality\n");
-	printf("-debug [<address>]\n");
-	printf("\tEnable debugger. Optionally, set a breakpoint\n");
-	printf("-dump {C|R|B|V}...\n");
-	printf("\tConfigure system dump: (C)PU, (R)AM, (B)anked-RAM, (V)RAM\n");
-	printf("\tMultiple characters are possible, e.g. -dump CV ; Default: RB\n");
-	printf("-joy1 {NES | SNES}\n");
-	printf("\tChoose what type of joystick to use, e.g. -joy1 SNES\n");
-	printf("-joy2 {NES | SNES}\n");
-	printf("\tChoose what type of joystick to use, e.g. -joy2 SNES\n");
-	printf("-sound <output device>\n");
-	printf("\tSet the output device used for audio emulation\n");
-	printf("-abufs <number of audio buffers>\n");
-	printf("\tSet the number of audio buffers used for playback. (default: 8)\n");
-	printf("\tIncreasing this will reduce stutter on slower computers,\n");
-	printf("\tbut will increase audio latency.\n");
+	printf(
+	"\nCommander X16 Emulator r%s (%s)\n"
+	"(C)2019,2020 Michael Steil et al.\n"
+	"All rights reserved. License: 2-clause BSD\n\n"
+
+	"Usage: x16emu [option] ...\n\n"
+
+	"-rom <rom.bin>\n"
+	"\tOverride KERNAL/BASIC/* ROM file.\n"
+	"-ram <ramsize>\n"
+	"\tSpecify banked RAM size in KB (8, 16, 32, ..., 2048).\n"
+	"\tThe default is 512.\n"
+	"-keymap <keymap>\n"
+	"\tEnable a specific keyboard layout decode table.\n"
+	"-sdcard <sdcard.img>\n"
+	"\tSpecify SD card image (partition map + FAT32)\n"
+	"-prg <app.prg>[,<load_addr>]\n"
+	"\tLoad application from the local disk into RAM\n"
+	"\t(.PRG file with 2 byte start address header)\n"
+	"\tThe override load address is hex without a prefix.\n"
+	"-bas <app.txt>\n"
+	"\tInject a BASIC program in ASCII encoding through the\n"
+	"\tkeyboard.\n"
+	"-run\n"
+	"\tStart the -prg/-bas program using RUN or SYS, depending\n"
+	"\ton the load address.\n"
+	"-geos\n"
+	"\tLaunch GEOS at startup.\n"
+	"-warp\n"
+	"\tEnable warp mode, run emulator as fast as possible.\n"
+	"-echo [{iso|raw}]\n"
+	"\tPrint all KERNAL output to the host's stdout.\n"
+	"\tBy default, everything but printable ASCII characters get\n"
+	"\tescaped. \"iso\" will escape everything but non-printable\n"
+	"\tISO-8859-1 characters and convert the output to UTF-8.\n"
+	"\t\"raw\" will not do any substitutions.\n"
+	"\tWith the BASIC statement \"LIST\", this can be used\n"
+	"\tto detokenize a BASIC program.\n"
+	"-log {K|S|V}...\n"
+	"\tEnable logging of (K)eyboard, (S)peed, (V)ideo.\n"
+	"\tMultiple characters are possible, e.g. -log KS\n"
+	"-gif <file.gif>[,wait]\n"
+	"\tRecord a gif for the video output.\n"
+	"\tUse ,wait to start paused.\n"
+	"\tPOKE $9FB5,2 to start recording.\n"
+	"\tPOKE $9FB5,1 to capture a single frame.\n"
+	"\tPOKE $9FB5,0 to pause.\n"
+	"-scale {1|2|3|4}\n"
+	"\tScale output to an integer multiple of 640x480\n"
+	"-quality {nearest|linear|best}\n"
+	"\tScaling algorithm quality\n"
+	"-debug [<address>]\n"
+	"\tEnable debugger. Optionally, set a breakpoint\n"
+	"-dump {C|R|B|V}...\n"
+	"\tConfigure system dump: (C)PU, (R)AM, (B)anked-RAM, (V)RAM\n"
+	"\tMultiple characters are possible, e.g. -dump CV ; Default: RB\n"
+	"-joy1 {NES | SNES}\n"
+	"\tChoose what type of joystick to use, e.g. -joy1 SNES\n"
+	"-joy2 {NES | SNES}\n"
+	"\tChoose what type of joystick to use, e.g. -joy2 SNES\n"
+	"-sound <output device>\n"
+	"\tSet the output device used for audio emulation\n"
+	"-abufs <number of audio buffers>\n"
+	"\tSet the number of audio buffers used for playback. (default: 8)\n"
+	"\tIncreasing this will reduce stutter on slower computers,\n"
+	"\tbut will increase audio latency.\n"
 #ifdef TRACE
-	printf("-trace [<address>]\n");
-	printf("\tPrint instruction trace. Optionally, a trigger address\n");
-	printf("\tcan be specified.\n");
+	"-trace [<address>]\n"
+	"\tPrint instruction trace. Optionally, a trigger address\n"
+	"\tcan be specified.\n"
 #endif
-	printf("-version\n");
-	printf("\tPrint additional version information the emulator and ROM.\n");
-	printf("\n");
+	"-version\n"
+	"\tPrint additional version information the emulator and ROM.\n"
+	"\n"
+	, VER, VER_NAME);
+
 	exit(1);
 }
 
@@ -464,35 +484,136 @@ usage_keymap()
 	exit(1);
 }
 
-int
-main(int argc, char **argv)
-{
-	char *rom_filename = "rom.bin";
-	char rom_path_data[PATH_MAX];
+int findKeymap(const char *keymapName) {
+	if(keymapName) {
+		for (int i = 0; i < sizeof(keymaps)/sizeof(*keymaps); i++) {
+			if (!strcmp(keymapName, keymaps[i])) {
+				return i;
+			}
+		}
+	}
+	return -1;
+}
 
-	char *rom_path = rom_path_data;
-	char *prg_path = NULL;
-	char *bas_path = NULL;
-	char *sdcard_path = NULL;
-	bool run_geos = false;
-	bool run_test = false;
-	int test_number = 0;
-	int audio_buffers = 8;
-
-	const char *audio_dev_name = NULL;
-
-	run_after_load = false;
+void processParms(int argc, char **argv, Parms *parms) {
+	const char *rom_filename = "rom.bin";
 
 	char *base_path = SDL_GetBasePath();
-
-	// This causes the emulator to load ROM data from the executable's directory when
-	// no ROM file is specified on the command line.
-	memcpy(rom_path, base_path, strlen(base_path) + 1);
-	strncpy(rom_path + strlen(rom_path), rom_filename, PATH_MAX - strlen(rom_path));
 
 	argc--;
 	argv++;
 
+	//
+	// set default values first
+	//
+	parms->audio_buffers= 8;
+	parms->run_geos= false;
+	parms->run_test= false;
+	parms->test_number= 0;
+	parms->prg_path= NULL;
+	parms->bas_path= NULL;
+	parms->sdcard_path= NULL;
+	parms->audio_dev_name= NULL;
+	parms->window_scale= 1;
+	parms->run_after_load= false;
+	parms->scale_quality= "best";
+	parms->dump_cpu = false;
+	parms->dump_ram = false;
+	parms->dump_bank = false;
+	parms->dump_vram = false;
+
+
+	// This causes the emulator to load ROM data from the executable's directory when
+	// no ROM file is specified on the command line.
+	memcpy(parms->rom_path, base_path, strlen(base_path) + 1);
+	strncpy(parms->rom_path + strlen(parms->rom_path), rom_filename, PATH_MAX - strlen(parms->rom_path));
+
+	//
+	// read parms values from ini file
+	//
+	dictionary *iniDict= iniparser_load("x16emu.ini");
+	if(iniDict) {
+
+		parms->audio_buffers= iniparser_getint(iniDict, "main:abufs", 8);
+		parms->run_geos= 1 == iniparser_getboolean(iniDict, "main:geos", 0);
+		parms->test_number= iniparser_getint(iniDict, "main:test", -1);
+		parms->run_test= parms->test_number != -1;
+		parms->window_scale= iniparser_getint(iniDict, "main:scale", 1);
+		if(parms->window_scale>4)
+			parms->window_scale= 1;
+
+		parms->prg_path= (char *)iniparser_getstring(iniDict, "main:prg", NULL);
+		parms->bas_path= (char *)iniparser_getstring(iniDict, "main:bas", NULL);
+		parms->sdcard_path= (char *)iniparser_getstring(iniDict, "main:sdcard", NULL);
+		parms->audio_dev_name= (char *)iniparser_getstring(iniDict, "main:sound", NULL);
+
+		gif_path= (char *)iniparser_getstring(iniDict, "main:gif", NULL);
+
+		log_keyboard= 1 == iniparser_getboolean(iniDict, "main:log_keyboard", 0);
+		log_speed= 1 == iniparser_getboolean(iniDict, "main:log_speed", 0);
+		log_video= 1 == iniparser_getboolean(iniDict, "main:log_video", 0);
+
+		parms->dump_cpu= 1 == iniparser_getboolean(iniDict, "main:dump_cpu", 0);
+		parms->dump_ram= 1 == iniparser_getboolean(iniDict, "main:dump_ram", 0);
+		parms->dump_bank= 1 == iniparser_getboolean(iniDict, "main:dump_bank", 0);
+		parms->dump_vram= 1 == iniparser_getboolean(iniDict, "main:dump_vram", 0);
+
+		int ramsize= iniparser_getint(iniDict, "main:ram", num_ram_banks*8);
+		if(ramsize % 8 == 0)
+			num_ram_banks= ramsize / 8;
+
+		char *path= (char *)iniparser_getstring(iniDict, "main:rom", NULL);
+		if(path)
+			strncpy(parms->rom_path, path, PATH_MAX-1);
+
+		int km= findKeymap(iniparser_getstring(iniDict, "main:keymap", NULL));
+		if(km >= 0)
+			keymap = km;
+
+		warp_mode= 1 == iniparser_getboolean(iniDict, "main:warp", 0);
+		debugger_enabled= 1 == iniparser_getboolean(iniDict, "debugger:enabled", 0);
+
+		char *echo= (char *)iniparser_getstring(iniDict, "main:echo", NULL);
+		if(echo) {
+			if(!strcmp("raw", echo))
+				echo_mode = ECHO_MODE_RAW;
+			else if(!strcmp("iso", echo))
+				echo_mode = ECHO_MODE_ISO;
+			else
+				echo_mode = ECHO_MODE_COOKED;
+		}
+
+		char *joystick= (char *)iniparser_getstring(iniDict, "main:joy1", NULL);
+		if(joystick) {
+			if(!strcmp("NES", joystick))
+				joy1_mode = NES;
+			else if(!strcmp("SNES", joystick))
+				joy1_mode = SNES;
+		}
+
+		joystick= (char *)iniparser_getstring(iniDict, "main:joy2", NULL);
+		if(joystick) {
+			if(!strcmp("NES", joystick))
+				joy2_mode = NES;
+			else if(!strcmp("SNES", joystick))
+				joy2_mode = SNES;
+		}
+
+		char *quality= (char *)iniparser_getstring(iniDict, "main:quality", NULL);
+		if(quality) {
+			if( !strcmp("nearest", quality) ||
+				!strcmp("linear", quality) ||
+				!strcmp("best", quality)) {
+				parms->scale_quality = quality;
+			}
+		}
+
+		iniparser_freedict(iniDict);
+	}
+
+	//
+	// get parms values from CLI - always override INI if set
+	//
 	while (argc > 0) {
 		if (!strcmp(argv[0], "-rom")) {
 			argc--;
@@ -500,7 +621,7 @@ main(int argc, char **argv)
 			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
-			rom_path = argv[0];
+			strncpy(parms->rom_path, argv[0], PATH_MAX-1);
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-ram")) {
@@ -528,14 +649,10 @@ main(int argc, char **argv)
 			if (!argc || argv[0][0] == '-') {
 				usage_keymap();
 			}
-			bool found = false;
-			for (int i = 0; i < sizeof(keymaps)/sizeof(*keymaps); i++) {
-				if (!strcmp(argv[0], keymaps[i])) {
-					found = true;
-					keymap = i;
-				}
-			}
-			if (!found) {
+			int km= findKeymap(argv[0]);
+			if(km >= 0)
+				keymap = km;
+			else {
 				usage_keymap();
 			}
 			argc--;
@@ -546,34 +663,34 @@ main(int argc, char **argv)
 			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
-			prg_path = argv[0];
+			parms->prg_path = argv[0];
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-run")) {
 			argc--;
 			argv++;
-			run_after_load = true;
+			parms->run_after_load = true;
 		} else if (!strcmp(argv[0], "-bas")) {
 			argc--;
 			argv++;
 			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
-			bas_path = argv[0];
+			parms->bas_path = argv[0];
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-geos")) {
 			argc--;
 			argv++;
-			run_geos = true;
+			parms->run_geos = true;
 		} else if (!strcmp(argv[0], "-test")) {
 			argc--;
 			argv++;
 			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
-			test_number = atoi(argv[0]);
-			run_test = true;
+			parms->test_number = atoi(argv[0]);
+			parms->run_test = true;
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-sdcard")) {
@@ -582,7 +699,7 @@ main(int argc, char **argv)
 			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
-			sdcard_path = argv[0];
+			parms->sdcard_path = argv[0];
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-warp")) {
@@ -634,23 +751,19 @@ main(int argc, char **argv)
 			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
-			dump_cpu = false;
-			dump_ram = false;
-			dump_bank = false;
-			dump_vram = false;
 			for (char *p = argv[0]; *p; p++) {
 				switch (tolower(*p)) {
 					case 'c':
-						dump_cpu = true;
+						parms->dump_cpu = true;
 						break;
 					case 'r':
-						dump_ram = true;
+						parms->dump_ram = true;
 						break;
 					case 'b':
-						dump_bank = true;
+						parms->dump_bank = true;
 						break;
 					case 'v':
-						dump_vram = true;
+						parms->dump_vram = true;
 						break;
 					default:
 						usage();
@@ -749,16 +862,16 @@ main(int argc, char **argv)
 			for(char *p = argv[0]; *p; p++) {
 				switch(tolower(*p)) {
 				case '1':
-					window_scale = 1;
+					parms->window_scale = 1;
 					break;
 				case '2':
-					window_scale = 2;
+					parms->window_scale = 2;
 					break;
 				case '3':
-					window_scale = 3;
+					parms->window_scale = 3;
 					break;
 				case '4':
-					window_scale = 4;
+					parms->window_scale = 4;
 					break;
 				default:
 					usage();
@@ -775,7 +888,7 @@ main(int argc, char **argv)
 			if (!strcmp(argv[0], "nearest") ||
 				!strcmp(argv[0], "linear") ||
 				!strcmp(argv[0], "best")) {
-				scale_quality = argv[0];
+				parms->scale_quality = argv[0];
 			} else {
 				usage();
 			}
@@ -787,7 +900,7 @@ main(int argc, char **argv)
 			if (!argc || argv[0][0] == '-') {
 				audio_usage();
 			}
-			audio_dev_name = argv[0];
+			parms->audio_dev_name = argv[0];
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-abufs")) {
@@ -796,7 +909,7 @@ main(int argc, char **argv)
 			if (!argc || argv[0][0] == '-') {
 				usage();
 			}
-			audio_buffers = (int)strtol(argv[0], NULL, 10);
+			parms->audio_buffers = (int)strtol(argv[0], NULL, 10);
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-version")){
@@ -809,48 +922,55 @@ main(int argc, char **argv)
 		}
 	}
 
-	SDL_RWops *f = SDL_RWFromFile(rom_path, "rb");
+}
+
+int
+main(int argc, char **argv)
+{
+	processParms(argc, argv, &parms);
+
+	SDL_RWops *f = SDL_RWFromFile(parms.rom_path, "rb");
 	if (!f) {
-		printf("Cannot open %s!\n", rom_path);
+		printf("Cannot open %s!\n", parms.rom_path);
 		exit(1);
 	}
 	size_t rom_size = SDL_RWread(f, ROM, ROM_SIZE, 1);
 	(void)rom_size;
 	SDL_RWclose(f);
 
-	if (sdcard_path) {
-		sdcard_file = SDL_RWFromFile(sdcard_path, "r+b");
+	if (parms.sdcard_path) {
+		sdcard_file = SDL_RWFromFile(parms.sdcard_path, "r+b");
 		if (!sdcard_file) {
-			printf("Cannot open %s!\n", sdcard_path);
+			printf("Cannot open %s!\n", parms.sdcard_path);
 			exit(1);
 		}
 		sdcard_attach();
 	}
 
 	prg_override_start = -1;
-	if (prg_path) {
-		char *comma = strchr(prg_path, ',');
+	if (parms.prg_path) {
+		char *comma = strchr(parms.prg_path, ',');
 		if (comma) {
 			prg_override_start = (uint16_t)strtol(comma + 1, NULL, 16);
 			*comma = 0;
 		}
 
-		prg_file = SDL_RWFromFile(prg_path, "rb");
+		prg_file = SDL_RWFromFile(parms.prg_path, "rb");
 		if (!prg_file) {
-			printf("Cannot open %s!\n", prg_path);
+			printf("Cannot open %s!\n", parms.prg_path);
 			exit(1);
 		}
 	}
 
-	if (bas_path) {
-		SDL_RWops *bas_file = SDL_RWFromFile(bas_path, "r");
+	if (parms.bas_path) {
+		SDL_RWops *bas_file = SDL_RWFromFile(parms.bas_path, "r");
 		if (!bas_file) {
-			printf("Cannot open %s!\n", bas_path);
+			printf("Cannot open %s!\n", parms.bas_path);
 			exit(1);
 		}
 		paste_text = paste_text_data;
 		size_t paste_size = SDL_RWread(bas_file, paste_text, 1, sizeof(paste_text_data) - 1);
-		if (run_after_load) {
+		if (parms.run_after_load) {
 			strncpy(paste_text + paste_size, "\rRUN\r", sizeof(paste_text_data) - paste_size);
 		} else {
 			paste_text[paste_size] = 0;
@@ -858,20 +978,20 @@ main(int argc, char **argv)
 		SDL_RWclose(bas_file);
 	}
 
-	if (run_geos) {
+	if (parms.run_geos) {
 		paste_text = "GEOS\r";
 	}
-	if (run_test) {
+	if (parms.run_test) {
 		paste_text = paste_text_data;
-		snprintf(paste_text, sizeof(paste_text_data), "TEST %d\r", test_number);
+		snprintf(paste_text, sizeof(paste_text_data), "TEST %d\r", parms.test_number);
 	}
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
 
-	audio_init(audio_dev_name, audio_buffers);
+	audio_init(parms.audio_dev_name, parms.audio_buffers);
 
 	memory_init();
-	video_init(window_scale, scale_quality);
+	video_init(parms.window_scale, parms.scale_quality);
 
 	joystick_init();
 
@@ -1120,7 +1240,7 @@ emulator_loop(void *param)
 					RAM[VARTAB + 1] = end >> 8;
 				}
 
-				if (run_after_load) {
+				if (parms.run_after_load) {
 					if (start == 0x0801) {
 						paste_text = "RUN\r";
 					} else {
