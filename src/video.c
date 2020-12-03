@@ -7,7 +7,7 @@
 #include "memory.h"
 #include "ps2.h"
 #include "glue.h"
-#include "debugger.h"
+#include "debugger/debugger.h"
 #include "keyboard.h"
 #include "gif.h"
 #include "vera_spi.h"
@@ -1086,7 +1086,7 @@ video_update()
 	SDL_RenderCopy(renderer, sdlTexture, NULL, NULL);
 
 	if (debugger_enabled && showDebugOnRender != 0) {
-		DEBUGRenderDisplay(SCREEN_WIDTH, SCREEN_HEIGHT);
+		// DEBUGRenderDisplay(SCREEN_WIDTH, SCREEN_HEIGHT);
 		SDL_RenderPresent(renderer);
 		return true;
 	}
@@ -1450,4 +1450,25 @@ bool video_is_tiledata_address(int addr)
 bool video_is_special_address(int addr)
 {
 	return addr >= 0x1F9C0;
+}
+
+/*
+	Return address type
+	0 : tilemap
+	1 : tiledata
+	2 : special
+	3 : other
+*/
+int video_get_address_type(int addr)
+{
+	if(video_is_tilemap_address(addr))
+		return 0;
+
+	if(video_is_tiledata_address(addr))
+		return 1;
+
+	if(video_is_special_address(addr))
+		return 2;
+
+	return 3;
 }
