@@ -571,7 +571,7 @@ void processParms(int argc, char **argv, Parms *parms) {
 			keymap = km;
 
 		warp_mode= 1 == iniparser_getboolean(iniDict, "main:warp", 0);
-		debugger_enabled= 1 == iniparser_getboolean(iniDict, "debugger:enabled", 0);
+		debugger_enabled= 1 == iniparser_getboolean(iniDict, "dbg:enabled", 0);
 
 		char *echo= (char *)iniparser_getstring(iniDict, "main:echo", NULL);
 		if(echo) {
