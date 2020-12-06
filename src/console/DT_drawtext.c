@@ -31,11 +31,14 @@
 #include "SDL.h"
 #include "DT_drawtext.h"
 #include "internal.h"
+#include <libgen.h>
 
 #ifdef HAVE_SDLIMAGE
   #include "SDL_image.h"
 #endif
 
+#define CHARS_PER_LINE 16
+#define CHAR_LINES 16
 
 static BitFont *BitFonts = NULL;	/* Linked list of fonts */
 
@@ -60,7 +63,7 @@ const SDL_Color col_white= {255, 255, 255, 255};
 
 /* sets the transparency value for the font in question.  assumes that
  * we're in an OpenGL context.  */
-void DT_SetFontAlphaGL(int FontNumber, int a) {
+void DT_SetFontAlphaGL(int fontNumber, int a) {
 	unsigned char val;
 	BitFont *CurrentFont;
 	unsigned char r_targ, g_targ, b_targ;
@@ -68,12 +71,12 @@ void DT_SetFontAlphaGL(int FontNumber, int a) {
 	unsigned char *pix;
 
 	/* get pointer to font */
-	CurrentFont = DT_FontPointer(FontNumber);
+	CurrentFont = DT_FontPointer(fontNumber);
 	if(CurrentFont == NULL) {
 		PRINT_ERROR("Setting font alpha for non-existent font!\n");
 		return;
 	}
-	if(CurrentFont->FontSurface->format->BytesPerPixel == 2) {
+	if(CurrentFont->fontSurface->format->BytesPerPixel == 2) {
 		PRINT_ERROR("16-bit SDL surfaces do not support alpha-blending under OpenGL\n");
 		return;
 	}
@@ -87,8 +90,8 @@ void DT_SetFontAlphaGL(int FontNumber, int a) {
 	/* iterate over all pixels in the font surface.  For each
 	 * pixel that is (255,0,255), set its alpha channel
 	 * appropriately.  */
-	imax = CurrentFont->FontSurface->h * (CurrentFont->FontSurface->w << 2);
-	pix = (unsigned char *)(CurrentFont->FontSurface->pixels);
+	imax = CurrentFont->fontSurface->h * (CurrentFont->fontSurface->w << 2);
+	pix = (unsigned char *)(CurrentFont->fontSurface->pixels);
 	r_targ = 255;		/*pix[0]; */
 	g_targ = 0;		/*pix[1]; */
 	b_targ = 255;		/*pix[2]; */
@@ -97,39 +100,24 @@ void DT_SetFontAlphaGL(int FontNumber, int a) {
 			pix[i] = val;
 	/* also make sure that alpha blending is disabled for the font
 	   surface. */
-	//SDL_SetAlpha(CurrentFont->FontSurface, 0, SDL_ALPHA_OPAQUE);
-	SDL_SetSurfaceBlendMode(CurrentFont->FontSurface, SDL_BLENDMODE_NONE);
+	//SDL_SetAlpha(CurrentFont->fontSurface, 0, SDL_ALPHA_OPAQUE);
+	SDL_SetSurfaceBlendMode(CurrentFont->fontSurface, SDL_BLENDMODE_NONE);
 }
 
 /* Loads the font into a new struct
  * returns -1 as an error else it returns the number
  * of the font for the user to use
  */
-int DT_LoadFont(SDL_Renderer *renderer, const char *BitmapName, int flags) {
-	int ret = -1;
-
-	printf("DT_LoadFont %s\n", BitmapName);
-
-	SDL_RWops * rw = SDL_RWFromFile(BitmapName, "rb");
-	if (rw) {
-		ret = DT_LoadFont_RW(renderer, rw, flags);
-		SDL_RWclose(rw);
-	}
-	return ret;
-}
-
-int DT_LoadFont_RW(SDL_Renderer *renderer, SDL_RWops * rw, int flags) {
-	int FontNumber = 0;
+int DT_LoadFont(SDL_Renderer *renderer, const char *bitmapPath, int flags) {
+	int fontNumber = 0;
 	BitFont **CurrentFont = &BitFonts;
 	SDL_Surface *Temp;
 
-
-	while(*CurrentFont) {
-		CurrentFont = &((*CurrentFont)->NextFont);
-		FontNumber++;
-	}
-
 	/* load the font bitmap */
+
+	SDL_RWops * rw = SDL_RWFromFile(bitmapPath, "rb");
+	if(rw == NULL)
+		return -1;
 
 #ifdef HAVE_SDLIMAGE
 	Temp = IMG_Load_RW(rw, 0);
@@ -137,21 +125,35 @@ int DT_LoadFont_RW(SDL_Renderer *renderer, SDL_RWops * rw, int flags) {
 	Temp = SDL_LoadBMP_RW(rw, 0);
 #endif
 
+	SDL_RWclose(rw);
+
     if(Temp == NULL) {
 		PRINT_ERROR("Cannot load file: ");
 		printf("%s\n", SDL_GetError());
 		return -1;
 	}
 
+	while(*CurrentFont) {
+		CurrentFont = &((*CurrentFont)->nextFont);
+		fontNumber++;
+	}
+
 	/* Add a font to the list */
-	*CurrentFont = (BitFont *) malloc(sizeof(BitFont));
+	*CurrentFont = (BitFont *) calloc(1, sizeof(BitFont));
 
-	(*CurrentFont)->FontSurface = SDL_ConvertSurfaceFormat(Temp, SDL_PIXELFORMAT_RGBA32, 0);
+	(*CurrentFont)->fontSurface = SDL_ConvertSurfaceFormat(Temp, SDL_PIXELFORMAT_RGBA32, 0);
 
-	(*CurrentFont)->CharWidth = (*CurrentFont)->FontSurface->w / 256;
-	(*CurrentFont)->CharHeight = (*CurrentFont)->FontSurface->h;
-	(*CurrentFont)->FontNumber = FontNumber;
-	(*CurrentFont)->NextFont = NULL;
+	// (*CurrentFont)->charWidth = (*CurrentFont)->fontSurface->w / 256;
+	// (*CurrentFont)->charHeight = (*CurrentFont)->fontSurface->h;
+	(*CurrentFont)->charWidth = (*CurrentFont)->fontSurface->w / CHARS_PER_LINE;
+	(*CurrentFont)->charHeight = (*CurrentFont)->fontSurface->h / CHAR_LINES;
+	(*CurrentFont)->fontNumber = fontNumber;
+	(*CurrentFont)->nextFont = NULL;
+
+	const char *filename= basename((char *)bitmapPath);
+	const char *dot= strrchr(filename, '.');
+	const int len= dot ? dot - filename : strlen(filename);
+	strncpy((*CurrentFont)->fontName, filename, len<sizeof((*CurrentFont)->fontName)-1 ? len : sizeof((*CurrentFont)->fontName)-1);
 
 
 	/* Set font as transparent if the flag is set.  The assumption we'll go on
@@ -159,11 +161,11 @@ int DT_LoadFont_RW(SDL_Renderer *renderer, SDL_RWops * rw, int flags) {
 	 * as transparent.
 	 */
 	if(flags & TRANS_FONT)
-		SDL_SetColorKey((*CurrentFont)->FontSurface, SDL_TRUE, SDL_MapRGB((*CurrentFont)->FontSurface->format, 255, 0, 255));
+		SDL_SetColorKey((*CurrentFont)->fontSurface, SDL_TRUE, SDL_MapRGB((*CurrentFont)->fontSurface->format, 255, 0, 255));
 
-	(*CurrentFont)->FontTexture= SDL_CreateTextureFromSurface(renderer, (*CurrentFont)->FontSurface);
+	(*CurrentFont)->fontTexture= SDL_CreateTextureFromSurface(renderer, (*CurrentFont)->fontSurface);
 
-	return FontNumber;
+	return fontNumber;
 }
 
 int DT_ProcessEscapeCodes(const char *string, SDL_Surface *surface, int pos, int len) {
@@ -212,19 +214,19 @@ void DT_DrawText(const char *string, SDL_Surface *surface, int FontType, int x, 
 	if(x > surface->w || y > surface->h)
 		return;
 
-	if(strlen(string) < (surface->w - x) / CurrentFont->CharWidth)
+	if(strlen(string) < (surface->w - x) / CurrentFont->charWidth)
 		characters = strlen(string);
 	else
-		characters = (surface->w - x) / CurrentFont->CharWidth;
+		characters = (surface->w - x) / CurrentFont->charWidth;
 
 	DestRect.x = x;
 	DestRect.y = y;
-	DestRect.w = CurrentFont->CharWidth;
-	DestRect.h = CurrentFont->CharHeight;
+	DestRect.w = CurrentFont->charWidth;
+	DestRect.h = CurrentFont->charHeight;
 
 	SourceRect.y = 0;
-	SourceRect.w = CurrentFont->CharWidth;
-	SourceRect.h = CurrentFont->CharHeight;
+	SourceRect.w = CurrentFont->charWidth;
+	SourceRect.h = CurrentFont->charHeight;
 
 	/* Now draw it */
 	for(loop = 0; loop < characters; loop++) {
@@ -233,14 +235,16 @@ void DT_DrawText(const char *string, SDL_Surface *surface, int FontType, int x, 
 			current = 0;
 
 		if(current == 0x1B) { // ESC [
-			loop= DT_ProcessEscapeCodes(string, CurrentFont->FontSurface, ++loop, characters);
+			loop= DT_ProcessEscapeCodes(string, CurrentFont->fontSurface, ++loop, characters);
 			continue;
 		}
 
-		/* SourceRect.x = string[loop] * CurrentFont->CharWidth; */
-		SourceRect.x = current * CurrentFont->CharWidth;
-		SDL_BlitSurface(CurrentFont->FontSurface, &SourceRect, surface, &DestRect);
-		DestRect.x += CurrentFont->CharWidth;
+		/* SourceRect.x = string[loop] * CurrentFont->charWidth; */
+		SourceRect.x = current * CurrentFont->charWidth % (CurrentFont->charWidth * CHARS_PER_LINE);
+		SourceRect.y = current / CHARS_PER_LINE * (CurrentFont->charHeight);
+
+		SDL_BlitSurface(CurrentFont->fontSurface, &SourceRect, surface, &DestRect);
+		DestRect.x += CurrentFont->charWidth;
 	}
 }
 
@@ -291,21 +295,21 @@ void DT_DrawText2(SDL_Renderer *renderer, const char *string, int FontType, int 
 
 	CurrentFont = DT_FontPointer(FontType);
 
-	SDL_SetTextureColorMod(CurrentFont->FontTexture, colour.r, colour.g, colour.b);
+	SDL_SetTextureColorMod(CurrentFont->fontTexture, colour.r, colour.g, colour.b);
 
-	if(strlen(string) < (width - x) / CurrentFont->CharWidth)
+	if(strlen(string) < (width - x) / CurrentFont->charWidth)
 		characters = strlen(string);
 	else
-		characters = (width - x) / CurrentFont->CharWidth;
+		characters = (width - x) / CurrentFont->charWidth;
 
 	DestRect.x = x;
 	DestRect.y = y;
-	DestRect.w = CurrentFont->CharWidth;
-	DestRect.h = CurrentFont->CharHeight;
+	DestRect.w = CurrentFont->charWidth;
+	DestRect.h = CurrentFont->charHeight;
 
 	SourceRect.y = 0;
-	SourceRect.w = CurrentFont->CharWidth;
-	SourceRect.h = CurrentFont->CharHeight;
+	SourceRect.w = CurrentFont->charWidth;
+	SourceRect.h = CurrentFont->charHeight;
 
 	/* Now draw it */
 	for(loop = 0; loop < characters; loop++) {
@@ -314,59 +318,99 @@ void DT_DrawText2(SDL_Renderer *renderer, const char *string, int FontType, int 
 			current = 0;
 
 		if(current == 0x1B) { // ESC [
-			loop= DT_ProcessEscapeCodes2(string, CurrentFont->FontTexture, ++loop, characters);
+			loop= DT_ProcessEscapeCodes2(string, CurrentFont->fontTexture, ++loop, characters);
 			continue;
 		}
 
-		/* SourceRect.x = string[loop] * CurrentFont->CharWidth; */
-		SourceRect.x = current * CurrentFont->CharWidth;
-		SDL_RenderCopy(renderer, CurrentFont->FontTexture, &SourceRect, &DestRect);
+		// SourceRect.x = current * CurrentFont->charWidth;
+		SourceRect.x = current * CurrentFont->charWidth % (CurrentFont->charWidth * CHARS_PER_LINE);
+		SourceRect.y = current / CHARS_PER_LINE * (CurrentFont->charHeight);
+		SDL_RenderCopy(renderer, CurrentFont->fontTexture, &SourceRect, &DestRect);
 
-		DestRect.x += CurrentFont->CharWidth;
+		DestRect.x += CurrentFont->charWidth;
 	}
 }
 
 
 /* Returns the height of the font numbers character
  * returns 0 if the fontnumber was invalid */
-int DT_FontHeight(int FontNumber) {
+int DT_FontHeight(int fontNumber) {
 	BitFont *CurrentFont;
 
-	CurrentFont = DT_FontPointer(FontNumber);
+	CurrentFont = DT_FontPointer(fontNumber);
 	if(CurrentFont)
-		return CurrentFont->CharHeight;
+		return CurrentFont->charHeight;
 	else
 		return 0;
 }
 
 /* Returns the width of the font numbers charcter */
-int DT_FontWidth(int FontNumber) {
+int DT_FontWidth(int fontNumber) {
 	BitFont *CurrentFont;
 
-	CurrentFont = DT_FontPointer(FontNumber);
+	CurrentFont = DT_FontPointer(fontNumber);
 	if(CurrentFont)
-		return CurrentFont->CharWidth;
+		return CurrentFont->charWidth;
 	else
 		return 0;
 }
 
 /* Returns a pointer to the font struct of the number
- * returns NULL if theres an error
+ * returns NULL if there's an error
  */
-BitFont *DT_FontPointer(int FontNumber) {
+BitFont *DT_FontPointer(int fontNumber) {
 	BitFont *CurrentFont = BitFonts;
 	// BitFont *temp;
 
 	while(CurrentFont)
-		if(CurrentFont->FontNumber == FontNumber)
+		if(CurrentFont->fontNumber == fontNumber)
 			return CurrentFont;
 		else {
 			// temp = CurrentFont;
-			CurrentFont = CurrentFont->NextFont;
+			CurrentFont = CurrentFont->nextFont;
 		}
 
 	return NULL;
 
+}
+
+/* Find a font by name or number and returns a pointer to the font struct
+ * returns -1 if not found
+ */
+int DT_FindFontID(char *font) {
+	BitFont *currentFont = BitFonts;
+	char *endPtr;
+	int fontNum= (int)strtol(font, &endPtr, 10);
+
+	// not a number therefore let's find by name
+	if(endPtr == font) {
+		while(currentFont)
+			if(!stricmp(font, currentFont->fontName))
+				return currentFont->fontNumber;
+			else {
+				currentFont = currentFont->nextFont;
+			}
+	}
+	else
+		return DT_FontPointer(fontNum) ? fontNum : -1;
+
+	return -1;
+
+}
+
+/* Set Font Name
+ *
+ */
+int DT_SetFontName(int fontNumber, const char *name) {
+	BitFont *currentFont= DT_FontPointer(fontNumber);
+	if(!currentFont)
+		return -1;
+
+	int len= strlen(name);
+	memset(currentFont->fontName, 0, sizeof(currentFont->fontName));
+	strncpy(currentFont->fontName, name, len<sizeof(currentFont->fontName) ? len : sizeof(currentFont->fontName)-1);
+
+	return 0;
 }
 
 /* removes all the fonts currently loaded */
@@ -376,9 +420,9 @@ void DT_DestroyDrawText() {
 
 	while(CurrentFont) {
 		temp = CurrentFont;
-		CurrentFont = CurrentFont->NextFont;
+		CurrentFont = CurrentFont->nextFont;
 
-		SDL_FreeSurface(temp->FontSurface);
+		SDL_FreeSurface(temp->fontSurface);
 		free(temp);
 	}
 

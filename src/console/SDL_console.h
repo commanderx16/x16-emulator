@@ -1,21 +1,21 @@
 /*
 	SDL_console: An easy to use drop-down console based on the SDL library
 	Copyright (C) 1999, 2000, 2001, 2002, 2003, 2004 Clemens Wacha
-	
+
 	This library is free software; you can redistribute it and/or
 	modify it under the terms of the GNU Library General Public
 	License as published by the Free Software Foundation; either
 	version 2 of the License, or (at your option) any later version.
-	
+
 	This library is distributed in the hope that it will be useful,
 	but WHITOUT ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 	Library General Public License for more details.
-	
+
 	You should have received a copy of the GNU Library Generla Public
 	License along with this library; if not, write to the Free
 	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-	
+
 	Clemens Wacha
 	reflex-2000@gmx.net
 */
@@ -79,7 +79,7 @@ extern "C" {
 		int TotalConsoleLines;				/*! Total number of lines in the console */
 		int ConsoleScrollBack;				/*! How much the user scrolled back in the console */
 		int TotalCommands;					/*! Number of commands that were typed in before (which are now in the CommandLines array) */
-		int FontNumber;						/*! This is the number of the font for the console (DT_* specific; will hopefully disappear in future releases) */
+		int fontNumber;						/*! This is the number of the font for the console (DT_* specific; will hopefully disappear in future releases) */
 		int LineBuffer;						/*! The number of visible lines in the console (autocalculated on CON_UpdateConsole()) */
 		int VChars;							/*! The number of visible characters in one console line (autocalculated on CON_Init() and recalc. on CON_Resize()) */
 		int BackX, BackY;					/*! Background image x and y coords */
@@ -97,6 +97,7 @@ extern "C" {
 		SDL_Surface *InputBackground;		/*! Dirty rectangle that holds the part of the background image that is behind the commandline */
 		int DispX, DispY;					/*! The top left x and y coords of the console on the display screen */
 		unsigned char ConsoleAlpha;			/*! The consoles alpha level */
+		SDL_Color bgColor;
 		int CommandScrollBack;				/*! How much the users scrolled back in the command lines */
 		void(*CmdFunction)(struct console_information_td *console, char* command);	/*! The Function that is executed if you press 'Return' in the console */
 		char*(*TabFunction)(char* command);	/*! The Function that is executed if you press 'Tab' in the console */
@@ -106,7 +107,7 @@ extern "C" {
 	} ConsoleInformation;
 
 	/*! Takes keys from the keyboard and inputs them to the console if the console isVisible().
-		If the event was not handled (i.e. WM events or unknown ctrl- or alt-sequences) 
+		If the event was not handled (i.e. WM events or unknown ctrl- or alt-sequences)
 		the function returns the event for further processing. ***The prototype of this function will change in the next major release to
 		int CON_Events(ConsoleInformation* console, SDL_Event *event) ***/
 	extern DECLSPEC SDL_Event* SDLCALL CON_Events(SDL_Event *event);
@@ -121,14 +122,13 @@ extern "C" {
 	/*! Draws the console to the screen if it is visible (NOT if it isVisible()). It get's drawn if it is REALLY visible ;-) */
 	extern DECLSPEC void SDLCALL CON_DrawConsole(ConsoleInformation *console);
 	/*! Initializes a new console. CON_Init/CON_Init_RW are the same other than they take a filename or SDL_RWops handle (respectively)
-		@param FontName A filename of an image containing the font. Look at the example code for the image contents
+		@param fontPath A filename of an image containing the font. Look at the example code for the image contents
 		@param rw An open SDL_RWops handle of an image containing the font. Look at the example code for the image contents
 		@param DisplayScreen The VideoSurface we are blitting to. ***This was not a very intelligent move. I will change this in the next major release.
 		CON_DrawConsole will then no more blit the console to this surface but give you a pointer to ConsoleSurface when all updates are done***
 		@param lines The total number of lines in the history
 		@param rect Position and size of the new console */
-	extern DECLSPEC ConsoleInformation* SDLCALL CON_Init(const char *FontName, SDL_Renderer * renderer, int lines, SDL_Rect rect);
-	extern DECLSPEC ConsoleInformation* SDLCALL CON_Init_RW(SDL_RWops * rw, SDL_Renderer * renderer, int lines, SDL_Rect rect);
+	extern DECLSPEC ConsoleInformation* SDLCALL CON_Init(const char *fontPath, SDL_Renderer * renderer, int lines, SDL_Rect rect);
 	/*! Frees DT_DrawText and calls CON_Free */
 	extern DECLSPEC void SDLCALL CON_Destroy(ConsoleInformation *console);
 	/*! Frees all the memory loaded by the console */
@@ -141,6 +141,8 @@ extern "C" {
 	/*! Internal: Sets the alpha channel of an SDL_Surface to the specified value.
 		Preconditions: the surface in question is RGBA. 0 <= a <= 255, where 0 is transparent and 255 opaque */
 	extern DECLSPEC void SDLCALL CON_AlphaGL(SDL_Surface *s, int alpha);
+	/*! Sets the background color for the console */
+	extern DECLSPEC void SDLCALL CON_BackgroundColor(ConsoleInformation *console, int r, int g, int b);
 	/*! Sets a background image for the console */
 	extern DECLSPEC int SDLCALL CON_Background(ConsoleInformation *console, const char *image, int x, int y);
 	/*! Changes current position of the console to the new given coordinates */
@@ -162,11 +164,11 @@ extern "C" {
 	/*! Sets the callback function that is called if a command was typed in. The function you would like to use as the callback will have to
 		look like this: <br>
 		<b> void my_command_handler(ConsoleInformation* console, char* command)</b> <br><br>
-		You will then call the function like this:<br><b> 
+		You will then call the function like this:<br><b>
 		CON_SetExecuteFunction(console, my_command_handler)</b><br><br>
 		If this is not clear look at the example program */
 	extern DECLSPEC void SDLCALL CON_SetExecuteFunction(ConsoleInformation *console, void(*CmdFunction)(ConsoleInformation *console2, char* command));
-	/*! Sets the callback function that is called if you press the 'Tab' key. The function has to look like this:<br><b> 
+	/*! Sets the callback function that is called if you press the 'Tab' key. The function has to look like this:<br><b>
 		char* my_tabcompletion(char* command)</b><br><br>
 		The commandline on the left side of the cursor gets passed over to your function. You will then have to make your
 		own tab-complete and return the completed string as return value. If you have nothing to complete you can return
