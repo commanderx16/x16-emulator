@@ -19,6 +19,8 @@ int yPos = 0;
 SDL_Texture *fontTexture;
 int textureInitialized = 0;
 
+extern int font_debugger;
+
 // *******************************************************************************************
 // left trim string
 //
@@ -199,8 +201,7 @@ void DEBUGWrite(SDL_Renderer *renderer, int x, int y, int ch, SDL_Color colour) 
 // *******************************************************************************************
 
 void DEBUGString(SDL_Renderer *renderer, int x, int y, char *s, SDL_Color colour) {
-	int fontNum= 0;
-	int h= DT_FontHeight(fontNum);
-	int w= DT_FontWidth(fontNum);
-	DT_DrawText2(renderer, s, fontNum, x*(w+1), y*(h+1), colour);
+	int h= DT_FontHeight(font_debugger) + 1;
+	int w= DT_FontWidth(font_debugger);
+	DT_DrawText2(renderer, s, font_debugger, x*w, y*h, colour);
 }

@@ -31,10 +31,10 @@
 
 static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift);
 
-static void DEBUGRenderData(int y, int memaddr);
+static void DEBUGRenderData(int x, int y, int lineCount, int memaddr);
 static void DEBUGRenderRegisters();
 static void DEBUGRenderVRAM(int y, int vmemaddr);
-static void DEBUGRenderCode(int lines,int initialPC);
+static void DEBUGRenderCode(int lines, int initialPC);
 static void DEBUGRenderStack(int bytesCount);
 
 static void DEBUG_Command_Handler(ConsoleInformation *console, char* command);
@@ -87,16 +87,35 @@ static void DEBUG_Command_Handler(ConsoleInformation *console, char* command);
 
 #define DBGMAX_ZERO_PAGE_REGISTERS 20
 
+const int DBG_LAYOUT_CODE_WIDTH= 8 + 9 + 14 + 3+1+13+3;
+const int DBG_LAYOUT_REG_WIDTH= 4 + 3 + 4 + 3;
+const int DBG_LAYOUT_ZP_REG_WIDTH= 4 + 4;
+const int DBG_LAYOUT_STCK_WIDTH= 4 + 1 + 2 + 1 + 1;
+const int DBG_LAYOUT_DATA_WIDTH= 8 + 16 * 3 + 16;
+
 // RGB colours
 // const SDL_Color col_bkgnd= {0, 0, 0, 255};
 SDL_Color col_label= {0, 255, 0, 255};
 SDL_Color col_data= {0, 255, 255, 255};
 SDL_Color col_highlight= {255, 255, 0, 255};
 
-const SDL_Color col_vram_tilemap = {0, 255, 255, 255};
-const SDL_Color col_vram_tiledata = {0, 255, 0, 255};
-const SDL_Color col_vram_special  = {255, 92, 92, 255};
-const SDL_Color col_vram_other  = {128, 128, 128, 255};
+const int col_vram_len= 4;
+/*
+	0 : tilemap
+	1 : tiledata
+	2 : special
+	3 : other
+*/
+SDL_Color col_vram[] = {
+	{0, 255, 255, 255},
+	{0, 255, 0, 255},
+	{255, 92, 92, 255},
+	{128, 128, 128, 255}
+};
+
+SDL_Color col_dbg_bkgnd = {0, 0, 0, 255};
+SDL_Color col_con_bkgnd = {0, 0, 0, 255};
+SDL_Color col_dbg_focus = {255, 255, 255, 0};
 
 int showDebugOnRender = 0;										// Used to trigger rendering in video.c
 int showFullDisplay = 0; 										// If non-zero show the whole thing.
@@ -121,21 +140,22 @@ int win_width = 640;
 int con_height = 50;
 int layout= 0;
 
-int DBG_STCK= 			80;											// Debug stack starts here.
-const int DBG_ZP_REG=   80;                             			// Zero page registers start here
-const int DBG_REG=   	48;                            				// Registers start here
-const int DBG_BP_REG= 	62;                             			// Breakpoins registers start here
+int font_debugger= 0;
+
+int DBG_LAYOUT_WIDTH= 			0;
+int DBG_LAYOUT_HEIGHT= 			0;
+int DBG_LAYOUT_STCK_X= 			-DBG_LAYOUT_STCK_WIDTH;						// Debug stack starts here.
+int DBG_LAYOUT_ZP_REG_X=   		-DBG_LAYOUT_ZP_REG_WIDTH;          			// Zero page registers start here
+int DBG_LAYOUT_REG_X=   		DBG_LAYOUT_CODE_WIDTH + 1;     				// Registers start here
+int DBG_LAYOUT_REG_Y=   		0;
+int DBG_LAYOUT_BP_REG_X= 		DBG_LAYOUT_CODE_WIDTH + 1 + DBG_LAYOUT_REG_WIDTH;	// Breakpoins registers start here
 SDL_Rect smallDataZoneRect= { 0, 290, 525, 455 };
-SDL_Rect smallCodeZoneRect= { 0, 0, 310, 280 };
-SDL_Rect largeCodeZoneRect= { 0, 0, 330, 745 };
+SDL_Rect smallCodeZoneRect= { 5, 0, 310, 285 };
+SDL_Rect largeCodeZoneRect= { 5, 0, 330, 750 };
 SDL_Rect emptyZoneRect= { 0, 0, 0, 0 };
 
 SDL_Rect *codeZoneRect= &smallCodeZoneRect;
 SDL_Rect *dataZoneRect= &smallDataZoneRect;
-
-//
-//		This flag controls
-//
 
 SDL_Renderer *dbgRenderer; 										// Renderer passed in.
 static SDL_Window* dbgWindow;
@@ -293,7 +313,6 @@ int  DEBUGGetCurrentStatus(void) {
 			}
 
 			CON_Events(&event);
-			// if(!CON_Events(&event)) continue;
 
 		}
 	}
@@ -324,67 +343,111 @@ int  DEBUGGetCurrentStatus(void) {
 //								Setup fonts and co
 //
 // *******************************************************************************************
-void readSettings() {
-	dictionary *iniDict= iniparser_load("x16emu.ini");
-	if(iniDict) {
-		const char *keys[16];
-		int cmdCount= iniparser_getsecnkeys(iniDict, "dbg_ini_script");
-		iniparser_getseckeys(iniDict, "dbg_ini_script", keys);
-		for(int idx =0; idx < cmdCount; idx++) {
-			char *cmd= (char *)iniparser_getstring(iniDict, keys[idx], "");
-			CON_Out(console, cmd);
-			DEBUG_Command_Handler(console, cmd);
-		}
+void setDebuggerFont(int fontNumber) {
+	font_debugger= fontNumber;
 
-		char buffer[32];
-		char *bp;
-		for(int idx= 0; idx < DBG_MAX_BREAKPOINTS; idx++) {
-			sprintf(buffer, "debugger:BP%d", idx);
-			bp= (char *)iniparser_getstring(iniDict, buffer, NULL);
-			if(bp && bp[0] != '\0') {
-				sprintf(buffer, "bp %s", bp);
-				CON_Out(console, buffer);
-				DEBUG_Command_Handler(console, buffer);
-			}
-		}
+	int charWidth= DT_FontWidth(font_debugger);
+	int charHeight= DT_FontHeight(font_debugger);
 
-		iniparser_freedict(iniDict);
+	// adjust focus rect width to follow font char width
+	smallCodeZoneRect.w=
+	largeCodeZoneRect.w= charWidth * DBG_LAYOUT_CODE_WIDTH;
+
+	// adjust focus rect width to follow font char width
+	smallDataZoneRect.w= charWidth * (DBG_LAYOUT_DATA_WIDTH+1);
+	smallDataZoneRect.y= (smallDataZoneRect.y / charHeight) * charHeight;
+	smallDataZoneRect.h= win_height - con_height - smallDataZoneRect.y - 5;
+
+	DBG_LAYOUT_WIDTH= win_width / charWidth;
+	DBG_LAYOUT_HEIGHT= win_height / charHeight;
+
+}
+
+bool readColour(const dictionary *dict, const char *key, SDL_Colour *col) {
+	int val= iniparser_getint(dict, key, -1);
+	if(val>0) {
+		col->r= val >> 16;
+		col->g= val >> 8 & 0xFF;
+		col->b= val & 0xFF;
+		return true;
 	}
+	return false;
+}
+
+void readSettings(dictionary *iniDict) {
+	const char *keys[16];
+	int cmdCount= iniparser_getsecnkeys(iniDict, "dbg_ini_script");
+	iniparser_getseckeys(iniDict, "dbg_ini_script", keys);
+	for(int idx =0; idx < cmdCount; idx++) {
+		char *cmd= (char *)iniparser_getstring(iniDict, keys[idx], "");
+		CON_Out(console, cmd);
+		DEBUG_Command_Handler(console, cmd);
+	}
+
+	char buffer[32];
+	char *bp;
+	for(int idx= 0; idx < DBG_MAX_BREAKPOINTS; idx++) {
+		sprintf(buffer, "dbg:BP%d", idx);
+		bp= (char *)iniparser_getstring(iniDict, buffer, NULL);
+		if(bp && bp[0] != '\0') {
+			sprintf(buffer, "bp %s", bp);
+			CON_Out(console, buffer);
+			DEBUG_Command_Handler(console, buffer);
+		}
+	}
+
+	int fontNum= DT_LoadFont(dbgRenderer, iniparser_getstring(iniDict, "dbg:font", "consolas10.bmp"), TRANS_FONT);
+	setDebuggerFont(fontNum>=0 ? fontNum : 0);
+
+	readColour(iniDict, "dbg:focus_color", &col_dbg_focus);
+	readColour(iniDict, "dbg:bg_color", &col_dbg_bkgnd);
+
+	readColour(iniDict, "dbg:vram_tilemap_color", &col_vram[0]);
+	readColour(iniDict, "dbg:vram_tiledata_color", &col_vram[1]);
+	readColour(iniDict, "dbg:vram_special_color", &col_vram[2]);
+	readColour(iniDict, "dbg:vram_other_color", &col_vram[3]);
+
+	readColour(iniDict, "dbg_console:bg_color", &col_con_bkgnd);
+	CON_BackgroundColor(console, col_con_bkgnd.r, col_con_bkgnd.g, col_con_bkgnd.b);
 }
 
 void DEBUGInitUI(SDL_Renderer *pRenderer) {
 	SDL_Rect Con_rect;
 
-	dbgWindow= SDL_CreateWindow("X16 Debugger", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, win_width, win_height, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN);
-	dbgRenderer= SDL_CreateRenderer(dbgWindow, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED );
+	dictionary *iniDict= iniparser_load("x16emu.ini");
+	if(iniDict) {
 
-	SDL_SetRenderDrawBlendMode(dbgRenderer, SDL_BLENDMODE_BLEND);
+		dbgWindow= SDL_CreateWindow("X16 Debugger", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, win_width, win_height, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN);
+		dbgRenderer= SDL_CreateRenderer(dbgWindow, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED );
+		SDL_SetRenderDrawBlendMode(dbgRenderer, SDL_BLENDMODE_BLEND);
+		dbgWindowID= SDL_GetWindowID(dbgWindow);
+		SDL_ShowCursor(SDL_ENABLE);
 
-	dbgWindowID= SDL_GetWindowID(dbgWindow);
+		// DEBUGInitChars(pRenderer);
+		// dbgRenderer = pRenderer;				// Save renderer.
+		DEBUGInitChars(dbgRenderer);
 
-	// DEBUGInitChars(pRenderer);
-	// dbgRenderer = pRenderer;				// Save renderer.
-	DEBUGInitChars(dbgRenderer);
+		char *fontPath= (char *)iniparser_getstring(iniDict, "dbg_console:font", "consolas10.bmp");
+		Con_rect.x = 0;
+		Con_rect.y = 0;
+		Con_rect.w = win_width;
+		Con_rect.h = win_height;
+		console= CON_Init(fontPath, dbgRenderer, 50, Con_rect);
+		CON_SetExecuteFunction(console, DEBUG_Command_Handler);
 
-	Con_rect.x = 0;
-	Con_rect.y = 0;
-	Con_rect.w = win_width;
-	Con_rect.h = win_height;
-	console= CON_Init("ConsoleFont.bmp", dbgRenderer, 50, Con_rect);
-	CON_Show(console);
-	CON_SetExecuteFunction(console, DEBUG_Command_Handler);
+		symbol_init();
 
-	SDL_ShowCursor(SDL_ENABLE);
+		readSettings(iniDict);
 
-	symbol_init();
+		CON_Show(console);
 
-	readSettings();
-
+		iniparser_freedict(iniDict);
+	}
 }
 
 // *******************************************************************************************
 //
-//								Setup fonts and co
+//
 //
 // *******************************************************************************************
 void DEBUGFreeUI() {
@@ -394,7 +457,7 @@ void DEBUGFreeUI() {
 
 // *******************************************************************************************
 //
-//								Set a new breakpoint address. -1 to disable.
+//								Add a new breakpoint address
 //
 // *******************************************************************************************
 
@@ -508,12 +571,13 @@ void DEBUG_Command_Handler(ConsoleInformation *console, char* command) {
 //									 Render Data Area
 //
 // *******************************************************************************************
+#define DATA_ADDR_WIDTH 2+1+4 + 1
+#define DATA_BYTES_WIDTH 16*3
+static void DEBUGRenderData(int x, int y, int lineCount, int memaddr) {
 
-static void DEBUGRenderData(int y, int memaddr) {
-
-	while (y < dbg_height-2) {									// To bottom of screen
+	while(lineCount--) {									// To bottom of screen
 		memaddr &= 0xFFFF;
-		DEBUGAddress(DBG_MEMX, y, (uint8_t)currentBank, memaddr, col_label);	// Show label.
+		DEBUGAddress(x, y, (uint8_t)currentBank, memaddr, col_label);	// Show label.
 		for (int i = 0;i < 16;i++) {
 			int addr= memaddr + i;
 			// if in RAM or in ROM and outside existing banks, print nothing
@@ -521,26 +585,19 @@ static void DEBUGRenderData(int y, int memaddr) {
 				continue;
 			else {
 				int byte= real_read6502(addr, true, currentBank);
-				DEBUGNumber(DBG_MEMX+8+i*3, y, byte, 2, col_data);
-				DEBUGWrite(dbgRenderer, DBG_MEMX+57+i, y, byte, col_data);
+				DEBUGNumber(x+DATA_ADDR_WIDTH+i*3, y, byte, 2, col_data);
+				DEBUGWrite(dbgRenderer, x+DATA_ADDR_WIDTH+DATA_BYTES_WIDTH+i, y, byte==0 ? '.' : byte, col_data);
 			}
 		}
 		y++;
 		memaddr+= 16;
 	}
 	if(mouseZone == 2) {
-		SDL_SetRenderDrawColor(dbgRenderer, 255, 255, 255, 80);
+		SDL_SetRenderDrawColor(dbgRenderer, col_dbg_focus.r, col_dbg_focus.g, col_dbg_focus.b, 80);
 		SDL_RenderFillRect(dbgRenderer, dataZoneRect);
 	}
 }
 
-#define VRAM_TYPES_COUNT (4)
-static SDL_Colour vramColours[VRAM_TYPES_COUNT]= {
-	col_vram_tilemap,
-	col_vram_tiledata,
-	col_vram_special,
-	col_vram_other
-};
 static void
 DEBUGRenderVRAM(int y, int vmemaddr)
 {
@@ -551,8 +608,8 @@ DEBUGRenderVRAM(int y, int vmemaddr)
 			int addr = (vmemaddr + i) & 0x1FFFF;
 			int byte = video_space_read(addr);
 
-			int type= video_get_address_type(addr) % VRAM_TYPES_COUNT;
-			DEBUGNumber(DBG_MEMX + 6 + i * 3, y, byte, 2, vramColours[type]);
+			int type= video_get_address_type(addr) % col_vram_len;
+			DEBUGNumber(DBG_MEMX + 6 + i * 3, y, byte, 2, col_vram[type]);
 		}
 		y++;
 		vmemaddr += 16;
@@ -564,6 +621,9 @@ DEBUGRenderVRAM(int y, int vmemaddr)
 //									 Render Disassembly
 //
 // *******************************************************************************************
+#define CODE_ADDR_WIDTH 2+1+4 + 1
+#define CODE_BYTES_WIDTH 2+1+2+1+2 + 1
+#define CODE_LABEL_WIDTH SYMBOL_LABEL_MAXLEN + 1
 static void DEBUGRenderCode(int lines, int initialPC) {
 	char buffer[48];
 	char *label;
@@ -581,20 +641,20 @@ static void DEBUGRenderCode(int lines, int initialPC) {
 		if(y == 0)
 			disasmLine1Size= size;
 
-		DEBUGString(dbgRenderer, DBG_ASMX+8+9+13, y, buffer, initialPC == pc ? col_highlight : col_data);
+		DEBUGString(dbgRenderer, DBG_ASMX+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH+CODE_LABEL_WIDTH, y, buffer, initialPC == pc ? col_highlight : col_data);
 
 		for(int byteCount= 0; byteCount<size;byteCount++) {
 			int byte= real_read6502(initialPC + byteCount, true, currentPCBank);
-			DEBUGNumber(DBG_ASMX+8+byteCount*3, y, byte, 2, initialPC == pc ? col_highlight : col_data);
+			DEBUGNumber(DBG_ASMX+CODE_ADDR_WIDTH+byteCount*3, y, byte, 2, initialPC == pc ? col_highlight : col_data);
 		}
 		label= symbol_find_label(currentPCBank, initialPC);
 		if(label)
-			DEBUGString(dbgRenderer, DBG_ASMX+8+9, y, label, initialPC == pc ? col_highlight : col_data);
+			DEBUGString(dbgRenderer, DBG_ASMX+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH, y, label, initialPC == pc ? col_highlight : col_data);
 		initialPC += size;										// Forward to next
 	}
 
 	if(mouseZone == 1) {
-		SDL_SetRenderDrawColor(dbgRenderer, 255, 255, 255, 80);
+		SDL_SetRenderDrawColor(dbgRenderer, col_dbg_focus.r, col_dbg_focus.g, col_dbg_focus.b, 80);
 		SDL_RenderFillRect(dbgRenderer, codeZoneRect) ;
 	}
 }
@@ -605,77 +665,60 @@ static void DEBUGRenderCode(int lines, int initialPC) {
 //
 // *******************************************************************************************
 
-typedef struct {
-	char *text;
-	int xOffset;
-	int yOffset;
-} TRegisterLabelPos;
-typedef struct {
-	int xOffset;
-	int yOffset;
-} TRegisterValuePos;
-typedef struct {
-	int regCode;
-	int width;
-	int showChar;
-	TRegisterLabelPos label;
-	TRegisterValuePos value;
-} TRegisterPos;
-
 static TRegisterPos regs[]= {
-	{ REG_P,   2, 0, { "P", DBG_REG+0, 0}, {DBG_REG+0, 1} },
-	{ REG_P,  -1, 0, { "NVRBDIZC", DBG_REG+3, 0}, {DBG_REG+3, 1} },
-	{ REG_A,   2, 1, { "A",  DBG_REG+0, 2}, {DBG_REG+3, 2} },
-	{ REG_X,   2, 1, { "X",  DBG_REG+0, 3}, {DBG_REG+3, 3} },
-	{ REG_Y,   2, 1, { "Y",  DBG_REG+0, 4}, {DBG_REG+3, 4} },
-	{ REG_PC,  4, 0, { "PC", DBG_REG+0, 5}, {DBG_REG+3, 5} },
-	{ REG_SP,  4, 0, { "SP", DBG_REG+0, 6}, {DBG_REG+3, 6} },
+	{ KIND_CPU, REG_P,   2, 0, { "P", 0, 0}, {0, 1} },
+	{ KIND_CPU, REG_P,  -1, 0, { "NVRBDIZC", 3, 0}, {3, 1} },
+	{ KIND_CPU, REG_A,   2, 1, { "A",  0, 2}, {3, 2} },
+	{ KIND_CPU, REG_X,   2, 1, { "X",  0, 3}, {3, 3} },
+	{ KIND_CPU, REG_Y,   2, 1, { "Y",  0, 4}, {3, 4} },
+	{ KIND_CPU, REG_PC,  4, 0, { "PC", 0, 5}, {3, 5} },
+	{ KIND_CPU, REG_SP,  4, 0, { "SP", 0, 6}, {3, 6} },
 
-	{ REG_BKA, 2, 0, { "BKA", DBG_REG+0, 8}, {DBG_REG+4, 8} },
-	{ REG_BKO, 2, 0, { "BKO", DBG_REG+7, 8}, {DBG_REG+11, 8} },
+	{ KIND_CPU, REG_BKA, 2, 0, { "BKA", 0, 8}, {4, 8} },
+	{ KIND_CPU, REG_BKO, 2, 0, { "BKO", 7, 8}, {11, 8} },
 
-	{ REG_VA,  6, 0, { "VA",  DBG_REG+0, 10}, {DBG_REG+3, 10} },
-	{ REG_VD0, 2, 0, { "VD0", DBG_REG+0, 11}, {DBG_REG+0, 12} },
-	{ REG_VD1, 2, 0, { "VD1", DBG_REG+4, 11}, {DBG_REG+4, 12} },
-	{ REG_VCT, 2, 0, { "VCT", DBG_REG+8, 11}, {DBG_REG+8, 12} },
+	{ KIND_CPU, REG_VA,  6, 0, { "VA",  0, 10}, {3, 10} },
+	{ KIND_CPU, REG_VD0, 2, 0, { "VD0", 0, 11}, {0, 12} },
+	{ KIND_CPU, REG_VD1, 2, 0, { "VD1", 4, 11}, {4, 12} },
+	{ KIND_CPU, REG_VCT, 2, 0, { "VCT", 8, 11}, {8, 12} },
 
-	{ REG_R0,  4, 0, { "R0",  DBG_ZP_REG, 21+0}, {DBG_ZP_REG+4, 21+0} },
-	{ REG_R1,  4, 0, { "R1",  DBG_ZP_REG, 21+1}, {DBG_ZP_REG+4, 21+1} },
-	{ REG_R2,  4, 0, { "R2",  DBG_ZP_REG, 21+2}, {DBG_ZP_REG+4, 21+2} },
-	{ REG_R3,  4, 0, { "R3",  DBG_ZP_REG, 21+3}, {DBG_ZP_REG+4, 21+3} },
+	{ KIND_ZP, REG_R0,  4, 0, { "R0",  0, 21+0}, {4, 21+0} },
+	{ KIND_ZP, REG_R1,  4, 0, { "R1",  0, 21+1}, {4, 21+1} },
+	{ KIND_ZP, REG_R2,  4, 0, { "R2",  0, 21+2}, {4, 21+2} },
+	{ KIND_ZP, REG_R3,  4, 0, { "R3",  0, 21+3}, {4, 21+3} },
 
-	{ REG_R4,  4, 0, { "R4",  DBG_ZP_REG, 21+5}, {DBG_ZP_REG+4, 21+5} },
-	{ REG_R5,  4, 0, { "R5",  DBG_ZP_REG, 21+6}, {DBG_ZP_REG+4, 21+6} },
-	{ REG_R6,  4, 0, { "R6",  DBG_ZP_REG, 21+7}, {DBG_ZP_REG+4, 21+7} },
-	{ REG_R7,  4, 0, { "R7",  DBG_ZP_REG, 21+8}, {DBG_ZP_REG+4, 21+8} },
+	{ KIND_ZP, REG_R4,  4, 0, { "R4",  0, 21+5}, {4, 21+5} },
+	{ KIND_ZP, REG_R5,  4, 0, { "R5",  0, 21+6}, {4, 21+6} },
+	{ KIND_ZP, REG_R6,  4, 0, { "R6",  0, 21+7}, {4, 21+7} },
+	{ KIND_ZP, REG_R7,  4, 0, { "R7",  0, 21+8}, {4, 21+8} },
 
-	{ REG_R8,  4, 0, { "R8",  DBG_ZP_REG, 21+10}, {DBG_ZP_REG+4, 21+10} },
-	{ REG_R9,  4, 0, { "R9",  DBG_ZP_REG, 21+11}, {DBG_ZP_REG+4, 21+11} },
-	{ REG_R10, 4, 0, { "R10", DBG_ZP_REG, 21+12}, {DBG_ZP_REG+4, 21+12} },
-	{ REG_R11, 4, 0, { "R11", DBG_ZP_REG, 21+13}, {DBG_ZP_REG+4, 21+13} },
+	{ KIND_ZP, REG_R8,  4, 0, { "R8",  0, 21+10}, {4, 21+10} },
+	{ KIND_ZP, REG_R9,  4, 0, { "R9",  0, 21+11}, {4, 21+11} },
+	{ KIND_ZP, REG_R10, 4, 0, { "R10", 0, 21+12}, {4, 21+12} },
+	{ KIND_ZP, REG_R11, 4, 0, { "R11", 0, 21+13}, {4, 21+13} },
 
-	{ REG_R12, 4, 0, { "R12", DBG_ZP_REG, 21+15}, {DBG_ZP_REG+4, 21+15} },
-	{ REG_R13, 4, 0, { "R13", DBG_ZP_REG, 21+16}, {DBG_ZP_REG+4, 21+16} },
-	{ REG_R14, 4, 0, { "R14", DBG_ZP_REG, 21+17}, {DBG_ZP_REG+4, 21+17} },
-	{ REG_R15, 4, 0, { "R15", DBG_ZP_REG, 21+18}, {DBG_ZP_REG+4, 21+18} },
+	{ KIND_ZP, REG_R12, 4, 0, { "R12", 0, 21+15}, {4, 21+15} },
+	{ KIND_ZP, REG_R13, 4, 0, { "R13", 0, 21+16}, {4, 21+16} },
+	{ KIND_ZP, REG_R14, 4, 0, { "R14", 0, 21+17}, {4, 21+17} },
+	{ KIND_ZP, REG_R15, 4, 0, { "R15", 0, 21+18}, {4, 21+18} },
 
-	{ REG_x16, 4, 0, { "x16", DBG_ZP_REG, 21+20}, {DBG_ZP_REG+4, 21+20} },
-	{ REG_x17, 4, 0, { "x17", DBG_ZP_REG, 21+21}, {DBG_ZP_REG+4, 21+21} },
-	{ REG_x18, 4, 0, { "x18", DBG_ZP_REG, 21+22}, {DBG_ZP_REG+4, 21+22} },
-	{ REG_x19, 4, 0, { "x19", DBG_ZP_REG, 21+23}, {DBG_ZP_REG+4, 21+23} },
+	{ KIND_ZP, REG_x16, 4, 0, { "x16", 0, 21+20}, {4, 21+20} },
+	{ KIND_ZP, REG_x17, 4, 0, { "x17", 0, 21+21}, {4, 21+21} },
+	{ KIND_ZP, REG_x18, 4, 0, { "x18", 0, 21+22}, {4, 21+22} },
+	{ KIND_ZP, REG_x19, 4, 0, { "x19", 0, 21+23}, {4, 21+23} },
 
-	{ REG_BP0, 6, 0, { "BP0", DBG_BP_REG, 0}, {DBG_BP_REG+4, 0} },
-	{ REG_BP1, 6, 0, { "BP1", DBG_BP_REG, 0+1}, {DBG_BP_REG+4, 0+1} },
-	{ REG_BP2, 6, 0, { "BP2", DBG_BP_REG, 0+2}, {DBG_BP_REG+4, 0+2} },
-	{ REG_BP3, 6, 0, { "BP3", DBG_BP_REG, 0+3}, {DBG_BP_REG+4, 0+3} },
-	{ REG_BP4, 6, 0, { "BP4", DBG_BP_REG, 0+4}, {DBG_BP_REG+4, 0+4} },
-	{ REG_BP5, 6, 0, { "BP5", DBG_BP_REG, 0+5}, {DBG_BP_REG+4, 0+5} },
-	{ REG_BP6, 6, 0, { "BP6", DBG_BP_REG, 0+6}, {DBG_BP_REG+4, 0+6} },
-	{ REG_BP7, 6, 0, { "BP7", DBG_BP_REG, 0+7}, {DBG_BP_REG+4, 0+7} },
-	{ REG_BP8, 6, 0, { "BP8", DBG_BP_REG, 0+8}, {DBG_BP_REG+4, 0+8} },
-	{ REG_BP9, 6, 0, { "BP9", DBG_BP_REG, 0+9}, {DBG_BP_REG+4, 0+9} },
+	{ KIND_BP, REG_BP0, 6, 0, { "BP0", 0, 0}, {4, 0} },
+	{ KIND_BP, REG_BP1, 6, 0, { "BP1", 0, 0+1}, {4, 0+1} },
+	{ KIND_BP, REG_BP2, 6, 0, { "BP2", 0, 0+2}, {4, 0+2} },
+	{ KIND_BP, REG_BP3, 6, 0, { "BP3", 0, 0+3}, {4, 0+3} },
+	{ KIND_BP, REG_BP4, 6, 0, { "BP4", 0, 0+4}, {4, 0+4} },
+	{ KIND_BP, REG_BP5, 6, 0, { "BP5", 0, 0+5}, {4, 0+5} },
+	{ KIND_BP, REG_BP6, 6, 0, { "BP6", 0, 0+6}, {4, 0+6} },
+	{ KIND_BP, REG_BP7, 6, 0, { "BP7", 0, 0+7}, {4, 0+7} },
+	{ KIND_BP, REG_BP8, 6, 0, { "BP8", 0, 0+8}, {4, 0+8} },
+	{ KIND_BP, REG_BP9, 6, 0, { "BP9", 0, 0+9}, {4, 0+9} },
 
-	{ 0, 0, 0, { NULL, 0, 0}, {0, 0} }
+	{ 0, 0, 0, 0, { NULL, 0, 0}, {0, 0} }
 };
 
 int readVirtualRegister(int reg) {
@@ -747,10 +790,18 @@ static void DEBUGRenderRegisters() {
 			}
 		}
 		if(wannaShow) {
-			DEBUGString(dbgRenderer, regs[idx].label.xOffset, regs[idx].label.yOffset, regs[idx].label.text, col_label);
-			DEBUGNumber(regs[idx].value.xOffset, regs[idx].value.yOffset, value, regs[idx].width, col_data);
+			int xOffset= 0;;
+			switch(regs[idx].regKind) {
+				case KIND_CPU: xOffset= DBG_LAYOUT_REG_X; break;
+				case KIND_ZP: xOffset= DBG_LAYOUT_ZP_REG_X; break;
+				case KIND_BP: xOffset= DBG_LAYOUT_BP_REG_X; break;
+			}
+			if(xOffset<0)
+				xOffset= DBG_LAYOUT_WIDTH + xOffset;
+			DEBUGString(dbgRenderer, regs[idx].label.xOffset+xOffset, regs[idx].label.yOffset, regs[idx].label.text, col_label);
+			DEBUGNumber(regs[idx].value.xOffset+xOffset, regs[idx].value.yOffset, value, regs[idx].width, col_data);
 			if(regs[idx].showChar)
-				DEBUGWrite(dbgRenderer, regs[idx].value.xOffset + 3, regs[idx].value.yOffset, value, col_data);
+				DEBUGWrite(dbgRenderer, regs[idx].value.xOffset+xOffset + 3, regs[idx].value.yOffset, value, col_data);
 		}
 	}
 
@@ -765,11 +816,12 @@ static void DEBUGRenderRegisters() {
 static void DEBUGRenderStack(int bytesCount) {
 	int data= (sp-6) | 0x100;
 	int y= 0;
+	int xOffset= DBG_LAYOUT_STCK_X < 0 ? DBG_LAYOUT_WIDTH + DBG_LAYOUT_STCK_X : DBG_LAYOUT_STCK_X;
 	while (y < bytesCount) {
-		DEBUGNumber(DBG_STCK, y, data & 0xFFFF, 4, (data & 0xFF) == sp ? col_highlight : col_label);
+		DEBUGNumber(xOffset, y, data & 0xFFFF, 4, (data & 0xFF) == sp ? col_highlight : col_label);
 		int byte = real_read6502((data++) & 0xFFFF, false, 0);
-		DEBUGNumber(DBG_STCK+5, y, byte, 2, col_data);
-		DEBUGWrite(dbgRenderer, DBG_STCK+8, y, byte, col_data);
+		DEBUGNumber(xOffset+5, y, byte, 2, col_data);
+		DEBUGWrite(dbgRenderer, xOffset+8, y, byte, col_data);
 		y++;
 		data= (data & 0xFF) | 0x100;
 	}
@@ -802,28 +854,35 @@ void DEBUGRenderDisplay(int width, int height) {
 	rc.w = width;
 	rc.h = height - con_height + 2;
 	rc.x = rc.y = 0;
-	SDL_SetRenderDrawColor(dbgRenderer, 0, 0, 255, SDL_ALPHA_OPAQUE);
+	SDL_SetRenderDrawColor(dbgRenderer, col_dbg_bkgnd.r, col_dbg_bkgnd.g, col_dbg_bkgnd.b, SDL_ALPHA_OPAQUE);
 	SDL_RenderFillRect(dbgRenderer, &rc);
 
 	// Draw register name and values.
 	DEBUGRenderRegisters();
 
+	int codeLinecount;
 	switch(layout) {
 		case 1:
 			codeZoneRect= &largeCodeZoneRect;
+			codeLinecount= codeZoneRect->h / (DT_FontHeight(font_debugger)+1);
 			dataZoneRect= &emptyZoneRect;
-			DEBUGRenderCode(53, currentPC);
 			break;
 
 		default:
+		{
 			codeZoneRect= &smallCodeZoneRect;
+			codeLinecount= codeZoneRect->h / (DT_FontHeight(font_debugger)+1);
+
 			dataZoneRect= &smallDataZoneRect;
-			DEBUGRenderCode(20, currentPC);
+			int dataLinecount= dataZoneRect->h / (DT_FontHeight(font_debugger)+1);
+
 			if (dumpmode == DDUMP_RAM)
-				DEBUGRenderData(21, currentData);
+				DEBUGRenderData(DBG_MEMX, codeLinecount+1, dataLinecount, currentData);
 			else
-				DEBUGRenderVRAM(21, currentData);
+				DEBUGRenderVRAM(codeLinecount+1, currentData);
+		}
 	}
+	DEBUGRenderCode(codeLinecount, currentPC);
 
 	DEBUGRenderStack(20);
 
@@ -831,6 +890,6 @@ void DEBUGRenderDisplay(int width, int height) {
 	char mouseCoord[30];
 	SDL_GetMouseState(&mouseX, &mouseY);
 	sprintf(mouseCoord, "%d %d", mouseX, mouseY);
-	DT_DrawText2(dbgRenderer, mouseCoord, 0, win_width-50, win_height - 20, col_highlight);
+	DT_DrawText2(dbgRenderer, mouseCoord, font_debugger, win_width-50, win_height - 20, col_highlight);
 
 }

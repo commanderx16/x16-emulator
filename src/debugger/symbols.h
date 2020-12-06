@@ -3,12 +3,14 @@
 
 #include <stdint.h>
 
+#define SYMBOL_LABEL_MAXLEN 14
+
 typedef enum { Default, User } SymFileType;
 typedef enum { NoErr= 0, CantOpen= -1, SynErr= -2 } SymLoadError;
 
 typedef struct {
 	uint8_t addr8;
-	char label[15];
+	char label[SYMBOL_LABEL_MAXLEN + 1];
 } TSymbolDictEntry;
 
 typedef struct {
