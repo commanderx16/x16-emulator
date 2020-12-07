@@ -34,6 +34,7 @@ void cmd_symload(int data, int argc, char* argv[]);
 void cmd_symsave(int data, int argc, char* argv[]);
 
 void cmd_code(int data, int argc, char* argv[]);
+void cmd_data(int data, int argc, char* argv[]);
 void cmd_font(int data, int argc, char* argv[]);
 
 void cmd_romdebug(int data, int argc, char* argv[]);

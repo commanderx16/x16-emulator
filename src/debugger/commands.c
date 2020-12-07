@@ -74,6 +74,7 @@ command_t cmd_table[] = {
 	{ "symdump", cmd_symsave, 1, 0, "symdump symbolFilename\ndump in a file the symbol dictionary" },
 
 	{ "code", cmd_code, 0, 0, "code\nToggle the display in full page of code/disasm" },
+	{ "data", cmd_data, 0, 0, "data\nToggle the display in full page of data" },
 	{ "font", cmd_font, 0, 0, "font [Name|ID [Path]]\nDisplay loaded fonts or Set the debugger font or Load and Set the debugger font" },
 
 	{ "romdebug", cmd_romdebug, 0, 0, "romdebug\ntoggle ROM debug mode to allow editing" },
@@ -489,11 +490,19 @@ void cmd_symsave(int data, int argc, char* argv[]) {
 }
 
 /* ----------------------------------------------------------------------------
-	display the code in full page
+	display the code zone in full page
 	code
 */
 void cmd_code(int data, int argc, char* argv[]) {
-	DEBUGupdateLayout(layoutID==0 ? 1 : 0);
+	DEBUGupdateLayout(layoutID != 1 ? 1 : 0);
+}
+
+/* ----------------------------------------------------------------------------
+	display the data zone in full page
+	data
+*/
+void cmd_data(int data, int argc, char* argv[]) {
+	DEBUGupdateLayout(layoutID != 2 ? 2 : 0);
 }
 
 /* ----------------------------------------------------------------------------
