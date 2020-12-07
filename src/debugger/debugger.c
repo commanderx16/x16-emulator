@@ -29,7 +29,7 @@
 #include "commands.h"
 #include "symbols.h"
 
-static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift);
+static int DEBUGHandleKeyEvent(SDL_Event *event);
 
 static void DEBUGRenderCode(int x, int y, int lineCount);
 static void DEBUGRenderData(int x, int y, int lineCount);
@@ -178,6 +178,23 @@ ConsoleInformation *console;
 
 // *******************************************************************************************
 //
+//									Write String at postion col,line
+//
+// *******************************************************************************************
+void DEBUGPrintString(SDL_Renderer *renderer, int column, int line, char *s, SDL_Color colour) {
+	int h= DT_FontHeight(dbgFontID) + 1;
+	int w= DT_FontWidth(dbgFontID);
+	DT_DrawText2(renderer, s, dbgFontID, column*w, line*h, colour);
+}
+
+void DEBUGPrintChar(SDL_Renderer *renderer, int x, int y, int ch, SDL_Color colour) {
+	char buffer[2];
+	sprintf(buffer, "%c", ch);
+	DEBUGPrintString(renderer, x, y, buffer, colour);
+}
+
+// *******************************************************************************************
+//
 //									Write Hex/Bin Constant
 //
 // *******************************************************************************************
@@ -188,7 +205,7 @@ const char *bit_rep[16] = {
     [12] = "1100", [13] = "1101", [14] = "1110", [15] = "1111",
 };
 
-static void DEBUGNumber(int x, int y, int n, int w, SDL_Color colour) {
+static void DEBUGPrintNumber(int x, int y, int n, int w, SDL_Color colour) {
 	char fmtString[8],buffer[16];
 	if(w<0) {
 		snprintf(buffer, sizeof(buffer), "%s%s", bit_rep[n >> 4], bit_rep[n & 0x0F]);
@@ -196,7 +213,7 @@ static void DEBUGNumber(int x, int y, int n, int w, SDL_Color colour) {
 		snprintf(fmtString, sizeof(fmtString), "%%0%dX", w);
 		snprintf(buffer, sizeof(buffer), fmtString, n);
 	}
-	DEBUGString(dbgRenderer, x, y, buffer, colour);
+	DEBUGPrintString(dbgRenderer, x, y, buffer, colour);
 }
 
 // *******************************************************************************************
@@ -204,7 +221,7 @@ static void DEBUGNumber(int x, int y, int n, int w, SDL_Color colour) {
 //									Write Bank:Address
 //
 // *******************************************************************************************
-static void DEBUGAddress(int x, int y, int bank, int addr, SDL_Color colour) {
+static void DEBUGPrintAddress(int x, int y, int bank, int addr, SDL_Color colour) {
 	char buffer[4];
 
 	if(addr >= 0xA000) {
@@ -213,16 +230,16 @@ static void DEBUGAddress(int x, int y, int bank, int addr, SDL_Color colour) {
 		strcpy(buffer, "--:");
 	}
 
-	DEBUGString(dbgRenderer, x, y, buffer, colour);
+	DEBUGPrintString(dbgRenderer, x, y, buffer, colour);
 
-	DEBUGNumber(x+3, y, addr, 4, colour);
+	DEBUGPrintNumber(x+3, y, addr, 4, colour);
 
 }
 
 static void
-DEBUGVAddress(int x, int y, int addr, SDL_Color colour)
+DEBUGPrintVAddress(int x, int y, int addr, SDL_Color colour)
 {
-	DEBUGNumber(x, y, addr, 5, colour);
+	DEBUGPrintNumber(x, y, addr, 5, colour);
 }
 
 // *******************************************************************************************
@@ -275,13 +292,22 @@ int  DEBUGGetCurrentStatus(void) {
 		while (SDL_PollEvent(&event)) { 						// We now poll events here.
 
 			switch(event.type) {
+				case SDL_WINDOWEVENT:
+					if(event.window.event == SDL_WINDOWEVENT_CLOSE)
+						return -1;
+					break;
+
 				case SDL_QUIT:									// Time for exit
 					return -1;
 
 				case SDL_KEYDOWN:								// Handle key presses.
-					DEBUGHandleKeyEvent(event.key.keysym.sym,
-										SDL_GetModState() & (KMOD_LSHIFT|KMOD_RSHIFT));
+				case SDL_TEXTINPUT:
+				{
+					int isHandled= DEBUGHandleKeyEvent(&event);
+					if(isHandled)
+						continue;
 					break;
+				}
 
 				case SDL_MOUSEMOTION:
 				{
@@ -445,7 +471,6 @@ void DEBUGInitUI(SDL_Renderer *pRenderer) {
 
 		// DEBUGInitChars(pRenderer);
 		// dbgRenderer = pRenderer;				// Save renderer.
-		DEBUGInitChars(dbgRenderer);
 
 		char *fontPath= (char *)iniparser_getstring(iniDict, "dbg_console:font", "consolas10.bmp");
 		Con_rect.x = 0;
@@ -507,54 +532,77 @@ void DEBUGBreakToDebugger(void) {
 //
 // *******************************************************************************************
 
-static void DEBUGHandleKeyEvent(SDL_Keycode key, int isShift) {
+static int DEBUGHandleKeyEvent(SDL_Event *event) {
 	int opcode;
 
-	switch(key) {
+	switch(event->type) {
+		case SDL_KEYDOWN:
+			switch(event->key.keysym.sym) {
 
-		case DBGKEY_STEP:									// Single step (F11 by default)
-			currentMode = DMODE_STEP; 						// Runs once, then switches back.
-			break;
+				case DBGKEY_STEP:									// Single step (F11 by default)
+					currentMode = DMODE_STEP; 						// Runs once, then switches back.
+					break;
 
-		case DBGKEY_STEPOVER:								// Step over (F10 by default)
-			opcode = real_read6502(pc, false, 0);							// What opcode is it ?
-			if (opcode == 0x20) { 							// Is it JSR ?
-				stepBreakPoint = pc + 3;					// Then break 3 on.
-				currentMode = DMODE_RUN;					// And run.
-			} else {
-				currentMode = DMODE_STEP;					// Otherwise single step.
+				case DBGKEY_STEPOVER:								// Step over (F10 by default)
+					opcode = real_read6502(pc, false, 0);							// What opcode is it ?
+					if (opcode == 0x20) { 							// Is it JSR ?
+						stepBreakPoint = pc + 3;					// Then break 3 on.
+						currentMode = DMODE_RUN;					// And run.
+					} else {
+						currentMode = DMODE_STEP;					// Otherwise single step.
+					}
+					break;
+
+				case DBGKEY_RUN:									// F5 Runs until Break.
+					currentMode = DMODE_RUN;
+					break;
+
+				case DBGKEY_SETBRK:									// F9 Set breakpoint to displayed.
+					DEBUGSetBreakPoint(currentPC);
+					break;
+
+				case DBGKEY_HOME:									// F1 sets the display PC to the actual one.
+					currentPC = pc;
+					currentPCBank= currentPC < 0xC000 ? memory_get_ram_bank() : memory_get_rom_bank();
+					offsetSP= 0;
+					break;
+
+				case DBGKEY_RESET:									// F2 reset the 6502
+					reset6502();
+					currentPC = pc;
+					currentPCBank= -1;
+					break;
+
+				// case DBGKEY_PAGE_NEXT:
+				// 	currentBank += 1;
+				// 	return 1;
+
+				// case DBGKEY_PAGE_PREV:
+				// 	currentBank -= 1;
+				// 	return 1;
+
 			}
 			break;
 
-		case DBGKEY_RUN:									// F5 Runs until Break.
-			currentMode = DMODE_RUN;
-			break;
+		case SDL_TEXTINPUT:
+			switch(event->text.text[0]) {
+				case '+':
+					if(mouseZone == MZ_DATA) {
+						currentBank += 1;
+						return 1;
+					}
 
-		case DBGKEY_SETBRK:									// F9 Set breakpoint to displayed.
-			DEBUGSetBreakPoint(currentPC);
-			break;
+				case '-':
+					if(mouseZone == MZ_DATA) {
+						currentBank -= 1;
+						return 1;
+					}
 
-		case DBGKEY_HOME:									// F1 sets the display PC to the actual one.
-			currentPC = pc;
-			currentPCBank= currentPC < 0xC000 ? memory_get_ram_bank() : memory_get_rom_bank();
-			offsetSP= 0;
+			}
 			break;
-
-		case DBGKEY_RESET:									// F2 reset the 6502
-			reset6502();
-			currentPC = pc;
-			currentPCBank= -1;
-			break;
-
-		case DBGKEY_PAGE_NEXT:
-			currentBank += 1;
-			break;
-
-		case DBGKEY_PAGE_PREV:
-			currentBank -= 1;
-			break;
-
 	}
+
+	return 0;
 
 }
 
@@ -602,7 +650,7 @@ static void DEBUGRenderData(int x, int y, int lineCount) {
 
 	while(lineCount--) {									// To bottom of screen
 		memaddr &= 0xFFFF;
-		DEBUGAddress(x, y, (uint8_t)currentBank, memaddr, col_label);	// Show label.
+		DEBUGPrintAddress(x, y, (uint8_t)currentBank, memaddr, col_label);	// Show label.
 		for (int i = 0;i < 16;i++) {
 			int addr= memaddr + i;
 			// if in RAM or in ROM and outside existing banks, print nothing
@@ -610,8 +658,8 @@ static void DEBUGRenderData(int x, int y, int lineCount) {
 				continue;
 			else {
 				int byte= real_read6502(addr, true, currentBank);
-				DEBUGNumber(x+DATA_ADDR_WIDTH+i*3, y, byte, 2, col_data);
-				DEBUGWrite(dbgRenderer, x+DATA_ADDR_WIDTH+DATA_BYTES_WIDTH+i, y, byte==0 ? '.' : byte, col_data);
+				DEBUGPrintNumber(x+DATA_ADDR_WIDTH+i*3, y, byte, 2, col_data);
+				DEBUGPrintChar(dbgRenderer, x+DATA_ADDR_WIDTH+DATA_BYTES_WIDTH+i, y, byte==0 ? '.' : byte, col_data);
 			}
 		}
 		y++;
@@ -625,14 +673,14 @@ DEBUGRenderVRAM(int x, int y, int lineCount)
 {
 	int vmemaddr= currentData;
 	while (lineCount--) {
-		DEBUGVAddress(x, y, vmemaddr & 0x1FFFF, col_label); // Show label.
+		DEBUGPrintVAddress(x, y, vmemaddr & 0x1FFFF, col_label); // Show label.
 
 		for (int i = 0; i < 16; i++) {
 			int addr = (vmemaddr + i) & 0x1FFFF;
 			int byte = video_space_read(addr);
 
 			int type= video_get_address_type(addr) % col_vram_len;
-			DEBUGNumber(x + 6 + i * 3, y, byte, 2, col_vram[type]);
+			DEBUGPrintNumber(x + 6 + i * 3, y, byte, 2, col_vram[type]);
 		}
 		y++;
 		vmemaddr += 16;
@@ -654,7 +702,7 @@ static void DEBUGRenderCode(int x, int y, int lineCount) {
 
 	for (int y = 0; y < lineCount; y++) { 							// Each line
 
-		DEBUGAddress(x, y, currentPCBank, initialPC, col_label);
+		DEBUGPrintAddress(x, y, currentPCBank, initialPC, col_label);
 
 		if(!isValidAddr(currentPCBank, initialPC)) {
 			initialPC++;
@@ -665,15 +713,15 @@ static void DEBUGRenderCode(int x, int y, int lineCount) {
 		if(y == 0)
 			disasmLine1Size= size;
 
-		DEBUGString(dbgRenderer, x+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH+CODE_LABEL_WIDTH, y, buffer, initialPC == pc ? col_highlight : col_data);
+		DEBUGPrintString(dbgRenderer, x+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH+CODE_LABEL_WIDTH, y, buffer, initialPC == pc ? col_highlight : col_data);
 
 		for(int byteCount= 0; byteCount<size;byteCount++) {
 			int byte= real_read6502(initialPC + byteCount, true, currentPCBank);
-			DEBUGNumber(x+CODE_ADDR_WIDTH+byteCount*3, y, byte, 2, initialPC == pc ? col_highlight : col_data);
+			DEBUGPrintNumber(x+CODE_ADDR_WIDTH+byteCount*3, y, byte, 2, initialPC == pc ? col_highlight : col_data);
 		}
 		label= symbol_find_label(currentPCBank, initialPC);
 		if(label)
-			DEBUGString(dbgRenderer, x+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH, y, label, initialPC == pc ? col_highlight : col_data);
+			DEBUGPrintString(dbgRenderer, x+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH, y, label, initialPC == pc ? col_highlight : col_data);
 		initialPC += size;										// Forward to next
 	}
 
@@ -795,10 +843,10 @@ static void DEBUGRenderRegisters(int x, int y, TRegister_kind regKing) {
 		TRegisterLabelPos *labelPos= &regs[idx].label;
 		TRegisterValuePos *valuePos= &regs[idx].value;
 
-		DEBUGString(dbgRenderer, labelPos->xOffset+x, labelPos->yOffset+y, labelPos->text, col_label);
-		DEBUGNumber(valuePos->xOffset+x, valuePos->yOffset+y, value, regs[idx].width, col_data);
+		DEBUGPrintString(dbgRenderer, labelPos->xOffset+x, labelPos->yOffset+y, labelPos->text, col_label);
+		DEBUGPrintNumber(valuePos->xOffset+x, valuePos->yOffset+y, value, regs[idx].width, col_data);
 		if(regs[idx].showChar)
-			DEBUGWrite(dbgRenderer, valuePos->xOffset+x + 3, valuePos->yOffset+y, value, col_data);
+			DEBUGPrintChar(dbgRenderer, valuePos->xOffset+x + 3, valuePos->yOffset+y, value, col_data);
 	}
 
 }
@@ -814,10 +862,10 @@ static void DEBUGRenderStack(int bytesCount) {
 	int y= 0;
 	int xOffset= layout.stackXpos < 0 ? layout.totalWidth + layout.stackXpos : layout.stackXpos;
 	while (y < bytesCount) {
-		DEBUGNumber(xOffset, y, data & 0xFFFF, 4, (data & 0xFF) == sp ? col_highlight : col_label);
+		DEBUGPrintNumber(xOffset, y, data & 0xFFFF, 4, (data & 0xFF) == sp ? col_highlight : col_label);
 		int byte = real_read6502((data++) & 0xFFFF, false, 0);
-		DEBUGNumber(xOffset+5, y, byte, 2, col_data);
-		DEBUGWrite(dbgRenderer, xOffset+8, y, byte, col_data);
+		DEBUGPrintNumber(xOffset+5, y, byte, 2, col_data);
+		DEBUGPrintChar(dbgRenderer, xOffset+8, y, byte, col_data);
 		y++;
 		data= (data & 0xFF) | 0x100;
 	}
@@ -881,8 +929,6 @@ void DEBUGupdateLayout(int id) {
 
 		}
 	}
-
-	printf("dataLinecount:%d\n", layout.dataLinecount);
 }
 
 void DEBUGRenderDisplay(int width, int height) {

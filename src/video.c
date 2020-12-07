@@ -1104,6 +1104,9 @@ video_update()
 		if (event.type == SDL_QUIT) {
 			return false;
 		}
+		if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE) {
+			return false;
+		}
 		if (event.type == SDL_KEYDOWN) {
 			bool consumed = false;
 			if (cmd_down) {
