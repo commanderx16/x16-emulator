@@ -87,14 +87,35 @@ static void DEBUG_Command_Handler(ConsoleInformation *console, char* command);
 
 #define DBGMAX_ZERO_PAGE_REGISTERS 20
 
+int showDebugOnRender = 0;										// Used to trigger rendering in video.c
+int showFullDisplay = 0; 										// If non-zero show the whole thing.
+int currentPC = -1;												// Current PC value.
+int currentData = 0;											// Current data display address.
+int currentPCBank = -1;
+int currentBank = 0;
+int currentMode = DMODE_RUN;									// Start running.
+int breakPoint = -1; 											// User Break
+int stepBreakPoint = -1;										// Single step break.
+int dumpmode          = DDUMP_RAM;
+int showFullConsole = 0;
+int breakpoints[DBG_MAX_BREAKPOINTS];
+int breakpointsCount= 0;
+int isWindowVisible = 0;
+int disasmLine1Size= 0;
+int offsetSP= 0;
+
+//
+// layout related stuff
+//
+
 const int DBG_LAYOUT_CODE_WIDTH= 8 + 9 + 14 + 3+1+13+3;
 const int DBG_LAYOUT_REG_WIDTH= 4 + 3 + 4 + 3;
 const int DBG_LAYOUT_ZP_REG_WIDTH= 4 + 4;
 const int DBG_LAYOUT_STCK_WIDTH= 4 + 1 + 2 + 1 + 1;
 const int DBG_LAYOUT_DATA_WIDTH= 8 + 16 * 3 + 16;
 
-// RGB colours
-// const SDL_Color col_bkgnd= {0, 0, 0, 255};
+// COLOURS
+
 SDL_Color col_label= {0, 255, 0, 255};
 SDL_Color col_data= {0, 255, 255, 255};
 SDL_Color col_highlight= {255, 255, 0, 255};
@@ -117,56 +138,38 @@ SDL_Color col_dbg_bkgnd = {0, 0, 0, 255};
 SDL_Color col_con_bkgnd = {0, 0, 0, 255};
 SDL_Color col_dbg_focus = {255, 255, 255, 0};
 
-int showDebugOnRender = 0;										// Used to trigger rendering in video.c
-int showFullDisplay = 0; 										// If non-zero show the whole thing.
-int currentPC = -1;												// Current PC value.
-int currentData = 0;											// Current data display address.
-int currentPCBank = -1;
-int currentBank = 0;
-int currentMode = DMODE_RUN;									// Start running.
-int breakPoint = -1; 											// User Break
-int stepBreakPoint = -1;										// Single step break.
-int dumpmode          = DDUMP_RAM;
-int showFullConsole = 0;
-int breakpoints[DBG_MAX_BREAKPOINTS];
-int breakpointsCount= 0;
-int isWindowVisible = 0;
-int disasmLine1Size= 0;
-int offsetSP= 0;
+// main variables
 
-int dbg_height = DBG_HEIGHT;
 int win_height = 800;
 int win_width = 640;
 int con_height = 50;
-
 int layoutID= 0;
 TLayout layout;
+int dbgFontID= 0;
 
-int font_debugger= 0;
+// UI zones
 
-int DBG_LAYOUT_WIDTH= 			0;
-int DBG_LAYOUT_HEIGHT= 			0;
-int DBG_LAYOUT_STCK_X= 			-DBG_LAYOUT_STCK_WIDTH;						// Debug stack starts here.
-int DBG_LAYOUT_ZP_REG_X=   		-DBG_LAYOUT_ZP_REG_WIDTH;          			// Zero page registers start here
-int DBG_LAYOUT_REG_X=   		DBG_LAYOUT_CODE_WIDTH + 1;     				// Registers start here
-int DBG_LAYOUT_BP_REG_X= 		DBG_LAYOUT_CODE_WIDTH + 1 + DBG_LAYOUT_REG_WIDTH;	// Breakpoins registers start here
-
-SDL_Rect smallDataZoneRect= { 0, 290, 525, 455 };
+SDL_Rect smallDataZoneRect= { 0, 288, 525, 455 };
+SDL_Rect largeDataZoneRect= { 0, 0, 525, 750 };
 SDL_Rect smallCodeZoneRect= { 5, 0, 310, 285 };
 SDL_Rect largeCodeZoneRect= { 5, 0, 330, 750 };
 SDL_Rect stackZoneRect= { 575, 0, 65, 285 };
-SDL_Rect zpRegZoneRect= { 575, 290, 65, 455 };
+SDL_Rect zpRegZoneRect= { 575, 288, 65, 455 };
 SDL_Rect emptyZoneRect= { 0, 0, 0, 0 };
 
-enum MouseZones { MZ_NONE, MZ_CODE, MZ_DATA, MZ_STACK, MZ_ZPREG, mouseZonesCount};
+enum { MZ_NONE, MZ_CODE, MZ_DATA, MZ_STACK, MZ_ZPREG, mouseZonesCount};
 int mouseZone= MZ_NONE;
-SDL_Rect *mouseZonesRect[]= {
-	NULL,
-	&smallCodeZoneRect,
-	&smallDataZoneRect,
-	&stackZoneRect,
-	&zpRegZoneRect
+TMouseZone mouseZones[]= {
+	{MZT_NONE, NULL},
+	{MZT_HIGHLIGHT, &smallCodeZoneRect},
+	{MZT_HIGHLIGHT, &smallDataZoneRect},
+	{MZT_HIGHLIGHT, &stackZoneRect},
+	{MZT_NONE, &zpRegZoneRect}
 };
+
+//
+// main objects
+//
 
 SDL_Renderer *dbgRenderer; 										// Renderer passed in.
 static SDL_Window* dbgWindow;
@@ -288,7 +291,7 @@ int  DEBUGGetCurrentStatus(void) {
 					mouseZone= MZ_NONE;
 					SDL_Point mouse_position= {event.motion.x, event.motion.y};;
 					for(int idx= MZ_NONE+1; idx < mouseZonesCount; idx++) {
-						if(SDL_PointInRect(&mouse_position, mouseZonesRect[idx])) {
+						if(SDL_PointInRect(&mouse_position, mouseZones[idx].rect)) {
 							mouseZone= idx;
 							break;
 						}
@@ -311,7 +314,7 @@ int  DEBUGGetCurrentStatus(void) {
 						}
 						case MZ_DATA:
 						{
-							int inc= (event.wheel.y > 0) ? -0x200 : 0x200;
+							int inc= layout.dataLinecount * 16 * ((event.wheel.y > 0) ? -1 : 1);
 							currentData = (currentData + inc) & (dumpmode == DDUMP_RAM ? 0xFFFF : 0x1FFFF);
 							break;
 						}
@@ -359,10 +362,10 @@ int  DEBUGGetCurrentStatus(void) {
 //
 // *******************************************************************************************
 void DEBUGsetFont(int fontNumber) {
-	font_debugger= fontNumber;
+	dbgFontID= fontNumber;
 
-	int charWidth= DT_FontWidth(font_debugger);
-	int charHeight= DT_FontHeight(font_debugger);
+	int charWidth= DT_FontWidth(dbgFontID);
+	int charHeight= DT_FontHeight(dbgFontID);
 
 	// adjust focus rect width to follow font char width
 	smallCodeZoneRect.w=
@@ -373,8 +376,8 @@ void DEBUGsetFont(int fontNumber) {
 	// smallDataZoneRect.y= (smallDataZoneRect.y / charHeight) * charHeight;
 	// smallDataZoneRect.h= win_height - con_height - smallDataZoneRect.y - 5;
 
-	DBG_LAYOUT_WIDTH= win_width / charWidth;
-	DBG_LAYOUT_HEIGHT= win_height / charHeight;
+	layout.totalHeight= win_height / charHeight;
+	layout.totalWidth= win_width / charWidth;
 
 	DEBUGupdateLayout(-1);
 
@@ -743,12 +746,14 @@ int DEBUGreadVirtualRegister(int reg) {
 	return real_read6502(reg_addr+1, true, currentBank)*256+real_read6502(reg_addr, true, currentBank);
 }
 
-static void DEBUGRenderRegisters() {
+static void DEBUGRenderRegisters(int x, int y, TRegister_kind regKing) {
 	int value= 0;
-	bool wannaShow;
 
 	for(int idx= 0; regs[idx].regCode; idx++) {
-		wannaShow= true;
+
+		if(regKing != regs[idx].regKind)
+			continue;
+
 		switch(regs[idx].regCode) {
 			case REG_A: value= a; break;
 			case REG_X: value= x; break;
@@ -756,74 +761,44 @@ static void DEBUGRenderRegisters() {
 			case REG_P: value= status; break;
 			case REG_PC: value= pc; break;
 			case REG_SP: value= sp|0x100; break;
-
 			case REG_BKA: value= memory_get_ram_bank(); break;
 			case REG_BKO: value= memory_get_rom_bank(); break;
-
 			case REG_VA: value= video_read(0, true) | (video_read(1, true)<<8) | (video_read(2, true)<<16); break;
 			case REG_VD0: value= video_read(3, true); break;
 			case REG_VD1: value= video_read(4, true); break;
 			case REG_VCT: value= video_read(5, true); break;
 
-			case REG_R0:
-			case REG_R1:
-			case REG_R2:
-			case REG_R3:
-			case REG_R4:
-			case REG_R5:
-			case REG_R6:
-			case REG_R7:
-			case REG_R8:
-			case REG_R9:
-			case REG_R10:
-			case REG_R11:
-			case REG_R12:
-			case REG_R13:
-			case REG_R14:
-			case REG_R15:
-			case REG_x16:
-			case REG_x17:
-			case REG_x18:
-			case REG_x19: value= DEBUGreadVirtualRegister(regs[idx].regCode - REG_R0); break;
+			case REG_R0: case REG_R1: case REG_R2: case REG_R3:
+			case REG_R4: case REG_R5: case REG_R6: case REG_R7:
+			case REG_R8: case REG_R9: case REG_R10: case REG_R11:
+			case REG_R12: case REG_R13: case REG_R14: case REG_R15:
+			case REG_x16: case REG_x17: case REG_x18:
+			case REG_x19:
+				value= DEBUGreadVirtualRegister(regs[idx].regCode - REG_R0);
+				break;
 
-			case REG_BP0:
-			case REG_BP1:
-			case REG_BP2:
-			case REG_BP3:
-			case REG_BP4:
-			case REG_BP5:
-			case REG_BP6:
-			case REG_BP7:
-			case REG_BP8:
+			case REG_BP0: case REG_BP1: case REG_BP2: case REG_BP3:
+			case REG_BP4: case REG_BP5: case REG_BP6: case REG_BP7:	case REG_BP8:
 			case REG_BP9:
 			{
 				int bpIdx= regs[idx].regCode - REG_BP0;
-				if(bpIdx < breakpointsCount) {
-					value= breakpoints[bpIdx];
-				} else {
-					wannaShow= false;
-				}
+				if(bpIdx >= breakpointsCount)
+					continue;
+				value= breakpoints[bpIdx];
 				break;
 			}
 		}
-		if(wannaShow) {
-			int xOffset= 0;
-			int yOffset= 0;
-			switch(regs[idx].regKind) {
-				case KIND_CPU: xOffset= DBG_LAYOUT_REG_X; break;
-				case KIND_ZP:
-					xOffset= DBG_LAYOUT_ZP_REG_X;
-					yOffset= layout.codeLinecount+1;
-					break;
-				case KIND_BP: xOffset= DBG_LAYOUT_BP_REG_X; break;
-			}
-			if(xOffset<0)
-				xOffset= DBG_LAYOUT_WIDTH + xOffset;
-			DEBUGString(dbgRenderer, regs[idx].label.xOffset+xOffset, regs[idx].label.yOffset+yOffset, regs[idx].label.text, col_label);
-			DEBUGNumber(regs[idx].value.xOffset+xOffset, regs[idx].value.yOffset+yOffset, value, regs[idx].width, col_data);
-			if(regs[idx].showChar)
-				DEBUGWrite(dbgRenderer, regs[idx].value.xOffset+xOffset + 3, regs[idx].value.yOffset+yOffset, value, col_data);
-		}
+
+		if(x<0)
+			x= layout.totalWidth + x;
+
+		TRegisterLabelPos *labelPos= &regs[idx].label;
+		TRegisterValuePos *valuePos= &regs[idx].value;
+
+		DEBUGString(dbgRenderer, labelPos->xOffset+x, labelPos->yOffset+y, labelPos->text, col_label);
+		DEBUGNumber(valuePos->xOffset+x, valuePos->yOffset+y, value, regs[idx].width, col_data);
+		if(regs[idx].showChar)
+			DEBUGWrite(dbgRenderer, valuePos->xOffset+x + 3, valuePos->yOffset+y, value, col_data);
 	}
 
 }
@@ -837,7 +812,7 @@ static void DEBUGRenderRegisters() {
 static void DEBUGRenderStack(int bytesCount) {
 	int data= ((sp-6+offsetSP) & 0xFF) | 0x100;
 	int y= 0;
-	int xOffset= DBG_LAYOUT_STCK_X < 0 ? DBG_LAYOUT_WIDTH + DBG_LAYOUT_STCK_X : DBG_LAYOUT_STCK_X;
+	int xOffset= layout.stackXpos < 0 ? layout.totalWidth + layout.stackXpos : layout.stackXpos;
 	while (y < bytesCount) {
 		DEBUGNumber(xOffset, y, data & 0xFFFF, 4, (data & 0xFF) == sp ? col_highlight : col_label);
 		int byte = real_read6502((data++) & 0xFFFF, false, 0);
@@ -854,29 +829,60 @@ static void DEBUGRenderStack(int bytesCount) {
 //
 // *******************************************************************************************
 void DEBUGupdateLayout(int id) {
-	int ch= DT_FontHeight(font_debugger)+1;
+	int ch= DT_FontHeight(dbgFontID)+1;
 
 	if(id>=0)
 		layoutID= id;
 
 	switch(layoutID) {
+		case 2:
+			mouseZones[MZ_DATA].rect= &largeDataZoneRect;
+			mouseZones[MZ_CODE].rect= &emptyZoneRect;
+			layout.dataLinecount= mouseZones[MZ_DATA].rect->h / ch;
+			layout.dataYpos= 0;
+			layout.codeLinecount= 0;
+			layout.zpRegLinecount= 0;
+			layout.regLinecount= 0;
+			layout.bpRegLinecount= 0;
+			break;
+
 		case 1:
-			mouseZonesRect[MZ_DATA]= &emptyZoneRect;
-			mouseZonesRect[MZ_CODE]= &largeCodeZoneRect;
-			layout.codeLinecount= mouseZonesRect[MZ_CODE]->h / ch;
+			mouseZones[MZ_DATA].rect= &emptyZoneRect;
+			mouseZones[MZ_CODE].rect= &largeCodeZoneRect;
+			layout.codeLinecount= mouseZones[MZ_CODE].rect->h / ch;
 			layout.dataLinecount= 0;
+			layout.regLinecount= 1;
+			layout.bpRegLinecount= 1;
+			layout.zpRegLinecount= 20;
 			break;
 
 		default:
 		{
-			mouseZonesRect[MZ_DATA]= &smallDataZoneRect;
-			mouseZonesRect[MZ_CODE]= &smallCodeZoneRect;
+			mouseZones[MZ_DATA].rect= &smallDataZoneRect;
+			mouseZones[MZ_CODE].rect= &smallCodeZoneRect;
 
-			layout.codeLinecount= mouseZonesRect[MZ_CODE]->h / ch;
-			layout.dataLinecount= mouseZonesRect[MZ_DATA]->h / ch;
-			layout.stackLinecount= mouseZonesRect[MZ_STACK]->h / ch;
+			layout.codeLinecount= mouseZones[MZ_CODE].rect->h / ch;
+
+			layout.dataLinecount= mouseZones[MZ_DATA].rect->h / ch;
+			layout.dataYpos= layout.codeLinecount+1;
+
+			layout.stackLinecount= mouseZones[MZ_STACK].rect->h / ch;
+			layout.stackXpos= -DBG_LAYOUT_STCK_WIDTH;
+
+			layout.regXpos= DBG_LAYOUT_CODE_WIDTH + 1;
+			layout.regLinecount= 1;
+
+			layout.bpRegXpos= DBG_LAYOUT_CODE_WIDTH + 1 + DBG_LAYOUT_REG_WIDTH;
+			layout.bpRegLinecount= 1;
+
+			layout.zpRegXpos= -DBG_LAYOUT_ZP_REG_WIDTH;
+			layout.zpRegYpos= ceil((double)mouseZones[MZ_ZPREG].rect->y / (double)ch);
+			layout.zpRegLinecount= 20;
+
 		}
 	}
+
+	printf("dataLinecount:%d\n", layout.dataLinecount);
 }
 
 void DEBUGRenderDisplay(int width, int height) {
@@ -896,30 +902,35 @@ void DEBUGRenderDisplay(int width, int height) {
 	SDL_RenderFillRect(dbgRenderer, &rc);
 
 	// Draw register name and values.
-	DEBUGRenderRegisters();
+	if(layout.regLinecount)
+		DEBUGRenderRegisters(layout.regXpos, 0, KIND_CPU);
+	if(layout.bpRegLinecount)
+		DEBUGRenderRegisters(layout.bpRegXpos, 0, KIND_BP);
+	if(layout.zpRegLinecount)
+		DEBUGRenderRegisters(layout.zpRegXpos, layout.zpRegYpos, KIND_ZP);
 
 	if(layout.codeLinecount)
-		DEBUGRenderCode(DBG_ASMX, 0, layout.codeLinecount);
+		DEBUGRenderCode(1, 0, layout.codeLinecount);
 
 	if(layout.dataLinecount) {
 		if (dumpmode == DDUMP_RAM)
-			DEBUGRenderData(DBG_MEMX, layout.codeLinecount+1, layout.dataLinecount);
+			DEBUGRenderData(1, layout.dataYpos, layout.dataLinecount);
 		else
-			DEBUGRenderVRAM(DBG_MEMX, layout.codeLinecount+1, layout.dataLinecount);
+			DEBUGRenderVRAM(1, layout.dataYpos, layout.dataLinecount);
 	}
 
 	if(layout.stackLinecount)
 		DEBUGRenderStack(layout.stackLinecount);
 
-	if(mouseZone != MZ_NONE) {
+	if(mouseZones[mouseZone].type == MZT_HIGHLIGHT) {
 		SDL_SetRenderDrawColor(dbgRenderer, col_dbg_focus.r, col_dbg_focus.g, col_dbg_focus.b, 80);
-		SDL_RenderFillRect(dbgRenderer, mouseZonesRect[mouseZone]) ;
+		SDL_RenderFillRect(dbgRenderer, mouseZones[mouseZone].rect) ;
 	}
 
 	int mouseX, mouseY;
 	char mouseCoord[30];
 	SDL_GetMouseState(&mouseX, &mouseY);
 	sprintf(mouseCoord, "%03d %03d", mouseX, mouseY);
-	DT_DrawText2(dbgRenderer, mouseCoord, font_debugger, win_width-DT_FontWidth(font_debugger)*7, win_height - con_height, col_highlight);
+	DT_DrawText2(dbgRenderer, mouseCoord, dbgFontID, win_width-DT_FontWidth(dbgFontID)*7, win_height - con_height, col_highlight);
 
 }

@@ -29,14 +29,6 @@ void DEBUGFreeUI();
 void DEBUGsetFont(int fontNumber);
 void DEBUGupdateLayout(int id);
 
-#define DBG_WIDTH 		(60)									// Char cells across
-#define DBG_HEIGHT 		(55)
-
-#define DBG_ASMX 		(1)										// Disassembly starts here
-#define DBG_LBLX 		(26) 									// Debug labels start here
-#define DBG_DATX		(30)									// Debug data starts here.
-#define DBG_MEMX 		(1)										// Memory Display starts here
-
 #define DMODE_STOP 		(0)										// Debugger is waiting for action.
 #define DMODE_STEP 		(1)										// Debugger is doing a single step
 #define DMODE_RUN 		(2)										// Debugger is running normally.
@@ -62,9 +54,34 @@ typedef struct {
 } TRegisterPos;
 
 typedef struct layout {
+	int totalWidth;
+	int totalHeight;
+
 	int codeLinecount;
+
+	int dataYpos;
 	int dataLinecount;
+
+	int stackXpos;
 	int stackLinecount;
+
+	int regXpos;
+	int regLinecount;
+
+	int bpRegXpos;
+	int bpRegLinecount;
+
+	int zpRegXpos;
+	int zpRegYpos;
+	int zpRegLinecount;
 } TLayout;
+
+typedef enum {
+	MZT_NONE, MZT_HIGHLIGHT, MZT_BUTTON
+} TMouseZoneType;
+typedef struct {
+	TMouseZoneType type;
+	SDL_Rect *rect;
+} TMouseZone;
 
 #endif
