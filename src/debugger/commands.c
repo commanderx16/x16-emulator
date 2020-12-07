@@ -8,6 +8,8 @@
 #include "commands.h"
 #include "symbols.h"
 #include "registers.h"
+#include "version.h"
+#include "../version.h"
 
 #define DDUMP_RAM	0
 #define DDUMP_VERA	1
@@ -78,6 +80,7 @@ command_t cmd_table[] = {
 	{ "font", cmd_font, 0, 0, "font [Name|ID [Path]]\nDisplay loaded fonts or Set the debugger font or Load and Set the debugger font" },
 
 	{ "romdebug", cmd_romdebug, 0, 0, "romdebug\ntoggle ROM debug mode to allow editing" },
+	{ "info", cmd_info, 0, 0, "info\ndisplay X16 emulator & debugger info" },
 
 	{ NULL, NULL }
 };
@@ -552,5 +555,14 @@ void cmd_romdebug(int data, int argc, char* argv[]) {
 		CON_Out(console, "%sCAUTION%s! ROM can be edited now", DT_color_red, DT_color_default);
 	else
 		CON_Out(console, "ROM is read-only now");
+}
+
+/* ----------------------------------------------------------------------------
+	display X16 emulator & debugger info
+	info
+*/
+void cmd_info(int data, int argc, char* argv[]) {
+	CON_Out(console, "x16 emulator: Release %s (%s)", VER, VER_NAME);
+	CON_Out(console, "x16 debugger: version %s", DBG_VER);
 }
 
