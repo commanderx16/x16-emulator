@@ -26,8 +26,8 @@ int  DEBUGGetCurrentStatus(void);
 void DEBUGSetBreakPoint(int newBreakPoint);
 void DEBUGInitUI(SDL_Renderer *pRenderer);
 void DEBUGFreeUI();
-void bootstrapConsole();
-void setDebuggerFont(int fontNumber);
+void DEBUGsetFont(int fontNumber);
+void DEBUGupdateLayout(int id);
 
 #define DBG_WIDTH 		(60)									// Char cells across
 #define DBG_HEIGHT 		(55)
@@ -60,5 +60,11 @@ typedef struct {
 	TRegisterLabelPos label;
 	TRegisterValuePos value;
 } TRegisterPos;
+
+typedef struct layout {
+	int codeLinecount;
+	int dataLinecount;
+	int stackLinecount;
+} TLayout;
 
 #endif

@@ -31,10 +31,10 @@
 
 static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift);
 
-static void DEBUGRenderData(int x, int y, int lineCount, int memaddr);
+static void DEBUGRenderCode(int x, int y, int lineCount);
+static void DEBUGRenderData(int x, int y, int lineCount);
+static void DEBUGRenderVRAM(int x, int y, int lineCount);
 static void DEBUGRenderRegisters();
-static void DEBUGRenderVRAM(int y, int vmemaddr);
-static void DEBUGRenderCode(int lines, int initialPC);
 static void DEBUGRenderStack(int bytesCount);
 
 static void DEBUG_Command_Handler(ConsoleInformation *console, char* command);
@@ -131,14 +131,16 @@ int showFullConsole = 0;
 int breakpoints[DBG_MAX_BREAKPOINTS];
 int breakpointsCount= 0;
 int isWindowVisible = 0;
-int mouseZone= 0;
 int disasmLine1Size= 0;
+int offsetSP= 0;
 
 int dbg_height = DBG_HEIGHT;
 int win_height = 800;
 int win_width = 640;
 int con_height = 50;
-int layout= 0;
+
+int layoutID= 0;
+TLayout layout;
 
 int font_debugger= 0;
 
@@ -147,15 +149,24 @@ int DBG_LAYOUT_HEIGHT= 			0;
 int DBG_LAYOUT_STCK_X= 			-DBG_LAYOUT_STCK_WIDTH;						// Debug stack starts here.
 int DBG_LAYOUT_ZP_REG_X=   		-DBG_LAYOUT_ZP_REG_WIDTH;          			// Zero page registers start here
 int DBG_LAYOUT_REG_X=   		DBG_LAYOUT_CODE_WIDTH + 1;     				// Registers start here
-int DBG_LAYOUT_REG_Y=   		0;
 int DBG_LAYOUT_BP_REG_X= 		DBG_LAYOUT_CODE_WIDTH + 1 + DBG_LAYOUT_REG_WIDTH;	// Breakpoins registers start here
+
 SDL_Rect smallDataZoneRect= { 0, 290, 525, 455 };
 SDL_Rect smallCodeZoneRect= { 5, 0, 310, 285 };
 SDL_Rect largeCodeZoneRect= { 5, 0, 330, 750 };
+SDL_Rect stackZoneRect= { 575, 0, 65, 285 };
+SDL_Rect zpRegZoneRect= { 575, 290, 65, 455 };
 SDL_Rect emptyZoneRect= { 0, 0, 0, 0 };
 
-SDL_Rect *codeZoneRect= &smallCodeZoneRect;
-SDL_Rect *dataZoneRect= &smallDataZoneRect;
+enum MouseZones { MZ_NONE, MZ_CODE, MZ_DATA, MZ_STACK, MZ_ZPREG, mouseZonesCount};
+int mouseZone= MZ_NONE;
+SDL_Rect *mouseZonesRect[]= {
+	NULL,
+	&smallCodeZoneRect,
+	&smallDataZoneRect,
+	&stackZoneRect,
+	&zpRegZoneRect
+};
 
 SDL_Renderer *dbgRenderer; 										// Renderer passed in.
 static SDL_Window* dbgWindow;
@@ -220,7 +231,7 @@ DEBUGVAddress(int x, int y, int addr, SDL_Color colour)
 //
 // *******************************************************************************************
 
-bool isOnBreakpoint(int addr) {
+bool DEBUGisOnBreakpoint(int addr) {
 	for(int idx= 0; idx<breakpointsCount; idx++) {
 		if(breakpoints[idx] == addr)
 			return true;
@@ -238,7 +249,7 @@ int  DEBUGGetCurrentStatus(void) {
 		currentMode = DMODE_STOP;								// So now stop, as we've done it.
 	}
 
-	if ((breakpointsCount && isOnBreakpoint(pc)) || pc == stepBreakPoint) {				// Hit a breakpoint.
+	if ((breakpointsCount && DEBUGisOnBreakpoint(pc)) || pc == stepBreakPoint) {				// Hit a breakpoint.
 		// to allow scroll code while on BP
 		if(currentMode != DMODE_STOP)
 			currentPC = pc;											// Update current PC
@@ -274,15 +285,14 @@ int  DEBUGGetCurrentStatus(void) {
 					if(dbgWindowID != event.motion.windowID)
 						break;
 
+					mouseZone= MZ_NONE;
 					SDL_Point mouse_position= {event.motion.x, event.motion.y};;
-
-					if(SDL_PointInRect(&mouse_position, dataZoneRect))
-						mouseZone= 2;
-					else
-					if(SDL_PointInRect(&mouse_position, codeZoneRect))
-						mouseZone= 1;
-					else
-						mouseZone= 0;
+					for(int idx= MZ_NONE+1; idx < mouseZonesCount; idx++) {
+						if(SDL_PointInRect(&mouse_position, mouseZonesRect[idx])) {
+							mouseZone= idx;
+							break;
+						}
+					}
 
 					break;
 				}
@@ -293,16 +303,21 @@ int  DEBUGGetCurrentStatus(void) {
 						break;
 
 					switch(mouseZone) {
-						case 1:
+						case MZ_CODE:
 						{
 							int inc= (event.wheel.y > 0) ? -3 : disasmLine1Size;
 							currentPC+= inc;
 							break;
 						}
-						case 2:
+						case MZ_DATA:
 						{
 							int inc= (event.wheel.y > 0) ? -0x200 : 0x200;
 							currentData = (currentData + inc) & (dumpmode == DDUMP_RAM ? 0xFFFF : 0x1FFFF);
+							break;
+						}
+						case MZ_STACK:
+						{
+							offsetSP= (offsetSP + (event.wheel.y > 0 ? -1 : 1)) % 255;
 							break;
 						}
 					}
@@ -343,7 +358,7 @@ int  DEBUGGetCurrentStatus(void) {
 //								Setup fonts and co
 //
 // *******************************************************************************************
-void setDebuggerFont(int fontNumber) {
+void DEBUGsetFont(int fontNumber) {
 	font_debugger= fontNumber;
 
 	int charWidth= DT_FontWidth(font_debugger);
@@ -355,15 +370,17 @@ void setDebuggerFont(int fontNumber) {
 
 	// adjust focus rect width to follow font char width
 	smallDataZoneRect.w= charWidth * (DBG_LAYOUT_DATA_WIDTH+1);
-	smallDataZoneRect.y= (smallDataZoneRect.y / charHeight) * charHeight;
-	smallDataZoneRect.h= win_height - con_height - smallDataZoneRect.y - 5;
+	// smallDataZoneRect.y= (smallDataZoneRect.y / charHeight) * charHeight;
+	// smallDataZoneRect.h= win_height - con_height - smallDataZoneRect.y - 5;
 
 	DBG_LAYOUT_WIDTH= win_width / charWidth;
 	DBG_LAYOUT_HEIGHT= win_height / charHeight;
 
+	DEBUGupdateLayout(-1);
+
 }
 
-bool readColour(const dictionary *dict, const char *key, SDL_Colour *col) {
+bool DEBUGreadColour(const dictionary *dict, const char *key, SDL_Colour *col) {
 	int val= iniparser_getint(dict, key, -1);
 	if(val>0) {
 		col->r= val >> 16;
@@ -374,7 +391,7 @@ bool readColour(const dictionary *dict, const char *key, SDL_Colour *col) {
 	return false;
 }
 
-void readSettings(dictionary *iniDict) {
+void DEBUGreadSettings(dictionary *iniDict) {
 	const char *keys[16];
 	int cmdCount= iniparser_getsecnkeys(iniDict, "dbg_ini_script");
 	iniparser_getseckeys(iniDict, "dbg_ini_script", keys);
@@ -397,17 +414,17 @@ void readSettings(dictionary *iniDict) {
 	}
 
 	int fontNum= DT_LoadFont(dbgRenderer, iniparser_getstring(iniDict, "dbg:font", "consolas10.bmp"), TRANS_FONT);
-	setDebuggerFont(fontNum>=0 ? fontNum : 0);
+	DEBUGsetFont(fontNum>=0 ? fontNum : 0);
 
-	readColour(iniDict, "dbg:focus_color", &col_dbg_focus);
-	readColour(iniDict, "dbg:bg_color", &col_dbg_bkgnd);
+	DEBUGreadColour(iniDict, "dbg:focus_color", &col_dbg_focus);
+	DEBUGreadColour(iniDict, "dbg:bg_color", &col_dbg_bkgnd);
 
-	readColour(iniDict, "dbg:vram_tilemap_color", &col_vram[0]);
-	readColour(iniDict, "dbg:vram_tiledata_color", &col_vram[1]);
-	readColour(iniDict, "dbg:vram_special_color", &col_vram[2]);
-	readColour(iniDict, "dbg:vram_other_color", &col_vram[3]);
+	DEBUGreadColour(iniDict, "dbg:vram_tilemap_color", &col_vram[0]);
+	DEBUGreadColour(iniDict, "dbg:vram_tiledata_color", &col_vram[1]);
+	DEBUGreadColour(iniDict, "dbg:vram_special_color", &col_vram[2]);
+	DEBUGreadColour(iniDict, "dbg:vram_other_color", &col_vram[3]);
 
-	readColour(iniDict, "dbg_console:bg_color", &col_con_bkgnd);
+	DEBUGreadColour(iniDict, "dbg_console:bg_color", &col_con_bkgnd);
 	CON_BackgroundColor(console, col_con_bkgnd.r, col_con_bkgnd.g, col_con_bkgnd.b);
 }
 
@@ -437,12 +454,15 @@ void DEBUGInitUI(SDL_Renderer *pRenderer) {
 
 		symbol_init();
 
-		readSettings(iniDict);
+		DEBUGreadSettings(iniDict);
 
 		CON_Show(console);
 
+		DEBUGupdateLayout(0);
+
 		iniparser_freedict(iniDict);
 	}
+
 }
 
 // *******************************************************************************************
@@ -484,7 +504,7 @@ void DEBUGBreakToDebugger(void) {
 //
 // *******************************************************************************************
 
-static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift) {
+static void DEBUGHandleKeyEvent(SDL_Keycode key, int isShift) {
 	int opcode;
 
 	switch(key) {
@@ -514,6 +534,7 @@ static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift) {
 		case DBGKEY_HOME:									// F1 sets the display PC to the actual one.
 			currentPC = pc;
 			currentPCBank= currentPC < 0xC000 ? memory_get_ram_bank() : memory_get_rom_bank();
+			offsetSP= 0;
 			break;
 
 		case DBGKEY_RESET:									// F2 reset the 6502
@@ -573,7 +594,8 @@ void DEBUG_Command_Handler(ConsoleInformation *console, char* command) {
 // *******************************************************************************************
 #define DATA_ADDR_WIDTH 2+1+4 + 1
 #define DATA_BYTES_WIDTH 16*3
-static void DEBUGRenderData(int x, int y, int lineCount, int memaddr) {
+static void DEBUGRenderData(int x, int y, int lineCount) {
+	int memaddr= currentData;
 
 	while(lineCount--) {									// To bottom of screen
 		memaddr &= 0xFFFF;
@@ -592,24 +614,22 @@ static void DEBUGRenderData(int x, int y, int lineCount, int memaddr) {
 		y++;
 		memaddr+= 16;
 	}
-	if(mouseZone == 2) {
-		SDL_SetRenderDrawColor(dbgRenderer, col_dbg_focus.r, col_dbg_focus.g, col_dbg_focus.b, 80);
-		SDL_RenderFillRect(dbgRenderer, dataZoneRect);
-	}
+
 }
 
 static void
-DEBUGRenderVRAM(int y, int vmemaddr)
+DEBUGRenderVRAM(int x, int y, int lineCount)
 {
-	while (y < dbg_height - 2) {                                                   // To bottom of screen
-		DEBUGVAddress(DBG_MEMX, y, vmemaddr & 0x1FFFF, col_label); // Show label.
+	int vmemaddr= currentData;
+	while (lineCount--) {
+		DEBUGVAddress(x, y, vmemaddr & 0x1FFFF, col_label); // Show label.
 
 		for (int i = 0; i < 16; i++) {
 			int addr = (vmemaddr + i) & 0x1FFFF;
 			int byte = video_space_read(addr);
 
 			int type= video_get_address_type(addr) % col_vram_len;
-			DEBUGNumber(DBG_MEMX + 6 + i * 3, y, byte, 2, col_vram[type]);
+			DEBUGNumber(x + 6 + i * 3, y, byte, 2, col_vram[type]);
 		}
 		y++;
 		vmemaddr += 16;
@@ -624,13 +644,14 @@ DEBUGRenderVRAM(int y, int vmemaddr)
 #define CODE_ADDR_WIDTH 2+1+4 + 1
 #define CODE_BYTES_WIDTH 2+1+2+1+2 + 1
 #define CODE_LABEL_WIDTH SYMBOL_LABEL_MAXLEN + 1
-static void DEBUGRenderCode(int lines, int initialPC) {
+static void DEBUGRenderCode(int x, int y, int lineCount) {
 	char buffer[48];
 	char *label;
+	int initialPC= currentPC;
 
-	for (int y = 0; y < lines; y++) { 							// Each line
+	for (int y = 0; y < lineCount; y++) { 							// Each line
 
-		DEBUGAddress(DBG_ASMX, y, currentPCBank, initialPC, col_label);
+		DEBUGAddress(x, y, currentPCBank, initialPC, col_label);
 
 		if(!isValidAddr(currentPCBank, initialPC)) {
 			initialPC++;
@@ -641,22 +662,18 @@ static void DEBUGRenderCode(int lines, int initialPC) {
 		if(y == 0)
 			disasmLine1Size= size;
 
-		DEBUGString(dbgRenderer, DBG_ASMX+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH+CODE_LABEL_WIDTH, y, buffer, initialPC == pc ? col_highlight : col_data);
+		DEBUGString(dbgRenderer, x+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH+CODE_LABEL_WIDTH, y, buffer, initialPC == pc ? col_highlight : col_data);
 
 		for(int byteCount= 0; byteCount<size;byteCount++) {
 			int byte= real_read6502(initialPC + byteCount, true, currentPCBank);
-			DEBUGNumber(DBG_ASMX+CODE_ADDR_WIDTH+byteCount*3, y, byte, 2, initialPC == pc ? col_highlight : col_data);
+			DEBUGNumber(x+CODE_ADDR_WIDTH+byteCount*3, y, byte, 2, initialPC == pc ? col_highlight : col_data);
 		}
 		label= symbol_find_label(currentPCBank, initialPC);
 		if(label)
-			DEBUGString(dbgRenderer, DBG_ASMX+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH, y, label, initialPC == pc ? col_highlight : col_data);
+			DEBUGString(dbgRenderer, x+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH, y, label, initialPC == pc ? col_highlight : col_data);
 		initialPC += size;										// Forward to next
 	}
 
-	if(mouseZone == 1) {
-		SDL_SetRenderDrawColor(dbgRenderer, col_dbg_focus.r, col_dbg_focus.g, col_dbg_focus.b, 80);
-		SDL_RenderFillRect(dbgRenderer, codeZoneRect) ;
-	}
 }
 
 // *******************************************************************************************
@@ -682,30 +699,30 @@ static TRegisterPos regs[]= {
 	{ KIND_CPU, REG_VD1, 2, 0, { "VD1", 4, 11}, {4, 12} },
 	{ KIND_CPU, REG_VCT, 2, 0, { "VCT", 8, 11}, {8, 12} },
 
-	{ KIND_ZP, REG_R0,  4, 0, { "R0",  0, 21+0}, {4, 21+0} },
-	{ KIND_ZP, REG_R1,  4, 0, { "R1",  0, 21+1}, {4, 21+1} },
-	{ KIND_ZP, REG_R2,  4, 0, { "R2",  0, 21+2}, {4, 21+2} },
-	{ KIND_ZP, REG_R3,  4, 0, { "R3",  0, 21+3}, {4, 21+3} },
+	{ KIND_ZP, REG_R0,  4, 0, { "R0",  0, 0}, {4, 0} },
+	{ KIND_ZP, REG_R1,  4, 0, { "R1",  0, 1}, {4, 1} },
+	{ KIND_ZP, REG_R2,  4, 0, { "R2",  0, 2}, {4, 2} },
+	{ KIND_ZP, REG_R3,  4, 0, { "R3",  0, 3}, {4, 3} },
 
-	{ KIND_ZP, REG_R4,  4, 0, { "R4",  0, 21+5}, {4, 21+5} },
-	{ KIND_ZP, REG_R5,  4, 0, { "R5",  0, 21+6}, {4, 21+6} },
-	{ KIND_ZP, REG_R6,  4, 0, { "R6",  0, 21+7}, {4, 21+7} },
-	{ KIND_ZP, REG_R7,  4, 0, { "R7",  0, 21+8}, {4, 21+8} },
+	{ KIND_ZP, REG_R4,  4, 0, { "R4",  0, 5}, {4, 5} },
+	{ KIND_ZP, REG_R5,  4, 0, { "R5",  0, 6}, {4, 6} },
+	{ KIND_ZP, REG_R6,  4, 0, { "R6",  0, 7}, {4, 7} },
+	{ KIND_ZP, REG_R7,  4, 0, { "R7",  0, 8}, {4, 8} },
 
-	{ KIND_ZP, REG_R8,  4, 0, { "R8",  0, 21+10}, {4, 21+10} },
-	{ KIND_ZP, REG_R9,  4, 0, { "R9",  0, 21+11}, {4, 21+11} },
-	{ KIND_ZP, REG_R10, 4, 0, { "R10", 0, 21+12}, {4, 21+12} },
-	{ KIND_ZP, REG_R11, 4, 0, { "R11", 0, 21+13}, {4, 21+13} },
+	{ KIND_ZP, REG_R8,  4, 0, { "R8",  0, 10}, {4, 10} },
+	{ KIND_ZP, REG_R9,  4, 0, { "R9",  0, 11}, {4, 11} },
+	{ KIND_ZP, REG_R10, 4, 0, { "R10", 0, 12}, {4, 12} },
+	{ KIND_ZP, REG_R11, 4, 0, { "R11", 0, 13}, {4, 13} },
 
-	{ KIND_ZP, REG_R12, 4, 0, { "R12", 0, 21+15}, {4, 21+15} },
-	{ KIND_ZP, REG_R13, 4, 0, { "R13", 0, 21+16}, {4, 21+16} },
-	{ KIND_ZP, REG_R14, 4, 0, { "R14", 0, 21+17}, {4, 21+17} },
-	{ KIND_ZP, REG_R15, 4, 0, { "R15", 0, 21+18}, {4, 21+18} },
+	{ KIND_ZP, REG_R12, 4, 0, { "R12", 0, 15}, {4, 15} },
+	{ KIND_ZP, REG_R13, 4, 0, { "R13", 0, 16}, {4, 16} },
+	{ KIND_ZP, REG_R14, 4, 0, { "R14", 0, 17}, {4, 17} },
+	{ KIND_ZP, REG_R15, 4, 0, { "R15", 0, 18}, {4, 18} },
 
-	{ KIND_ZP, REG_x16, 4, 0, { "x16", 0, 21+20}, {4, 21+20} },
-	{ KIND_ZP, REG_x17, 4, 0, { "x17", 0, 21+21}, {4, 21+21} },
-	{ KIND_ZP, REG_x18, 4, 0, { "x18", 0, 21+22}, {4, 21+22} },
-	{ KIND_ZP, REG_x19, 4, 0, { "x19", 0, 21+23}, {4, 21+23} },
+	{ KIND_ZP, REG_x16, 4, 0, { "x16", 0, 20}, {4, 20} },
+	{ KIND_ZP, REG_x17, 4, 0, { "x17", 0, 21}, {4, 21} },
+	{ KIND_ZP, REG_x18, 4, 0, { "x18", 0, 22}, {4, 22} },
+	{ KIND_ZP, REG_x19, 4, 0, { "x19", 0, 23}, {4, 23} },
 
 	{ KIND_BP, REG_BP0, 6, 0, { "BP0", 0, 0}, {4, 0} },
 	{ KIND_BP, REG_BP1, 6, 0, { "BP1", 0, 0+1}, {4, 0+1} },
@@ -721,7 +738,7 @@ static TRegisterPos regs[]= {
 	{ 0, 0, 0, 0, { NULL, 0, 0}, {0, 0} }
 };
 
-int readVirtualRegister(int reg) {
+int DEBUGreadVirtualRegister(int reg) {
 	int reg_addr = 2 + reg * 2;
 	return real_read6502(reg_addr+1, true, currentBank)*256+real_read6502(reg_addr, true, currentBank);
 }
@@ -767,7 +784,7 @@ static void DEBUGRenderRegisters() {
 			case REG_x16:
 			case REG_x17:
 			case REG_x18:
-			case REG_x19: value= readVirtualRegister(regs[idx].regCode - REG_R0); break;
+			case REG_x19: value= DEBUGreadVirtualRegister(regs[idx].regCode - REG_R0); break;
 
 			case REG_BP0:
 			case REG_BP1:
@@ -790,18 +807,22 @@ static void DEBUGRenderRegisters() {
 			}
 		}
 		if(wannaShow) {
-			int xOffset= 0;;
+			int xOffset= 0;
+			int yOffset= 0;
 			switch(regs[idx].regKind) {
 				case KIND_CPU: xOffset= DBG_LAYOUT_REG_X; break;
-				case KIND_ZP: xOffset= DBG_LAYOUT_ZP_REG_X; break;
+				case KIND_ZP:
+					xOffset= DBG_LAYOUT_ZP_REG_X;
+					yOffset= layout.codeLinecount+1;
+					break;
 				case KIND_BP: xOffset= DBG_LAYOUT_BP_REG_X; break;
 			}
 			if(xOffset<0)
 				xOffset= DBG_LAYOUT_WIDTH + xOffset;
-			DEBUGString(dbgRenderer, regs[idx].label.xOffset+xOffset, regs[idx].label.yOffset, regs[idx].label.text, col_label);
-			DEBUGNumber(regs[idx].value.xOffset+xOffset, regs[idx].value.yOffset, value, regs[idx].width, col_data);
+			DEBUGString(dbgRenderer, regs[idx].label.xOffset+xOffset, regs[idx].label.yOffset+yOffset, regs[idx].label.text, col_label);
+			DEBUGNumber(regs[idx].value.xOffset+xOffset, regs[idx].value.yOffset+yOffset, value, regs[idx].width, col_data);
 			if(regs[idx].showChar)
-				DEBUGWrite(dbgRenderer, regs[idx].value.xOffset+xOffset + 3, regs[idx].value.yOffset, value, col_data);
+				DEBUGWrite(dbgRenderer, regs[idx].value.xOffset+xOffset + 3, regs[idx].value.yOffset+yOffset, value, col_data);
 		}
 	}
 
@@ -814,7 +835,7 @@ static void DEBUGRenderRegisters() {
 // *******************************************************************************************
 
 static void DEBUGRenderStack(int bytesCount) {
-	int data= (sp-6) | 0x100;
+	int data= ((sp-6+offsetSP) & 0xFF) | 0x100;
 	int y= 0;
 	int xOffset= DBG_LAYOUT_STCK_X < 0 ? DBG_LAYOUT_WIDTH + DBG_LAYOUT_STCK_X : DBG_LAYOUT_STCK_X;
 	while (y < bytesCount) {
@@ -832,6 +853,31 @@ static void DEBUGRenderStack(int bytesCount) {
 //							Render the emulator debugger display.
 //
 // *******************************************************************************************
+void DEBUGupdateLayout(int id) {
+	int ch= DT_FontHeight(font_debugger)+1;
+
+	if(id>=0)
+		layoutID= id;
+
+	switch(layoutID) {
+		case 1:
+			mouseZonesRect[MZ_DATA]= &emptyZoneRect;
+			mouseZonesRect[MZ_CODE]= &largeCodeZoneRect;
+			layout.codeLinecount= mouseZonesRect[MZ_CODE]->h / ch;
+			layout.dataLinecount= 0;
+			break;
+
+		default:
+		{
+			mouseZonesRect[MZ_DATA]= &smallDataZoneRect;
+			mouseZonesRect[MZ_CODE]= &smallCodeZoneRect;
+
+			layout.codeLinecount= mouseZonesRect[MZ_CODE]->h / ch;
+			layout.dataLinecount= mouseZonesRect[MZ_DATA]->h / ch;
+			layout.stackLinecount= mouseZonesRect[MZ_STACK]->h / ch;
+		}
+	}
+}
 
 void DEBUGRenderDisplay(int width, int height) {
 
@@ -843,14 +889,6 @@ void DEBUGRenderDisplay(int width, int height) {
 		return;
 
 	SDL_Rect rc;
-	/*
-	rc.w = DBG_WIDTH * 6 * CHAR_SCALE;							// Erase background, set up rect
-	rc.h = height;
-	xPos = width-rc.w;yPos = 0; 								// Position screen
-	rc.x = xPos;rc.y = yPos; 									// Set rectangle and black out.
-	SDL_SetRenderDrawColor(dbgRenderer, 0, 0, 255, SDL_ALPHA_OPAQUE);
-	SDL_RenderFillRect(dbgRenderer,&rc);
-	*/
 	rc.w = width;
 	rc.h = height - con_height + 2;
 	rc.x = rc.y = 0;
@@ -860,36 +898,28 @@ void DEBUGRenderDisplay(int width, int height) {
 	// Draw register name and values.
 	DEBUGRenderRegisters();
 
-	int codeLinecount;
-	switch(layout) {
-		case 1:
-			codeZoneRect= &largeCodeZoneRect;
-			codeLinecount= codeZoneRect->h / (DT_FontHeight(font_debugger)+1);
-			dataZoneRect= &emptyZoneRect;
-			break;
+	if(layout.codeLinecount)
+		DEBUGRenderCode(DBG_ASMX, 0, layout.codeLinecount);
 
-		default:
-		{
-			codeZoneRect= &smallCodeZoneRect;
-			codeLinecount= codeZoneRect->h / (DT_FontHeight(font_debugger)+1);
-
-			dataZoneRect= &smallDataZoneRect;
-			int dataLinecount= dataZoneRect->h / (DT_FontHeight(font_debugger)+1);
-
-			if (dumpmode == DDUMP_RAM)
-				DEBUGRenderData(DBG_MEMX, codeLinecount+1, dataLinecount, currentData);
-			else
-				DEBUGRenderVRAM(codeLinecount+1, currentData);
-		}
+	if(layout.dataLinecount) {
+		if (dumpmode == DDUMP_RAM)
+			DEBUGRenderData(DBG_MEMX, layout.codeLinecount+1, layout.dataLinecount);
+		else
+			DEBUGRenderVRAM(DBG_MEMX, layout.codeLinecount+1, layout.dataLinecount);
 	}
-	DEBUGRenderCode(codeLinecount, currentPC);
 
-	DEBUGRenderStack(20);
+	if(layout.stackLinecount)
+		DEBUGRenderStack(layout.stackLinecount);
+
+	if(mouseZone != MZ_NONE) {
+		SDL_SetRenderDrawColor(dbgRenderer, col_dbg_focus.r, col_dbg_focus.g, col_dbg_focus.b, 80);
+		SDL_RenderFillRect(dbgRenderer, mouseZonesRect[mouseZone]) ;
+	}
 
 	int mouseX, mouseY;
 	char mouseCoord[30];
 	SDL_GetMouseState(&mouseX, &mouseY);
-	sprintf(mouseCoord, "%d %d", mouseX, mouseY);
-	DT_DrawText2(dbgRenderer, mouseCoord, font_debugger, win_width-50, win_height - 20, col_highlight);
+	sprintf(mouseCoord, "%03d %03d", mouseX, mouseY);
+	DT_DrawText2(dbgRenderer, mouseCoord, font_debugger, win_width-DT_FontWidth(font_debugger)*7, win_height - con_height, col_highlight);
 
 }

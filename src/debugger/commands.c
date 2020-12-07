@@ -20,9 +20,10 @@ extern int currentPC;
 extern ConsoleInformation *console;
 extern int breakpoints[DBG_MAX_BREAKPOINTS];
 extern int breakpointsCount;
-extern int layout;
 extern SDL_Renderer *dbgRenderer;
-extern void setDebuggerFont(int fontNumber);
+extern void DEBUGsetFont(int fontNumber);
+extern int layoutID;
+extern void DEBUGupdateLayout(int layoutID);
 
 int isROMdebugAllowed= 0;
 
@@ -70,9 +71,9 @@ command_t cmd_table[] = {
 	{ "sym", cmd_sym, 0, 0, "sym [address|symbol]\nlook-up for the address or symbol and display it" },
 	{ "symclear", cmd_symclear, 2, 0, "symclear bank [symbol|*]\nclear the \"symbol\" or \"*\" all from the symbol table for specified bank" },
 	{ "symload", cmd_symload, 1, 0, "symload [bank] symbolFilename\nload the symbol table [for the specified bank]" },
-	{ "symsave", cmd_symsave, 1, 0, "symsave symbolFilename\nsave the symbol table" },
+	{ "symdump", cmd_symsave, 1, 0, "symdump symbolFilename\ndump in a file the symbol dictionary" },
 
-	{ "code", cmd_code, 0, 0, "code\ndisplay code in full page" },
+	{ "code", cmd_code, 0, 0, "code\nToggle the display in full page of code/disasm" },
 	{ "font", cmd_font, 0, 0, "font [Name|ID [Path]]\nDisplay loaded fonts or Set the debugger font or Load and Set the debugger font" },
 
 	{ "romdebug", cmd_romdebug, 0, 0, "romdebug\ntoggle ROM debug mode to allow editing" },
@@ -87,7 +88,7 @@ command_t cmd_table[] = {
 	10:2000
 	10:symbol
 */
-int eval_addr(char *str) {
+int cmd_eval_addr(char *str) {
 	int bank= currentPCBank>0 ? currentPCBank : 0;
 	char *colon= strchr(str, ':');
 
@@ -110,7 +111,7 @@ void cmd_dump_mem(int data, int argc, char* argv[]) {
 	dumpmode= DDUMP_RAM;
 	if(argc == 1)
 		return;
-	int addr= eval_addr(argv[1]);
+	int addr= cmd_eval_addr(argv[1]);
 	currentBank= (addr & 0xFF0000) >> 16;
 	currentData= addr & 0xFFFF;
 }
@@ -131,7 +132,7 @@ void cmd_dump_videomem(int data, int argc, char* argv[]) {
 	e address values...
 */
 void cmd_edit_mem(int data, int argc, char* argv[]) {
-	int addr= eval_addr(argv[1]);
+	int addr= cmd_eval_addr(argv[1]);
 
 	argc-= 2;
 	switch(dumpmode) {
@@ -170,7 +171,7 @@ void cmd_edit_mem(int data, int argc, char* argv[]) {
 	f address value length [increment:1]
 */
 void cmd_fill_memory(int data, int argc, char* argv[]) {
-	int addr= eval_addr(argv[1]);
+	int addr= cmd_eval_addr(argv[1]);
 	int value= (int)strtol(argv[2], NULL, 16);
 	int length= (int)strtol(argv[3], NULL, 16);
 	int incr= argc>4 ? (int)strtol(argv[4], NULL, 16) : 1;
@@ -213,7 +214,7 @@ void cmd_fill_memory(int data, int argc, char* argv[]) {
 	d [bank]address
 */
 void cmd_disasm(int data, int argc, char* argv[]) {
-	int addr= eval_addr(argv[1]);
+	int addr= cmd_eval_addr(argv[1]);
 	currentPCBank= addr >> 16;
 	currentPC= addr & 0xFFFF;
 }
@@ -321,14 +322,20 @@ void cmd_set_status(int data, int argc, char* argv[]) {
 	?|help [command]
 */
 void cmd_help(int data, int argc, char* argv[]) {
-	char buffer[512]= "\0";
+	char buffer[CON_CHARS_PER_LINE+1]= "\0";
 	char *pBuffer= buffer;
 
 	for(int idx= 0; cmd_table[idx].name; idx++) {
 		if(argc == 2) {
-			if(!stricmp(argv[1], cmd_table[idx].name))
+			if(!stricmp(argv[1], cmd_table[idx].name)) {
 				pBuffer= cmd_table[idx].help;
+				break;
+			}
 		} else {
+			if(strlen(pBuffer) + strlen(cmd_table[idx].name) > sizeof(buffer)) {
+				CON_Out(console, pBuffer);
+				pBuffer[0]= '\0';
+			}
 			strncat(pBuffer, cmd_table[idx].name, sizeof(buffer)-1);
 			strncat(pBuffer, " ", sizeof(buffer)-1);
 		}
@@ -356,7 +363,7 @@ void cmd_bp_list(int data, int argc, char* argv[]) {
 	bp address
 */
 void cmd_bp_add(int data, int argc, char* argv[]) {
-	int addr= eval_addr(argv[1]);
+	int addr= cmd_eval_addr(argv[1]);
 	int bank= addr >> 16;
 
 	if(breakpointsCount >= DBG_MAX_BREAKPOINTS)
@@ -486,7 +493,7 @@ void cmd_symsave(int data, int argc, char* argv[]) {
 	code
 */
 void cmd_code(int data, int argc, char* argv[]) {
-	layout= layout==0 ? 1 : 0;
+	DEBUGupdateLayout(layoutID==0 ? 1 : 0);
 }
 
 /* ----------------------------------------------------------------------------
@@ -507,7 +514,7 @@ void cmd_font(int data, int argc, char* argv[]) {
 		{
 			int fontNum= DT_FindFontID(argv[1]);
 			if(fontNum >= 0)
-				setDebuggerFont(fontNum);
+				DEBUGsetFont(fontNum);
 			else
 				CON_Out(console, "%sNo such Font%s", DT_color_red, DT_color_default);
 			break;
@@ -517,7 +524,7 @@ void cmd_font(int data, int argc, char* argv[]) {
 			int fontNum= DT_LoadFont(dbgRenderer, argv[2], 1);
 			if(fontNum>=0) {
 				DT_SetFontName(fontNum, argv[1]);
-				setDebuggerFont(fontNum);
+				DEBUGsetFont(fontNum);
 			} else
 				CON_Out(console, "%sUnable to load this font: %s%s", DT_color_red, SDL_GetError(), DT_color_default);
 			break;
