@@ -21,7 +21,6 @@
 #include "../video.h"
 #include "../cpu/fake6502.h"
 #include "debugger.h"
-#include "rendertext.h"
 #include "../console/SDL_console.h"
 #include "../console/DT_drawtext.h"
 #include "../console/split.h"
@@ -442,7 +441,7 @@ void DEBUGreadSettings(dictionary *iniDict) {
 		}
 	}
 
-	int fontNum= DT_LoadFont(dbgRenderer, iniparser_getstring(iniDict, "dbg:font", "consolas10.bmp"), TRANS_FONT);
+	int fontNum= DT_LoadFont(dbgRenderer, iniparser_getstring(iniDict, "dbg:font", "console9.bmp"), TRANS_FONT);
 	DEBUGsetFont(fontNum>=0 ? fontNum : 0);
 
 	DEBUGreadColour(iniDict, "dbg:focus_color", &col_dbg_focus);
@@ -472,7 +471,8 @@ void DEBUGInitUI(SDL_Renderer *pRenderer) {
 		// DEBUGInitChars(pRenderer);
 		// dbgRenderer = pRenderer;				// Save renderer.
 
-		char *fontPath= (char *)iniparser_getstring(iniDict, "dbg_console:font", "consolas10.bmp");
+		char *fontPath= (char *)iniparser_getstring(iniDict, "dbg_console:font", "console9.bmp");
+
 		Con_rect.x = 0;
 		Con_rect.y = 0;
 		Con_rect.w = win_width;
