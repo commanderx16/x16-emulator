@@ -56,19 +56,27 @@ HEADERS = $(patsubst %,$(SDIR)/%,$(_HEADERS))
 OBJS += extern/src/ym2151.o
 HEADERS += extern/src/ym2151.h
 
+uniq = $(if $1,$(firstword $1) $(call uniq,$(filter-out $(firstword $1),$1)))
+
 ifneq ("$(wildcard ./rom_labels.h)","")
 HEADERS+=rom_labels.h
 endif
-
 
 all: $(OBJS) $(HEADERS)
 	$(CC) -o $(OUTPUT) $(OBJS) $(LDFLAGS)
 $(ODIR)/%.o: $(SDIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+
 cpu/tables.h cpu/mnemonics.h: cpu/buildtables.py cpu/6502.opcodes cpu/65c02.opcodes
 	cd cpu && python buildtables.py
 
+OBJDIRS:= $(call uniq, $(dir $(OBJS) ) )
+
+$(OBJDIRS):
+	mkdir -p $@
+
+OBJ_DIRS: $(OBJDIRS)
 
 # WebASssembly/emscripten target
 #
