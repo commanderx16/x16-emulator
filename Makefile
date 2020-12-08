@@ -32,7 +32,7 @@ ifeq ($(CROSS_COMPILE_WINDOWS),1)
 	CC=i686-w64-mingw32-gcc
 endif
 
-LDFLAGS+=-Wl,--subsystem,console
+# LDFLAGS+=-Wl,--subsystem,console
 
 ifdef EMSCRIPTEN
 	LDFLAGS+=--shell-file webassembly/x16emu-template.html --preload-file rom.bin -s TOTAL_MEMORY=32MB -s ASSERTIONS=1 -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1
@@ -44,7 +44,7 @@ endif
 
 _OBJS = cpu/fake6502.o memory.o video.o ps2.o via.o loadsave.o vera_spi.o audio.o vera_pcm.o vera_psg.o \
 		sdcard.o main.o javascript_interface.o joystick.o keyboard.o icon.o \
-		debugger/debugger.o debugger/disasm.o debugger/rendertext.o debugger/commands.o debugger/symbols.o \
+		debugger/debugger.o debugger/disasm.o debugger/commands.o debugger/symbols.o \
 		console/SDL_console.o console/internal.o console/DT_drawtext.o console/split.o \
 		iniparser/dictionary.o iniparser/iniparser.o
 
