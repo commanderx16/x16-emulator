@@ -102,6 +102,7 @@ int breakpointsCount= 0;
 int isWindowVisible = 0;
 int disasmLine1Size= 0;
 int offsetSP= 0;
+int wannaShowMouseCoord= 0;
 
 //
 // layout related stuff
@@ -454,6 +455,8 @@ void DEBUGreadSettings(dictionary *iniDict) {
 
 	DEBUGreadColour(iniDict, "dbg_console:bg_color", &col_con_bkgnd);
 	CON_BackgroundColor(console, col_con_bkgnd.r, col_con_bkgnd.g, col_con_bkgnd.b);
+
+	wannaShowMouseCoord= 1 == iniparser_getboolean(iniDict, "dbg:showMouseCoord", 0);
 }
 
 void DEBUGInitUI(SDL_Renderer *pRenderer) {
@@ -973,10 +976,12 @@ void DEBUGRenderDisplay(int width, int height) {
 		SDL_RenderFillRect(dbgRenderer, mouseZones[mouseZone].rect) ;
 	}
 
-	int mouseX, mouseY;
-	char mouseCoord[30];
-	SDL_GetMouseState(&mouseX, &mouseY);
-	sprintf(mouseCoord, "%03d %03d", mouseX, mouseY);
-	DT_DrawText2(dbgRenderer, mouseCoord, dbgFontID, win_width-DT_FontWidth(dbgFontID)*7, win_height - con_height, col_highlight);
+	if(wannaShowMouseCoord) {
+		int mouseX, mouseY;
+		char mouseCoord[30];
+		SDL_GetMouseState(&mouseX, &mouseY);
+		sprintf(mouseCoord, "%03d %03d", mouseX, mouseY);
+		DT_DrawText2(dbgRenderer, mouseCoord, dbgFontID, win_width-DT_FontWidth(dbgFontID)*7, win_height - con_height, col_highlight);
+	}
 
 }
