@@ -35,8 +35,8 @@ command_t cmd_table[] = {
 	{ "e", cmd_edit_mem, 0, 0, "e address values....\nset memory at address with values" },
 
 	{ "f", cmd_fill_memory, 3, 0, "f address value length [increment:1]\nfill CPU/VIDEO memory" },
-	{ "d", cmd_disasm, 1, 0, "f address value length [increment:1]\nfill CPU/VIDEO memory" },
-	{ "b", cmd_set_bank, 2, 0, "f address value length [increment:1]\nfillsCPU/VIDEO memory" },
+	{ "d", cmd_disasm, 1, 0, "d address\ndisasm from address" },
+	{ "b", cmd_set_bank, 2, 0, "b rom|ram bankNumber\nset RAM or ROM bank" },
 	{ "r", cmd_set_register, 2, 0, "r A|X|Y|PC|SP|P|BKA|BKO|VA|VD0|VD1|VCT value \nset register value" },
 
 	{ "sec", cmd_set_status, 0, 0b000000001, "sec\nset carry" },
