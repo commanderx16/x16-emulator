@@ -109,12 +109,24 @@ void DT_SetFontAlphaGL(int fontNumber, int a) {
  * of the font for the user to use
  */
 int DT_LoadFont(SDL_Renderer *renderer, const char *bitmapPath, int flags) {
-	int fontNumber = 0;
+	int fontNumber;
 	BitFont **CurrentFont = &BitFonts;
 	SDL_Surface *Temp;
+	char fontName[32];
+
+	// tried with basename() but it was crashing :/
+	const char *filename= strrchr (bitmapPath, '/');;
+	filename= filename ? filename+1 : bitmapPath;
+	const char *dot= strrchr(filename, '.');
+	const int len= dot ? dot - filename : strlen(filename);
+	memset(fontName, 0, sizeof(fontName));
+	strncpy(fontName, filename, len<sizeof(fontName)-1 ? len : sizeof(fontName)-1);
+
+	fontNumber= DT_FindFontID(fontName);
+	if(fontNumber>=0)
+		return fontNumber;
 
 	/* load the font bitmap */
-
 	SDL_RWops * rw = SDL_RWFromFile(bitmapPath, "rb");
 	if(rw == NULL)
 		return -1;
@@ -133,6 +145,7 @@ int DT_LoadFont(SDL_Renderer *renderer, const char *bitmapPath, int flags) {
 		return -1;
 	}
 
+	fontNumber= 0;
 	while(*CurrentFont) {
 		CurrentFont = &((*CurrentFont)->nextFont);
 		fontNumber++;
@@ -150,10 +163,7 @@ int DT_LoadFont(SDL_Renderer *renderer, const char *bitmapPath, int flags) {
 	(*CurrentFont)->fontNumber = fontNumber;
 	(*CurrentFont)->nextFont = NULL;
 
-	const char *filename= basename((char *)bitmapPath);
-	const char *dot= strrchr(filename, '.');
-	const int len= dot ? dot - filename : strlen(filename);
-	strncpy((*CurrentFont)->fontName, filename, len<sizeof((*CurrentFont)->fontName)-1 ? len : sizeof((*CurrentFont)->fontName)-1);
+	strcpy((*CurrentFont)->fontName, fontName);
 
 
 	/* Set font as transparent if the flag is set.  The assumption we'll go on
