@@ -162,4 +162,5 @@ package_linux:
 	rm -rf $(TMPDIR_NAME)
 
 clean:
-	rm -f $(ODIR)/*.o cpu/*.o extern/src/*.o x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem
+	find $(ODIR) -name \*.o -type f -delete
+	rm -f extern/src/*.o x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem
