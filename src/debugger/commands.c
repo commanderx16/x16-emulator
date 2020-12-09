@@ -35,6 +35,8 @@ command_t cmd_table[] = {
 	{ "e", cmd_edit_mem, 0, 0, "e address values....\nset memory at address with values" },
 
 	{ "f", cmd_fill_memory, 3, 0, "f address value length [increment:1]\nfill CPU/VIDEO memory" },
+	{ "sh", cmd_search_memory, 2, 0, "sh address,length|start:end value0 value1 ...\nsearch CPU/VIDEO memory in range (addr,len or start:end) for bytes" },
+
 	{ "d", cmd_disasm, 1, 0, "d address\ndisasm from address" },
 	{ "b", cmd_set_bank, 2, 0, "b rom|ram bankNumber\nset RAM or ROM bank" },
 	{ "r", cmd_set_register, 2, 0, "r A|X|Y|PC|SP|P|BKA|BKO|VA|VD0|VD1|VCT value \nset register value" },
@@ -216,6 +218,102 @@ void cmd_fill_memory(int data, int argc, char* argv[]) {
 			}
 			break;
 	}
+
+}
+
+int cmd_get_range(char *parm, int *start, int *end, int *len) {
+	char *sep;
+
+	sep= strchr(parm, ',');
+	if(sep) {
+		*sep= '\0';
+		sep++;
+		*start= cmd_eval_addr(parm);
+		*len= (int)strtol(sep, NULL, 16);
+		if(*len>0) {
+			*end= *start + *len;
+			return 0;
+		}
+	}
+	sep= strchr(parm, ':');
+	if(sep) {
+		*sep= '\0';
+		sep++;
+		*start= cmd_eval_addr(parm);
+		*end= cmd_eval_addr(sep);
+		if(*end>*start) {
+			*len= *end - *start;
+			return 0;
+		}
+	}
+
+	CON_Out(console, "%sERR: Syntax error for range: format is addr,len or start_addr:end_addr%s", DT_color_red, DT_color_default);
+	return -1;
+}
+
+/* ----------------------------------------------------------------------------
+	search CPU/VIDEO memory in range (addr,len or start:end) for bytes
+	sh address,length|start:end value0 value1 ...
+*/
+void cmd_search_memory(int data, int argc, char* argv[]) {
+	int bank, addr, addr_end, len, value, idx;
+	int memvalue= 0;
+	bool partialfind= false;
+	int foundAddr, foundCount= 0;
+
+	if(-1 == cmd_get_range(argv[1], &addr, &addr_end, &len))
+		return;
+
+	bank= (addr >> 16) & 0xFF;
+
+	idx= 2;
+	value= (int)strtol(argv[idx++], NULL, 16) & 0x00FF;
+
+	while(len>0) {
+
+		switch(dumpmode) {
+
+			case DDUMP_RAM:
+				addr &= 0xFFFF;
+				if(!isValidAddr(bank, addr))
+					continue;
+				memvalue= real_read6502(addr, true, bank);
+				break;
+
+			case DDUMP_VERA:
+				memvalue= video_space_read(addr);
+				break;
+
+		}
+
+		if(value == memvalue) {
+			if(!partialfind)
+				foundAddr= addr;
+
+			partialfind= true;
+
+			if(idx == argc) {
+				CON_Out(console, "%02d - %06X", foundCount, bank<<16 | foundAddr);
+				partialfind= false;
+				idx= 2;
+				foundCount++;
+			}
+
+			value= (int)strtol(argv[idx++], NULL, 16) & 0x00FF;
+
+		} else if(partialfind) {
+			partialfind= false;
+			idx= 2;
+			value= (int)strtol(argv[idx++], NULL, 16) & 0x00FF;
+			addr= foundAddr+1;
+			continue;
+		}
+
+		addr++;
+		len--;
+	}
+
+	CON_Out(console, "Total found %d", foundCount);
 
 }
 
