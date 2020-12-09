@@ -137,13 +137,13 @@ void cmd_dump_videomem(int data, int argc, char* argv[]) {
 */
 void cmd_edit_mem(int data, int argc, char* argv[]) {
 	int addr= cmd_eval_addr(argv[1]);
+	int value;
+	int idx= 2;
 
 	argc-= 2;
 	switch(dumpmode) {
 		case DDUMP_RAM:
 		{
-			int value;
-			int idx= 2;
 			int bank= addr >> 16;
 			while(argc--) {
 				value= (int)strtol(argv[idx++], NULL, 16);
@@ -165,6 +165,12 @@ void cmd_edit_mem(int data, int argc, char* argv[]) {
 		}
 
 		case DDUMP_VERA:
+			while(argc--) {
+				value= (int)strtol(argv[idx++], NULL, 16);
+				addr &= 0x1FFFF;
+				video_space_write(addr, value);
+				addr++;
+			}
 			break;
 
 	}
