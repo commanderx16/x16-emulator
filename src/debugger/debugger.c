@@ -448,6 +448,10 @@ void DEBUGreadSettings(dictionary *iniDict) {
 	DEBUGreadColour(iniDict, "dbg:focus_color", &col_dbg_focus);
 	DEBUGreadColour(iniDict, "dbg:bg_color", &col_dbg_bkgnd);
 
+	DEBUGreadColour(iniDict, "dbg:label_color", &col_label);
+	DEBUGreadColour(iniDict, "dbg:data_color", &col_data);
+	DEBUGreadColour(iniDict, "dbg:highlight_color", &col_highlight);
+
 	DEBUGreadColour(iniDict, "dbg:vram_tilemap_color", &col_vram[0]);
 	DEBUGreadColour(iniDict, "dbg:vram_tiledata_color", &col_vram[1]);
 	DEBUGreadColour(iniDict, "dbg:vram_special_color", &col_vram[2]);
