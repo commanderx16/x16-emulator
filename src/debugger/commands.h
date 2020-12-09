@@ -17,6 +17,7 @@ void cmd_dump_mem(int data, int argc, char* argv[]);
 void cmd_dump_videomem(int data, int argc, char* argv[]);
 void cmd_edit_mem(int data, int argc, char* argv[]);
 void cmd_fill_memory(int data, int argc, char* argv[]);
+void cmd_search_memory(int data, int argc, char* argv[]);
 void cmd_disasm(int data, int argc, char* argv[]);
 void cmd_set_bank(int data, int argc, char* argv[]);
 void cmd_set_register(int data, int argc, char* argv[]);
