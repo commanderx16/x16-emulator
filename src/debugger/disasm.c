@@ -18,6 +18,21 @@
 //
 // *******************************************************************************************
 
+void lineBuild(char *line, unsigned int max_line, char *fmt, char const *mnemonic, uint8_t bank, int addr) {
+	char buffer[48];
+
+	char *label= symbol_find_label(bank, addr);
+	if(label) {
+		strcpy(buffer, line);
+		buffer[fmt-line-1]= '\0';
+		strcat(buffer, "%s");
+		strcat(buffer, fmt+4);
+		snprintf(line, max_line, buffer, label);
+	} else
+		snprintf(line, max_line, mnemonic, addr);
+
+}
+
 int disasm(uint16_t pc, uint8_t *RAM, char *line, unsigned int max_line, uint8_t bank) {
 	uint8_t opcode = real_read6502(pc, true, bank);
 	char const *mnemonic = mnemonics[opcode];
@@ -43,10 +58,11 @@ int disasm(uint16_t pc, uint8_t *RAM, char *line, unsigned int max_line, uint8_t
 		snprintf(line, max_line, mnemonic, real_read6502(pc + 1, true, bank), pc + 3 + (int8_t)real_read6502(pc + 2, true, bank));
 		length = 3;
 	} else {
-		if (strstr(line, "%02x")) {
+		if ((fmt= strstr(line, "%02x"))) {
 			length = 2;
 			if (isBranch) {
-				snprintf(line, max_line, mnemonic, pc + 2 + (int8_t)real_read6502(pc + 1, true, bank));
+				addr= pc + 2 + real_read6502(pc + 1, true, bank);
+				lineBuild(line, max_line, fmt, mnemonic, bank, addr);
 			} else {
 				snprintf(line, max_line, mnemonic, real_read6502(pc + 1, true, bank));
 			}
@@ -54,16 +70,7 @@ int disasm(uint16_t pc, uint8_t *RAM, char *line, unsigned int max_line, uint8_t
 		if ((fmt= strstr(line, "%04x"))) {
 			length = 3;
 			addr= real_read6502(pc + 1, true, bank) | real_read6502(pc + 2, true, bank) << 8;
-			char *label= symbol_find_label(bank, addr);
-			if(label) {
-				char buffer[48];
-				strcpy(buffer, line);
-				buffer[fmt-line-1]= '\0';
-				strcat(buffer, "%s");
-				strcat(buffer, fmt+4);
-				snprintf(line, max_line, buffer, label);
-			} else
-				snprintf(line, max_line, mnemonic, addr);
+			lineBuild(line, max_line, fmt, mnemonic, bank, addr);
 		}
 	}
 	return length;
