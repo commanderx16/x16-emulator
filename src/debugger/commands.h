@@ -27,6 +27,7 @@ void cmd_help(int data, int argc, char* argv[]);
 
 void cmd_bp_list(int data, int argc, char* argv[]);
 void cmd_bp_add(int data, int argc, char* argv[]);
+void cmd_bpm_add(int data, int argc, char* argv[]);
 void cmd_bp_clear(int data, int argc, char* argv[]);
 
 void cmd_sym(int data, int argc, char* argv[]);

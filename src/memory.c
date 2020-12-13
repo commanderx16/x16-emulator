@@ -13,6 +13,11 @@
 #include "ym2151.h"
 #include "ps2.h"
 #include "cpu/fake6502.h"
+#include "debugger/breakpoints.h"
+
+extern bool debugger_enabled;
+extern void DEBUGstop();
+extern bool DEBUGisOnBreakpoint(int addr, TBreakpointType type);
 
 uint8_t ram_bank;
 uint8_t rom_bank;
@@ -56,6 +61,9 @@ effective_ram_bank()
 
 uint8_t
 read6502(uint16_t address) {
+	if(debugger_enabled && DEBUGisOnBreakpoint(address, BPT_MEM))
+		DEBUGstop();
+
 	return real_read6502(address, false, 0);
 }
 
@@ -96,6 +104,9 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 void
 write6502(uint16_t address, uint8_t value)
 {
+	if(debugger_enabled && DEBUGisOnBreakpoint(address, BPT_WMEM))
+		DEBUGstop();
+
 	if (address < 2) { // CPU I/O ports
 		cpuio_write(address, value);
 	} else if (address < 0x9f00) { // RAM

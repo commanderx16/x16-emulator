@@ -56,6 +56,7 @@ typedef struct {
 typedef struct layout {
 	int totalWidth;
 	int totalHeight;
+	int rowHeight;
 
 	int codeLinecount;
 
