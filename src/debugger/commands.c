@@ -10,6 +10,7 @@
 #include "registers.h"
 #include "version.h"
 #include "../version.h"
+#include "breakpoints.h"
 
 #define DDUMP_RAM	0
 #define DDUMP_VERA	1
@@ -20,8 +21,10 @@ extern int currentData;
 extern int currentPCBank;
 extern int currentPC;
 extern ConsoleInformation *console;
-extern int breakpoints[DBG_MAX_BREAKPOINTS];
+
+extern TBreakpoint breakpoints[DBG_MAX_BREAKPOINTS];
 extern int breakpointsCount;
+
 extern SDL_Renderer *dbgRenderer;
 extern void DEBUGsetFont(int fontNumber);
 extern int layoutID;
@@ -35,38 +38,39 @@ command_t cmd_table[] = {
 	{ "e", cmd_edit_mem, 0, 0, "e address values....\nset memory at address with values" },
 
 	{ "f", cmd_fill_memory, 3, 0, "f address value length [increment:1]\nfill CPU/VIDEO memory" },
-	{ "sh", cmd_search_memory, 2, 0, "sh address,length|start:end value0 value1 ...\nsearch CPU/VIDEO memory in range (addr,len or start:end) for bytes" },
+	{ "sh", cmd_search_memory, 2, 0, "sh address,length|start.end value0 value1 ...\nsearch CPU/VIDEO memory in range (addr,len or start.end) for bytes" },
 
 	{ "d", cmd_disasm, 1, 0, "d address\ndisasm from address" },
 	{ "b", cmd_set_bank, 2, 0, "b rom|ram bankNumber\nset RAM or ROM bank" },
 	{ "r", cmd_set_register, 2, 0, "r A|X|Y|PC|SP|P|BKA|BKO|VA|VD0|VD1|VCT value \nset register value" },
 
-	{ "sec", cmd_set_status, 0, 0b000000001, "sec\nset carry" },
-	{ "clc", cmd_set_status, 0, 0b100000001, "clc\nclear carry" },
+	{ "sec", cmd_set_status, 0, 0b000000001, "sec\nset Carry" },
+	{ "clc", cmd_set_status, 0, 0b100000001, "clc\nclear Carry" },
 
-	{ "sez", cmd_set_status, 0, 0b000000010, "sec\nset zero" },
-	{ "clz", cmd_set_status, 0, 0b100000010, "clz\nclear zero" },
+	{ "sez", cmd_set_status, 0, 0b000000010, "sec\nset Zero" },
+	{ "clz", cmd_set_status, 0, 0b100000010, "clz\nclear Zero" },
 
-	{ "sei", cmd_set_status, 0, 0b000000100, "sei\nset interrupts disabled" },
-	{ "cli", cmd_set_status, 0, 0b100000100, "cli\nclear interrupts disabled" },
+	{ "sei", cmd_set_status, 0, 0b000000100, "sei\nset Interrupts disabled" },
+	{ "cli", cmd_set_status, 0, 0b100000100, "cli\nclear Interrupts disabled" },
 
 	{ "sed", cmd_set_status, 0, 0b000001000, "sed\nset Decimal mode" },
 	{ "cld", cmd_set_status, 0, 0b100001000, "cld\nclear Decimal mode" },
 
-	{ "seb", cmd_set_status, 0, 0b000010000, "seb\nset break" },
-	{ "clb", cmd_set_status, 0, 0b100010000, "clb\nclear break" },
+	{ "seb", cmd_set_status, 0, 0b000010000, "seb\nset Break" },
+	{ "clb", cmd_set_status, 0, 0b100010000, "clb\nclear Break" },
 
-	{ "ser", cmd_set_status, 0, 0b000100000, "ser\nset reserved/not used" },
-	{ "clr", cmd_set_status, 0, 0b100100000, "clr\nclear reserved/not used" },
+	{ "ser", cmd_set_status, 0, 0b000100000, "ser\nset Reserved/not used" },
+	{ "clr", cmd_set_status, 0, 0b100100000, "clr\nclear Reserved/not used" },
 
-	{ "sev", cmd_set_status, 0, 0b001000000, "sev\nset overflow" },
-	{ "clv", cmd_set_status, 0, 0b101000000, "clv\nclear overflow" },
+	{ "sev", cmd_set_status, 0, 0b001000000, "sev\nset oVerflow" },
+	{ "clv", cmd_set_status, 0, 0b101000000, "clv\nclear oVerflow" },
 
-	{ "sen", cmd_set_status, 0, 0b010000000, "sen\nset negative" },
-	{ "cln", cmd_set_status, 0, 0b110000000, "cln\nclear negative" },
+	{ "sen", cmd_set_status, 0, 0b010000000, "sen\nset Negative" },
+	{ "cln", cmd_set_status, 0, 0b110000000, "cln\nclear Negative" },
 
 	{ "bpl", cmd_bp_list, 0, 0, "bpl\nlist breakpoints" },
 	{ "bp", cmd_bp_add, 1, 0, "bp address\nadd a breakpoint at the specified address" },
+	{ "bpm", cmd_bpm_add, 1, 0, "bpm address\nadd a memory access breakpoint at the specified address" },
 	{ "bpc", cmd_bp_clear, 1, 0, "bpc bp_number|*\nclear a specific breakpoint or all" },
 
 	{ "?", cmd_help, 0, 0, "?|help\ndisplay help" },
@@ -235,7 +239,7 @@ int cmd_get_range(char *parm, int *start, int *end, int *len) {
 			return 0;
 		}
 	}
-	sep= strchr(parm, ':');
+	sep= strchr(parm, '.');
 	if(sep) {
 		*sep= '\0';
 		sep++;
@@ -247,13 +251,13 @@ int cmd_get_range(char *parm, int *start, int *end, int *len) {
 		}
 	}
 
-	CON_Out(console, "%sERR: Syntax error for range: format is addr,len or start_addr:end_addr%s", DT_color_red, DT_color_default);
+	CON_Out(console, "%sERR: Syntax error for range: format is addr,len or start_addr.end_addr%s", DT_color_red, DT_color_default);
 	return -1;
 }
 
 /* ----------------------------------------------------------------------------
-	search CPU/VIDEO memory in range (addr,len or start:end) for bytes
-	sh address,length|start:end value0 value1 ...
+	search CPU/VIDEO memory in range (addr,len or start.end) for bytes
+	sh address,length|start.end value0 value1 ...
 */
 void cmd_search_memory(int data, int argc, char* argv[]) {
 	int bank, addr, addr_end, len, value, idx;
@@ -461,8 +465,11 @@ void cmd_bp_list(int data, int argc, char* argv[]) {
 		CON_Out(console, "There is no current breakpoints");
 		return;
 	}
+	char *labels[]= {
+		"BP", "BPM", "BPR", "BPW"
+	};
 	for(int idx= 0; idx < breakpointsCount; idx++) {
-		CON_Out(console, "%02d - %X", idx, breakpoints[idx]);
+		CON_Out(console, "%02d - %s %X", idx, labels[breakpoints[idx].type], breakpoints[idx].addr);
 	}
 }
 
@@ -481,7 +488,27 @@ void cmd_bp_add(int data, int argc, char* argv[]) {
 		return CON_Out(console, "%sERR: Invalid address%s", DT_color_red, DT_color_default);
 
 	breakpointsCount++;
-	breakpoints[breakpointsCount-1]= addr;
+	breakpoints[breakpointsCount-1].type= BPT_PC;
+	breakpoints[breakpointsCount-1].addr= addr;
+}
+
+/* ----------------------------------------------------------------------------
+	add memory access breakpoint
+	bpm address
+*/
+void cmd_bpm_add(int data, int argc, char* argv[]) {
+	int addr= cmd_eval_addr(argv[1]);
+	int bank= addr >> 16;
+
+	if(breakpointsCount >= DBG_MAX_BREAKPOINTS)
+		return CON_Out(console, "You have reached the max number (%d) of breakpoints allowed", DBG_MAX_BREAKPOINTS);
+
+	if(!isValidAddr(bank, addr))
+		return CON_Out(console, "%sERR: Invalid address%s", DT_color_red, DT_color_default);
+
+	breakpointsCount++;
+	breakpoints[breakpointsCount-1].type= BPT_MEM;
+	breakpoints[breakpointsCount-1].addr= addr;
 }
 
 /* ----------------------------------------------------------------------------

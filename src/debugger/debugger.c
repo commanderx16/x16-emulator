@@ -27,6 +27,7 @@
 #include "../iniparser/iniparser.h"
 #include "commands.h"
 #include "symbols.h"
+#include "breakpoints.h"
 
 static int DEBUGHandleKeyEvent(SDL_Event *event);
 
@@ -97,8 +98,10 @@ int breakPoint = -1; 											// User Break
 int stepBreakPoint = -1;										// Single step break.
 int dumpmode          = DDUMP_RAM;
 int showFullConsole = 0;
-int breakpoints[DBG_MAX_BREAKPOINTS];
+
+TBreakpoint breakpoints[DBG_MAX_BREAKPOINTS];
 int breakpointsCount= 0;
+
 int isWindowVisible = 0;
 int disasmLine1Size= 0;
 int offsetSP= 0;
@@ -178,6 +181,30 @@ ConsoleInformation *console;
 
 // *******************************************************************************************
 //
+//									test if there's a BP on addr
+//
+// *******************************************************************************************
+bool DEBUGisOnBreakpoint(int addr, TBreakpointType type) {
+	for(int idx= 0; idx<breakpointsCount; idx++) {
+		if(breakpoints[idx].type == type && breakpoints[idx].addr == addr)
+			return true;
+	}
+	return false;
+}
+
+// *******************************************************************************************
+//
+//									Place the dbg in STOP mode
+//
+// *******************************************************************************************
+void DEBUGstop() {
+	currentPC = pc;
+	currentPCBank= currentPC < 0xC000 ? memory_get_ram_bank() : memory_get_rom_bank();
+	currentMode = DMODE_STOP;
+}
+
+// *******************************************************************************************
+//
 //									Write String at postion col,line
 //
 // *******************************************************************************************
@@ -242,6 +269,16 @@ DEBUGPrintVAddress(int x, int y, int addr, SDL_Color colour)
 	DEBUGPrintNumber(x, y, addr, 5, colour);
 }
 
+static void DEBUGHighlightRow(int row, int x, int w) {
+	SDL_Rect rc;
+	rc.w = w;
+	rc.h = layout.rowHeight;
+	rc.x = x;
+	rc.y = row * layout.rowHeight - 1;
+	SDL_SetRenderDrawColor(dbgRenderer, col_highlight.r, col_highlight.g, col_highlight.b, 100);
+	SDL_RenderFillRect(dbgRenderer, &rc);
+}
+
 // *******************************************************************************************
 //
 //			This is used to determine who is in control. If it returns zero then
@@ -250,14 +287,6 @@ DEBUGPrintVAddress(int x, int y, int addr, SDL_Color colour)
 //			If it returns -ve, then exit.
 //
 // *******************************************************************************************
-
-bool DEBUGisOnBreakpoint(int addr) {
-	for(int idx= 0; idx<breakpointsCount; idx++) {
-		if(breakpoints[idx] == addr)
-			return true;
-	}
-	return false;
-}
 
 int  DEBUGGetCurrentStatus(void) {
 
@@ -269,7 +298,7 @@ int  DEBUGGetCurrentStatus(void) {
 		currentMode = DMODE_STOP;								// So now stop, as we've done it.
 	}
 
-	if ((breakpointsCount && DEBUGisOnBreakpoint(pc)) || pc == stepBreakPoint) {				// Hit a breakpoint.
+	if ((breakpointsCount && DEBUGisOnBreakpoint(pc, BPT_PC)) || pc == stepBreakPoint) {				// Hit a breakpoint.
 		// to allow scroll code while on BP
 		if(currentMode != DMODE_STOP)
 			currentPC = pc;											// Update current PC
@@ -376,8 +405,10 @@ int  DEBUGGetCurrentStatus(void) {
 		return 1;
 	}
 
-	SDL_HideWindow(dbgWindow);
-	isWindowVisible= 0;
+	if (currentMode != DMODE_STEP) {
+		SDL_HideWindow(dbgWindow);
+		isWindowVisible= 0;
+	}
 
 	return 0;													// Run wild, run free.
 }
@@ -404,6 +435,7 @@ void DEBUGsetFont(int fontNumber) {
 
 	layout.totalHeight= win_height / charHeight;
 	layout.totalWidth= win_width / charWidth;
+	layout.rowHeight= charHeight + 1;
 
 	DEBUGupdateLayout(-1);
 
@@ -702,14 +734,27 @@ DEBUGRenderVRAM(int x, int y, int lineCount)
 #define CODE_ADDR_WIDTH 2+1+4 + 1
 #define CODE_BYTES_WIDTH 2+1+2+1+2 + 1
 #define CODE_LABEL_WIDTH SYMBOL_LABEL_MAXLEN + 1
-static void DEBUGRenderCode(int x, int y, int lineCount) {
+static void DEBUGRenderCode(int col, int y, int lineCount) {
 	char buffer[48];
 	char *label;
-	int initialPC= currentPC;
+	int initialPC= currentPC - 18;// - lineCount;
+	int lineSize[18];
+	int lineSizeCount= -1;
+
+	// HACK: rollup a bit in hope to sync with proper disasm ;)
+	while(initialPC < currentPC) {
+		int size = disasm(initialPC, RAM, buffer, sizeof(buffer), currentPCBank);
+		initialPC += size;
+		lineSize[++lineSizeCount]= size;
+	}
+	currentPC= initialPC;
+	for(int idx = 0; (idx < 8)&&(lineSizeCount >= 0); idx++, lineSizeCount--) {
+		initialPC-= lineSize[lineSizeCount];
+	}
 
 	for (int y = 0; y < lineCount; y++) { 							// Each line
 
-		DEBUGPrintAddress(x, y, currentPCBank, initialPC, col_label);
+		DEBUGPrintAddress(col, y, currentPCBank, initialPC, col_label);
 
 		if(!isValidAddr(currentPCBank, initialPC)) {
 			initialPC++;
@@ -720,15 +765,18 @@ static void DEBUGRenderCode(int x, int y, int lineCount) {
 		if(y == 0)
 			disasmLine1Size= size;
 
-		DEBUGPrintString(dbgRenderer, x+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH+CODE_LABEL_WIDTH, y, buffer, initialPC == pc ? col_highlight : col_data);
+		if(initialPC == currentPC) {
+			DEBUGHighlightRow(y, mouseZones[MZ_CODE].rect->x, mouseZones[MZ_CODE].rect->w );
+		}
+		DEBUGPrintString(dbgRenderer, col+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH+CODE_LABEL_WIDTH, y, buffer, col_data);
 
 		for(int byteCount= 0; byteCount<size;byteCount++) {
 			int byte= real_read6502(initialPC + byteCount, true, currentPCBank);
-			DEBUGPrintNumber(x+CODE_ADDR_WIDTH+byteCount*3, y, byte, 2, initialPC == pc ? col_highlight : col_data);
+			DEBUGPrintNumber(col+CODE_ADDR_WIDTH+byteCount*3, y, byte, 2, col_data);
 		}
 		label= symbol_find_label(currentPCBank, initialPC);
 		if(label)
-			DEBUGPrintString(dbgRenderer, x+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH, y, label, initialPC == pc ? col_highlight : col_data);
+			DEBUGPrintString(dbgRenderer, col+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH, y, label, col_data);
 		initialPC += size;										// Forward to next
 	}
 
@@ -782,16 +830,16 @@ static TRegisterPos regs[]= {
 	{ KIND_ZP, REG_x18, 4, 0, { "x18", 0, 22}, {4, 22} },
 	{ KIND_ZP, REG_x19, 4, 0, { "x19", 0, 23}, {4, 23} },
 
-	{ KIND_BP, REG_BP0, 6, 0, { "BP0", 0, 0}, {4, 0} },
-	{ KIND_BP, REG_BP1, 6, 0, { "BP1", 0, 0+1}, {4, 0+1} },
-	{ KIND_BP, REG_BP2, 6, 0, { "BP2", 0, 0+2}, {4, 0+2} },
-	{ KIND_BP, REG_BP3, 6, 0, { "BP3", 0, 0+3}, {4, 0+3} },
-	{ KIND_BP, REG_BP4, 6, 0, { "BP4", 0, 0+4}, {4, 0+4} },
-	{ KIND_BP, REG_BP5, 6, 0, { "BP5", 0, 0+5}, {4, 0+5} },
-	{ KIND_BP, REG_BP6, 6, 0, { "BP6", 0, 0+6}, {4, 0+6} },
-	{ KIND_BP, REG_BP7, 6, 0, { "BP7", 0, 0+7}, {4, 0+7} },
-	{ KIND_BP, REG_BP8, 6, 0, { "BP8", 0, 0+8}, {4, 0+8} },
-	{ KIND_BP, REG_BP9, 6, 0, { "BP9", 0, 0+9}, {4, 0+9} },
+	{ KIND_BP, REG_BP0, 6, 0, { "B%c0", 0, 0}, {4, 0} },
+	{ KIND_BP, REG_BP1, 6, 0, { "B%c1", 0, 0+1}, {4, 0+1} },
+	{ KIND_BP, REG_BP2, 6, 0, { "B%c2", 0, 0+2}, {4, 0+2} },
+	{ KIND_BP, REG_BP3, 6, 0, { "B%c3", 0, 0+3}, {4, 0+3} },
+	{ KIND_BP, REG_BP4, 6, 0, { "B%c4", 0, 0+4}, {4, 0+4} },
+	{ KIND_BP, REG_BP5, 6, 0, { "B%c5", 0, 0+5}, {4, 0+5} },
+	{ KIND_BP, REG_BP6, 6, 0, { "B%c6", 0, 0+6}, {4, 0+6} },
+	{ KIND_BP, REG_BP7, 6, 0, { "B%c7", 0, 0+7}, {4, 0+7} },
+	{ KIND_BP, REG_BP8, 6, 0, { "B%c8", 0, 0+8}, {4, 0+8} },
+	{ KIND_BP, REG_BP9, 6, 0, { "B%c9", 0, 0+9}, {4, 0+9} },
 
 	{ 0, 0, 0, 0, { NULL, 0, 0}, {0, 0} }
 };
@@ -803,11 +851,16 @@ int DEBUGreadVirtualRegister(int reg) {
 
 static void DEBUGRenderRegisters(int x, int y, TRegister_kind regKing) {
 	int value= 0;
+	char buffer[10];
 
 	for(int idx= 0; regs[idx].regCode; idx++) {
 
 		if(regKing != regs[idx].regKind)
 			continue;
+
+		TRegisterLabelPos *labelPos= &regs[idx].label;
+		TRegisterValuePos *valuePos= &regs[idx].value;
+		char *label= labelPos->text;
 
 		switch(regs[idx].regCode) {
 			case REG_A: value= a; break;
@@ -839,7 +892,16 @@ static void DEBUGRenderRegisters(int x, int y, TRegister_kind regKing) {
 				int bpIdx= regs[idx].regCode - REG_BP0;
 				if(bpIdx >= breakpointsCount)
 					continue;
-				value= breakpoints[bpIdx];
+				value= breakpoints[bpIdx].addr;
+				char typeCh;
+				switch(breakpoints[bpIdx].type) {
+					default: 		typeCh= 'p'; break;
+					case BPT_MEM: 	typeCh= 'm'; break;
+					case BPT_RMEM: 	typeCh= 'r'; break;
+					case BPT_WMEM: 	typeCh= 'w'; break;
+				}
+				sprintf(buffer, label, typeCh);
+				label= buffer;
 				break;
 			}
 		}
@@ -847,10 +909,7 @@ static void DEBUGRenderRegisters(int x, int y, TRegister_kind regKing) {
 		if(x<0)
 			x= layout.totalWidth + x;
 
-		TRegisterLabelPos *labelPos= &regs[idx].label;
-		TRegisterValuePos *valuePos= &regs[idx].value;
-
-		DEBUGPrintString(dbgRenderer, labelPos->xOffset+x, labelPos->yOffset+y, labelPos->text, col_label);
+		DEBUGPrintString(dbgRenderer, labelPos->xOffset+x, labelPos->yOffset+y, label, col_label);
 		DEBUGPrintNumber(valuePos->xOffset+x, valuePos->yOffset+y, value, regs[idx].width, col_data);
 		if(regs[idx].showChar)
 			DEBUGPrintChar(dbgRenderer, valuePos->xOffset+x + 3, valuePos->yOffset+y, value, col_data);
@@ -866,14 +925,19 @@ static void DEBUGRenderRegisters(int x, int y, TRegister_kind regKing) {
 
 static void DEBUGRenderStack(int bytesCount) {
 	int data= ((sp-6+offsetSP) & 0xFF) | 0x100;
-	int y= 0;
+	int row= 0;
 	int xOffset= layout.stackXpos < 0 ? layout.totalWidth + layout.stackXpos : layout.stackXpos;
-	while (y < bytesCount) {
-		DEBUGPrintNumber(xOffset, y, data & 0xFFFF, 4, (data & 0xFF) == sp ? col_highlight : col_label);
+	while (row < bytesCount) {
+
+		if((data & 0xFF) == sp) {
+			DEBUGHighlightRow(row, mouseZones[MZ_STACK].rect->x, mouseZones[MZ_STACK].rect->h);
+		}
+
+		DEBUGPrintNumber(xOffset, row, data & 0xFFFF, 4, col_label);
 		int byte = real_read6502((data++) & 0xFFFF, false, 0);
-		DEBUGPrintNumber(xOffset+5, y, byte, 2, col_data);
-		DEBUGPrintChar(dbgRenderer, xOffset+8, y, byte, col_data);
-		y++;
+		DEBUGPrintNumber(xOffset+5, row, byte, 2, col_data);
+		DEBUGPrintChar(dbgRenderer, xOffset+8, row, byte, col_data);
+		row++;
 		data= (data & 0xFF) | 0x100;
 	}
 }
