@@ -109,15 +109,16 @@ SDL_Event* CON_Events(SDL_Event *event) {
 			default:
 				return event;
 			}
+
 		} else if(event->key.keysym.mod & KMOD_ALT) {
 			/* the console does not handle ALT combinations! */
 			return event;
 		} else {
 			/* first of all, check if the console hide key was pressed */
-			if(event->key.keysym.sym == Topmost->HideKey) {
-				CON_Hide(Topmost);
-				return NULL;
-			}
+			// if(event->key.keysym.sym == Topmost->HideKey) {
+			// 	CON_Hide(Topmost);
+			// 	return NULL;
+			// }
 			switch (event->key.keysym.sym) {
 			case SDLK_HOME:
 				if(event->key.keysym.mod & KMOD_SHIFT) {
@@ -194,10 +195,10 @@ SDL_Event* CON_Events(SDL_Event *event) {
 					Topmost->CommandScrollBack = -1;
 				// }
 				break;
-			case SDLK_ESCAPE:
-				/* deactivate Console */
-				CON_Hide(Topmost);
-				return NULL;
+			// case SDLK_ESCAPE:
+			// 	/* deactivate Console */
+			// 	CON_Hide(Topmost);
+			// 	return NULL;
 			}
 		}
 		return NULL;
