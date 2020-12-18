@@ -9,8 +9,6 @@ static TSymbolVolume *volumes= NULL;
 static int volumesCount= 0;
 static dictionary * symbolsDict= NULL;
 
-
-
 #ifndef HEXDUMP_COLS
 #define HEXDUMP_COLS 16
 #endif
@@ -162,7 +160,7 @@ int symbol_dict_find_addr(TSymbolVolume *dict, char *label, int *addr) {
 
 		entries= dict->dict[pageIdx].entries;
 		for(int entryIdx= 0; entryIdx < count; entryIdx++) {
-			if(!stricmp(label, entries[entryIdx].label)) {
+			if(!strnicmp(label, entries[entryIdx].label, SYMBOL_LABEL_MAXLEN)) {
 				*addr= (pageIdx << 8) | entries[entryIdx].addr8;
 				return 1;
 			}
@@ -179,11 +177,11 @@ int symbol_dict_find_addr(TSymbolVolume *dict, char *label, int *addr) {
 int symbol_find_addr(int bank, char *label) {
 	TSymbolVolume *volume= symbol_get_bank_volume(bank);
 	if(volume == NULL)
-		return 0xFF000000;
+		return SYMBOL_NOT_FOUND;
 
 	int addr;
 	if(!symbol_dict_find_addr(volume, label, &addr))
-		return 0xFF000000;
+		return SYMBOL_NOT_FOUND;
 
 	return addr;
 }
