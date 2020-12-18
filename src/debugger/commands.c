@@ -98,19 +98,74 @@ command_t cmd_table[] = {
 	10:2000
 	10:symbol
 */
-int cmd_eval_addr(char *str) {
+unsigned int cmd_eval_addr(char *str) {
 	int bank= currentPCBank>0 ? currentPCBank : 0;
 	char *colon= strchr(str, ':');
+	char *end;
 
 	if(colon) {
 		bank= (int)strtol(str, NULL, 16);
 		str= colon+1;
 	}
 
-	unsigned int addr= symbol_find_addr(bank, str);
-	if(addr == 0xFF000000)
-		addr= (int)strtol(str, NULL, 16);
+	unsigned int addr= (int)strtol(str, &end, 16);
+
+	if(end != str+strlen(str)) {
+		addr= symbol_find_addr(bank, str);
+		if(addr == SYMBOL_NOT_FOUND)
+			return addr;
+	}
 	return (bank << 16) | addr;
+}
+
+/* ----------------------------------------------------------------------------
+	eval range string
+	"<symbol|addr>,<length>"
+	"<start>.<end>"
+*/
+int cmd_get_range(char *parm, unsigned int *start, unsigned int *end, int *len) {
+	char *sep;
+
+	sep= strchr(parm, ',');
+	if(sep) {
+		*sep= '\0';
+		sep++;
+		*start= cmd_eval_addr(parm);
+		if(*start == SYMBOL_NOT_FOUND) {
+			CON_Out(console, "symbol \"%s\" not found", parm);
+			return -1;
+		}
+
+		*len= (int)strtol(sep, NULL, 16);
+		if(*len>0) {
+			*end= *start + *len;
+			return 0;
+		}
+	}
+	sep= strchr(parm, '.');
+	if(sep) {
+		*sep= '\0';
+		sep++;
+		*start= cmd_eval_addr(parm);
+		if(*start == SYMBOL_NOT_FOUND) {
+			CON_Out(console, "symbol \"%s\" not found", parm);
+			return -1;
+		}
+
+		*end= cmd_eval_addr(sep);
+		if(*end == SYMBOL_NOT_FOUND) {
+			CON_Out(console, "symbol \"%s\" not found", sep);
+			return -1;
+		}
+
+		if(*end>*start) {
+			*len= *end - *start;
+			return 0;
+		}
+	}
+
+	CON_Out(console, "%sERR: Syntax error for range: format is addr,len or start_addr.end_addr%s", DT_color_red, DT_color_default);
+	return -1;
 }
 
 /* ----------------------------------------------------------------------------
@@ -122,7 +177,11 @@ void cmd_dump_mem(int data, int argc, char* argv[]) {
 	dumpmode= DDUMP_RAM;
 	if(argc == 1)
 		return;
-	int addr= cmd_eval_addr(argv[1]);
+	unsigned int addr= cmd_eval_addr(argv[1]);
+	if(addr == SYMBOL_NOT_FOUND) {
+		CON_Out(console, "symbol \"%s\" not found", argv[1]);
+		return;
+	}
 	currentBank= (addr & 0xFF0000) >> 16;
 	currentData= addr & 0xFFFF;
 }
@@ -145,9 +204,14 @@ void cmd_dump_videomem(int data, int argc, char* argv[]) {
 */
 void cmd_edit_mem(int data, int argc, char* argv[]) {
 	(void)data;
-	int addr= cmd_eval_addr(argv[1]);
-	int value;
 	int idx= 2;
+	int value;
+	unsigned int addr= cmd_eval_addr(argv[1]);
+
+	if(addr == SYMBOL_NOT_FOUND) {
+		CON_Out(console, "symbol \"%s\" not found", argv[1]);
+		return;
+	}
 
 	argc-= 2;
 	switch(dumpmode) {
@@ -191,10 +255,15 @@ void cmd_edit_mem(int data, int argc, char* argv[]) {
 */
 void cmd_fill_memory(int data, int argc, char* argv[]) {
 	(void)data;
-	int addr= cmd_eval_addr(argv[1]);
+	unsigned int addr= cmd_eval_addr(argv[1]);
 	int value= (int)strtol(argv[2], NULL, 16);
 	int length= (int)strtol(argv[3], NULL, 16);
 	int incr= argc>4 ? (int)strtol(argv[4], NULL, 16) : 1;
+
+	if(addr == SYMBOL_NOT_FOUND) {
+		CON_Out(console, "symbol \"%s\" not found", argv[1]);
+		return;
+	}
 
 	length= length > 0 ? length : 1;
 
@@ -229,43 +298,14 @@ void cmd_fill_memory(int data, int argc, char* argv[]) {
 
 }
 
-int cmd_get_range(char *parm, int *start, int *end, int *len) {
-	char *sep;
-
-	sep= strchr(parm, ',');
-	if(sep) {
-		*sep= '\0';
-		sep++;
-		*start= cmd_eval_addr(parm);
-		*len= (int)strtol(sep, NULL, 16);
-		if(*len>0) {
-			*end= *start + *len;
-			return 0;
-		}
-	}
-	sep= strchr(parm, '.');
-	if(sep) {
-		*sep= '\0';
-		sep++;
-		*start= cmd_eval_addr(parm);
-		*end= cmd_eval_addr(sep);
-		if(*end>*start) {
-			*len= *end - *start;
-			return 0;
-		}
-	}
-
-	CON_Out(console, "%sERR: Syntax error for range: format is addr,len or start_addr.end_addr%s", DT_color_red, DT_color_default);
-	return -1;
-}
-
 /* ----------------------------------------------------------------------------
 	search CPU/VIDEO memory in range (addr,len or start.end) for bytes
 	sh address,length|start.end value0 value1 ...
 */
 void cmd_search_memory(int data, int argc, char* argv[]) {
 	(void)data;
-	int bank, addr, addr_end, len, value, idx;
+	int bank, len, value, idx;
+	unsigned int addr, addr_end;
 	int memvalue= 0;
 	bool partialfind= false;
 	int foundAddr, foundCount= 0;
@@ -334,7 +374,13 @@ void cmd_search_memory(int data, int argc, char* argv[]) {
 void cmd_disasm(int data, int argc, char* argv[]) {
 	(void)data;
 	(void)argc;
-	int addr= cmd_eval_addr(argv[1]);
+	unsigned int addr= cmd_eval_addr(argv[1]);
+
+	if(addr == SYMBOL_NOT_FOUND) {
+		CON_Out(console, "symbol \"%s\" not found", argv[1]);
+		return;
+	}
+
 	currentPCBank= addr >> 16;
 	currentPC= addr & 0xFFFF;
 }
@@ -500,13 +546,19 @@ void cmd_bp_list(int data, int argc, char* argv[]) {
 void cmd_bp_add(int data, int argc, char* argv[]) {
 	(void)data;
 	(void)argc;
-	int addr= cmd_eval_addr(argv[1]);
-	int bank= addr >> 16;
+	unsigned int addr= cmd_eval_addr(argv[1]);
+
+	if(addr == SYMBOL_NOT_FOUND) {
+		CON_Out(console, "symbol \"%s\" not found", argv[1]);
+		return;
+	}
 
 	if(breakpointsCount >= DBG_MAX_BREAKPOINTS) {
 		CON_Out(console, "You have reached the max number (%d) of breakpoints allowed", DBG_MAX_BREAKPOINTS);
 		return;
 	}
+
+	int bank= addr >> 16;
 
 	if(!isValidAddr(bank, addr)) {
 		CON_Out(console, "%sERR: Invalid address%s", DT_color_red, DT_color_default);
@@ -525,14 +577,18 @@ void cmd_bp_add(int data, int argc, char* argv[]) {
 void cmd_bpm_add(int data, int argc, char* argv[]) {
 	(void)data;
 	(void)argc;
-	int addr= cmd_eval_addr(argv[1]);
-	int bank= addr >> 16;
+	unsigned int addr= cmd_eval_addr(argv[1]);
+	if(addr == SYMBOL_NOT_FOUND) {
+		CON_Out(console, "symbol \"%s\" not found", argv[1]);
+		return;
+	}
 
 	if(breakpointsCount >= DBG_MAX_BREAKPOINTS) {
 		CON_Out(console, "You have reached the max number (%d) of breakpoints allowed", DBG_MAX_BREAKPOINTS);
 		return;
 	}
 
+	int bank= addr >> 16;
 	if(!isValidAddr(bank, addr)) {
 		CON_Out(console, "%sERR: Invalid address%s", DT_color_red, DT_color_default);
 		return;

@@ -5,6 +5,8 @@
 
 #define SYMBOL_LABEL_MAXLEN 14
 
+#define SYMBOL_NOT_FOUND ((unsigned int)0xFF000000)
+
 typedef enum { Default, User } SymFileType;
 typedef enum { NoErr= 0, CantOpen= -1, SynErr= -2 } SymLoadError;
 
