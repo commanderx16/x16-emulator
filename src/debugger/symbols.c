@@ -189,9 +189,9 @@ int symbol_find_addr(int bank, char *label) {
 }
 
 /*
-	lookup in bank dict for label and return addr
+	lookup for label and return addr
 */
-const char *symbol_lookup(int bank, char *label) {
+const char *symbol_lookup(char *label) {
 	return dictionary_get(symbolsDict, label, NULL);
 }
 

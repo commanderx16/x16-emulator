@@ -45,13 +45,13 @@ static BitFont *BitFonts = NULL;	/* Linked list of fonts */
 /*
 	src: https://misc.flogisoft.com/bash/tip_colors_and_formatting
 */
-const char *DT_color_default= "\e[39m";
-const char *DT_color_black= "\e[30m";
-const char *DT_color_red= "\e[31m";
-const char *DT_color_green= "\e[32m";
-const char *DT_color_yellow= "\e[33m";
-const char *DT_color_blue= "\e[34m";
-const char *DT_color_white= "\e[97m";
+const char *DT_color_default= "\x1B[39m";
+const char *DT_color_black= "\x1B[30m";
+const char *DT_color_red= "\x1B[31m";
+const char *DT_color_green= "\x1B[32m";
+const char *DT_color_yellow= "\x1B[33m";
+const char *DT_color_blue= "\x1B[34m";
+const char *DT_color_white= "\x1B[97m";
 
 const SDL_Color col_default= {255, 255, 255, 255};
 const SDL_Color col_black= {0, 0, 0, 255};
@@ -118,7 +118,7 @@ int DT_LoadFont(SDL_Renderer *renderer, const char *bitmapPath, int flags) {
 	const char *filename= strrchr (bitmapPath, '/');;
 	filename= filename ? filename+1 : bitmapPath;
 	const char *dot= strrchr(filename, '.');
-	const int len= dot ? dot - filename : strlen(filename);
+	const unsigned long len= dot ? dot - filename : strlen(filename);
 	memset(fontName, 0, sizeof(fontName));
 	strncpy(fontName, filename, len<sizeof(fontName)-1 ? len : sizeof(fontName)-1);
 
@@ -224,7 +224,7 @@ void DT_DrawText(const char *string, SDL_Surface *surface, int FontType, int x, 
 	if(x > surface->w || y > surface->h)
 		return;
 
-	if(strlen(string) < (surface->w - x) / CurrentFont->charWidth)
+	if(strlen(string) < (size_t)((surface->w - x) / CurrentFont->charWidth))
 		characters = strlen(string);
 	else
 		characters = (surface->w - x) / CurrentFont->charWidth;
@@ -307,7 +307,7 @@ void DT_DrawText2(SDL_Renderer *renderer, const char *string, int FontType, int 
 
 	SDL_SetTextureColorMod(CurrentFont->fontTexture, colour.r, colour.g, colour.b);
 
-	if(strlen(string) < (width - x) / CurrentFont->charWidth)
+	if(strlen(string) < (size_t)((width - x) / CurrentFont->charWidth))
 		characters = strlen(string);
 	else
 		characters = (width - x) / CurrentFont->charWidth;
@@ -416,7 +416,7 @@ int DT_SetFontName(int fontNumber, const char *name) {
 	if(!currentFont)
 		return -1;
 
-	int len= strlen(name);
+	size_t len= strlen(name);
 	memset(currentFont->fontName, 0, sizeof(currentFont->fontName));
 	strncpy(currentFont->fontName, name, len<sizeof(currentFont->fontName) ? len : sizeof(currentFont->fontName)-1);
 

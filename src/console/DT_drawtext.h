@@ -26,7 +26,7 @@
 #ifdef HAVE_CONFIG_H
   #include <config.h>
 #endif
-
+#include "SDL.h"
 
 #define TRANS_FONT 1
 

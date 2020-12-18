@@ -44,29 +44,29 @@ command_t cmd_table[] = {
 	{ "b", cmd_set_bank, 2, 0, "b rom|ram bankNumber\nset RAM or ROM bank" },
 	{ "r", cmd_set_register, 2, 0, "r A|X|Y|PC|SP|P|BKA|BKO|VA|VD0|VD1|VCT value \nset register value" },
 
-	{ "sec", cmd_set_status, 0, 0b000000001, "sec\nset Carry" },
-	{ "clc", cmd_set_status, 0, 0b100000001, "clc\nclear Carry" },
+	{ "sec", cmd_set_status, 0, 0x01, "sec\nset Carry" },
+	{ "clc", cmd_set_status, 0, 0x01 | 0x80, "clc\nclear Carry" },
 
-	{ "sez", cmd_set_status, 0, 0b000000010, "sec\nset Zero" },
-	{ "clz", cmd_set_status, 0, 0b100000010, "clz\nclear Zero" },
+	{ "sez", cmd_set_status, 0, 0x02, "sec\nset Zero" },
+	{ "clz", cmd_set_status, 0, 0x02 | 0x80, "clz\nclear Zero" },
 
-	{ "sei", cmd_set_status, 0, 0b000000100, "sei\nset Interrupts disabled" },
-	{ "cli", cmd_set_status, 0, 0b100000100, "cli\nclear Interrupts disabled" },
+	{ "sei", cmd_set_status, 0, 0x04, "sei\nset Interrupts disabled" },
+	{ "cli", cmd_set_status, 0, 0x04 | 0x80, "cli\nclear Interrupts disabled" },
 
-	{ "sed", cmd_set_status, 0, 0b000001000, "sed\nset Decimal mode" },
-	{ "cld", cmd_set_status, 0, 0b100001000, "cld\nclear Decimal mode" },
+	{ "sed", cmd_set_status, 0, 0x06, "sed\nset Decimal mode" },
+	{ "cld", cmd_set_status, 0, 0x06 | 0x80, "cld\nclear Decimal mode" },
 
-	{ "seb", cmd_set_status, 0, 0b000010000, "seb\nset Break" },
-	{ "clb", cmd_set_status, 0, 0b100010000, "clb\nclear Break" },
+	{ "seb", cmd_set_status, 0, 0x08, "seb\nset Break" },
+	{ "clb", cmd_set_status, 0, 0x08 | 0x80, "clb\nclear Break" },
 
-	{ "ser", cmd_set_status, 0, 0b000100000, "ser\nset Reserved/not used" },
-	{ "clr", cmd_set_status, 0, 0b100100000, "clr\nclear Reserved/not used" },
+	{ "ser", cmd_set_status, 0, 0x0A, "ser\nset Reserved/not used" },
+	{ "clr", cmd_set_status, 0, 0x0A | 0x80, "clr\nclear Reserved/not used" },
 
-	{ "sev", cmd_set_status, 0, 0b001000000, "sev\nset oVerflow" },
-	{ "clv", cmd_set_status, 0, 0b101000000, "clv\nclear oVerflow" },
+	{ "sev", cmd_set_status, 0, 0x0C, "sev\nset oVerflow" },
+	{ "clv", cmd_set_status, 0, 0x0C | 0x80, "clv\nclear oVerflow" },
 
-	{ "sen", cmd_set_status, 0, 0b010000000, "sen\nset Negative" },
-	{ "cln", cmd_set_status, 0, 0b110000000, "cln\nclear Negative" },
+	{ "sen", cmd_set_status, 0, 0x0E, "sen\nset Negative" },
+	{ "cln", cmd_set_status, 0, 0x0E | 0x80, "cln\nclear Negative" },
 
 	{ "bpl", cmd_bp_list, 0, 0, "bpl\nlist breakpoints" },
 	{ "bp", cmd_bp_add, 1, 0, "bp address\nadd a breakpoint at the specified address" },
@@ -88,7 +88,7 @@ command_t cmd_table[] = {
 	{ "romdebug", cmd_romdebug, 0, 0, "romdebug\ntoggle ROM debug mode to allow editing" },
 	{ "info", cmd_info, 0, 0, "info\ndisplay X16 emulator & debugger info" },
 
-	{ NULL, NULL }
+	{ NULL, NULL, 0, 0, NULL }
 };
 
 /*
@@ -107,7 +107,7 @@ int cmd_eval_addr(char *str) {
 		str= colon+1;
 	}
 
-	int addr= symbol_find_addr(bank, str);
+	unsigned int addr= symbol_find_addr(bank, str);
 	if(addr == 0xFF000000)
 		addr= (int)strtol(str, NULL, 16);
 	return (bank << 16) | addr;
@@ -118,6 +118,7 @@ int cmd_eval_addr(char *str) {
 	m [address]
 */
 void cmd_dump_mem(int data, int argc, char* argv[]) {
+	(void)data;
 	dumpmode= DDUMP_RAM;
 	if(argc == 1)
 		return;
@@ -131,6 +132,7 @@ void cmd_dump_mem(int data, int argc, char* argv[]) {
 	v [address]
 */
 void cmd_dump_videomem(int data, int argc, char* argv[]) {
+	(void)data;
 	dumpmode= DDUMP_VERA;
 	if(argc == 1)
 		return;
@@ -142,6 +144,7 @@ void cmd_dump_videomem(int data, int argc, char* argv[]) {
 	e address values...
 */
 void cmd_edit_mem(int data, int argc, char* argv[]) {
+	(void)data;
 	int addr= cmd_eval_addr(argv[1]);
 	int value;
 	int idx= 2;
@@ -187,6 +190,7 @@ void cmd_edit_mem(int data, int argc, char* argv[]) {
 	f address value length [increment:1]
 */
 void cmd_fill_memory(int data, int argc, char* argv[]) {
+	(void)data;
 	int addr= cmd_eval_addr(argv[1]);
 	int value= (int)strtol(argv[2], NULL, 16);
 	int length= (int)strtol(argv[3], NULL, 16);
@@ -260,13 +264,15 @@ int cmd_get_range(char *parm, int *start, int *end, int *len) {
 	sh address,length|start.end value0 value1 ...
 */
 void cmd_search_memory(int data, int argc, char* argv[]) {
+	(void)data;
 	int bank, addr, addr_end, len, value, idx;
 	int memvalue= 0;
 	bool partialfind= false;
 	int foundAddr, foundCount= 0;
 
-	if(-1 == cmd_get_range(argv[1], &addr, &addr_end, &len))
+	if(-1 == cmd_get_range(argv[1], &addr, &addr_end, &len)) {
 		return;
+	}
 
 	bank= (addr >> 16) & 0xFF;
 
@@ -326,6 +332,8 @@ void cmd_search_memory(int data, int argc, char* argv[]) {
 	d [bank]address
 */
 void cmd_disasm(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
 	int addr= cmd_eval_addr(argv[1]);
 	currentPCBank= addr >> 16;
 	currentPC= addr & 0xFFFF;
@@ -336,14 +344,18 @@ void cmd_disasm(int data, int argc, char* argv[]) {
 	b rom|ram bank
 */
 void cmd_set_bank(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
 	char *type= argv[1];
 	int value= (int)strtol(argv[2], NULL, 16) & 0x00FF;
 
 	if(!strcmp(type, "rom")) {
-		return memory_set_rom_bank(value);
+		memory_set_rom_bank(value);
+		return;
 	}
 	if(!strcmp(type, "ram")) {
-		return memory_set_ram_bank(value);
+		memory_set_ram_bank(value);
+		return;
 	}
 
 	CON_Out(console, "%sERR: Bank is either ROM or RAM%s", DT_color_red, DT_color_default);
@@ -355,6 +367,8 @@ void cmd_set_bank(int data, int argc, char* argv[]) {
 	r A|X|Y|PC|SP|P|BKA|BKO|VA|VD0|VD1|VCT value
 */
 void cmd_set_register(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
 	char *reg= argv[1];
 	int value= (int)strtol(argv[2], NULL, 16);
 	int regCode= -1;
@@ -421,6 +435,8 @@ void cmd_set_register(int data, int argc, char* argv[]) {
 	se? cl?
 */
 void cmd_set_status(int data, int argc, char* argv[]) {
+	(void)argv;
+	(void)argc;
 	int mask= data & 0xFF;
 	if(mask == data)
 		status|= mask;
@@ -434,6 +450,7 @@ void cmd_set_status(int data, int argc, char* argv[]) {
 	?|help [command]
 */
 void cmd_help(int data, int argc, char* argv[]) {
+	(void)data;
 	char buffer[CON_CHARS_PER_LINE+1]= "\0";
 	char *pBuffer= buffer;
 
@@ -461,6 +478,9 @@ void cmd_help(int data, int argc, char* argv[]) {
 	bpl
 */
 void cmd_bp_list(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
+	(void)argv;
 	if(breakpointsCount == 0) {
 		CON_Out(console, "There is no current breakpoints");
 		return;
@@ -478,14 +498,20 @@ void cmd_bp_list(int data, int argc, char* argv[]) {
 	bp address
 */
 void cmd_bp_add(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
 	int addr= cmd_eval_addr(argv[1]);
 	int bank= addr >> 16;
 
-	if(breakpointsCount >= DBG_MAX_BREAKPOINTS)
-		return CON_Out(console, "You have reached the max number (%d) of breakpoints allowed", DBG_MAX_BREAKPOINTS);
+	if(breakpointsCount >= DBG_MAX_BREAKPOINTS) {
+		CON_Out(console, "You have reached the max number (%d) of breakpoints allowed", DBG_MAX_BREAKPOINTS);
+		return;
+	}
 
-	if(!isValidAddr(bank, addr))
-		return CON_Out(console, "%sERR: Invalid address%s", DT_color_red, DT_color_default);
+	if(!isValidAddr(bank, addr)) {
+		CON_Out(console, "%sERR: Invalid address%s", DT_color_red, DT_color_default);
+		return ;
+	}
 
 	breakpointsCount++;
 	breakpoints[breakpointsCount-1].type= BPT_PC;
@@ -497,14 +523,20 @@ void cmd_bp_add(int data, int argc, char* argv[]) {
 	bpm address
 */
 void cmd_bpm_add(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
 	int addr= cmd_eval_addr(argv[1]);
 	int bank= addr >> 16;
 
-	if(breakpointsCount >= DBG_MAX_BREAKPOINTS)
-		return CON_Out(console, "You have reached the max number (%d) of breakpoints allowed", DBG_MAX_BREAKPOINTS);
+	if(breakpointsCount >= DBG_MAX_BREAKPOINTS) {
+		CON_Out(console, "You have reached the max number (%d) of breakpoints allowed", DBG_MAX_BREAKPOINTS);
+		return;
+	}
 
-	if(!isValidAddr(bank, addr))
-		return CON_Out(console, "%sERR: Invalid address%s", DT_color_red, DT_color_default);
+	if(!isValidAddr(bank, addr)) {
+		CON_Out(console, "%sERR: Invalid address%s", DT_color_red, DT_color_default);
+		return;
+	}
 
 	breakpointsCount++;
 	breakpoints[breakpointsCount-1].type= BPT_MEM;
@@ -516,6 +548,8 @@ void cmd_bpm_add(int data, int argc, char* argv[]) {
 	bpc bp_number|*
 */
 void cmd_bp_clear(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
 	if(!strcmp(argv[1],"*")) {
 		breakpointsCount= 0;
 		return;
@@ -536,8 +570,10 @@ void cmd_bp_clear(int data, int argc, char* argv[]) {
 	sym [address|symbol]
 */
 void cmd_sym(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
 
-	const char *addresses= symbol_lookup(0, argv[1]);
+	const char *addresses= symbol_lookup(argv[1]);
 	if(addresses)
 		CON_Out(console, addresses);
 	else
@@ -566,6 +602,8 @@ void cmd_sym(int data, int argc, char* argv[]) {
 	symclear bank [symbol|*]
 */
 void cmd_symclear(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
 	int bank= (int)strtol(argv[1], NULL, 16);
 	int count= -1;
 
@@ -583,6 +621,8 @@ void cmd_symclear(int data, int argc, char* argv[]) {
 	symload [bank] symbolFilename
 */
 void cmd_symload(int data, int argc, char* argv[]) {
+	(void)data;
+
 	int bank= -1;
 	char *filename= NULL;
 	int lineCount= 0;
@@ -620,6 +660,9 @@ void cmd_symload(int data, int argc, char* argv[]) {
 	symload [bank] symbolFilename
 */
 void cmd_symsave(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
+
 	symbol_dump(argv[1]);
 }
 
@@ -628,6 +671,10 @@ void cmd_symsave(int data, int argc, char* argv[]) {
 	code
 */
 void cmd_code(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
+	(void)argv;
+
 	DEBUGupdateLayout(layoutID != 1 ? 1 : 0);
 }
 
@@ -636,6 +683,10 @@ void cmd_code(int data, int argc, char* argv[]) {
 	data
 */
 void cmd_data(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
+	(void)argv;
+
 	DEBUGupdateLayout(layoutID != 2 ? 2 : 0);
 }
 
@@ -644,6 +695,7 @@ void cmd_data(int data, int argc, char* argv[]) {
 	font [Name|ID [Path]]
 */
 void cmd_font(int data, int argc, char* argv[]) {
+	(void)data;
 
 	switch(argc) {
 		case 1:
@@ -681,6 +733,10 @@ void cmd_font(int data, int argc, char* argv[]) {
 	romdebug
 */
 void cmd_romdebug(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
+	(void)argv;
+
 	isROMdebugAllowed= 1 - isROMdebugAllowed;
 	if(isROMdebugAllowed)
 		CON_Out(console, "%sCAUTION%s! ROM can be edited now", DT_color_red, DT_color_default);
@@ -693,6 +749,10 @@ void cmd_romdebug(int data, int argc, char* argv[]) {
 	info
 */
 void cmd_info(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
+	(void)argv;
+
 	CON_Out(console, "x16 emulator: Release %s (%s)", VER, VER_NAME);
 	CON_Out(console, "x16 debugger: version %s", DBG_VER);
 }

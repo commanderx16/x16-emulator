@@ -722,7 +722,7 @@ void CON_Out(ConsoleInformation *console, const char *str, ...) {
 				*eol= '\0';
 				eol++;
 			}
-			while(strlen(ptemp) > console->VChars) {
+			while(strlen(ptemp) > (size_t)console->VChars) {
 				CON_NewLineConsole(console);
 				strncpy(console->ConsoleLines[0], ptemp, console->VChars);
 				console->ConsoleLines[0][console->VChars] = '\0';
@@ -943,7 +943,7 @@ void CON_SetPrompt(ConsoleInformation *console, const char* newprompt) {
 		return;
 
 	/* check length so we can still see at least 1 char :-) */
-	if(strlen(newprompt) < console->VChars)
+	if(strlen(newprompt) < (size_t)console->VChars)
 		console->Prompt = strdup(newprompt);
 	else
 		CON_Out(console, "prompt too long. (max. %i chars)", console->VChars - 1);
@@ -1016,6 +1016,8 @@ void CON_TabCompletion(ConsoleInformation *console) {
 }
 
 char* Default_TabFunction(char* command) {
+	(void)command;
+
 	CON_Out(Topmost, "     No TabFunction registered");
 	CON_Out(Topmost, "     use 'CON_SetTabCompletion' to register one");
 	CON_Out(Topmost, " ");
@@ -1023,6 +1025,8 @@ char* Default_TabFunction(char* command) {
 }
 
 void Cursor_Left(ConsoleInformation *console) {
+	(void)console;
+
 	char temp[CON_CHARS_PER_LINE+1];
 
 	if(Topmost->CursorPos > 0) {
@@ -1036,9 +1040,11 @@ void Cursor_Left(ConsoleInformation *console) {
 }
 
 void Cursor_Right(ConsoleInformation *console) {
+	(void)console;
+
 	char temp[CON_CHARS_PER_LINE+1];
 
-	if(Topmost->CursorPos < strlen(Topmost->Command)) {
+	if((size_t)Topmost->CursorPos < strlen(Topmost->Command)) {
 		Topmost->CursorPos++;
 		mystrncat(Topmost->LCommand, Topmost->RCommand, 1);
 		strcpy(temp, Topmost->RCommand);
@@ -1048,6 +1054,8 @@ void Cursor_Right(ConsoleInformation *console) {
 }
 
 void Cursor_Home(ConsoleInformation *console) {
+	(void)console;
+
 	char temp[CON_CHARS_PER_LINE+1];
 
 	Topmost->CursorPos = 0;
@@ -1058,6 +1066,8 @@ void Cursor_Home(ConsoleInformation *console) {
 }
 
 void Cursor_End(ConsoleInformation *console) {
+	(void)console;
+
 	Topmost->CursorPos = strlen(Topmost->Command);
 	mystrncat(Topmost->LCommand, Topmost->RCommand, strlen(Topmost->RCommand));
 	memset(Topmost->RCommand, 0, CON_CHARS_PER_LINE+1);
@@ -1100,6 +1110,8 @@ void Cursor_Add(ConsoleInformation *console, SDL_Event *event) {
 }
 
 void Clear_Command(ConsoleInformation *console) {
+	(void)console;
+
 	Topmost->CursorPos = 0;
 	memset(Topmost->VCommand, 0, CON_CHARS_PER_LINE+1);
 	memset(Topmost->Command, 0, CON_CHARS_PER_LINE+1);
@@ -1108,6 +1120,8 @@ void Clear_Command(ConsoleInformation *console) {
 }
 
 void Assemble_Command(ConsoleInformation* console) {
+	(void)console;
+
 	int len = 0;
 
 	/* Concatenate the left and right side to command */

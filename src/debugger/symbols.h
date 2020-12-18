@@ -35,6 +35,6 @@ int symbol_find_addr(int bank, char *label);
 int symbol_clear_volume(int bank);
 SymLoadError symbol_load(char *filename, int bank, int *addedCount, int *dupCount, int *lineCount);
 void symbol_dump(char *filename);
-const char *symbol_lookup(int bank, char *label);
+const char *symbol_lookup(char *label);
 
 #endif
