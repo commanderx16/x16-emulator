@@ -76,7 +76,7 @@ command_t cmd_table[] = {
 	{ "?", cmd_help, 0, 0, "?|help\ndisplay help" },
 	{ "help", cmd_help, 0, 0, "?|help\ndisplay help" },
 
-	{ "sym", cmd_sym, 0, 0, "sym [address|symbol]\nlook-up for the address or symbol and display it" },
+	{ "sym", cmd_sym, 1, 0, "sym address|symbol\nlook-up for the address or symbol and display it" },
 	{ "symclear", cmd_symclear, 2, 0, "symclear bank [symbol|*]\nclear the \"symbol\" or \"*\" all from the symbol table for specified bank" },
 	{ "symload", cmd_symload, 1, 0, "symload [bank] symbolFilename\nload the symbol table [for the specified bank]" },
 	{ "symdump", cmd_symsave, 1, 0, "symdump symbolFilename\ndump in a file the symbol dictionary" },
@@ -567,7 +567,7 @@ void cmd_bp_clear(int data, int argc, char* argv[]) {
 
 /* ----------------------------------------------------------------------------
 	look-up for the address or symbol and display it
-	sym [address|symbol]
+	sym address|symbol
 */
 void cmd_sym(int data, int argc, char* argv[]) {
 	(void)data;
