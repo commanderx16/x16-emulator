@@ -496,6 +496,8 @@ void DEBUGreadSettings(dictionary *iniDict) {
 }
 
 void DEBUGInitUI(SDL_Renderer *pRenderer) {
+	(void)pRenderer;
+
 	SDL_Rect Con_rect;
 
 	dictionary *iniDict= iniparser_load("x16emu.ini");
@@ -670,7 +672,8 @@ void DEBUG_Command_Handler(ConsoleInformation *console, char* command) {
 				CON_Out(console, cmd_table[idx].help);
 				return;
 			}
-			return cmd_table[idx].fn(cmd_table[idx].data, argc, argv);
+			cmd_table[idx].fn(cmd_table[idx].data, argc, argv);
+			return;
 		}
 	}
 
@@ -752,7 +755,7 @@ static void DEBUGRenderCode(int col, int y, int lineCount) {
 		initialPC-= lineSize[lineSizeCount];
 	}
 
-	for (int y = 0; y < lineCount; y++) { 							// Each line
+	for (; y < lineCount; y++) { 							// Each line
 
 		DEBUGPrintAddress(col, y, currentPCBank, initialPC, col_label);
 
