@@ -1052,7 +1052,7 @@ void DEBUGRenderDisplay(int width, int height) {
 		char mouseCoord[30];
 		SDL_GetMouseState(&mouseX, &mouseY);
 		sprintf(mouseCoord, "%03d %03d", mouseX, mouseY);
-		DT_DrawText2(dbgRenderer, mouseCoord, dbgFontID, win_width-DT_FontWidth(dbgFontID)*7, win_height - con_height, col_highlight);
+		DT_DrawText2(dbgRenderer, mouseCoord, dbgFontID, win_width-DT_FontWidth(dbgFontID)*9, win_height - con_height, col_highlight);
 	}
 
 }

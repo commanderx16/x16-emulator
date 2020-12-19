@@ -45,28 +45,28 @@ command_t cmd_table[] = {
 	{ "r", cmd_set_register, 2, 0, "r A|X|Y|PC|SP|P|BKA|BKO|VA|VD0|VD1|VCT value \nset register value" },
 
 	{ "sec", cmd_set_status, 0, 0x01, "sec\nset Carry" },
-	{ "clc", cmd_set_status, 0, 0x01 | 0x80, "clc\nclear Carry" },
+	{ "clc", cmd_set_status, 0, 0x01 | 0x8000, "clc\nclear Carry" },
 
 	{ "sez", cmd_set_status, 0, 0x02, "sec\nset Zero" },
-	{ "clz", cmd_set_status, 0, 0x02 | 0x80, "clz\nclear Zero" },
+	{ "clz", cmd_set_status, 0, 0x02 | 0x8000, "clz\nclear Zero" },
 
 	{ "sei", cmd_set_status, 0, 0x04, "sei\nset Interrupts disabled" },
-	{ "cli", cmd_set_status, 0, 0x04 | 0x80, "cli\nclear Interrupts disabled" },
+	{ "cli", cmd_set_status, 0, 0x04 | 0x8000, "cli\nclear Interrupts disabled" },
 
-	{ "sed", cmd_set_status, 0, 0x06, "sed\nset Decimal mode" },
-	{ "cld", cmd_set_status, 0, 0x06 | 0x80, "cld\nclear Decimal mode" },
+	{ "sed", cmd_set_status, 0, 0x08, "sed\nset Decimal mode" },
+	{ "cld", cmd_set_status, 0, 0x08 | 0x8000, "cld\nclear Decimal mode" },
 
-	{ "seb", cmd_set_status, 0, 0x08, "seb\nset Break" },
-	{ "clb", cmd_set_status, 0, 0x08 | 0x80, "clb\nclear Break" },
+	{ "seb", cmd_set_status, 0, 0x10, "seb\nset Break" },
+	{ "clb", cmd_set_status, 0, 0x10 | 0x8000, "clb\nclear Break" },
 
-	{ "ser", cmd_set_status, 0, 0x0A, "ser\nset Reserved/not used" },
-	{ "clr", cmd_set_status, 0, 0x0A | 0x80, "clr\nclear Reserved/not used" },
+	{ "ser", cmd_set_status, 0, 0x20, "ser\nset Reserved/not used" },
+	{ "clr", cmd_set_status, 0, 0x20 | 0x8000, "clr\nclear Reserved/not used" },
 
-	{ "sev", cmd_set_status, 0, 0x0C, "sev\nset oVerflow" },
-	{ "clv", cmd_set_status, 0, 0x0C | 0x80, "clv\nclear oVerflow" },
+	{ "sev", cmd_set_status, 0, 0x40, "sev\nset oVerflow" },
+	{ "clv", cmd_set_status, 0, 0x40 | 0x8000, "clv\nclear oVerflow" },
 
-	{ "sen", cmd_set_status, 0, 0x0E, "sen\nset Negative" },
-	{ "cln", cmd_set_status, 0, 0x0E | 0x80, "cln\nclear Negative" },
+	{ "sen", cmd_set_status, 0, 0x80, "sen\nset Negative" },
+	{ "cln", cmd_set_status, 0, 0x80 | 0x8000, "cln\nclear Negative" },
 
 	{ "bpl", cmd_bp_list, 0, 0, "bpl\nlist breakpoints" },
 	{ "bp", cmd_bp_add, 1, 0, "bp address\nadd a breakpoint at the specified address" },
@@ -484,6 +484,7 @@ void cmd_set_status(int data, int argc, char* argv[]) {
 	(void)argv;
 	(void)argc;
 	int mask= data & 0xFF;
+
 	if(mask == data)
 		status|= mask;
 	else
