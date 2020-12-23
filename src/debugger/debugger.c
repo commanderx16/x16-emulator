@@ -31,10 +31,10 @@
 
 static int DEBUGHandleKeyEvent(SDL_Event *event);
 
-static void DEBUGRenderCode(int x, int y, int lineCount);
-static void DEBUGRenderData(int x, int y, int lineCount);
-static void DEBUGRenderVRAM(int x, int y, int lineCount);
-static void DEBUGRenderRegisters();
+static void DEBUGRenderCode(int col, int row, int lineCount);
+static void DEBUGRenderData(int col, int row, int lineCount);
+static void DEBUGRenderVRAM(int col, int row, int lineCount);
+static void DEBUGRenderRegisters(int col, int row, TRegister_kind regKing);
 static void DEBUGRenderStack(int bytesCount);
 
 static void DEBUG_Command_Handler(ConsoleInformation *console, char* command);
@@ -208,16 +208,16 @@ void DEBUGstop() {
 //									Write String at postion col,line
 //
 // *******************************************************************************************
-void DEBUGPrintString(SDL_Renderer *renderer, int column, int line, char *s, SDL_Color colour) {
+void DEBUGPrintString(SDL_Renderer *renderer, int col, int row, char *s, SDL_Color colour) {
 	int h= DT_FontHeight(dbgFontID) + 1;
 	int w= DT_FontWidth(dbgFontID);
-	DT_DrawText2(renderer, s, dbgFontID, column*w, line*h, colour);
+	DT_DrawText2(renderer, s, dbgFontID, col*w, row*h, colour);
 }
 
-void DEBUGPrintChar(SDL_Renderer *renderer, int x, int y, int ch, SDL_Color colour) {
+void DEBUGPrintChar(SDL_Renderer *renderer, int col, int row, int ch, SDL_Color colour) {
 	char buffer[2];
 	sprintf(buffer, "%c", ch);
-	DEBUGPrintString(renderer, x, y, buffer, colour);
+	DEBUGPrintString(renderer, col, row, buffer, colour);
 }
 
 // *******************************************************************************************
@@ -232,7 +232,7 @@ const char *bit_rep[16] = {
     [12] = "1100", [13] = "1101", [14] = "1110", [15] = "1111",
 };
 
-static void DEBUGPrintNumber(int x, int y, int n, int w, SDL_Color colour) {
+static void DEBUGPrintNumber(int col, int row, int n, int w, SDL_Color colour) {
 	char fmtString[8],buffer[16];
 	if(w<0) {
 		snprintf(buffer, sizeof(buffer), "%s%s", bit_rep[n >> 4], bit_rep[n & 0x0F]);
@@ -240,7 +240,7 @@ static void DEBUGPrintNumber(int x, int y, int n, int w, SDL_Color colour) {
 		snprintf(fmtString, sizeof(fmtString), "%%0%dX", w);
 		snprintf(buffer, sizeof(buffer), fmtString, n);
 	}
-	DEBUGPrintString(dbgRenderer, x, y, buffer, colour);
+	DEBUGPrintString(dbgRenderer, col, row, buffer, colour);
 }
 
 // *******************************************************************************************
@@ -248,7 +248,7 @@ static void DEBUGPrintNumber(int x, int y, int n, int w, SDL_Color colour) {
 //									Write Bank:Address
 //
 // *******************************************************************************************
-static void DEBUGPrintAddress(int x, int y, int bank, int addr, SDL_Color colour) {
+static void DEBUGPrintAddress(int col, int row, int bank, int addr, SDL_Color colour) {
 	char buffer[4];
 
 	if(addr >= 0xA000) {
@@ -257,23 +257,23 @@ static void DEBUGPrintAddress(int x, int y, int bank, int addr, SDL_Color colour
 		strcpy(buffer, "--:");
 	}
 
-	DEBUGPrintString(dbgRenderer, x, y, buffer, colour);
+	DEBUGPrintString(dbgRenderer, col, row, buffer, colour);
 
-	DEBUGPrintNumber(x+3, y, addr, 4, colour);
+	DEBUGPrintNumber(col+3, row, addr, 4, colour);
 
 }
 
 static void
-DEBUGPrintVAddress(int x, int y, int addr, SDL_Color colour)
+DEBUGPrintVAddress(int col, int row, int addr, SDL_Color colour)
 {
-	DEBUGPrintNumber(x, y, addr, 5, colour);
+	DEBUGPrintNumber(col, row, addr, 5, colour);
 }
 
-static void DEBUGHighlightRow(int row, int x, int w) {
+static void DEBUGHighlightRow(int row, int xPos, int w) {
 	SDL_Rect rc;
 	rc.w = w;
 	rc.h = layout.rowHeight;
-	rc.x = x;
+	rc.x = xPos;
 	rc.y = row * layout.rowHeight - 1;
 	SDL_SetRenderDrawColor(dbgRenderer, col_highlight.r, col_highlight.g, col_highlight.b, 100);
 	SDL_RenderFillRect(dbgRenderer, &rc);
@@ -687,12 +687,12 @@ void DEBUG_Command_Handler(ConsoleInformation *console, char* command) {
 // *******************************************************************************************
 #define DATA_ADDR_WIDTH 2+1+4 + 1
 #define DATA_BYTES_WIDTH 16*3
-static void DEBUGRenderData(int x, int y, int lineCount) {
+static void DEBUGRenderData(int col, int row, int lineCount) {
 	int memaddr= currentData;
 
 	while(lineCount--) {									// To bottom of screen
 		memaddr &= 0xFFFF;
-		DEBUGPrintAddress(x, y, (uint8_t)currentBank, memaddr, col_label);	// Show label.
+		DEBUGPrintAddress(col, row, (uint8_t)currentBank, memaddr, col_label);	// Show label.
 		for (int i = 0;i < 16;i++) {
 			int addr= memaddr + i;
 			// if in RAM or in ROM and outside existing banks, print nothing
@@ -700,31 +700,31 @@ static void DEBUGRenderData(int x, int y, int lineCount) {
 				continue;
 			else {
 				int byte= real_read6502(addr, true, currentBank);
-				DEBUGPrintNumber(x+DATA_ADDR_WIDTH+i*3, y, byte, 2, col_data);
-				DEBUGPrintChar(dbgRenderer, x+DATA_ADDR_WIDTH+DATA_BYTES_WIDTH+i, y, byte==0 ? '.' : byte, col_data);
+				DEBUGPrintNumber(col + DATA_ADDR_WIDTH+i*3, row, byte, 2, col_data);
+				DEBUGPrintChar(dbgRenderer, col + DATA_ADDR_WIDTH+DATA_BYTES_WIDTH+i, row, byte==0 ? '.' : byte, col_data);
 			}
 		}
-		y++;
+		row++;
 		memaddr+= 16;
 	}
 
 }
 
 static void
-DEBUGRenderVRAM(int x, int y, int lineCount)
+DEBUGRenderVRAM(int col, int row, int lineCount)
 {
 	int vmemaddr= currentData;
 	while (lineCount--) {
-		DEBUGPrintVAddress(x, y, vmemaddr & 0x1FFFF, col_label); // Show label.
+		DEBUGPrintVAddress(col, row, vmemaddr & 0x1FFFF, col_label); // Show label.
 
 		for (int i = 0; i < 16; i++) {
 			int addr = (vmemaddr + i) & 0x1FFFF;
 			int byte = video_space_read(addr);
 
 			int type= video_get_address_type(addr) % col_vram_len;
-			DEBUGPrintNumber(x + 6 + i * 3, y, byte, 2, col_vram[type]);
+			DEBUGPrintNumber(col + 6 + i * 3, row, byte, 2, col_vram[type]);
 		}
-		y++;
+		row++;
 		vmemaddr += 16;
 	}
 }
@@ -737,7 +737,7 @@ DEBUGRenderVRAM(int x, int y, int lineCount)
 #define CODE_ADDR_WIDTH 2+1+4 + 1
 #define CODE_BYTES_WIDTH 2+1+2+1+2 + 1
 #define CODE_LABEL_WIDTH SYMBOL_LABEL_MAXLEN + 1
-static void DEBUGRenderCode(int col, int y, int lineCount) {
+static void DEBUGRenderCode(int col, int row, int lineCount) {
 	char buffer[48];
 	char *label;
 	int initialPC= currentPC - 18;// - lineCount;
@@ -755,9 +755,9 @@ static void DEBUGRenderCode(int col, int y, int lineCount) {
 		initialPC-= lineSize[lineSizeCount];
 	}
 
-	for (; y < lineCount; y++) { 							// Each line
+	for (; row < lineCount; row++) { 							// Each line
 
-		DEBUGPrintAddress(col, y, currentPCBank, initialPC, col_label);
+		DEBUGPrintAddress(col, row, currentPCBank, initialPC, col_label);
 
 		if(!isValidAddr(currentPCBank, initialPC)) {
 			initialPC++;
@@ -765,21 +765,21 @@ static void DEBUGRenderCode(int col, int y, int lineCount) {
 		}
 
 		int size = disasm(initialPC, RAM, buffer, sizeof(buffer), currentPCBank);	// Disassemble code
-		if(y == 0)
+		if(row == 0)
 			disasmLine1Size= size;
 
 		if(initialPC == currentPC) {
-			DEBUGHighlightRow(y, mouseZones[MZ_CODE].rect->x, mouseZones[MZ_CODE].rect->w );
+			DEBUGHighlightRow(row, mouseZones[MZ_CODE].rect->x, mouseZones[MZ_CODE].rect->w );
 		}
-		DEBUGPrintString(dbgRenderer, col+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH+CODE_LABEL_WIDTH, y, buffer, col_data);
+		DEBUGPrintString(dbgRenderer, col+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH+CODE_LABEL_WIDTH, row, buffer, col_data);
 
 		for(int byteCount= 0; byteCount<size;byteCount++) {
 			int byte= real_read6502(initialPC + byteCount, true, currentPCBank);
-			DEBUGPrintNumber(col+CODE_ADDR_WIDTH+byteCount*3, y, byte, 2, col_data);
+			DEBUGPrintNumber(col+CODE_ADDR_WIDTH+byteCount*3, row, byte, 2, col_data);
 		}
 		label= symbol_find_label(currentPCBank, initialPC);
 		if(label)
-			DEBUGPrintString(dbgRenderer, col+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH, y, label, col_data);
+			DEBUGPrintString(dbgRenderer, col+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH, row, label, col_data);
 		initialPC += size;										// Forward to next
 	}
 
@@ -852,7 +852,7 @@ int DEBUGreadVirtualRegister(int reg) {
 	return real_read6502(reg_addr+1, true, currentBank)*256+real_read6502(reg_addr, true, currentBank);
 }
 
-static void DEBUGRenderRegisters(int x, int y, TRegister_kind regKing) {
+static void DEBUGRenderRegisters(int col, int row, TRegister_kind regKing) {
 	int value= 0;
 	char buffer[10];
 
@@ -909,13 +909,13 @@ static void DEBUGRenderRegisters(int x, int y, TRegister_kind regKing) {
 			}
 		}
 
-		if(x<0)
-			x= layout.totalWidth + x;
+		if(col<0)
+			col+= layout.totalWidth;
 
-		DEBUGPrintString(dbgRenderer, labelPos->xOffset+x, labelPos->yOffset+y, label, col_label);
-		DEBUGPrintNumber(valuePos->xOffset+x, valuePos->yOffset+y, value, regs[idx].width, col_data);
+		DEBUGPrintString(dbgRenderer, labelPos->xOffset + col, labelPos->yOffset + row, label, col_label);
+		DEBUGPrintNumber(valuePos->xOffset + col, valuePos->yOffset + row, value, regs[idx].width, col_data);
 		if(regs[idx].showChar)
-			DEBUGPrintChar(dbgRenderer, valuePos->xOffset+x + 3, valuePos->yOffset+y, value, col_data);
+			DEBUGPrintChar(dbgRenderer, valuePos->xOffset + col + 3, valuePos->yOffset + row, value, col_data);
 	}
 
 }
