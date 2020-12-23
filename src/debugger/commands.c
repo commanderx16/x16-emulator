@@ -682,7 +682,7 @@ void cmd_symload(int data, int argc, char* argv[]) {
 
 	int bank= -1;
 	char *filename= NULL;
-	int lineCount= 0;
+	int lineCount= 1;
 	int addedCount= 0;
 	int dupCount= 0;
 
