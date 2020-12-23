@@ -60,20 +60,20 @@ typedef struct layout {
 
 	int codeLinecount;
 
-	int dataYpos;
+	int dataRow;
 	int dataLinecount;
 
-	int stackXpos;
+	int stackCol;
 	int stackLinecount;
 
-	int regXpos;
+	int regCol;
 	int regLinecount;
 
-	int bpRegXpos;
+	int bpRegCol;
 	int bpRegLinecount;
 
-	int zpRegXpos;
-	int zpRegYpos;
+	int zpRegCol;
+	int zpRegRow;
 	int zpRegLinecount;
 } TLayout;
 

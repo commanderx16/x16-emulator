@@ -58,7 +58,14 @@ void hexdump(void *mem, unsigned int len)
         }
 }
 
-
+// *******************************************************************************************
+// left trim string
+//
+char *ltrim(char *s)
+{
+	while(isspace(*s)) s++;
+	return s;
+}
 
 /*
 	expand volumes array with one new volume
@@ -330,12 +337,20 @@ SymLoadError symbol_load_default(FILE *fp, int bank, int *addedCount, int *dupCo
 */
 SymLoadError symbol_load_user(FILE *fp, int bank, int *addedCount, int *dupCount, int *lineCount) {
 	char lineBuffer[255];
+	char *linePtr;
 	int addr;
 	char label[255];
 
 	while(fgets(lineBuffer, sizeof(lineBuffer), fp)) {
 
-		if(2 != sscanf(lineBuffer, "%x %s", &addr, label))
+		(*lineCount)++;
+
+		linePtr= ltrim(lineBuffer);
+		if((*linePtr == ';') || (*linePtr == 0x00)) {
+			continue;
+		}
+
+		if(2 != sscanf(linePtr, "%x %s", &addr, label))
 			return SynErr;
 
 		addr= symbol_add(bank, addr, label);
@@ -345,7 +360,6 @@ SymLoadError symbol_load_user(FILE *fp, int bank, int *addedCount, int *dupCount
 		else
 			(*dupCount)++;
 
-		(*lineCount)++;
 	}
 
 	return NoErr;

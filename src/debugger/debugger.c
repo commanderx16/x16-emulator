@@ -111,7 +111,7 @@ int wannaShowMouseCoord= 0;
 // layout related stuff
 //
 
-const int DBG_LAYOUT_CODE_WIDTH= 8 + 9 + 14 + 3+1+13+3;
+// const int DBG_LAYOUT_CODE_WIDTH= 8 + 9 + 14 + 3+1+13+3;
 const int DBG_LAYOUT_REG_WIDTH= 4 + 3 + 4 + 3;
 const int DBG_LAYOUT_ZP_REG_WIDTH= 4 + 4;
 const int DBG_LAYOUT_STCK_WIDTH= 4 + 1 + 2 + 1 + 1;
@@ -154,8 +154,8 @@ int dbgFontID= 0;
 
 SDL_Rect smallDataZoneRect= { 0, 288, 525, 455 };
 SDL_Rect largeDataZoneRect= { 0, 0, 525, 750 };
-SDL_Rect smallCodeZoneRect= { 5, 0, 310, 285 };
-SDL_Rect largeCodeZoneRect= { 5, 0, 330, 750 };
+SDL_Rect smallCodeZoneRect= { 5, 0, 370, 285 };
+SDL_Rect largeCodeZoneRect= { 5, 0, 370, 750 };
 SDL_Rect stackZoneRect= { 575, 0, 65, 285 };
 SDL_Rect zpRegZoneRect= { 575, 288, 65, 455 };
 SDL_Rect emptyZoneRect= { 0, 0, 0, 0 };
@@ -425,8 +425,8 @@ void DEBUGsetFont(int fontNumber) {
 	int charHeight= DT_FontHeight(dbgFontID);
 
 	// adjust focus rect width to follow font char width
-	smallCodeZoneRect.w=
-	largeCodeZoneRect.w= charWidth * DBG_LAYOUT_CODE_WIDTH;
+	// smallCodeZoneRect.w=
+	// largeCodeZoneRect.w= charWidth * DBG_LAYOUT_CODE_WIDTH;
 
 	// adjust focus rect width to follow font char width
 	smallDataZoneRect.w= charWidth * (DBG_LAYOUT_DATA_WIDTH+1);
@@ -929,7 +929,7 @@ static void DEBUGRenderRegisters(int col, int row, TRegister_kind regKing) {
 static void DEBUGRenderStack(int bytesCount) {
 	int data= ((sp-6+offsetSP) & 0xFF) | 0x100;
 	int row= 0;
-	int xOffset= layout.stackXpos < 0 ? layout.totalWidth + layout.stackXpos : layout.stackXpos;
+	int xOffset= layout.stackCol < 0 ? layout.totalWidth + layout.stackCol : layout.stackCol;
 	while (row < bytesCount) {
 
 		if((data & 0xFF) == sp) {
@@ -952,6 +952,7 @@ static void DEBUGRenderStack(int bytesCount) {
 // *******************************************************************************************
 void DEBUGupdateLayout(int id) {
 	int ch= DT_FontHeight(dbgFontID)+1;
+	int cw= DT_FontWidth(dbgFontID);
 
 	if(id>=0)
 		layoutID= id;
@@ -961,7 +962,7 @@ void DEBUGupdateLayout(int id) {
 			mouseZones[MZ_DATA].rect= &largeDataZoneRect;
 			mouseZones[MZ_CODE].rect= &emptyZoneRect;
 			layout.dataLinecount= mouseZones[MZ_DATA].rect->h / ch;
-			layout.dataYpos= 0;
+			layout.dataRow= 0;
 			layout.codeLinecount= 0;
 			layout.zpRegLinecount= 0;
 			layout.regLinecount= 0;
@@ -986,19 +987,19 @@ void DEBUGupdateLayout(int id) {
 			layout.codeLinecount= mouseZones[MZ_CODE].rect->h / ch;
 
 			layout.dataLinecount= mouseZones[MZ_DATA].rect->h / ch;
-			layout.dataYpos= layout.codeLinecount+1;
+			layout.dataRow= layout.codeLinecount+1;
 
 			layout.stackLinecount= mouseZones[MZ_STACK].rect->h / ch;
-			layout.stackXpos= -DBG_LAYOUT_STCK_WIDTH;
+			layout.stackCol= -DBG_LAYOUT_STCK_WIDTH;
 
-			layout.regXpos= DBG_LAYOUT_CODE_WIDTH + 1;
+			layout.regCol= (mouseZones[MZ_CODE].rect->x + mouseZones[MZ_CODE].rect->w) / cw + 1;
 			layout.regLinecount= 1;
 
-			layout.bpRegXpos= DBG_LAYOUT_CODE_WIDTH + 1 + DBG_LAYOUT_REG_WIDTH;
+			layout.bpRegCol= layout.regCol + DBG_LAYOUT_REG_WIDTH;
 			layout.bpRegLinecount= 1;
 
-			layout.zpRegXpos= -DBG_LAYOUT_ZP_REG_WIDTH;
-			layout.zpRegYpos= ceil((double)mouseZones[MZ_ZPREG].rect->y / (double)ch);
+			layout.zpRegCol= -DBG_LAYOUT_ZP_REG_WIDTH;
+			layout.zpRegRow= ceil((double)mouseZones[MZ_ZPREG].rect->y / (double)ch);
 			layout.zpRegLinecount= 20;
 
 		}
@@ -1023,20 +1024,20 @@ void DEBUGRenderDisplay(int width, int height) {
 
 	// Draw register name and values.
 	if(layout.regLinecount)
-		DEBUGRenderRegisters(layout.regXpos, 0, KIND_CPU);
+		DEBUGRenderRegisters(layout.regCol, 0, KIND_CPU);
 	if(layout.bpRegLinecount)
-		DEBUGRenderRegisters(layout.bpRegXpos, 0, KIND_BP);
+		DEBUGRenderRegisters(layout.bpRegCol, 0, KIND_BP);
 	if(layout.zpRegLinecount)
-		DEBUGRenderRegisters(layout.zpRegXpos, layout.zpRegYpos, KIND_ZP);
+		DEBUGRenderRegisters(layout.zpRegCol, layout.zpRegRow, KIND_ZP);
 
 	if(layout.codeLinecount)
 		DEBUGRenderCode(1, 0, layout.codeLinecount);
 
 	if(layout.dataLinecount) {
 		if (dumpmode == DDUMP_RAM)
-			DEBUGRenderData(1, layout.dataYpos, layout.dataLinecount);
+			DEBUGRenderData(1, layout.dataRow, layout.dataLinecount);
 		else
-			DEBUGRenderVRAM(1, layout.dataYpos, layout.dataLinecount);
+			DEBUGRenderVRAM(1, layout.dataRow, layout.dataLinecount);
 	}
 
 	if(layout.stackLinecount)
