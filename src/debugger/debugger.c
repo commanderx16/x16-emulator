@@ -501,36 +501,34 @@ void DEBUGInitUI(SDL_Renderer *pRenderer) {
 	SDL_Rect Con_rect;
 
 	dictionary *iniDict= iniparser_load("x16emu.ini");
-	if(iniDict) {
 
-		dbgWindow= SDL_CreateWindow("X16 Debugger", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, win_width, win_height, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN);
-		dbgRenderer= SDL_CreateRenderer(dbgWindow, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED );
-		SDL_SetRenderDrawBlendMode(dbgRenderer, SDL_BLENDMODE_BLEND);
-		dbgWindowID= SDL_GetWindowID(dbgWindow);
-		SDL_ShowCursor(SDL_ENABLE);
+	dbgWindow= SDL_CreateWindow("X16 Debugger", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, win_width, win_height, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN);
+	dbgRenderer= SDL_CreateRenderer(dbgWindow, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED );
+	SDL_SetRenderDrawBlendMode(dbgRenderer, SDL_BLENDMODE_BLEND);
+	dbgWindowID= SDL_GetWindowID(dbgWindow);
+	SDL_ShowCursor(SDL_ENABLE);
 
-		// DEBUGInitChars(pRenderer);
-		// dbgRenderer = pRenderer;				// Save renderer.
+	// DEBUGInitChars(pRenderer);
+	// dbgRenderer = pRenderer;				// Save renderer.
 
-		char *fontPath= (char *)iniparser_getstring(iniDict, "dbg_console:font", "console9.bmp");
+	char *fontPath= (char *)iniparser_getstring(iniDict, "dbg_console:font", "console9.bmp");
 
-		Con_rect.x = 0;
-		Con_rect.y = 0;
-		Con_rect.w = win_width;
-		Con_rect.h = win_height;
-		console= CON_Init(fontPath, dbgRenderer, 50, Con_rect);
-		CON_SetExecuteFunction(console, DEBUG_Command_Handler);
+	Con_rect.x = 0;
+	Con_rect.y = 0;
+	Con_rect.w = win_width;
+	Con_rect.h = win_height;
+	console= CON_Init(fontPath, dbgRenderer, 50, Con_rect);
+	CON_SetExecuteFunction(console, DEBUG_Command_Handler);
 
-		symbol_init();
+	symbol_init();
 
-		DEBUGreadSettings(iniDict);
+	DEBUGreadSettings(iniDict);
 
-		CON_Show(console);
+	CON_Show(console);
 
-		DEBUGupdateLayout(0);
+	DEBUGupdateLayout(0);
 
-		iniparser_freedict(iniDict);
-	}
+	iniparser_freedict(iniDict);
 
 }
 
@@ -768,7 +766,7 @@ static void DEBUGRenderCode(int col, int row, int lineCount) {
 		if(row == 0)
 			disasmLine1Size= size;
 
-		if(initialPC == currentPC) {
+		if(initialPC == pc) {
 			DEBUGHighlightRow(row, mouseZones[MZ_CODE].rect->x, mouseZones[MZ_CODE].rect->w );
 		}
 		DEBUGPrintString(dbgRenderer, col+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH+CODE_LABEL_WIDTH, row, buffer, col_data);
