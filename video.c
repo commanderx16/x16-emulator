@@ -828,7 +828,7 @@ render_line(uint16_t y)
 		render_sprite_line(eff_y);
 	}
 
-	if (warp_mode && (frame_count & 63)) {
+	if (frame_count & frameskip_mask) {
 		// sprites were needed for the collision IRQ, but we can skip
 		// everything else if we're in warp mode, most of the time
 		return;
@@ -1114,8 +1114,11 @@ video_update()
 					is_fullscreen = !is_fullscreen;
 					SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
 					consumed = true;
+				} else if (event.key.keysym.sym == SDLK_MINUS || event.key.keysym.sym == SDLK_UNDERSCORE) {
+					machine_decrement_warp();
+					consumed = true;
 				} else if (event.key.keysym.sym == SDLK_PLUS || event.key.keysym.sym == SDLK_EQUALS) {
-					machine_toggle_warp();
+					machine_increment_warp();
 					consumed = true;
 				} else if (event.key.keysym.sym == SDLK_a) {
 					sdcard_attach();

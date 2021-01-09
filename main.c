@@ -79,6 +79,7 @@ bool dump_ram = true;
 bool dump_bank = true;
 bool dump_vram = false;
 bool warp_mode = false;
+uint8_t frameskip_mask = 0;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
@@ -91,7 +92,7 @@ int frames;
 int32_t sdlTicks_base;
 int32_t last_perf_update;
 int32_t perf_frame_count;
-char window_title[30];
+char window_title[40];
 
 #ifdef TRACE
 bool trace_mode = false;
@@ -237,6 +238,13 @@ timing_init() {
 	sdlTicks_base = SDL_GetTicks();
 	last_perf_update = 0;
 	perf_frame_count = 0;
+
+	if(warp_mode) {
+		sprintf(window_title, "Commander X16 (%dX)", (int)frameskip_mask + 1);
+		video_update_title(window_title);
+	} else {
+		video_update_title("Commander X16");
+	}
 }
 
 void
@@ -244,16 +252,18 @@ timing_update()
 {
 	frames++;
 	int32_t sdlTicks = SDL_GetTicks() - sdlTicks_base;
-	int32_t diff_time = 1000 * frames / 60 - sdlTicks;
-	if (!warp_mode && diff_time > 0) {
+	int32_t diff_time = 1000 * frames / 60 - sdlTicks * (frameskip_mask + 1);
+	if ((frames & frameskip_mask) == 0 && (diff_time > 0)) {
 		usleep(1000 * diff_time);
 	}
 
 	if (sdlTicks - last_perf_update > 5000) {
 		int32_t frameCount = frames - perf_frame_count;
 		int perf = frameCount / 3;
-
-		if (perf < 100 || warp_mode) {
+		if (warp_mode) {
+			sprintf(window_title, "Commander X16 (%dX, %d%%)", (int)frameskip_mask + 1, perf);
+			video_update_title(window_title);
+		} else if (perf < 100) {
 			sprintf(window_title, "Commander X16 (%d%%)", perf);
 			video_update_title(window_title);
 		} else {
@@ -277,9 +287,20 @@ timing_update()
 }
 
 void
-machine_toggle_warp()
+machine_increment_warp()
 {
-	warp_mode = !warp_mode;
+	if (frameskip_mask < 0x3f) {
+		frameskip_mask = (frameskip_mask << 1) | 1;
+		warp_mode      = true;
+		timing_init();
+	}
+}
+
+void
+machine_decrement_warp()
+{
+	frameskip_mask >>= 1;
+	warp_mode = (frameskip_mask != 0);
 	timing_init();
 }
 
@@ -589,6 +610,7 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			warp_mode = true;
+			frameskip_mask = 0x3f;
 		} else if (!strcmp(argv[0], "-echo")) {
 			argc--;
 			argv++;
