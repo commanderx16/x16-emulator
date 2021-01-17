@@ -88,6 +88,8 @@ command_t cmd_table[] = {
 	{ "romdebug", cmd_romdebug, 0, 0, "romdebug\ntoggle ROM debug mode to allow editing" },
 	{ "info", cmd_info, 0, 0, "info\ndisplay X16 emulator & debugger info" },
 
+	{ "load", cmd_load, 2, 0, "load file addr\nload binary file in memory" },
+
 	{ NULL, NULL, 0, 0, NULL }
 };
 
@@ -590,7 +592,7 @@ void cmd_bpm_add(int data, int argc, char* argv[]) {
 	}
 
 	int bank= addr >> 16;
-	if(!isValidAddr(bank, addr)) {
+	if(!isValidAddr(bank, addr & 0xFFFF)) {
 		CON_Out(console, "%sERR: Invalid address%s", DT_color_red, DT_color_default);
 		return;
 	}
@@ -631,27 +633,27 @@ void cmd_sym(int data, int argc, char* argv[]) {
 	(void)argc;
 
 	const char *addresses= symbol_lookup(argv[1]);
-	if(addresses)
+	if(addresses) {
 		CON_Out(console, addresses);
-	else
+		return;
+	}
+	// else
+	// 	CON_Out(console, "symbol \"%s\" not found", argv[1]);
+
+	TSymbolVolume *vol;
+	int hasFound= 0;
+
+	unsigned int addr= cmd_eval_addr(argv[1]);
+
+	for(int idx= 0; (vol= symbol_get_volume(idx)); idx++) {
+		char *label= symbol_find_label(vol->bank, addr);
+		if(label) {
+			hasFound= 1;
+			CON_Out(console, "%06X: %s", (vol->bank << 16) | addr, label);
+		}
+	}
+	if(!hasFound)
 		CON_Out(console, "symbol \"%s\" not found", argv[1]);
-
-	// char label[15];
-	// TSymbolVolume *vol;
-	// int hasFound= 0;
-
-	// strncpy(label, argv[1], 14);
-	// label[14]= 0;
-
-	// for(int idx= 0; (vol= symbol_get_volume(idx)); idx++) {
-	// 	int addr= symbol_find_addr(vol->bank, label);
-	// 	if(addr != 0xFF000000) {
-	// 		hasFound= 1;
-	// 		CON_Out(console, "%s : %06X", label, (vol->bank << 16) | addr);
-	// 	}
-	// }
-	// if(!hasFound)
-	// 	CON_Out(console, "symbol \"%s\" not found", label);
 }
 
 /* ----------------------------------------------------------------------------
@@ -812,5 +814,48 @@ void cmd_info(int data, int argc, char* argv[]) {
 
 	CON_Out(console, "x16 emulator: Release %s (%s)", VER, VER_NAME);
 	CON_Out(console, "x16 debugger: version %s", DBG_VER);
+}
+
+/* ----------------------------------------------------------------------------
+	load binary file in memory
+	load file addr
+*/
+void cmd_load(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
+
+	unsigned int addr= cmd_eval_addr(argv[2]);
+	if(addr == SYMBOL_NOT_FOUND) {
+		CON_Out(console, "%sERR: symbol \"%s\" not found%s", DT_color_red, argv[2], DT_color_default);
+		return;
+	}
+
+	int bank= addr >> 16;
+	addr &= 0xFFFF;
+
+	if(!isValidAddr(bank, addr)) {
+		CON_Out(console, "%sERR: Invalid address%s", DT_color_red, DT_color_default);
+		return;
+	}
+
+	FILE *fp= fopen(argv[1], "r");
+	if(fp == NULL) {
+		CON_Out(console, "%sERR: Can't open file%s", DT_color_red, DT_color_default);
+		return;
+	}
+
+	fseek(fp, 0L, SEEK_END);
+	long filesize= ftell(fp);
+	rewind(fp);
+
+	if(addr + filesize >= 0x9F00) {
+		filesize= 0x9F00 - addr;
+	}
+
+	fread(&RAM[addr], filesize, 1, fp);
+
+	fclose(fp);
+
+	CON_Out(console, "loaded file to %04X:%04X", addr, addr+filesize-1);
 }
 

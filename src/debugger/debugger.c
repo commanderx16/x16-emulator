@@ -122,6 +122,8 @@ const int DBG_LAYOUT_DATA_WIDTH= 8 + 16 * 3 + 16;
 SDL_Color col_label= {0, 255, 0, 255};
 SDL_Color col_data= {0, 255, 255, 255};
 SDL_Color col_highlight= {255, 255, 0, 255};
+SDL_Color col_dis_fnlabel= {156, 220, 254, 255};
+SDL_Color col_dis_sublabel= {147, 206, 137, 255};
 
 const int col_vram_len= 4;
 /*
@@ -291,7 +293,6 @@ static void DEBUGHighlightRow(int row, int xPos, int w) {
 int  DEBUGGetCurrentStatus(void) {
 
 	SDL_Event event;
-	if (currentPC < 0) currentPC = pc;							// Initialise current PC displayed.
 
 	if (currentMode == DMODE_STEP) {							// Single step before
 		currentPC = pc;											// Update current PC
@@ -311,7 +312,10 @@ int  DEBUGGetCurrentStatus(void) {
 		currentPC = pc; 										// Set the PC to what it is.
 	}
 
-	if(currentPCBank<0 && currentPC >= 0xA000) {
+	if(currentPC < 0) {
+		currentPC = pc;
+	}
+	if(currentPCBank < 0) {
 		currentPCBank= currentPC < 0xC000 ? memory_get_ram_bank() : memory_get_rom_bank();
 	}
 
@@ -580,6 +584,7 @@ static int DEBUGHandleKeyEvent(SDL_Event *event) {
 
 				case DBGKEY_STEP:									// Single step (F11 by default)
 					currentMode = DMODE_STEP; 						// Runs once, then switches back.
+					currentPCBank= -1;
 					break;
 
 				case DBGKEY_STEPOVER:								// Step over (F10 by default)
@@ -589,6 +594,7 @@ static int DEBUGHandleKeyEvent(SDL_Event *event) {
 						currentMode = DMODE_RUN;					// And run.
 					} else {
 						currentMode = DMODE_STEP;					// Otherwise single step.
+						currentPCBank= -1;
 					}
 					break;
 
@@ -620,6 +626,15 @@ static int DEBUGHandleKeyEvent(SDL_Event *event) {
 				// 	currentBank -= 1;
 				// 	return 1;
 
+				case SDLK_v:
+					if(event->key.keysym.mod & KMOD_CTRL) {
+						char *text= SDL_GetClipboardText();
+						if(text) {
+							Cursor_Paste(console, text);
+							SDL_free(text);
+						}
+					}
+					break;
 			}
 			break;
 
@@ -755,6 +770,11 @@ static void DEBUGRenderCode(int col, int row, int lineCount) {
 
 	for (; row < lineCount; row++) { 							// Each line
 
+		label= symbol_find_label(currentPCBank, initialPC);
+		if(label) {
+			DEBUGPrintString(dbgRenderer, col, row++, label, *label != '@' ? col_dis_fnlabel : col_dis_sublabel);
+		}
+
 		DEBUGPrintAddress(col, row, currentPCBank, initialPC, col_label);
 
 		if(!isValidAddr(currentPCBank, initialPC)) {
@@ -775,9 +795,7 @@ static void DEBUGRenderCode(int col, int row, int lineCount) {
 			int byte= real_read6502(initialPC + byteCount, true, currentPCBank);
 			DEBUGPrintNumber(col+CODE_ADDR_WIDTH+byteCount*3, row, byte, 2, col_data);
 		}
-		label= symbol_find_label(currentPCBank, initialPC);
-		if(label)
-			DEBUGPrintString(dbgRenderer, col+CODE_ADDR_WIDTH+CODE_BYTES_WIDTH, row, label, col_data);
+
 		initialPC += size;										// Forward to next
 	}
 
