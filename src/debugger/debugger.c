@@ -69,6 +69,12 @@ static void DEBUG_Command_Handler(ConsoleInformation *console, char* command);
 //
 // *******************************************************************************************
 
+#ifdef __APPLE__
+#define CMD_KEY KMOD_GUI
+#else
+#define CMD_KEY KMOD_CTRL
+#endif
+
 //
 //				0-9A-F sets the program address, with shift sets the data address.
 //
@@ -201,7 +207,7 @@ bool DEBUGisOnBreakpoint(int addr, TBreakpointType type) {
 // *******************************************************************************************
 void DEBUGstop() {
 	currentPC = pc;
-	currentPCBank= currentPC < 0xC000 ? memory_get_ram_bank() : memory_get_rom_bank();
+	currentPCBank= -1;
 	currentMode = DMODE_STOP;
 }
 
@@ -627,7 +633,8 @@ static int DEBUGHandleKeyEvent(SDL_Event *event) {
 				// 	return 1;
 
 				case SDLK_v:
-					if(event->key.keysym.mod & KMOD_CTRL) {
+
+					if(event->key.keysym.mod & CMD_KEY) {
 						char *text= SDL_GetClipboardText();
 						if(text) {
 							Cursor_Paste(console, text);
