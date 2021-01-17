@@ -1110,6 +1110,21 @@ void Cursor_Add(ConsoleInformation *console, SDL_Event *event) {
 	}
 }
 
+void Cursor_Paste(ConsoleInformation *console, char *text) {
+	int len = 0;
+	for(int idx= 0; text[idx] != 0; idx++) {
+		char newChar= text[idx];
+		if(strlen(Topmost->Command) + 1 < CON_CHARS_PER_LINE && newChar >= SDLK_SPACE && newChar <= SDLK_z) {
+			Topmost->CursorPos++;
+			len = strlen(Topmost->LCommand);
+			// Topmost->LCommand[len] = (char)event->key.keysym.sym;
+			Topmost->LCommand[len] = newChar;
+			Topmost->LCommand[len + sizeof(char)] = '\0';
+			Assemble_Command(console);
+		}
+	}
+}
+
 void Clear_Command(ConsoleInformation *console) {
 	(void)console;
 

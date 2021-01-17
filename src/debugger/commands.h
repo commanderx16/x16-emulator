@@ -42,5 +42,7 @@ void cmd_font(int data, int argc, char* argv[]);
 void cmd_romdebug(int data, int argc, char* argv[]);
 void cmd_info(int data, int argc, char* argv[]);
 
+void cmd_load(int data, int argc, char* argv[]);
+
 
 #endif
