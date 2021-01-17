@@ -193,8 +193,10 @@ ConsoleInformation *console;
 //
 // *******************************************************************************************
 bool DEBUGisOnBreakpoint(int addr, TBreakpointType type) {
+	int bank= addr < 0xC000 ? (addr < 0xA000 ? 0 : memory_get_ram_bank()) : memory_get_rom_bank();
+	int addr24= bank << 16 | addr;
 	for(int idx= 0; idx<breakpointsCount; idx++) {
-		if(breakpoints[idx].type == type && breakpoints[idx].addr == addr)
+		if(breakpoints[idx].type == type && breakpoints[idx].addr == addr24)
 			return true;
 	}
 	return false;
@@ -311,6 +313,7 @@ int  DEBUGGetCurrentStatus(void) {
 			currentPC = pc;											// Update current PC
 		currentMode = DMODE_STOP;								// So now stop, as we've done it.
 		stepBreakPoint = -1;									// Clear step breakpoint.
+		currentPCBank= -1;
 	}
 
 	if (SDL_GetKeyboardState(NULL)[DBGSCANKEY_BRK]) {			// Stop on break pressed.
@@ -318,12 +321,11 @@ int  DEBUGGetCurrentStatus(void) {
 		currentPC = pc; 										// Set the PC to what it is.
 	}
 
-	if(currentPC < 0) {
+	if(currentPC < 0)
 		currentPC = pc;
-	}
-	if(currentPCBank < 0) {
+
+	if(currentPCBank < 0)
 		currentPCBank= currentPC < 0xC000 ? memory_get_ram_bank() : memory_get_rom_bank();
-	}
 
 	if (currentMode != DMODE_RUN) {								// Not running, we own the keyboard.
 		showFullDisplay = 										// Check showing screen.
