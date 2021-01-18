@@ -2,10 +2,10 @@
 #define _BREAKPOINTS_H
 
 typedef enum {
-	BPT_PC,
-	BPT_MEM,
-	BPT_RMEM,
-	BPT_WMEM
+	BPT_PC= 0x10,
+	BPT_MEM= 0x03,
+	BPT_RMEM= 0x01,
+	BPT_WMEM= 0x02
 } TBreakpointType;
 
 typedef struct {

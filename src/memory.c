@@ -61,7 +61,7 @@ effective_ram_bank()
 
 uint8_t
 read6502(uint16_t address) {
-	if(debugger_enabled && DEBUGisOnBreakpoint(address, BPT_MEM))
+	if(debugger_enabled && DEBUGisOnBreakpoint(address, BPT_RMEM))
 		DEBUGstop();
 
 	return real_read6502(address, false, 0);
@@ -181,6 +181,12 @@ uint8_t
 memory_get_rom_bank()
 {
 	return rom_bank;
+}
+
+uint8_t
+memory_get_bank(uint16_t addr)
+{
+	return addr < 0xC000 ? (addr < 0xA000 ? 0 : memory_get_ram_bank()) : memory_get_rom_bank();
 }
 
 uint8_t

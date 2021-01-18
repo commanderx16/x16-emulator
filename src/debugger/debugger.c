@@ -193,10 +193,9 @@ ConsoleInformation *console;
 //
 // *******************************************************************************************
 bool DEBUGisOnBreakpoint(int addr, TBreakpointType type) {
-	int bank= addr < 0xC000 ? (addr < 0xA000 ? 0 : memory_get_ram_bank()) : memory_get_rom_bank();
-	int addr24= bank << 16 | addr;
+	int addr24= memory_get_bank(addr) << 16 | addr;
 	for(int idx= 0; idx<breakpointsCount; idx++) {
-		if(breakpoints[idx].type == type && breakpoints[idx].addr == addr24)
+		if((breakpoints[idx].type & type) && breakpoints[idx].addr == addr24)
 			return true;
 	}
 	return false;
