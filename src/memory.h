@@ -24,6 +24,7 @@ void memory_set_rom_bank(uint8_t bank);
 
 uint8_t memory_get_ram_bank();
 uint8_t memory_get_rom_bank();
+uint8_t memory_get_bank(uint16_t addr);
 
 uint8_t emu_read(uint8_t reg, bool debugOn);
 void emu_write(uint8_t reg, uint8_t value);

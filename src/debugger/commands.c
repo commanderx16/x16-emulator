@@ -70,7 +70,9 @@ command_t cmd_table[] = {
 
 	{ "bpl", cmd_bp_list, 0, 0, "bpl\nlist breakpoints" },
 	{ "bp", cmd_bp_add, 1, 0, "bp address\nadd a breakpoint at the specified address" },
-	{ "bpm", cmd_bpm_add, 1, 0, "bpm address\nadd a memory access breakpoint at the specified address" },
+	{ "bpm", cmd_bpm_add, 1, BPT_MEM, "bpm address\nadd a memory access breakpoint at the specified address" },
+	{ "bpmr", cmd_bpm_add, 1, BPT_RMEM, "bpmr address\nadd a memory read breakpoint at the specified address" },
+	{ "bpmw", cmd_bpm_add, 1, BPT_WMEM, "bpmw address\nadd a memory write breakpoint at the specified address" },
 	{ "bpc", cmd_bp_clear, 1, 0, "bpc bp_number|*\nclear a specific breakpoint or all" },
 
 	{ "?", cmd_help, 0, 0, "?|help\ndisplay help" },
@@ -578,7 +580,6 @@ void cmd_bp_add(int data, int argc, char* argv[]) {
 	bpm address
 */
 void cmd_bpm_add(int data, int argc, char* argv[]) {
-	(void)data;
 	(void)argc;
 	unsigned int addr= cmd_eval_addr(argv[1]);
 	if(addr == SYMBOL_NOT_FOUND) {
@@ -598,7 +599,7 @@ void cmd_bpm_add(int data, int argc, char* argv[]) {
 	}
 
 	breakpointsCount++;
-	breakpoints[breakpointsCount-1].type= BPT_MEM;
+	breakpoints[breakpointsCount-1].type= data;
 	breakpoints[breakpointsCount-1].addr= addr;
 }
 
@@ -838,23 +839,21 @@ void cmd_load(int data, int argc, char* argv[]) {
 		return;
 	}
 
-	FILE *fp= fopen(argv[1], "r");
+	SDL_RWops *fp= SDL_RWFromFile(argv[1], "rb");
 	if(fp == NULL) {
-		CON_Out(console, "%sERR: Can't open file%s", DT_color_red, DT_color_default);
+		CON_Out(console, "%sERR: Can't open file%s - %s", DT_color_red, argv[1], SDL_GetError(), DT_color_default);
 		return;
 	}
 
-	fseek(fp, 0L, SEEK_END);
-	long filesize= ftell(fp);
-	rewind(fp);
+	Sint64 filesize = SDL_RWsize(fp);
+	CON_Out(console, "file size %d", filesize);
 
 	if(addr + filesize >= 0x9F00) {
 		filesize= 0x9F00 - addr;
 	}
 
-	fread(&RAM[addr], filesize, 1, fp);
-
-	fclose(fp);
+	SDL_RWread(fp, &RAM[addr], filesize, 1);
+	SDL_RWclose(fp);
 
 	CON_Out(console, "loaded file to %04X:%04X", addr, addr+filesize-1);
 }
