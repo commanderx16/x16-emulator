@@ -3,6 +3,7 @@
 #include "../glue.h"
 #include "../video.h"
 #include "../memory.h"
+#include "../cpu/fake6502.h"
 #include "../console/DT_drawtext.h"
 #include "../console/SDL_console.h"
 #include "commands.h"
@@ -20,6 +21,7 @@ extern int currentBank;
 extern int currentData;
 extern int currentPCBank;
 extern int currentPC;
+extern int var_BPonBRK;
 extern ConsoleInformation *console;
 
 extern TBreakpoint breakpoints[DBG_MAX_BREAKPOINTS];
@@ -30,7 +32,9 @@ extern void DEBUGsetFont(int fontNumber);
 extern int layoutID;
 extern void DEBUGupdateLayout(int layoutID);
 
-int isROMdebugAllowed= 0;
+// VARS
+int var_isROMdebugAllowed= 0;
+int var_BPonBRK= 1;
 
 command_t cmd_table[] = {
 	{ "m", cmd_dump_mem, 0, 0, "m [[bank]address]\ndisplay CPU memory [at the given address]. If not specified the current bank will be used." },
@@ -87,13 +91,37 @@ command_t cmd_table[] = {
 	{ "data", cmd_data, 0, 0, "data\nToggle the display in full page of data" },
 	{ "font", cmd_font, 0, 0, "font [Name|ID [Path]]\nDisplay loaded fonts or Set the debugger font or Load and Set the debugger font" },
 
-	{ "romdebug", cmd_romdebug, 0, 0, "romdebug\ntoggle ROM debug mode to allow editing" },
+	// { "romdebug", cmd_romdebug, 0, 0, "romdebug\ntoggle ROM debug mode to allow editing" },
 	{ "info", cmd_info, 0, 0, "info\ndisplay X16 emulator & debugger info" },
+	{ "ticks", cmd_ticks, 0, 0, "ticks\ndisplay CPU clock ticks counter" },
+	{ "time", cmd_time, 1, 0, "time\nstart timer" },
+	{ "timelog", cmd_time, 1, 1, "timelog\nlog timer" },
+	{ "timeend", cmd_time, 1, 2, "timeend\nend timer" },
 
 	{ "load", cmd_load, 2, 0, "load file addr\nload binary file in memory" },
+	{ "var", cmd_var, 0, 0, "var name [value] \nset or get value for settings var" },
 
 	{ NULL, NULL, 0, 0, NULL }
 };
+
+/*
+
+*/
+void commands_init() {
+	symbol_init();
+
+	var_define("ROM_DEBUG", "allow to modify ROM", &var_isROMdebugAllowed);
+	var_define("BP_ON_BRK", "allow to see BRK as debugger breakpoint", &var_BPonBRK);
+
+}
+
+/*
+
+*/
+void commands_free() {
+	symbol_free();
+}
+
 
 /*
 	2000
@@ -230,7 +258,8 @@ void cmd_edit_mem(int data, int argc, char* argv[]) {
 				if (addr >= 0xA000) {
 					if(addr < 0xC000)
 						RAM[0xa000 + (bank << 13) + addr - 0xa000] = value;
-					else if(isROMdebugAllowed) {
+					// else if(isROMdebugAllowed) {
+					else if(var_isROMdebugAllowed) {
 						ROM[(bank << 14) + addr - 0xc000]= value;
 					}
 				} else {
@@ -792,17 +821,17 @@ void cmd_font(int data, int argc, char* argv[]) {
 	toggle ROM debug mode to allow editing
 	romdebug
 */
-void cmd_romdebug(int data, int argc, char* argv[]) {
-	(void)data;
-	(void)argc;
-	(void)argv;
+// void cmd_romdebug(int data, int argc, char* argv[]) {
+// 	(void)data;
+// 	(void)argc;
+// 	(void)argv;
 
-	isROMdebugAllowed= 1 - isROMdebugAllowed;
-	if(isROMdebugAllowed)
-		CON_Out(console, "%sCAUTION%s! ROM can be edited now", DT_color_red, DT_color_default);
-	else
-		CON_Out(console, "ROM is read-only now");
-}
+// 	isROMdebugAllowed= 1 - isROMdebugAllowed;
+// 	if(isROMdebugAllowed)
+// 		CON_Out(console, "%sCAUTION%s! ROM can be edited now", DT_color_red, DT_color_default);
+// 	else
+// 		CON_Out(console, "ROM is read-only now");
+// }
 
 /* ----------------------------------------------------------------------------
 	display X16 emulator & debugger info
@@ -815,6 +844,47 @@ void cmd_info(int data, int argc, char* argv[]) {
 
 	CON_Out(console, "x16 emulator: Release %s (%s)", VER, VER_NAME);
 	CON_Out(console, "x16 debugger: version %s", DBG_VER);
+}
+
+/* ----------------------------------------------------------------------------
+	display CPU clock ticks counter
+	ticks
+*/
+void cmd_ticks(int data, int argc, char* argv[]) {
+	(void)data;
+	(void)argc;
+	(void)argv;
+
+	CON_Out(console, "CPU clock ticks: %d", clockticks6502);
+}
+
+/* ----------------------------------------------------------------------------
+	start/log/end timer
+	time/timelog/timeend
+*/
+uint32_t timer;
+void cmd_time(int data, int argc, char* argv[]) {
+	(void)argc;
+
+	uint32_t timeDiff= 0;
+
+	switch(data) {
+		case 0:
+			timer= clockticks6502;
+			CON_Out(console, "%s: timer started", argv[1]);
+			return;
+
+		case 1:
+			timeDiff= clockticks6502 - timer;
+			break;
+
+		case 2:
+			timeDiff= clockticks6502 - timer;
+			timer= 0;
+			break;
+	}
+
+	CON_Out(console, "%s: %d ticks [8MHz: %fs]", argv[1], timeDiff, ((float)timeDiff)/8/1000/1000);
 }
 
 /* ----------------------------------------------------------------------------
@@ -858,3 +928,50 @@ void cmd_load(int data, int argc, char* argv[]) {
 	CON_Out(console, "loaded file to %04X:%04X", addr, addr+filesize-1);
 }
 
+/*
+
+*/
+void cmd_var_printvar(char *name) {
+	char *info;
+	int value= var_get(name, &info);
+	CON_Out(console, "    %s = %d ; %s", name, value, info);
+}
+
+/* ----------------------------------------------------------------------------
+	list settings vars or set or get value for a settings var
+	var [name [value]]
+*/
+void cmd_var(int data, int argc, char* argv[]) {
+	(void)data;
+
+	switch(argc) {
+		case 1:
+		{
+			var_get_list(cmd_var_printvar);
+			return;
+		}
+
+		case 2:
+		{
+			if(var_exists(argv[1]))  {
+				cmd_var_printvar(argv[1]);
+			} else {
+				CON_Out(console, "%sERR: var not found %s", DT_color_red, DT_color_default);
+			}
+			return;
+		}
+
+		case 3:
+		{
+			if(var_exists(argv[1]))  {
+				var_set(argv[1], strtol(argv[2], NULL, 0));
+				cmd_var_printvar(argv[1]);
+			} else {
+				CON_Out(console, "%sERR: var not found %s", DT_color_red, DT_color_default);
+			}
+			return;
+		}
+	}
+
+
+}

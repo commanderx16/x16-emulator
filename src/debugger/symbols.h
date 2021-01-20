@@ -39,4 +39,10 @@ SymLoadError symbol_load(char *filename, int bank, int *addedCount, int *dupCoun
 void symbol_dump(char *filename);
 const char *symbol_lookup(char *label);
 
+int var_get_list(void callback(char *name));
+int var_define(char *name, char *info, int *value);
+int var_get(char *name, char **info);
+int var_set(char *name, int value);
+int var_exists(char *name);
+
 #endif

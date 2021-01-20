@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include "symbols.h"
 #include "../iniparser/dictionary.h"
+#include "../iniparser/iniparser.h"
 
 static TSymbolVolume *volumes= NULL;
 static int volumesCount= 0;
@@ -65,6 +66,92 @@ char *ltrim(char *s)
 {
 	while(isspace(*s)) s++;
 	return s;
+}
+
+/*
+	VARS management
+*/
+
+// const char *var_get_string(char *name) {
+// 	char key[64];
+// 	snprintf(key, 64, "var:%s", name);
+// 	return iniparser_getstring(symbolsDict, key, NULL);
+// }
+
+// int var_set_string(char *name, char *value) {
+// 	char key[64];
+// 	snprintf(key, 64, "var:%s", name);
+// 	return iniparser_set(symbolsDict, key, value);
+// }
+
+// int var_get_int(char *name, int notFound) {
+// 	char key[64];
+// 	snprintf(key, 64, "var:%s", name);
+// 	return iniparser_getint(symbolsDict, key, notFound);
+// }
+
+// int var_set_int(char *name, int value) {
+// 	char valStr[16];
+// 	snprintf(valStr, 16, "%d", value);
+// 	return var_set_string(name, valStr);
+// }
+long long int var_getPtr(char *name, char **info) {
+	char key[64];
+	snprintf(key, 64, "var:%s", name);
+	const char *value= iniparser_getstring(symbolsDict, key, 0);
+	if(!value)
+		return -1;
+	if(info)
+		*info= strchr(value, '|') + 1;
+	return strtol(value, NULL, 0);
+}
+
+int var_get_list(void callback(char *name)) {
+	return iniparser_foreachkeys(symbolsDict, "var", callback);
+}
+
+int var_define(char *name, char *info, int *value) {
+	char key[64];
+	char valStr[64];
+	snprintf(key, sizeof key, "var:%s", name);
+	snprintf(valStr, sizeof valStr, "%lld|%s", (long long int)value, info);
+	return iniparser_set(symbolsDict, key, valStr);
+}
+
+int var_get(char *name, char **info) {
+	long long int valPtr= var_getPtr(name, info);
+	return valPtr ? *((int *)valPtr) : -1;
+}
+
+int var_set(char *name, int value) {
+	long long int valPtr= var_getPtr(name, NULL);
+	if(valPtr) {
+		*((int *)valPtr)= value;
+	}
+	return valPtr ? value : -1;
+}
+
+int var_exists(char *name) {
+	char key[64];
+	snprintf(key, 64, "var:%s", name);
+	return NULL != iniparser_getstring(symbolsDict, key, NULL);
+}
+/*
+	return addresses for symbol "label"
+*/
+const char *symbolDict_get_addresses(char *label) {
+	char key[1024];
+	snprintf(key, 1024, "symbol:%s", label);
+	return iniparser_getstring(symbolsDict, key, NULL);
+}
+
+/*
+	set addresses for symbol "label"
+*/
+int symbolDict_set_addresses(char *label, char *addresses) {
+	char key[1024];
+	snprintf(key, 1024, "symbol:%s", label);
+	return iniparser_set(symbolsDict, key, addresses);
 }
 
 /*
@@ -197,7 +284,7 @@ int symbol_find_addr(int bank, char *label) {
 	lookup for label and return addr
 */
 const char *symbol_lookup(char *label) {
-	return dictionary_get(symbolsDict, label, NULL);
+	return symbolDict_get_addresses(label);
 }
 
 
@@ -256,15 +343,15 @@ int symbol_add(int bank, int addr, char *label) {
 
 	addr24= (bank << 16) | addr;
 	sprintf(addrStr, "%06X", addr24);
-	value= dictionary_get(symbolsDict, label, NULL);
+	value= symbolDict_get_addresses(label);
 	if(value && !strstr(value, addrStr)) {
 		addresses= calloc(1, strlen(value) + 1 + strlen(addrStr) + 1);
 		sprintf(addresses, "%s,%s", value, addrStr);
-		dictionary_set(symbolsDict, label, addresses);
+		symbolDict_set_addresses(label, addresses);
 		free(addresses);
 	}
 	else
-		dictionary_set(symbolsDict, label, addrStr);
+		symbolDict_set_addresses(label, addrStr);
 
 
 	addr= addr & 0xFFFF;
@@ -409,6 +496,8 @@ void symbol_dump(char *filename) {
 */
 void symbol_init() {
 	symbolsDict= dictionary_new(0);
+	dictionary_set(symbolsDict, "symbol", NULL);
+	dictionary_set(symbolsDict, "var", NULL);
 }
 
 /*
@@ -424,6 +513,5 @@ void symbol_free() {
 
 	free(volumes);
 
-	if(symbolsDict)
-		dictionary_del(symbolsDict);
+	dictionary_del(symbolsDict);
 }
