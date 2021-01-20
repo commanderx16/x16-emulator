@@ -104,6 +104,7 @@ int breakPoint = -1; 											// User Break
 int stepBreakPoint = -1;										// Single step break.
 int dumpmode          = DDUMP_RAM;
 int showFullConsole = 0;
+extern int var_BPonBRK;
 
 TBreakpoint breakpoints[DBG_MAX_BREAKPOINTS];
 int breakpointsCount= 0;
@@ -300,6 +301,11 @@ static void DEBUGHighlightRow(int row, int xPos, int w) {
 int  DEBUGGetCurrentStatus(void) {
 
 	SDL_Event event;
+
+	if(var_BPonBRK && (0 == real_read6502(pc, false, 0))) {
+		currentPC = ++pc;
+		currentMode = DMODE_STOP;
+	}
 
 	if (currentMode == DMODE_STEP) {							// Single step before
 		currentPC = pc;											// Update current PC
@@ -531,7 +537,7 @@ void DEBUGInitUI(SDL_Renderer *pRenderer) {
 	console= CON_Init(fontPath, dbgRenderer, 50, Con_rect);
 	CON_SetExecuteFunction(console, DEBUG_Command_Handler);
 
-	symbol_init();
+	commands_init();
 
 	DEBUGreadSettings(iniDict);
 
@@ -550,7 +556,7 @@ void DEBUGInitUI(SDL_Renderer *pRenderer) {
 // *******************************************************************************************
 void DEBUGFreeUI() {
 	CON_Destroy(console);
-	symbol_free();
+	commands_free();
 }
 
 // *******************************************************************************************
@@ -1073,8 +1079,8 @@ void DEBUGRenderDisplay(int width, int height) {
 	}
 
 	if(wannaShowMouseCoord) {
-		int mouseX, mouseY;
 		char mouseCoord[30];
+		int mouseX, mouseY;
 		SDL_GetMouseState(&mouseX, &mouseY);
 		sprintf(mouseCoord, "%03d %03d", mouseX, mouseY);
 		DT_DrawText2(dbgRenderer, mouseCoord, dbgFontID, win_width-DT_FontWidth(dbgFontID)*9, win_height - con_height, col_highlight);

@@ -13,6 +13,9 @@ typedef struct {
 
 extern command_t cmd_table[];
 
+void commands_init();
+void commands_free();
+
 void cmd_dump_mem(int data, int argc, char* argv[]);
 void cmd_dump_videomem(int data, int argc, char* argv[]);
 void cmd_edit_mem(int data, int argc, char* argv[]);
@@ -39,10 +42,13 @@ void cmd_code(int data, int argc, char* argv[]);
 void cmd_data(int data, int argc, char* argv[]);
 void cmd_font(int data, int argc, char* argv[]);
 
-void cmd_romdebug(int data, int argc, char* argv[]);
+// void cmd_romdebug(int data, int argc, char* argv[]);
 void cmd_info(int data, int argc, char* argv[]);
+void cmd_ticks(int data, int argc, char* argv[]);
+void cmd_time(int data, int argc, char* argv[]);
 
 void cmd_load(int data, int argc, char* argv[]);
+void cmd_var(int data, int argc, char* argv[]);
 
 
 #endif

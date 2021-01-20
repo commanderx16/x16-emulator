@@ -397,6 +397,40 @@ const char ** iniparser_getseckeys(const dictionary * d, const char * s, const c
 
 /*-------------------------------------------------------------------------*/
 /**
+  @brief    Call a callback for each key in a section of a dictionary.
+  @param    d    Dictionary to examine
+  @param    s    Section name of dictionary to examine
+  @return   Number of keys in section
+ */
+/*--------------------------------------------------------------------------*/
+int iniparser_foreachkeys(const dictionary * d, const char * s, void callback(char *name))
+{
+    int keyCount, j, seclen ;
+    char keym[ASCIILINESZ+1];
+
+    if (d==NULL) return 0;
+    if (! iniparser_find_entry(d, s)) return 0;
+
+    seclen  = (int)strlen(s);
+    strlwc(s, keym, sizeof(keym));
+    keym[seclen] = ':';
+
+    keyCount = 0;
+
+    for (j=0 ; j<d->size ; j++) {
+        if (d->key[j]==NULL)
+            continue ;
+        if (!strncmp(d->key[j], keym, seclen+1)) {
+			callback(strchr(d->key[j], ':')+1);
+            keyCount++;
+        }
+    }
+
+    return keyCount;
+}
+
+/*-------------------------------------------------------------------------*/
+/**
   @brief    Get the string associated to a key
   @param    d       Dictionary to search
   @param    key     Key string to look for

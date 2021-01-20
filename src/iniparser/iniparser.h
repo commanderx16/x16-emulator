@@ -155,6 +155,7 @@ int iniparser_getsecnkeys(const dictionary * d, const char * s);
 /*--------------------------------------------------------------------------*/
 const char ** iniparser_getseckeys(const dictionary * d, const char * s, const char ** keys);
 
+int iniparser_foreachkeys(const dictionary * d, const char * s, void callback(char *s));
 
 /*-------------------------------------------------------------------------*/
 /**
