@@ -403,7 +403,7 @@ const char ** iniparser_getseckeys(const dictionary * d, const char * s, const c
   @return   Number of keys in section
  */
 /*--------------------------------------------------------------------------*/
-int iniparser_foreachkeys(const dictionary * d, const char * s, void callback(char *name))
+int iniparser_foreachkeys(const dictionary * d, const char * s, foreachCallback callback)
 {
     int keyCount, j, seclen ;
     char keym[ASCIILINESZ+1];
@@ -421,7 +421,7 @@ int iniparser_foreachkeys(const dictionary * d, const char * s, void callback(ch
         if (d->key[j]==NULL)
             continue ;
         if (!strncmp(d->key[j], keym, seclen+1)) {
-			callback(strchr(d->key[j], ':')+1);
+			callback(d, d->key[j], strchr(d->key[j], ':')+1);
             keyCount++;
         }
     }
