@@ -2,6 +2,7 @@
 #define _SYMBOLS_H
 
 #include <stdint.h>
+#include "../iniparser/iniparser.h"
 
 #define SYMBOL_LABEL_MAXLEN 14
 
@@ -39,10 +40,12 @@ SymLoadError symbol_load(char *filename, int bank, int *addedCount, int *dupCoun
 void symbol_dump(char *filename);
 const char *symbol_lookup(char *label);
 
-int var_get_list(void callback(char *name));
-int var_define(char *name, char *info, int *value);
-int var_get(char *name, char **info);
-int var_set(char *name, int value);
-int var_exists(char *name);
+int var_get_list(foreachCallback callback);
+int var_define(const char *name, const char *info, const int *value);
+int var_get(const char *name, const char **info);
+int var_set(const char *name, const int value);
+int var_exists(const char *name);
+
+char *ltrim(char *s);
 
 #endif

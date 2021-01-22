@@ -24,7 +24,6 @@
 #include "../console/SDL_console.h"
 #include "../console/DT_drawtext.h"
 #include "../console/split.h"
-#include "../iniparser/iniparser.h"
 #include "commands.h"
 #include "symbols.h"
 #include "breakpoints.h"
@@ -78,23 +77,53 @@ static void DEBUG_Command_Handler(ConsoleInformation *console, char* command);
 //
 //				0-9A-F sets the program address, with shift sets the data address.
 //
+/*
 #define DBGKEY_HOME 	SDLK_F1 								// F1 is "Goto PC"
 #define DBGKEY_RESET 	SDLK_F2 								// F2 resets the 6502
-#define DBGKEY_RUN 		SDLK_F5 								// F5 is run.
+int DBGKEY_RUN= 		SDLK_F5; 								// F5 is run.
 #define DBGKEY_SETBRK 	SDLK_F9									// F9 sets breakpoint
 #define DBGKEY_STEP 	SDLK_F11 								// F11 is step into.
 #define DBGKEY_STEPOVER	SDLK_F10 								// F10 is step over.
 #define DBGKEY_PAGE_NEXT	SDLK_KP_PLUS
 #define DBGKEY_PAGE_PREV	SDLK_KP_MINUS
+*/
+
+enum {
+		DBGKEY_HOME= 1,
+		DBGKEY_RESET,
+		DBGKEY_RUN,
+		DBGKEY_SETBRK,
+		DBGKEY_STEP,
+		DBGKEY_STEPOVER,
+		DBGKEY_PAGE_NEXT,
+		DBGKEY_PAGE_PREV,
+		DBGKEY_PASTE,
+};
+
+typedef struct {
+	char *name;
+	int binding;
+	SDL_Keycode key;
+	SDL_Keymod keyMod;
+} KeyBinding;
+
+KeyBinding keyBindings[]= {
+	{"DBG_STEP", DBGKEY_STEP, SDLK_F11, 0xFFFF},
+	{"DBG_STEPOVER", DBGKEY_STEPOVER, SDLK_F10, 0xFFFF},
+	{"DBG_RUN", DBGKEY_RUN, SDLK_F5, 0xFFFF},
+	{"DBG_SETBRK", DBGKEY_SETBRK, SDLK_F9, 0xFFFF},
+	{"DBG_HOME", DBGKEY_HOME, SDLK_F1, 0xFFFF},
+	{"DBG_RESET", DBGKEY_RESET, SDLK_F2, 0xFFFF},
+	{"DBG_PASTE", DBGKEY_PASTE, SDLK_v, CMD_KEY},
+	{NULL, 0, 0, 0},
+};
 
 #define DBGSCANKEY_BRK 	SDL_SCANCODE_F12 						// F12 is break into running code.
-#define DBGSCANKEY_SHOW	SDL_SCANCODE_TAB 						// Show screen key.
 																// *** MUST BE SCAN CODES ***
 
 #define DBGMAX_ZERO_PAGE_REGISTERS 20
 
 int showDebugOnRender = 0;										// Used to trigger rendering in video.c
-int showFullDisplay = 0; 										// If non-zero show the whole thing.
 int currentPC = -1;												// Current PC value.
 int currentData = 0;											// Current data display address.
 int currentPCBank = -1;
@@ -333,8 +362,6 @@ int  DEBUGGetCurrentStatus(void) {
 		currentPCBank= currentPC < 0xC000 ? memory_get_ram_bank() : memory_get_rom_bank();
 
 	if (currentMode != DMODE_RUN) {								// Not running, we own the keyboard.
-		showFullDisplay = 										// Check showing screen.
-					SDL_GetKeyboardState(NULL)[DBGSCANKEY_SHOW];
 		while (SDL_PollEvent(&event)) { 						// We now poll events here.
 
 			switch(event.type) {
@@ -361,7 +388,7 @@ int  DEBUGGetCurrentStatus(void) {
 						break;
 
 					mouseZone= MZ_NONE;
-					SDL_Point mouse_position= {event.motion.x, event.motion.y};;
+					SDL_Point mouse_position= {event.motion.x, event.motion.y};
 					for(int idx= MZ_NONE+1; idx < mouseZonesCount; idx++) {
 						if(SDL_PointInRect(&mouse_position, mouseZones[idx].rect)) {
 							mouseZone= idx;
@@ -458,6 +485,8 @@ void DEBUGsetFont(int fontNumber) {
 
 }
 
+/*
+*/
 bool DEBUGreadColour(const dictionary *dict, const char *key, SDL_Colour *col) {
 	int val= iniparser_getint(dict, key, -1);
 	if(val>0) {
@@ -469,15 +498,71 @@ bool DEBUGreadColour(const dictionary *dict, const char *key, SDL_Colour *col) {
 	return false;
 }
 
-void DEBUGreadSettings(dictionary *iniDict) {
-	const char *keys[16];
-	int cmdCount= iniparser_getsecnkeys(iniDict, "dbg_ini_script");
-	iniparser_getseckeys(iniDict, "dbg_ini_script", keys);
-	for(int idx =0; idx < cmdCount; idx++) {
-		char *cmd= (char *)iniparser_getstring(iniDict, keys[idx], "");
-		CON_Out(console, cmd);
-		DEBUG_Command_Handler(console, cmd);
+/*
+*/
+void DEBUGiniScriptExecLine(const dictionary *dict, const char *key, const char *entry) {
+	(void)entry;
+	const char *cmd= iniparser_getstring(dict, key, "");
+	CON_Out(console, cmd);
+	DEBUG_Command_Handler(console, (char *)cmd);
+}
+
+/*
+*/
+void DEBUGsetKeyBinding(const dictionary *dict, const char *key, const char *entry) {
+	char keyName[256];
+	const char *subStr;
+	char *sep;
+	SDL_Keymod mods= 0;
+	SDL_Keycode keycode;
+	const char *binding= iniparser_getstring(dict, key, "");
+
+	*keyName= 0;
+	subStr= binding;
+	for(int idx= 0; keyBindings[idx].binding; idx++) {
+		if(!stricmp(keyBindings[idx].name, entry)) {
+
+			do {
+				sep= strstr(subStr, "::");
+
+				if(!strnicmp("SHIFT", subStr, 5))
+					mods |= KMOD_SHIFT;
+				else
+				if(!strnicmp("CTRL", subStr, 4))
+					mods |= KMOD_CTRL;
+				else
+				if(!strnicmp("ALT", subStr, 3))
+					mods |= KMOD_ALT;
+				else
+				if(!strnicmp("GUI", subStr, 3))
+					mods |= KMOD_GUI;
+				else
+					strncpy(keyName, subStr, sep != NULL ? sep - subStr : sizeof keyName);
+
+				subStr= sep+2;
+
+			} while(sep != NULL);
+
+			keycode= SDL_GetKeyFromName(ltrim(keyName));
+			if(keycode == SDLK_UNKNOWN) {
+				CON_Out(console, "%sERR: unkown binding for %s %s", DT_color_red, entry, DT_color_default);
+				return;
+			}
+
+			keyBindings[idx].key= keycode;
+			keyBindings[idx].keyMod= mods;
+		}
 	}
+
+}
+
+/*
+*/
+void DEBUGreadSettings(dictionary *iniDict) {
+
+	iniparser_foreachkeys(iniDict, "dbg_ini_script", DEBUGiniScriptExecLine);
+
+	iniparser_foreachkeys(iniDict, "key_bindings", DEBUGsetKeyBinding);
 
 	char buffer[32];
 	char *bp;
@@ -512,6 +597,8 @@ void DEBUGreadSettings(dictionary *iniDict) {
 	wannaShowMouseCoord= 1 == iniparser_getboolean(iniDict, "dbg:showMouseCoord", 0);
 }
 
+/*
+*/
 void DEBUGInitUI(SDL_Renderer *pRenderer) {
 	(void)pRenderer;
 
@@ -587,13 +674,20 @@ void DEBUGBreakToDebugger(void) {
 //									Handle keyboard state.
 //
 // *******************************************************************************************
+int DEBUGGetKeyBinding(SDL_Keysym *key) {
+	for(int idx= 0; keyBindings[idx].binding; idx++) {
+		if((key->sym == keyBindings[idx].key) && (key->mod & keyBindings[idx].keyMod))
+			return keyBindings[idx].binding;
+	}
+	return 0;
+}
 
 static int DEBUGHandleKeyEvent(SDL_Event *event) {
 	int opcode;
 
 	switch(event->type) {
 		case SDL_KEYDOWN:
-			switch(event->key.keysym.sym) {
+			switch(DEBUGGetKeyBinding(&(event->key.keysym))) {
 
 				case DBGKEY_STEP:									// Single step (F11 by default)
 					currentMode = DMODE_STEP; 						// Runs once, then switches back.
@@ -631,24 +725,15 @@ static int DEBUGHandleKeyEvent(SDL_Event *event) {
 					currentPCBank= -1;
 					break;
 
-				// case DBGKEY_PAGE_NEXT:
-				// 	currentBank += 1;
-				// 	return 1;
-
-				// case DBGKEY_PAGE_PREV:
-				// 	currentBank -= 1;
-				// 	return 1;
-
-				case SDLK_v:
-
-					if(event->key.keysym.mod & CMD_KEY) {
-						char *text= SDL_GetClipboardText();
-						if(text) {
-							Cursor_Paste(console, text);
-							SDL_free(text);
-						}
+				case DBGKEY_PASTE:
+				{
+					char *text= SDL_GetClipboardText();
+					if(text) {
+						Cursor_Paste(console, text);
+						SDL_free(text);
 					}
 					break;
+				}
 			}
 			break;
 
@@ -1037,8 +1122,6 @@ void DEBUGupdateLayout(int id) {
 }
 
 void DEBUGRenderDisplay(int width, int height) {
-
-	if (showFullDisplay) return;								// Not rendering debug.
 
 	CON_DrawConsole(console);
 

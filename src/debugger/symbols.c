@@ -2,9 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include "symbols.h"
 #include "../iniparser/dictionary.h"
-#include "../iniparser/iniparser.h"
+#include "symbols.h"
 
 static TSymbolVolume *volumes= NULL;
 static int volumesCount= 0;
@@ -72,30 +71,7 @@ char *ltrim(char *s)
 	VARS management
 */
 
-// const char *var_get_string(char *name) {
-// 	char key[64];
-// 	snprintf(key, 64, "var:%s", name);
-// 	return iniparser_getstring(symbolsDict, key, NULL);
-// }
-
-// int var_set_string(char *name, char *value) {
-// 	char key[64];
-// 	snprintf(key, 64, "var:%s", name);
-// 	return iniparser_set(symbolsDict, key, value);
-// }
-
-// int var_get_int(char *name, int notFound) {
-// 	char key[64];
-// 	snprintf(key, 64, "var:%s", name);
-// 	return iniparser_getint(symbolsDict, key, notFound);
-// }
-
-// int var_set_int(char *name, int value) {
-// 	char valStr[16];
-// 	snprintf(valStr, 16, "%d", value);
-// 	return var_set_string(name, valStr);
-// }
-long long int var_getPtr(char *name, char **info) {
+long long int var_getPtr(const char *name, const char **info) {
 	char key[64];
 	snprintf(key, 64, "var:%s", name);
 	const char *value= iniparser_getstring(symbolsDict, key, 0);
@@ -106,11 +82,11 @@ long long int var_getPtr(char *name, char **info) {
 	return strtol(value, NULL, 0);
 }
 
-int var_get_list(void callback(char *name)) {
+int var_get_list(foreachCallback callback) {
 	return iniparser_foreachkeys(symbolsDict, "var", callback);
 }
 
-int var_define(char *name, char *info, int *value) {
+int var_define(const char *name, const char *info, const int *value) {
 	char key[64];
 	char valStr[64];
 	snprintf(key, sizeof key, "var:%s", name);
@@ -118,12 +94,12 @@ int var_define(char *name, char *info, int *value) {
 	return iniparser_set(symbolsDict, key, valStr);
 }
 
-int var_get(char *name, char **info) {
+int var_get(const char *name, const char **info) {
 	long long int valPtr= var_getPtr(name, info);
 	return valPtr ? *((int *)valPtr) : -1;
 }
 
-int var_set(char *name, int value) {
+int var_set(const char *name, const int value) {
 	long long int valPtr= var_getPtr(name, NULL);
 	if(valPtr) {
 		*((int *)valPtr)= value;
@@ -131,7 +107,7 @@ int var_set(char *name, int value) {
 	return valPtr ? value : -1;
 }
 
-int var_exists(char *name) {
+int var_exists(const char *name) {
 	char key[64];
 	snprintf(key, 64, "var:%s", name);
 	return NULL != iniparser_getstring(symbolsDict, key, NULL);

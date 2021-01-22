@@ -7,6 +7,7 @@
 #include "../console/DT_drawtext.h"
 #include "../console/SDL_console.h"
 #include "commands.h"
+#include "../iniparser/iniparser.h"
 #include "symbols.h"
 #include "registers.h"
 #include "version.h"
@@ -854,7 +855,6 @@ void cmd_ticks(int data, int argc, char* argv[]) {
 	(void)data;
 	(void)argc;
 	(void)argv;
-
 	CON_Out(console, "CPU clock ticks: %d", clockticks6502);
 }
 
@@ -931,10 +931,10 @@ void cmd_load(int data, int argc, char* argv[]) {
 /*
 
 */
-void cmd_var_printvar(char *name) {
-	char *info;
-	int value= var_get(name, &info);
-	CON_Out(console, "    %s = %d ; %s", name, value, info);
+void cmd_var_printvar(const dictionary * d, const char *key, const char *entry) {
+	const char *info;
+	int value= var_get(entry, &info);
+	CON_Out(console, "    %s = %d ; %s", entry, value, info);
 }
 
 /* ----------------------------------------------------------------------------
@@ -954,7 +954,7 @@ void cmd_var(int data, int argc, char* argv[]) {
 		case 2:
 		{
 			if(var_exists(argv[1]))  {
-				cmd_var_printvar(argv[1]);
+				cmd_var_printvar(NULL, NULL, argv[1]);
 			} else {
 				CON_Out(console, "%sERR: var not found %s", DT_color_red, DT_color_default);
 			}
@@ -965,7 +965,7 @@ void cmd_var(int data, int argc, char* argv[]) {
 		{
 			if(var_exists(argv[1]))  {
 				var_set(argv[1], strtol(argv[2], NULL, 0));
-				cmd_var_printvar(argv[1]);
+				cmd_var_printvar(NULL, NULL, argv[1]);
 			} else {
 				CON_Out(console, "%sERR: var not found %s", DT_color_red, DT_color_default);
 			}
