@@ -107,19 +107,18 @@ typedef struct {
 	SDL_Keymod keyMod;
 } KeyBinding;
 
+#define KMOD_MASK ~(KMOD_NUM || KMOD_CAPS || KMOD_MODE)
+
 KeyBinding keyBindings[]= {
-	{"DBG_STEP", DBGKEY_STEP, SDLK_F11, 0xFFFF},
-	{"DBG_STEPOVER", DBGKEY_STEPOVER, SDLK_F10, 0xFFFF},
-	{"DBG_RUN", DBGKEY_RUN, SDLK_F5, 0xFFFF},
-	{"DBG_SETBRK", DBGKEY_SETBRK, SDLK_F9, 0xFFFF},
-	{"DBG_HOME", DBGKEY_HOME, SDLK_F1, 0xFFFF},
-	{"DBG_RESET", DBGKEY_RESET, SDLK_F2, 0xFFFF},
+	{"DBG_STEP", DBGKEY_STEP, SDLK_F11, KMOD_NONE},
+	{"DBG_STEPOVER", DBGKEY_STEPOVER, SDLK_F10, KMOD_NONE},
+	{"DBG_RUN", DBGKEY_RUN, SDLK_F5, KMOD_NONE},
+	{"DBG_SETBRK", DBGKEY_SETBRK, SDLK_F9, KMOD_NONE},
+	{"DBG_HOME", DBGKEY_HOME, SDLK_F1, KMOD_NONE},
+	{"DBG_RESET", DBGKEY_RESET, SDLK_F2, KMOD_NONE},
 	{"DBG_PASTE", DBGKEY_PASTE, SDLK_v, CMD_KEY},
 	{NULL, 0, 0, 0},
 };
-
-#define DBGSCANKEY_BRK 	SDL_SCANCODE_F12 						// F12 is break into running code.
-																// *** MUST BE SCAN CODES ***
 
 #define DBGMAX_ZERO_PAGE_REGISTERS 20
 
@@ -237,7 +236,7 @@ bool DEBUGisOnBreakpoint(int addr, TBreakpointType type) {
 //
 // *******************************************************************************************
 void DEBUGstop() {
-	currentPC = pc;
+	currentPC = -1;
 	currentPCBank= -1;
 	currentMode = DMODE_STOP;
 }
@@ -326,7 +325,6 @@ static void DEBUGHighlightRow(int row, int xPos, int w) {
 //			If it returns -ve, then exit.
 //
 // *******************************************************************************************
-
 int  DEBUGGetCurrentStatus(void) {
 
 	SDL_Event event;
@@ -350,10 +348,10 @@ int  DEBUGGetCurrentStatus(void) {
 		currentPCBank= -1;
 	}
 
-	if (SDL_GetKeyboardState(NULL)[DBGSCANKEY_BRK]) {			// Stop on break pressed.
-		currentMode = DMODE_STOP;
-		currentPC = pc; 										// Set the PC to what it is.
-	}
+	// if (SDL_GetKeyboardState(NULL)[DBGSCANKEY_BRK]) {			// Stop on break pressed.
+	// 	currentMode = DMODE_STOP;
+	// 	currentPC = pc; 										// Set the PC to what it is.
+	// }
 
 	if(currentPC < 0)
 		currentPC = pc;
@@ -660,23 +658,13 @@ void DEBUGSetBreakPoint(int newBreakPoint) {
 
 // *******************************************************************************************
 //
-//								Break into debugger from code.
-//
-// *******************************************************************************************
-
-void DEBUGBreakToDebugger(void) {
-	currentMode = DMODE_STOP;
-	currentPC = pc;
-}
-
-// *******************************************************************************************
-//
 //									Handle keyboard state.
 //
 // *******************************************************************************************
 int DEBUGGetKeyBinding(SDL_Keysym *key) {
+	SDL_Keymod mods= key->mod & 0x0FFF;
 	for(int idx= 0; keyBindings[idx].binding; idx++) {
-		if((key->sym == keyBindings[idx].key) && (key->mod & keyBindings[idx].keyMod))
+		if((key->sym == keyBindings[idx].key) && ((mods & keyBindings[idx].keyMod) || (!mods && !keyBindings[idx].keyMod)))
 			return keyBindings[idx].binding;
 	}
 	return 0;

@@ -28,6 +28,7 @@ void DEBUGInitUI(SDL_Renderer *pRenderer);
 void DEBUGFreeUI();
 void DEBUGsetFont(int fontNumber);
 void DEBUGupdateLayout(int id);
+void DEBUGstop();
 
 #define DMODE_STOP 		(0)										// Debugger is waiting for action.
 #define DMODE_STEP 		(1)										// Debugger is doing a single step

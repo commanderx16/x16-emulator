@@ -85,6 +85,7 @@ static SDL_Rect uiBtns[]= {
 	{ 8, 73, 84, 14},
 	{ 8, 89, 84, 14},
 	{ 8, 105, 84, 14},
+	{ 8, 137, 84, 14},
 	{ 0, 0, 0, 0}
 };
 static int uiBtnSelected= -1;
@@ -1187,6 +1188,9 @@ video_update()
 							break;
 						case 6:
 							sdcard_detach();
+							break;
+						case 7:
+							DEBUGstop();
 							break;
 					}
 					break;
