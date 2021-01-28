@@ -22,7 +22,6 @@ extern int currentBank;
 extern int currentData;
 extern int currentPCBank;
 extern int currentPC;
-extern int var_BPonBRK;
 extern ConsoleInformation *console;
 
 extern TBreakpoint breakpoints[DBG_MAX_BREAKPOINTS];
@@ -99,7 +98,7 @@ command_t cmd_table[] = {
 	{ "timelog", cmd_time, 1, 1, "timelog\nlog timer" },
 	{ "timeend", cmd_time, 1, 2, "timeend\nend timer" },
 
-	{ "load", cmd_load, 2, 0, "load file addr\nload binary file in memory" },
+	{ "load", cmd_load, 2, 0, "load file addr [[from:]len]\nload binary file in memory" },
 	{ "var", cmd_var, 0, 0, "var name [value] \nset or get value for settings var" },
 
 	{ NULL, NULL, 0, 0, NULL }
@@ -125,30 +124,52 @@ void commands_free() {
 
 
 /*
-	2000
-	102000
-	symbol
-	10:2000
-	10:symbol
+	2000		2000
+	102000		102000
+	symbol		5C598
+	10:2000		102000
+	10:022000	102000
+	10:symbol	102000
 */
 unsigned int cmd_eval_addr(char *str) {
-	int bank= currentPCBank>0 ? currentPCBank : 0;
+	int bank= -1;
 	char *colon= strchr(str, ':');
 	char *end;
+	const char *strEnd;
 
 	if(colon) {
 		bank= (int)strtol(str, NULL, 16);
 		str= colon+1;
 	}
-
+	strEnd= str + strlen(str);
 	unsigned int addr= (int)strtol(str, &end, 16);
 
-	if(end != str+strlen(str)) {
-		addr= symbol_find_addr(bank, str);
-		if(addr == SYMBOL_NOT_FOUND)
-			return addr;
+	// number ?
+	if(end == strEnd) {
+		if(bank>=0)
+			return (addr & 0xFFFF) | bank << 16;
+
+		if(addr <= 0xFFFF)
+			addr|= currentPCBank << 16;
+
+		return addr;
 	}
-	return (bank << 16) | addr;
+
+	if(bank<0) {
+		const char *addresses= symbol_lookup(str);
+		if(!addresses)
+			return SYMBOL_NOT_FOUND;
+		addr= (int)strtol(addresses, &end, 16);
+		// return addr if no duplicates
+		if(end == (addresses+strlen(addresses))) {
+			return addr;
+		}
+		return SYMBOL_NOT_FOUND;
+	}
+
+	addr= symbol_find_addr(bank, str);
+	return addr == SYMBOL_NOT_FOUND ? SYMBOL_NOT_FOUND : addr;
+
 }
 
 /* ----------------------------------------------------------------------------
@@ -254,14 +275,21 @@ void cmd_edit_mem(int data, int argc, char* argv[]) {
 			while(argc--) {
 				value= (int)strtol(argv[idx++], NULL, 16);
 				addr &= 0xFFFF;
-				if(!isValidAddr(bank, addr))
-					continue;
+				if(!isValidAddr(bank, addr)) {
+					CON_Out(console, "%sERR: Invalid address %02X:%04X", DT_color_red, bank, addr, DT_color_default);
+					return;
+				}
 				if (addr >= 0xA000) {
 					if(addr < 0xC000)
-						RAM[0xa000 + (bank << 13) + addr - 0xa000] = value;
-					// else if(isROMdebugAllowed) {
-					else if(var_isROMdebugAllowed) {
-						ROM[(bank << 14) + addr - 0xc000]= value;
+						RAM[addr + (bank << 13)] = value;
+					else {
+						if(var_isROMdebugAllowed)
+							ROM[(bank << 14) + addr - 0xc000]= value;
+						else {
+							CON_Out(console, "%sERR: Not allowed to write into ROM - use var ROM_DEBUG to change it%s", DT_color_red, DT_color_default);
+							return;
+						}
+
 					}
 				} else {
 					RAM[addr] = value;
@@ -308,11 +336,21 @@ void cmd_fill_memory(int data, int argc, char* argv[]) {
 			int bank= addr >> 16;
 			while(length--) {
 				addr &= 0xFFFF;
-				if(!isValidAddr(bank, addr))
-					continue;
+				if(!isValidAddr(bank, addr)) {
+					CON_Out(console, "%sERR: Invalid address %02X:%04X", DT_color_red, bank, addr, DT_color_default);
+					return;
+				}
 				if (addr >= 0xA000) {
 					if(addr < 0xC000)
-						RAM[0xa000 + (bank << 13) + addr - 0xa000] = value;
+						RAM[addr + (bank << 13)] = value;
+					else {
+						if(var_isROMdebugAllowed)
+							ROM[(bank << 14) + addr - 0xc000]= value;
+						else{
+							CON_Out(console, "%sERR: Not allowed to write into ROM - use var ROM_DEBUG to change it%s", DT_color_red, DT_color_default);
+							return;
+						}
+					}
 				} else {
 					RAM[addr] = value;
 				}
@@ -665,26 +703,26 @@ void cmd_sym(int data, int argc, char* argv[]) {
 
 	const char *addresses= symbol_lookup(argv[1]);
 	if(addresses) {
-		CON_Out(console, addresses);
+		CON_Out(console, "%s: %s", argv[1], addresses);
 		return;
 	}
-	// else
-	// 	CON_Out(console, "symbol \"%s\" not found", argv[1]);
 
 	TSymbolVolume *vol;
-	int hasFound= 0;
-
+	int isFound= 0;
 	unsigned int addr= cmd_eval_addr(argv[1]);
-
-	for(int idx= 0; (vol= symbol_get_volume(idx)); idx++) {
-		char *label= symbol_find_label(vol->bank, addr);
-		if(label) {
-			hasFound= 1;
-			CON_Out(console, "%06X: %s", (vol->bank << 16) | addr, label);
+	if(addr != SYMBOL_NOT_FOUND) {
+		for(int idx= 0; (vol= symbol_get_volume(idx)); idx++) {
+			char *label= symbol_find_label(vol->bank, addr);
+			if(label) {
+				isFound= 1;
+				CON_Out(console, "%s: %06X", label, (vol->bank << 16) | addr);
+			}
 		}
 	}
-	if(!hasFound)
+
+	if(!isFound)
 		CON_Out(console, "symbol \"%s\" not found", argv[1]);
+
 }
 
 /* ----------------------------------------------------------------------------
@@ -819,22 +857,6 @@ void cmd_font(int data, int argc, char* argv[]) {
 }
 
 /* ----------------------------------------------------------------------------
-	toggle ROM debug mode to allow editing
-	romdebug
-*/
-// void cmd_romdebug(int data, int argc, char* argv[]) {
-// 	(void)data;
-// 	(void)argc;
-// 	(void)argv;
-
-// 	isROMdebugAllowed= 1 - isROMdebugAllowed;
-// 	if(isROMdebugAllowed)
-// 		CON_Out(console, "%sCAUTION%s! ROM can be edited now", DT_color_red, DT_color_default);
-// 	else
-// 		CON_Out(console, "ROM is read-only now");
-// }
-
-/* ----------------------------------------------------------------------------
 	display X16 emulator & debugger info
 	info
 */
@@ -889,7 +911,7 @@ void cmd_time(int data, int argc, char* argv[]) {
 
 /* ----------------------------------------------------------------------------
 	load binary file in memory
-	load file addr
+	load file addr [[from:]len]
 */
 void cmd_load(int data, int argc, char* argv[]) {
 	(void)data;
@@ -909,29 +931,91 @@ void cmd_load(int data, int argc, char* argv[]) {
 		return;
 	}
 
+	Sint64 len= -1;
+	Sint64 from= 0;
+
+	if(argc>3) {
+		char *lenStr= strchr(argv[3], ':');
+		if(lenStr != NULL) {
+			from= strtol(argv[3], NULL, 16);
+			lenStr++;
+		} else {
+			lenStr= argv[3];
+		}
+		len= strtol(lenStr, NULL, 16);
+		len= len ? len : -1;
+	}
+
 	SDL_RWops *fp= SDL_RWFromFile(argv[1], "rb");
 	if(fp == NULL) {
 		CON_Out(console, "%sERR: Can't open file%s - %s", DT_color_red, argv[1], SDL_GetError(), DT_color_default);
 		return;
 	}
-
-	Sint64 filesize = SDL_RWsize(fp);
-	CON_Out(console, "file size %d", filesize);
-
-	if(addr + filesize >= 0x9F00) {
-		filesize= 0x9F00 - addr;
+	Sint64 filesize= SDL_RWsize(fp);
+	if(len == -1) {
+		len= filesize - from;
 	}
 
-	SDL_RWread(fp, &RAM[addr], filesize, 1);
+	uint8_t *MEMPtr;
+	int bankEnd= bank;
+	int offset;
+	unsigned int addrEnd= addr + len - 1;
+	int err= 0;
+	// BANKED ROM - check if allowed / overflow
+	if(addr >= 0xC000) {
+		offset= (bank << 14) + addr - 0xc000;
+		if(!var_isROMdebugAllowed) {
+			CON_Out(console, "%sERR: Not allowed to load into ROM - use var ROM_DEBUG to change it%s", DT_color_red, DT_color_default);
+			err= 1;
+		}
+		else if((bank >= NUM_ROM_BANKS) || (offset+len > ROM_SIZE)) {
+			CON_Out(console, "%sERR: Banked ROM overflow (%d bytes in %d banks) %s", DT_color_red, ROM_SIZE, NUM_ROM_BANKS, DT_color_default);
+			err= 1;
+		}
+		else {
+			MEMPtr= &ROM[offset];
+		}
+	}
+	// BANKED RAM - check if overflow
+	else if(addr >= 0xA000) {
+		offset= (bank << 13) + addr;
+		if((bank >= num_ram_banks) || (offset+len > RAM_SIZE)) {
+			CON_Out(console, "%sERR: Banked RAM overflow (%d bytes in %d banks) %s", DT_color_red, num_ram_banks*8192, num_ram_banks, DT_color_default);
+			err= 1;
+		} else {
+			MEMPtr= &RAM[offset];
+			Sint64 byteCount= addrEnd - 0xA000;
+			bankEnd= bank + byteCount / 8192;
+			addrEnd= 0xA000 + byteCount % 8192;
+		}
+	}
+	// IO space - NOT ALLOWED
+	else if( (addr >= 0x9F00) || ((addrEnd >= 0x9F00) && (addrEnd <= 0xA000))) {
+		CON_Out(console, "%sERR: Unable to load into IO space $9F00.$9FFF%s", DT_color_red, DT_color_default);
+		err= 1;
+	}
+	else {
+		MEMPtr= &RAM[addr];
+	}
+
+	if(err) {
+		SDL_RWclose(fp);
+		return;
+	}
+
+	SDL_RWseek(fp, from, RW_SEEK_SET);
+	SDL_RWread(fp, MEMPtr, len, 1);
 	SDL_RWclose(fp);
 
-	CON_Out(console, "loaded file to %04X:%04X", addr, addr+filesize-1);
+	CON_Out(console, "loaded file to %02X:%04X.%02X:%04X", bank, addr, bankEnd, addrEnd);
 }
 
 /*
 
 */
 void cmd_var_printvar(const dictionary * d, const char *key, const char *entry) {
+	(void)d;
+	(void)key;
 	const char *info;
 	int value= var_get(entry, &info);
 	CON_Out(console, "    %s = %d ; %s", entry, value, info);

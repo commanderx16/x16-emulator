@@ -188,7 +188,7 @@ TSymbolVolume *symbol_get_bank_volume(int bank) {
 	iterate on all entries for a dict page to match addr
 */
 TSymbolDictEntry *symbol_dict_find_entry_by_addr(TSymbolVolume *dict, int addr) {
-	int pageIdx= addr >> 8;
+	int pageIdx= (addr >> 8) & 0xFF;
 	TSymbolDictEntry *entries= dict->dict[pageIdx].entries;
 	int count= dict->dict[pageIdx].count;
 
