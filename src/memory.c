@@ -92,7 +92,7 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 		}
 	} else if (address < 0xc000) { // banked RAM
 		int ramBank = debugOn ? bank % num_ram_banks : effective_ram_bank();
-		return	RAM[0xa000 + (ramBank << 13) + address - 0xa000];
+		return	RAM[address + (ramBank << 13)];
 
 
 	} else { // banked ROM
@@ -133,7 +133,7 @@ write6502(uint16_t address, uint8_t value)
 			// future expansion
 		}
 	} else if (address < 0xc000) { // banked RAM
-		RAM[0xa000 + (effective_ram_bank() << 13) + address - 0xa000] = value;
+		RAM[address + (effective_ram_bank() << 13)] = value;
 	} else { // ROM
 		// ignore
 	}

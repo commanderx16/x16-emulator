@@ -117,6 +117,9 @@ KeyBinding keyBindings[]= {
 	{"DBG_HOME", DBGKEY_HOME, SDLK_F1, KMOD_NONE},
 	{"DBG_RESET", DBGKEY_RESET, SDLK_F2, KMOD_NONE},
 	{"DBG_PASTE", DBGKEY_PASTE, SDLK_v, CMD_KEY},
+
+	{"DBG_PAGE_NEXT", DBGKEY_PAGE_NEXT, SDLK_KP_PLUS, KMOD_NONE},
+	{"DBG_PAGE_PREV", DBGKEY_PAGE_PREV, SDLK_KP_MINUS, KMOD_NONE},
 	{NULL, 0, 0, 0},
 };
 
@@ -372,11 +375,14 @@ int  DEBUGGetCurrentStatus(void) {
 					return -1;
 
 				case SDL_KEYDOWN:								// Handle key presses.
-				case SDL_TEXTINPUT:
 				{
 					int isHandled= DEBUGHandleKeyEvent(&event);
-					if(isHandled)
+					if(isHandled) {
+						SDL_StopTextInput();
 						continue;
+					} else {
+						SDL_StartTextInput();
+					}
 					break;
 				}
 
@@ -722,23 +728,19 @@ static int DEBUGHandleKeyEvent(SDL_Event *event) {
 					}
 					break;
 				}
-			}
-			break;
-
-		case SDL_TEXTINPUT:
-			switch(event->text.text[0]) {
-				case '+':
+				case DBGKEY_PAGE_NEXT:
 					if(mouseZone == MZ_DATA) {
 						currentBank += 1;
 						return 1;
 					}
+					break;
 
-				case '-':
+				case DBGKEY_PAGE_PREV:
 					if(mouseZone == MZ_DATA) {
 						currentBank -= 1;
 						return 1;
 					}
-
+					break;
 			}
 			break;
 	}
