@@ -1002,7 +1002,8 @@ video_step(float mhz)
 			render_line(y);
 		}
 		scan_pos_y++;
-		if (scan_pos_y == SCREEN_HEIGHT) {
+		y++;
+		if (y == SCREEN_HEIGHT) {
 			if (ien & 4) {
 				if (sprite_line_collisions != 0) {
 					isr |= 4;
@@ -1020,7 +1021,6 @@ video_step(float mhz)
 			frame_count++;
 		}
 		if (ien & 2) { // LINE IRQ
-			y = scan_pos_y - front_porch;
 			if (y < SCREEN_HEIGHT && y == irq_line) {
 				isr |= 2;
 			}
