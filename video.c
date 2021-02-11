@@ -1001,7 +1001,6 @@ video_step(float mhz)
 		if (y < SCREEN_HEIGHT) {
 			render_line(y);
 		}
-		scan_pos_y++;
 		y++;
 		if (y == SCREEN_HEIGHT) {
 			if (ien & 4) {
@@ -1015,6 +1014,7 @@ video_step(float mhz)
 				isr |= 1;
 			}
 		}
+		scan_pos_y++;
 		if (scan_pos_y == SCAN_HEIGHT) {
 			scan_pos_y = 0;
 			new_frame = true;
