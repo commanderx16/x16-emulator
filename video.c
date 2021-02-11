@@ -1010,14 +1010,14 @@ video_step(float mhz)
 				isr = (isr & 0xf) | sprite_line_collisions;
 			}
 			sprite_line_collisions = 0;
+			if (ien & 1) { // VSYNC IRQ
+				isr |= 1;
+			}
 		}
 		if (scan_pos_y == SCAN_HEIGHT) {
 			scan_pos_y = 0;
 			new_frame = true;
 			frame_count++;
-			if (ien & 1) { // VSYNC IRQ
-				isr |= 1;
-			}
 		}
 		if (ien & 2) { // LINE IRQ
 			y = scan_pos_y - front_porch;
