@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include "sdcard.h"
 
-//#define VERBOSE 1
+#define VERBOSE 1
 
 // MMC/SD command (SPI mode)
 enum {

@@ -13,7 +13,6 @@
 #include "ym2151.h"
 #include "ps2.h"
 #include "cpu/fake6502.h"
-#include "rtc.h"
 
 uint8_t ram_bank;
 uint8_t rom_bank;
@@ -23,7 +22,6 @@ uint8_t ROM[ROM_SIZE];
 
 bool led_status;
 static uint8_t addr_ym = 0;
-static uint8_t addr_rtc = 0;
 
 #define DEVICE_EMULATOR (0x9fb0)
 
@@ -76,9 +74,6 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 		} else if (address >= 0x9f20 && address < 0x9f40) {
 			return video_read(address & 0x1f, debugOn);
 		} else if (address >= 0x9f40 && address < 0x9f60) {
-			if (address == 0x9f46) { // RTC data
-				return rtc_read(addr_rtc);
-			}
 			return 0;
 		} else if (address >= 0x9fb0 && address < 0x9fc0) {
 			// emulator state
@@ -117,10 +112,6 @@ write6502(uint16_t address, uint8_t value)
 				addr_ym = value;
 			} else if (address == 0x9f41) { // YM data
 				YM_write_reg(addr_ym, value);
-			} else if (address == 0x9f44) { // RTC address
-				addr_rtc = value;
-			} else if (address == 0x9f46) { // RTC data
-				rtc_write(addr_rtc, value);
 			}
 			// TODO:
 			//   $9F42 & $9F43: SAA1099P
