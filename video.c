@@ -38,13 +38,16 @@
 #define SCAN_HEIGHT 525
 
 // VGA
+#define VGA_BACK_PORCH_X 48
 #define VGA_FRONT_PORCH_X 16
+#define	VGA_BACK_PORCH_Y 33
 #define VGA_FRONT_PORCH_Y 10
 #define VGA_PIXEL_FREQ 25.175
 
 // NTSC: 262.5 lines per frame, lower field first
 #define NTSC_FRONT_PORCH_X 80
-#define NTSC_FRONT_PORCH_Y 22
+#define NTSC_BACK_PORCH_Y 23
+#define NTSC_FRONT_PORCH_Y 7
 #define NTSC_PIXEL_FREQ (15.750 * 800 / 1000)
 #define TITLE_SAFE_X 0.067
 #define TITLE_SAFE_Y 0.05
@@ -996,8 +999,8 @@ video_step(float mhz)
 	scan_pos_x += advance;
 	if (scan_pos_x > SCAN_WIDTH) {
 		scan_pos_x -= SCAN_WIDTH;
-		uint16_t front_porch = (out_mode & 2) ? NTSC_FRONT_PORCH_Y : VGA_FRONT_PORCH_Y;
-		uint16_t y = scan_pos_y - front_porch;
+		uint16_t back_porch = (out_mode & 2) ? NTSC_BACK_PORCH_Y : VGA_BACK_PORCH_Y;
+		uint16_t y = scan_pos_y - back_porch;
 		if (y < SCREEN_HEIGHT) {
 			render_line(y);
 		}
@@ -1021,6 +1024,7 @@ video_step(float mhz)
 			frame_count++;
 		}
 		if (ien & 2) { // LINE IRQ
+			y = scan_pos_y - back_porch;
 			if (y < SCREEN_HEIGHT && y == irq_line) {
 				isr |= 2;
 			}
