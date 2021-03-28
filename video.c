@@ -1001,8 +1001,8 @@ video_step(float mhz)
 		if (y < SCREEN_HEIGHT) {
 			render_line(y);
 		}
-		scan_pos_y++;
-		if (scan_pos_y == SCREEN_HEIGHT) {
+		y++;
+		if (y == SCREEN_HEIGHT) {
 			if (ien & 4) {
 				if (sprite_line_collisions != 0) {
 					isr |= 4;
@@ -1010,17 +1010,17 @@ video_step(float mhz)
 				isr = (isr & 0xf) | sprite_line_collisions;
 			}
 			sprite_line_collisions = 0;
-		}
-		if (scan_pos_y == SCAN_HEIGHT) {
-			scan_pos_y = 0;
-			new_frame = true;
-			frame_count++;
 			if (ien & 1) { // VSYNC IRQ
 				isr |= 1;
 			}
 		}
+		scan_pos_y++;
+		if (scan_pos_y == SCAN_HEIGHT) {
+			scan_pos_y = 0;
+			new_frame = true;
+			frame_count++;
+		}
 		if (ien & 2) { // LINE IRQ
-			y = scan_pos_y - front_porch;
 			if (y < SCREEN_HEIGHT && y == irq_line) {
 				isr |= 2;
 			}
