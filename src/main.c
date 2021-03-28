@@ -583,20 +583,17 @@ void processParms(int argc, char **argv, Parms *parms) {
 				echo_mode = ECHO_MODE_COOKED;
 		}
 
-		char *joystick= (char *)iniparser_getstring(iniDict, "main:joy1", NULL);
-		if(joystick) {
-			if(!strcmp("NES", joystick))
-				joy1_mode = NES;
-			else if(!strcmp("SNES", joystick))
-				joy1_mode = SNES;
-		}
-
-		joystick= (char *)iniparser_getstring(iniDict, "main:joy2", NULL);
-		if(joystick) {
-			if(!strcmp("NES", joystick))
-				joy2_mode = NES;
-			else if(!strcmp("SNES", joystick))
-				joy2_mode = SNES;
+		char *joystick;
+		char joykey[32];
+		for(int joyIdx= 0; joyIdx<NUM_JOYSTICKS; joyIdx++) {
+			sprintf(joykey, "main:joy%d", joyIdx+1);
+			joystick= (char *)iniparser_getstring(iniDict, joykey, NULL);
+			if(joystick) {
+				if(!strcmp("NES", joystick))
+					joy_mode[joyIdx] = NES;
+				else if(!strcmp("SNES", joystick))
+					joy_mode[joyIdx] = SNES;
+			}
 		}
 
 		char *quality= (char *)iniparser_getstring(iniDict, "main:quality", NULL);
