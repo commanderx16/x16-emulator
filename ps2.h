@@ -27,6 +27,7 @@ void ps2_step(int i);
 void mouse_button_down(int num);
 void mouse_button_up(int num);
 void mouse_move(int x, int y);
+void mouse_send_state();
 uint8_t mouse_read(uint8_t reg);
 
 #endif

@@ -1004,8 +1004,8 @@ video_step(float mhz)
 		if (y < SCREEN_HEIGHT) {
 			render_line(y);
 		}
-		scan_pos_y++;
-		if (scan_pos_y == SCREEN_HEIGHT) {
+		y++;
+		if (y == SCREEN_HEIGHT) {
 			if (ien & 4) {
 				if (sprite_line_collisions != 0) {
 					isr |= 4;
@@ -1013,14 +1013,15 @@ video_step(float mhz)
 				isr = (isr & 0xf) | sprite_line_collisions;
 			}
 			sprite_line_collisions = 0;
+			if (ien & 1) { // VSYNC IRQ
+				isr |= 1;
+			}
 		}
+		scan_pos_y++;
 		if (scan_pos_y == SCAN_HEIGHT) {
 			scan_pos_y = 0;
 			new_frame = true;
 			frame_count++;
-			if (ien & 1) { // VSYNC IRQ
-				isr |= 1;
-			}
 		}
 		if (ien & 2) { // LINE IRQ
 			y = scan_pos_y - back_porch;
@@ -1058,6 +1059,8 @@ bool
 video_update()
 {
 	static bool cmd_down = false;
+
+	bool mouse_changed = false;
 
 	// if LED is on, stamp red 8x4 square into top right of framebuffer
 	if (led_status) {
@@ -1147,9 +1150,11 @@ video_update()
 			switch (event.button.button) {
 				case SDL_BUTTON_LEFT:
 					mouse_button_down(0);
+					mouse_changed = true;
 					break;
 				case SDL_BUTTON_RIGHT:
 					mouse_button_down(1);
+					mouse_changed = true;
 					break;
 			}
 		}
@@ -1157,9 +1162,11 @@ video_update()
 			switch (event.button.button) {
 				case SDL_BUTTON_LEFT:
 					mouse_button_up(0);
+					mouse_changed = true;
 					break;
 				case SDL_BUTTON_RIGHT:
 					mouse_button_up(1);
+					mouse_changed = true;
 					break;
 			}
 		}
@@ -1169,7 +1176,11 @@ video_update()
 			mouse_move(event.motion.x - mouse_x, event.motion.y - mouse_y);
 			mouse_x = event.motion.x;
 			mouse_y = event.motion.y;
+			mouse_changed = true;
 		}
+	}
+	if (mouse_changed) {
+		mouse_send_state();
 	}
 	return true;
 }
