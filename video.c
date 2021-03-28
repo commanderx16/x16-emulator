@@ -1056,6 +1056,8 @@ video_update()
 {
 	static bool cmd_down = false;
 
+	bool mouse_changed = false;
+
 	// if LED is on, stamp red 8x4 square into top right of framebuffer
 	if (led_status) {
 		for (int y = 0; y < 4; y++) {
@@ -1144,9 +1146,11 @@ video_update()
 			switch (event.button.button) {
 				case SDL_BUTTON_LEFT:
 					mouse_button_down(0);
+					mouse_changed = true;
 					break;
 				case SDL_BUTTON_RIGHT:
 					mouse_button_down(1);
+					mouse_changed = true;
 					break;
 			}
 		}
@@ -1154,9 +1158,11 @@ video_update()
 			switch (event.button.button) {
 				case SDL_BUTTON_LEFT:
 					mouse_button_up(0);
+					mouse_changed = true;
 					break;
 				case SDL_BUTTON_RIGHT:
 					mouse_button_up(1);
+					mouse_changed = true;
 					break;
 			}
 		}
@@ -1166,7 +1172,11 @@ video_update()
 			mouse_move(event.motion.x - mouse_x, event.motion.y - mouse_y);
 			mouse_x = event.motion.x;
 			mouse_y = event.motion.y;
+			mouse_changed = true;
 		}
+	}
+	if (mouse_changed) {
+		mouse_send_state();
 	}
 	return true;
 }
