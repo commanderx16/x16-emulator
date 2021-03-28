@@ -1020,6 +1020,7 @@ emulator_loop(void *param)
 			}
 			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
 			sp += 2;
+			continue;
 		}
 #endif
 
