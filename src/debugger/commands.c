@@ -7,6 +7,7 @@
 #include "../console/SDL_console.h"
 #include "commands.h"
 #include "symbols.h"
+#include "registers.h"
 
 #define DDUMP_RAM	0
 #define DDUMP_VERA	1
@@ -20,6 +21,8 @@ extern ConsoleInformation *console;
 extern int breakpoints[DBG_MAX_BREAKPOINTS];
 extern int breakpointsCount;
 extern int layout;
+extern SDL_Renderer *dbgRenderer;
+extern void setDebuggerFont(int fontNumber);
 
 int isROMdebugAllowed= 0;
 
@@ -70,6 +73,8 @@ command_t cmd_table[] = {
 	{ "symsave", cmd_symsave, 1, 0, "symsave symbolFilename\nsave the symbol table" },
 
 	{ "code", cmd_code, 0, 0, "code\ndisplay code in full page" },
+	{ "font", cmd_font, 0, 0, "font [Name|ID [Path]]\nDisplay loaded fonts or Set the debugger font or Load and Set the debugger font" },
+
 	{ "romdebug", cmd_romdebug, 0, 0, "romdebug\ntoggle ROM debug mode to allow editing" },
 
 	{ NULL, NULL }
@@ -482,6 +487,43 @@ void cmd_symsave(int data, int argc, char* argv[]) {
 */
 void cmd_code(int data, int argc, char* argv[]) {
 	layout= layout==0 ? 1 : 0;
+}
+
+/* ----------------------------------------------------------------------------
+	Display loaded fonts or Set the debugger font or Load and Set the debugger font
+	font [Name|ID [Path]]
+*/
+void cmd_font(int data, int argc, char* argv[]) {
+
+	switch(argc) {
+		case 1:
+		{
+			BitFont *font;
+			for(int idx= 0; (font= DT_FontPointer(idx)); idx++)
+				CON_Out(console, "[%02d] H:%02d W:%02d N:%s", font->fontNumber, font->charHeight, font->charWidth, font->fontName);
+			break;
+		}
+		case 2:
+		{
+			int fontNum= DT_FindFontID(argv[1]);
+			if(fontNum >= 0)
+				setDebuggerFont(fontNum);
+			else
+				CON_Out(console, "%sNo such Font%s", DT_color_red, DT_color_default);
+			break;
+		}
+		case 3:
+		{
+			int fontNum= DT_LoadFont(dbgRenderer, argv[2], 1);
+			if(fontNum>=0) {
+				DT_SetFontName(fontNum, argv[1]);
+				setDebuggerFont(fontNum);
+			} else
+				CON_Out(console, "%sUnable to load this font: %s%s", DT_color_red, SDL_GetError(), DT_color_default);
+			break;
+		}
+	}
+
 }
 
 /* ----------------------------------------------------------------------------

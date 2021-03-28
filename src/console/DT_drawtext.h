@@ -36,12 +36,13 @@ extern "C" {
 #endif
 
 	typedef struct BitFont_td {
-		SDL_Surface		*FontSurface;
-		SDL_Texture		*FontTexture;
-		int			CharWidth;
-		int			CharHeight;
-		int			FontNumber;
-		struct BitFont_td	*NextFont;
+		SDL_Surface			*fontSurface;
+		SDL_Texture			*fontTexture;
+		int					charWidth;
+		int					charHeight;
+		int					fontNumber;
+		char				fontName[32];
+		struct BitFont_td	*nextFont;
 	}
 	BitFont;
 
@@ -56,10 +57,12 @@ extern "C" {
 	void DT_DrawText( const char *string, SDL_Surface *surface, int FontType, int x, int y );
 	void DT_DrawText2(SDL_Renderer *renderer, const char *string, int FontType, int x, int y, SDL_Color colour);
 	int DT_LoadFont_RW(SDL_Renderer *renderer, SDL_RWops * rw, int flags );
-	int	DT_LoadFont(SDL_Renderer *renderer, const char *BitmapName, int flags );
-	int	DT_FontHeight( int FontNumber );
-	int	DT_FontWidth( int FontNumber );
-	BitFont* DT_FontPointer( int FontNumber );
+	int	DT_LoadFont(SDL_Renderer *renderer, const char *bitmapPath, int flags );
+	int	DT_FontHeight( int fontNumber );
+	int	DT_FontWidth( int fontNumber );
+	BitFont *DT_FontPointer( int fontNumber );
+	int DT_FindFontID(char *font);
+	int DT_SetFontName(int fontNumber, const char *name);
 	void DT_DestroyDrawText();
 
 
