@@ -10,6 +10,7 @@
 #include "debugger.h"
 #include "keyboard.h"
 #include "gif.h"
+#include "joystick.h"
 #include "vera_spi.h"
 #include "vera_psg.h"
 #include "vera_pcm.h"
@@ -1178,6 +1179,20 @@ video_update()
 			mouse_y = event.motion.y;
 			mouse_changed = true;
 		}
+
+		if (event.type == SDL_JOYDEVICEADDED) {
+			joystick_add(event.jdevice.which);
+		}
+	    if (event.type == SDL_JOYDEVICEREMOVED) {
+		    joystick_remove(event.jdevice.which);
+	    }
+	    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+		    joystick_button_down(event.cbutton.which, event.cbutton.button);
+	    }
+		if (event.type == SDL_CONTROLLERBUTTONUP) {
+		    joystick_button_up(event.cbutton.which, event.cbutton.button);
+	    }
+
 	}
 	if (mouse_changed) {
 		mouse_send_state();

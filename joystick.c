@@ -116,6 +116,13 @@ joystick_init(void)
 	Num_joystick_controllers = num_joysticks > 16 ? num_joysticks : 16;
 	Joystick_controllers     = malloc(sizeof(struct joystick_info) * Num_joystick_controllers);
 
+	for (int i = 0; i < Num_joystick_controllers; ++i) {
+		Joystick_controllers[i].instance_id = -1;
+		Joystick_controllers[i].controller  = NULL;
+		Joystick_controllers[i].button_mask = 0xffff;
+		Joystick_controllers[i].shift_mask  = 0;
+	}
+
 	for (int i = 0; i < num_joysticks; ++i) {
 		joystick_add(i);
 	}
