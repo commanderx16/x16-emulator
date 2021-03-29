@@ -439,6 +439,7 @@ usage()
 	printf("\tChoose what type of joystick to use, e.g. -joy2 SNES\n");
 	printf("-sound <output device>\n");
 	printf("\tSet the output device used for audio emulation\n");
+	printf("\tIf output device is 'none', no audio is generated\n");
 	printf("-abufs <number of audio buffers>\n");
 	printf("\tSet the number of audio buffers used for playback. (default: 8)\n");
 	printf("\tIncreasing this will reduce stutter on slower computers,\n");
