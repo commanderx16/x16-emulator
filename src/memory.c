@@ -13,6 +13,11 @@
 #include "ym2151.h"
 #include "ps2.h"
 #include "cpu/fake6502.h"
+#include "debugger/breakpoints.h"
+
+extern bool debugger_enabled;
+extern void DEBUGstop();
+extern bool DEBUGisOnBreakpoint(int addr, TBreakpointType type);
 
 uint8_t ram_bank;
 uint8_t rom_bank;
@@ -56,6 +61,9 @@ effective_ram_bank()
 
 uint8_t
 read6502(uint16_t address) {
+	if(debugger_enabled && DEBUGisOnBreakpoint(address, BPT_RMEM))
+		DEBUGstop();
+
 	return real_read6502(address, false, 0);
 }
 
@@ -84,7 +92,7 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 		}
 	} else if (address < 0xc000) { // banked RAM
 		int ramBank = debugOn ? bank % num_ram_banks : effective_ram_bank();
-		return	RAM[0xa000 + (ramBank << 13) + address - 0xa000];
+		return	RAM[address + (ramBank << 13)];
 
 
 	} else { // banked ROM
@@ -96,6 +104,9 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 void
 write6502(uint16_t address, uint8_t value)
 {
+	if(debugger_enabled && DEBUGisOnBreakpoint(address, BPT_WMEM))
+		DEBUGstop();
+
 	if (address < 2) { // CPU I/O ports
 		cpuio_write(address, value);
 	} else if (address < 0x9f00) { // RAM
@@ -122,7 +133,7 @@ write6502(uint16_t address, uint8_t value)
 			// future expansion
 		}
 	} else if (address < 0xc000) { // banked RAM
-		RAM[0xa000 + (effective_ram_bank() << 13) + address - 0xa000] = value;
+		RAM[address + (effective_ram_bank() << 13)] = value;
 	} else { // ROM
 		// ignore
 	}
@@ -163,13 +174,19 @@ memory_get_ram_bank()
 void
 memory_set_rom_bank(uint8_t bank)
 {
-	rom_bank = bank & (NUM_ROM_BANKS - 1);;
+	rom_bank = bank & (NUM_ROM_BANKS - 1);
 }
 
 uint8_t
 memory_get_rom_bank()
 {
 	return rom_bank;
+}
+
+uint8_t
+memory_get_bank(uint16_t addr)
+{
+	return addr < 0xC000 ? (addr < 0xA000 ? 0 : memory_get_ram_bank()) : memory_get_rom_bank();
 }
 
 uint8_t
@@ -275,4 +292,15 @@ emu_read(uint8_t reg, bool debugOn)
 	}
 	if (!debugOn) printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
 	return -1;
+}
+
+/*
+	true if address is in EXISTING memory (RAM & ROM)
+*/
+bool isValidAddr(int bank, int addr) {
+	return 		addr < 0xA000
+				||
+				(addr < 0xC000 && (bank % num_ram_banks == bank))
+				||
+				(addr >= 0xc000 && (bank % NUM_ROM_BANKS == bank));
 }
