@@ -16,22 +16,22 @@
 //
 // VIA#1
 //
-// PA0: PS2KDAT   PS/2 DATA keyboard
-// PA1: PS2KCLK   PS/2 CLK  keyboard
-// PA2: NESLATCH  NES LATCH (for all controllers)
-// PA3: NESCLK    NES CLK   (for all controllers)
-// PA4: NESDAT3   NES DATA  (controller 3)
-// PA5: NESDAT2   NES DATA  (controller 2)
-// PA6: NESDAT1   NES DATA  (controller 1)
-// PA7: NESDAT0   NES DATA  (controller 0)
-// PB0: PS2MDAT   PS/2 DATA mouse
-// PB1: PS2MCLK   PS/2 CLK  mouse
-// PB2: ACTLED    activity LED
-// PB3: IECATTO   Serial ATN  out
-// PB4: IECCLKO   Serial CLK  out
-// PB5: IECDATAO  Serial DATA out
-// PB6: IECCLKI   Serial CLK  in
-// PB7: IECDATAI  Serial DATA in
+// PA0: PS2KDAT    PS/2 DATA keyboard
+// PA1: PS2KCLK    PS/2 CLK  keyboard
+// PA2: SNESLATCH  SNES LATCH (for all controllers)
+// PA3: SNESCLK    SNES CLK   (for all controllers)
+// PA4: SNESDAT3   SNES DATA  (controller 3)
+// PA5: SNESDAT2   SNES DATA  (controller 2)
+// PA6: SNESDAT1   SNES DATA  (controller 1)
+// PA7: SNESDAT0   SNES DATA  (controller 0)
+// PB0: PS2MDAT    PS/2 DATA mouse
+// PB1: PS2MCLK    PS/2 CLK  mouse
+// PB2: ACTLED     activity LED
+// PB3: IECATTO    Serial ATN  out
+// PB4: IECCLKO    Serial CLK  out
+// PB5: IECDATAO   Serial DATA out
+// PB6: IECCLKI    Serial CLK  in
+// PB7: IECDATAI   Serial DATA in
 
 static uint8_t via1registers[16];
 

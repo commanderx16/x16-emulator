@@ -139,16 +139,16 @@ Since the emulator tells the computer the *position* of keys that are pressed, y
 
 The following keys can be used for controlling games:
 
-|Keyboard Key  | NES Equivalent |
-|--------------|----------------|
-|Ctrl          | A 		|
-|Alt 	       | B		|
-|Space         | SELECT         |
-|Enter         | START		|
-|Cursor Up     | UP		|
-|Cursor Down   | DOWN		|
-|Cursor Left   | LEFT		|
-|Cursor Right  | RIGHT		|
+|Keyboard Key  | SNES Equivalent |
+|--------------|-----------------|
+|Ctrl          | B               |
+|Alt           | Y               |
+|Space         | SELECT          |
+|Enter         | START           |
+|Cursor Up     | UP              |
+|Cursor Down   | DOWN            |
+|Cursor Left   | LEFT            |
+|Cursor Right  | RIGHT           |
 
 
 Functions while running

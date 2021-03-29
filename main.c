@@ -433,10 +433,14 @@ usage()
 	printf("-dump {C|R|B|V}...\n");
 	printf("\tConfigure system dump: (C)PU, (R)AM, (B)anked-RAM, (V)RAM\n");
 	printf("\tMultiple characters are possible, e.g. -dump CV ; Default: RB\n");
-	printf("-joy1 {NES | SNES}\n");
-	printf("\tChoose what type of joystick to use, e.g. -joy1 SNES\n");
-	printf("-joy2 {NES | SNES}\n");
-	printf("\tChoose what type of joystick to use, e.g. -joy2 SNES\n");
+	printf("-joy1\n");
+	printf("\tEnable joystick on port 1\n");
+	printf("-joy2\n");
+	printf("\tEnable joystick on port 2\n");
+	printf("-joy3\n");
+	printf("\tEnable joystick on port 3\n");
+	printf("-joy4\n");
+	printf("\tEnable joystick on port 4\n");
 	printf("-sound <output device>\n");
 	printf("\tSet the output device used for audio emulation\n");
 	printf("-abufs <number of audio buffers>\n");
@@ -681,51 +685,19 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-joy1")) {
 			argc--;
 			argv++;
-			if (!strcmp(argv[0], "NES")) {
-				joy_mode[0] = NES;
-				argc--;
-				argv++;
-			} else if (!strcmp(argv[0], "SNES")) {
-				joy_mode[0] = SNES;
-				argc--;
-				argv++;
-			}
+			joy_mode[0] = SNES;
 		} else if (!strcmp(argv[0], "-joy2")){
 			argc--;
 			argv++;
-			if (!strcmp(argv[0], "NES")){
-				joy_mode[1] = NES;
-				argc--;
-				argv++;
-			} else if (!strcmp(argv[0], "SNES")){
-				joy_mode[1] = SNES;
-				argc--;
-				argv++;
-			}
+			joy_mode[1] = SNES;
 		} else if (!strcmp(argv[0], "-joy3")){
 			argc--;
 			argv++;
-			if (!strcmp(argv[0], "NES")){
-				joy_mode[2] = NES;
-				argc--;
-				argv++;
-			} else if (!strcmp(argv[0], "SNES")){
-				joy_mode[2] = SNES;
-				argc--;
-				argv++;
-			}
+			joy_mode[2] = SNES;
 		} else if (!strcmp(argv[0], "-joy4")){
 			argc--;
 			argv++;
-			if (!strcmp(argv[0], "NES")){
-				joy_mode[3] = NES;
-				argc--;
-				argv++;
-			} else if (!strcmp(argv[0], "SNES")){
-				joy_mode[3] = SNES;
-				argc--;
-				argv++;
-			}
+			joy_mode[3] = SNES;
 #ifdef TRACE
 		} else if (!strcmp(argv[0], "-trace")) {
 			argc--;

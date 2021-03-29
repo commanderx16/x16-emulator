@@ -23,7 +23,7 @@
 
 #define NUM_JOYSTICKS 4
 
-enum joy_status { NONE, NES, SNES };
+enum joy_status { NONE, SNES };
 extern enum joy_status joy_mode[NUM_JOYSTICKS];
 extern bool joystick_data[NUM_JOYSTICKS];
 extern bool joystick_latch, joystick_clock;

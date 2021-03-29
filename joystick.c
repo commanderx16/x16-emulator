@@ -103,27 +103,6 @@ bool handle_latch(bool latch, bool clock)
 //Should replace this with SDL events, so we do not miss inputs when polling
 uint16_t get_joystick_state(SDL_GameController *control, enum joy_status mode)
 {
-	if (mode == NES) {
-		bool a_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_A);
-		bool b_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_X);
-		bool select_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_BACK);
-		bool start_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_START);
-		bool up_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_DPAD_UP);
-		bool down_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
-		bool left_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
-		bool right_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
-
-		return
-		(!a_pressed) |
-		(!b_pressed) << 1 |
-		(!select_pressed) << 2 |
-		(!start_pressed) << 3 |
-		(!up_pressed) << 4 |
-		(!down_pressed) << 5 |
-		(!left_pressed) << 6 |
-		(!right_pressed) << 7 |
-		0x0000;
-	}
 	if (mode == SNES) {
 		bool b_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_A);
 		bool y_pressed = SDL_GameControllerGetButton(control, SDL_CONTROLLER_BUTTON_X);
