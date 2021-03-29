@@ -13,7 +13,7 @@
 
 bool video_init(int window_scale, char *quality);
 void video_reset(void);
-bool video_step(float mhz);
+bool video_step(float mhz, float steps);
 bool video_update(void);
 void video_end(void);
 bool video_get_irq_out(void);

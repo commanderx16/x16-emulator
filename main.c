@@ -681,51 +681,19 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-joy1")) {
 			argc--;
 			argv++;
-			if (!strcmp(argv[0], "NES")) {
-				joy_mode[0] = NES;
-				argc--;
-				argv++;
-			} else if (!strcmp(argv[0], "SNES")) {
-				joy_mode[0] = SNES;
-				argc--;
-				argv++;
-			}
+			Joystick_slots_enabled[0] = true;
 		} else if (!strcmp(argv[0], "-joy2")){
 			argc--;
 			argv++;
-			if (!strcmp(argv[0], "NES")){
-				joy_mode[1] = NES;
-				argc--;
-				argv++;
-			} else if (!strcmp(argv[0], "SNES")){
-				joy_mode[1] = SNES;
-				argc--;
-				argv++;
-			}
-		} else if (!strcmp(argv[0], "-joy3")){
+			Joystick_slots_enabled[1] = true;
+		} else if (!strcmp(argv[0], "-joy3")) {
 			argc--;
 			argv++;
-			if (!strcmp(argv[0], "NES")){
-				joy_mode[2] = NES;
-				argc--;
-				argv++;
-			} else if (!strcmp(argv[0], "SNES")){
-				joy_mode[2] = SNES;
-				argc--;
-				argv++;
-			}
-		} else if (!strcmp(argv[0], "-joy4")){
+			Joystick_slots_enabled[2] = true;
+		} else if (!strcmp(argv[0], "-joy4")) {
 			argc--;
 			argv++;
-			if (!strcmp(argv[0], "NES")){
-				joy_mode[3] = NES;
-				argc--;
-				argv++;
-			} else if (!strcmp(argv[0], "SNES")){
-				joy_mode[3] = SNES;
-				argc--;
-				argv++;
-			}
+			Joystick_slots_enabled[3] = true;
 #ifdef TRACE
 		} else if (!strcmp(argv[0], "-trace")) {
 			argc--;
@@ -1028,13 +996,8 @@ emulator_loop(void *param)
 		step6502();
 		uint8_t clocks = clockticks6502 - old_clockticks6502;
 		bool new_frame = false;
-		for (uint8_t i = 0; i < clocks; i++) {
-			ps2_step(0);
-			ps2_step(1);
-			joystick_step();
-			vera_spi_step();
-			new_frame |= video_step(MHZ);
-		}
+		vera_spi_step(clocks);
+		new_frame |= video_step(MHZ, clocks);
 		audio_render(clocks);
 
 		instruction_counter++;
