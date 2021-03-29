@@ -492,13 +492,17 @@ void DEBUGsetFont(int fontNumber) {
 /*
 */
 bool DEBUGreadColour(const dictionary *dict, const char *key, SDL_Colour *col) {
-	int val= iniparser_getint(dict, key, -1);
-	if(val>0) {
-		col->r= val >> 16;
-		col->g= val >> 8 & 0xFF;
-		col->b= val & 0xFF;
-		return true;
+	const char *str = iniparser_getstring(dict, key, NULL);
+	if(str) {
+		int rgb;
+		if(1 == sscanf(str ,"$%x", &rgb)) {
+			col->r= rgb >> 16;
+			col->g= rgb >> 8 & 0xFF;
+			col->b= rgb & 0xFF;
+			return true;
+		}
 	}
+	CON_Out(console, "%sERR: bad colour value for key %s = %s %s", DT_color_red, key, str, DT_color_default);
 	return false;
 }
 
