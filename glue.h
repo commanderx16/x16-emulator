@@ -52,6 +52,7 @@ extern uint16_t num_ram_banks;
 extern bool debugger_enabled;
 extern bool log_video;
 extern bool log_keyboard;
+extern bool log_speed;
 extern echo_mode_t echo_mode;
 extern bool save_on_exit;
 extern gif_recorder_state_t record_gif;
