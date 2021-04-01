@@ -8,7 +8,7 @@
 #include "smc.h"
 #include "rtc.h"
 
-#define LOG_LEVEL 0
+#define LOG_LEVEL 4
 
 #define DEVICE_SMC 0x42
 #define DEVICE_RTC 0x6F
@@ -133,12 +133,13 @@ i2c_step()
 						printf("I2C ACK(%d) $%02X\n", count, byte);
 #endif
 						i2c_port.data_out = 0;
+						count++;
 					} else {
 #if LOG_LEVEL >= 3
 						printf("I2C NACK(%d) $%02X\n", count, byte);
 #endif
+						count = 0;
 					}
-					count++;
 				}
 				state = STATE_START;
 			}

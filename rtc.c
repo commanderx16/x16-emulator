@@ -3,6 +3,10 @@
 // All rights reserved. License: 2-clause BSD
 
 // MCP7940N RTC
+// * RTC
+//   * 24h and AM/PM supported
+//   * oscillator can be turned off
+//   * alarms etc. not supported
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -30,11 +34,10 @@ static uint8_t sram[0x40];
 void
 rtc_init()
 {
-	running = true;
+	running = false; // yes, the MCP7940N starts out this way!
 	vbaten = true;
-	
 	h24 = true;
-	
+	clocks = 0;
 	seconds = 0;
 	minutes = 0;
 	hours = 0;
@@ -42,8 +45,6 @@ rtc_init()
 	day = 1;
 	month = 1;
 	year = 0;
-	
-	clocks = 0;
 }
 
 static uint8_t days_per_month[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
