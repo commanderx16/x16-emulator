@@ -220,7 +220,7 @@ machine_reset()
 	vera_spi_init();
 	via1_init();
 	via2_init();
-    rtc_init();
+	rtc_init();
 	video_reset();
 	reset6502();
 }
@@ -1034,12 +1034,12 @@ emulator_loop(void *param)
 		for (uint8_t i = 0; i < clocks; i++) {
 			ps2_step(0);
 			ps2_step(1);
-            i2c_step();
+			i2c_step();
 			joystick_step();
 			vera_spi_step();
 			new_frame |= video_step(MHZ);
 		}
-        rtc_step(clocks);
+		rtc_step(clocks);
 		audio_render(clocks);
 
 		instruction_counter++;

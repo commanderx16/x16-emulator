@@ -11,10 +11,10 @@
 #define I2C_DATA_MASK 2
 
 typedef struct {
-    int clk_out;
-    int data_out;
-    int clk_in;
-    int data_in;
+	int clk_out;
+	int data_out;
+	int clk_in;
+	int data_in;
 } i2c_port_t;
 
 extern i2c_port_t i2c_port;

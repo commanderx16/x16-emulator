@@ -21,36 +21,36 @@ uint8_t activity_led;
 
 uint8_t
 smc_read(uint8_t a) {
-    return 0xff;
+	return 0xff;
 }
 
 void
 smc_write(uint8_t a, uint8_t v) {
-    switch (a) {
-        case 1:
-            if (v == 0) {
-                printf("SMC Power Off.\n");
-                exit(0);
-            } else if (v == 1) {
-                machine_reset();
-            }
-            break;
-        case 2:
-            if (v == 0) {
-                machine_reset();
-            }
-            break;
-        case 3:
-            if (v == 0) {
-                // TODO NMI
-            }
-            break;
-        case 4:
-            // TODO power LED
-            break;
-        case 5:
-            activity_led = v;
-            break;
-    }
+	switch (a) {
+		case 1:
+			if (v == 0) {
+				printf("SMC Power Off.\n");
+				exit(0);
+			} else if (v == 1) {
+				machine_reset();
+			}
+			break;
+		case 2:
+			if (v == 0) {
+				machine_reset();
+			}
+			break;
+		case 3:
+			if (v == 0) {
+				// TODO NMI
+			}
+			break;
+		case 4:
+			// TODO power LED
+			break;
+		case 5:
+			activity_led = v;
+			break;
+	}
 }
 
