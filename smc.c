@@ -2,6 +2,8 @@
 // Copyright (c) 2021 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
+// System Management Controller
+
 #include <stdio.h>
 #include <stdbool.h>
 #include "smc.h"
