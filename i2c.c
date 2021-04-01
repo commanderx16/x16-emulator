@@ -13,17 +13,17 @@
 #define DEVICE_SMC 0x42
 #define DEVICE_RTC 0x6F
 
-i2c_port_t i2c_port;
-
 #define STATE_START 0
 #define STATE_STOP -1
 
-int state = STATE_STOP;
-bool read_mode = false;
-uint8_t byte = 0;
-int count = 0;
-uint8_t device;
-uint8_t offset;
+i2c_port_t i2c_port;
+
+static int state = STATE_STOP;
+static bool read_mode = false;
+static uint8_t byte = 0;
+static int count = 0;
+static uint8_t device;
+static uint8_t offset;
 
 uint8_t
 i2c_read(uint8_t device, uint8_t offset) {

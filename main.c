@@ -23,6 +23,7 @@
 #include "via.h"
 #include "ps2.h"
 #include "i2c.h"
+#include "rtc.h"
 #include "vera_spi.h"
 #include "sdcard.h"
 #include "loadsave.h"
@@ -219,6 +220,7 @@ machine_reset()
 	vera_spi_init();
 	via1_init();
 	via2_init();
+    rtc_init();
 	video_reset();
 	reset6502();
 }
@@ -1037,6 +1039,7 @@ emulator_loop(void *param)
 			vera_spi_step();
 			new_frame |= video_step(MHZ);
 		}
+        rtc_step(clocks);
 		audio_render(clocks);
 
 		instruction_counter++;
