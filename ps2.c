@@ -168,40 +168,27 @@ mouse_send(int x, int y, int b)
 void
 mouse_send_state(void)
 {
-	if (mouse_diff_x > 255) {
-		mouse_send(255, 0, buttons);
-		mouse_diff_x -= 255;
-	}
-	if (mouse_diff_x < -256) {
-		mouse_send(-256, 0, buttons);
-		mouse_diff_x -= -256;
-	}
-	if (mouse_diff_y > 255) {
-		mouse_send(0, 255, buttons);
-		mouse_diff_y -= 255;
-	}
-	if (mouse_diff_y < -256) {
-		mouse_send(0, -256, buttons);
-		mouse_diff_y -= -256;
-	}
-	if (mouse_send(mouse_diff_x, mouse_diff_y, buttons)) {
-		mouse_diff_x = 0;
-		mouse_diff_y = 0;
-	}
+	do {
+		int send_diff_x = mouse_diff_x > 255 ? 255 : (mouse_diff_x < -256 ? -256 : mouse_diff_x);
+		int send_diff_y = mouse_diff_y > 255 ? 255 : (mouse_diff_y < -256 ? -256 : mouse_diff_y);
+
+		mouse_send(send_diff_x, send_diff_y, buttons);
+
+		mouse_diff_x -= send_diff_x;
+		mouse_diff_y -= send_diff_y;
+	} while (mouse_diff_x != 0 && mouse_diff_y != 0);
 }
 
 void
 mouse_button_down(int num)
 {
 	buttons |= 1 << num;
-	mouse_send_state();
 }
 
 void
 mouse_button_up(int num)
 {
 	buttons &= (1 << num) ^ 0xff;
-	mouse_send_state();
 }
 
 void
@@ -209,7 +196,6 @@ mouse_move(int x, int y)
 {
 	mouse_diff_x += x;
 	mouse_diff_y += y;
-	mouse_send_state();
 }
 
 uint8_t
