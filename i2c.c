@@ -8,7 +8,7 @@
 #include "smc.h"
 #include "rtc.h"
 
-#define LOG_LEVEL 1
+#define LOG_LEVEL 0
 
 #define DEVICE_SMC 0x42
 #define DEVICE_RTC 0x6F
@@ -37,7 +37,7 @@ i2c_read(uint8_t device, uint8_t offset) {
             value = 0xff;
     }
 #if LOG_LEVEL >= 1
-    printf("I2C PEEK($%02X:$%02X) = $%02X\n", device, offset, value);
+    printf("I2C READ($%02X:$%02X) = $%02X\n", device, offset, value);
 #endif
     return value;
 }
@@ -47,13 +47,15 @@ i2c_write(uint8_t device, uint8_t offset, uint8_t value) {
     switch (device) {
         case DEVICE_SMC:
             smc_write(offset, value);
+            break;
         case DEVICE_RTC:
             rtc_write(offset, value);
+            break;
 //        default:
             // no-op
     }
 #if LOG_LEVEL >= 1
-    printf("I2C POKE $%02X:$%02X, $%02X\n", device, offset, byte);
+    printf("I2C WRITE $%02X:$%02X, $%02X\n", device, offset, byte);
 #endif
 }
 

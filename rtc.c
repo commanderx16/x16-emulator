@@ -9,7 +9,8 @@
 #include "rtc.h"
 #include "glue.h"
 
-#define BCD(a) ((a / 10) << 4 | (a % 10))
+#define BCD(a) (((a) / 10) << 4 | ((a) % 10))
+#define UNBCD(a) (((a) >> 4) * 10 + ((a) & 0xf))
 
 static bool running;
 static bool vbaten;
@@ -113,9 +114,10 @@ rtc_step(int c)
 
 uint8_t
 rtc_read(uint8_t a) {
+//    printf("RTC READ $%02X\n", a);
     switch (a) {
         case 0:
-            return BCD(seconds);
+            return BCD(seconds) | (running << 7);
         case 1:
             return BCD(minutes);
         case 2: {
@@ -133,11 +135,11 @@ rtc_read(uint8_t a) {
             }
             h |= pm << 5;
             h |= (!h24) << 6;
-            return h;
+            return BCD(h);
         }
         case 3: {
             uint8_t v = day_of_week;
-            v |= vbaten << 5;
+            v |= vbaten << 3;
             v |= running << 5;
             return v;
         }
@@ -159,7 +161,47 @@ rtc_read(uint8_t a) {
 
 void
 rtc_write(uint8_t a, uint8_t v) {
+//    printf("RTC WRITE $%02X, $%02X\n", a, v);
     switch (a) {
+        case 0:
+            running = !!(v & 0x80);
+            seconds = UNBCD(v & 0x7f);
+            break;
+        case 1:
+            minutes = UNBCD(v);
+            break;
+        case 2: {
+            h24 = !(v & 0x40);
+            uint8_t h = v & 0x3f;
+            bool pm = false;
+            if (!h24) {
+                pm = v & 0x20;
+                h &= 0x1f;
+            }
+            h = UNBCD(h);
+            if (!h24 && h == 12) {
+                h = 0;
+            }
+            if (pm) {
+                h += 12;
+            }
+            hours = h;
+            break;
+        }
+        case 3: {
+            day_of_week = v & 7;
+            vbaten = !!(v & 0x20);
+            break;
+        }
+        case 4:
+            day = UNBCD(v);
+            break;
+        case 5:
+            month = UNBCD(v);
+            break;
+        case 6:
+            year = UNBCD(v);
+            break;
         default:
             if (a >= 0x20 && a < 0x60) {
                 sram[a - 0x20] = v;
