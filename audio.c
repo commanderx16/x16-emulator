@@ -91,7 +91,7 @@ audio_init(const char *dev_name, int num_audio_buffers)
 		exit(-1);
 	}
 
-	// Init YM2151 emulation. 4 MHz clock
+	// Init YM2151 emulation. 3.579545MHz clock
 	YM_Create(3579545);
 	YM_init(obtained.freq, 60);
 
