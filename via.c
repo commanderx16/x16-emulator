@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include "via.h"
 #include "ps2.h"
+#include "i2c.h"
 #include "memory.h"
 //XXX
 #include "glue.h"
@@ -38,6 +39,7 @@ static uint8_t via1registers[16];
 void
 via1_init()
 {
+    srand(time(NULL));
 }
 
 uint8_t
@@ -91,24 +93,39 @@ via1_write(uint8_t reg, uint8_t value)
 // VIA#2
 //
 // PA/PB: user port
+//
+// PB0: SCL (I2C CLK)
+// PB1: SDA (I2C DATA)
 
 static uint8_t via2registers[16];
 
 void
 via2_init()
 {
-	srand(time(NULL));
 }
 
 uint8_t
 via2_read(uint8_t reg)
 {
-	return via2registers[reg];
+    if (reg == 0) { // PB
+        uint8_t value =
+            (via2registers[2] & PS2_CLK_MASK ? 0 : ps2_port[1].clk_out << 1) |
+            (via2registers[2] & PS2_DATA_MASK ? 0 : ps2_port[1].data_out);
+        return value;
+    } else {
+        return via2registers[reg];
+    }
 }
 
 void
 via2_write(uint8_t reg, uint8_t value)
 {
 	via2registers[reg] = value;
+
+    if (reg == 0 || reg == 2) {
+        // PB
+        i2c_port.clk_in = via2registers[2] & I2C_CLK_MASK ? via2registers[0] & I2C_CLK_MASK : 1;
+        i2c_port.data_in = via2registers[2] & I2C_DATA_MASK ? via2registers[0] & I2C_DATA_MASK : 1;
+    }
 }
 

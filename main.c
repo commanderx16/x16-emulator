@@ -22,6 +22,7 @@
 #include "video.h"
 #include "via.h"
 #include "ps2.h"
+#include "i2c.h"
 #include "vera_spi.h"
 #include "sdcard.h"
 #include "loadsave.h"
@@ -1031,6 +1032,7 @@ emulator_loop(void *param)
 		for (uint8_t i = 0; i < clocks; i++) {
 			ps2_step(0);
 			ps2_step(1);
+            i2c_step();
 			joystick_step();
 			vera_spi_step();
 			new_frame |= video_step(MHZ);
