@@ -51,7 +51,7 @@ matrix:
       services:
         - docker
       before_install:
-        - wget https://github.com/commanderx16/x16-emulator/releases/download/r32/x16emu_linux-r32.zip
+        - wget https://github.com/commanderx16/ChickenLips16-emulator/releases/download/r32/x16emu_linux-r32.zip
         - unzip x16emu_linux-r32.zip
         - docker run -dit --name emscripten -v $(pwd):/src trzeci/emscripten:sdk-incoming-64bit bash
       script:

@@ -1,4 +1,4 @@
-// Commander X16 Emulator
+// ChickenLips16 Emulator
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
@@ -254,10 +254,10 @@ timing_update()
 		int perf = frameCount / 3;
 
 		if (perf < 100 || warp_mode) {
-			sprintf(window_title, "Commander X16 (%d%%)", perf);
+			sprintf(window_title, "ChickenLips16 (%d%%)", perf);
 			video_update_title(window_title);
 		} else {
-			video_update_title("Commander X16");
+			video_update_title("ChickenLips16");
 		}
 
 		perf_frame_count = frames;
@@ -380,10 +380,10 @@ is_kernal()
 static void
 usage()
 {
-	printf("\nCommander X16 Emulator r%s (%s)\n", VER, VER_NAME);
+	printf("\nCommander ChickenLips16 Emulator r%s (%s)\n", VER, VER_NAME);
 	printf("(C)2019,2020 Michael Steil et al.\n");
 	printf("All rights reserved. License: 2-clause BSD\n\n");
-	printf("Usage: x16emu [option] ...\n\n");
+	printf("Usage: cl16emu [option] ...\n\n");
 	printf("-rom <rom.bin>\n");
 	printf("\tOverride KERNAL/BASIC/* ROM file.\n");
 	printf("-ram <ramsize>\n");

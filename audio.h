@@ -1,4 +1,4 @@
-// Commander X16 Emulator
+// ChickenLips16 Emulator
 // Copyright (c) 2020 Frank van den Hoef
 // All rights reserved. License: 2-clause BSD
 

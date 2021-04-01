@@ -2,12 +2,12 @@
   <img src="./.gh/logo.png" />
 </p>
 
-[![Build Status](https://travis-ci.org/commanderx16/x16-emulator.svg?branch=master)](https://travis-ci.org/commanderx16/x16-emulator)
-[![Release](https://img.shields.io/github/v/release/commanderx16/x16-emulator)](https://github.com/commanderx16/x16-emulator/releases)
-[![License: BSD-Clause](https://img.shields.io/github/license/commanderx16/x16-emulator)](./LICENSE)
-[![Contributors](https://img.shields.io/github/contributors/commanderx16/x16-emulator.svg)](https://github.com/commanderx16/x16-emulator/graphs/contributors)
+[![Build Status](https://travis-ci.org/commanderx16/ChickenLips16-emulator.svg?branch=master)](https://travis-ci.org/commanderx16/ChickenLips16-emulator)
+[![Release](https://img.shields.io/github/v/release/commanderx16/ChickenLips16-emulator)](https://github.com/commanderx16/ChickenLips16-emulator/releases)
+[![License: BSD-Clause](https://img.shields.io/github/license/commanderx16/ChickenLips16-emulator)](./LICENSE)
+[![Contributors](https://img.shields.io/github/contributors/commanderx16/ChickenLips16-emulator.svg)](https://github.com/commanderx16/ChickenLips16-emulator/graphs/contributors)
 
-This is an emulator for the Commander X16 computer system. It only depends on SDL2 and should compile on all modern operating systems.
+This is an emulator for the ChickenLips16 computer system. It only depends on SDL2 and should compile on all modern operating systems.
 
 Features
 --------
@@ -53,7 +53,7 @@ loaded from the directory containing the emulator binary, or you can use the `-r
 
 > __WARNING:__ Older versions of the ROM might not work in newer versions of the emulator, and vice versa.
 
-You can build a ROM image yourself using the [build instructions][x16rom-build] in the [x16-rom] repo. The `rom.bin` included in the [_latest_ release][releases] of the emulator may also work with the HEAD of this repo, but this is not guaranteed.
+You can build a ROM image yourself using the [build instructions][x16rom-build] in the [ChickenLips16-rom] repo. The `rom.bin` included in the [_latest_ release][releases] of the emulator may also work with the HEAD of this repo, but this is not guaranteed.
 
 ### macOS Build
 
@@ -65,7 +65,7 @@ The SDL2 development package is available as a distribution package with most ma
 - Red Hat: `yum install SDL2-devel`
 - Debian: `apt-get install libsdl2-dev`
 
-Type `make` to build the source. The output will be `x16emu` in the current directory. Remember you will also need a `rom.bin` as described above.
+Type `make` to build the source. The output will be `cl16emu` in the current directory. Remember you will also need a `rom.bin` as described above.
 
 ### WebAssembly Build
 
@@ -75,9 +75,9 @@ Steps for compiling WebAssembly/HTML5 can be found [here][webassembly].
 Starting
 --------
 
-You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the command line. The latter allows you to specify additional arguments.
+You can start `cl16emu`/`cl16emu.exe` either by double-clicking it, or from the command line. The latter allows you to specify additional arguments.
 
-* When starting `x16emu` without arguments, it will pick up the system ROM (`rom.bin`) from the executable's directory.
+* When starting `cl16emu` without arguments, it will pick up the system ROM (`rom.bin`) from the executable's directory.
 * The system ROM filename/path can be overridden with the `-rom` command line argument.
 * `-keymap` tells the KERNAL to switch to a specific keyboard layout. Use it without an argument to view the supported layouts.
 * `-sdcard` lets you specify an SD card image (partition table + FAT32).
@@ -87,7 +87,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-geos` launches GEOS at startup.
 * `-scale` scales video output to an integer multiple of 640x480
 * `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
-* `-warp` causes the emulator to run as fast as possible, possibly faster than a real X16.
+* `-warp` causes the emulator to run as fast as possible, possibly faster than a real ChickenLips16.
 * `-gif <filename>[,wait]` to record the screen into a GIF. See below for more info.
 * `-quality` change image scaling algorithm quality
 	* `nearest`: nearest pixel sampling
@@ -107,13 +107,13 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-abufs` can be used to specify the number of audio buffers (defaults to 8). If you're experiencing stuttering in the audio try to increase this number. This will result in additional audio latency though.
 * When compiled with `#define TRACE`, `-trace` will enable an instruction trace on stdout.
 
-Run `x16emu -h` to see all command line options.
+Run `cl16emu -h` to see all command line options.
 
 
 Keyboard Layout
 ---------------
 
-The X16 uses a PS/2 keyboard, and the ROM currently supports several different layouts. The following table shows their names, and what keys produce different characters than expected:
+The ChickenLips16 uses a PS/2 keyboard, and the ROM currently supports several different layouts. The following table shows their names, and what keys produce different characters than expected:
 
 |Name  |Description 	       |Differences|
 |------|------------------------|-------|
@@ -174,18 +174,18 @@ If the option `,wait` is specified after the filename, it will start recording o
 BASIC and the Screen Editor
 ---------------------------
 
-On startup, the X16 presents direct mode of BASIC V2. You can enter BASIC statements, or line numbers with BASIC statements and `RUN` the program, just like on Commodore computers.
+On startup, the ChickenLips16 presents direct mode of BASIC V2. You can enter BASIC statements, or line numbers with BASIC statements and `RUN` the program, just like on Commodore computers.
 
 * To stop execution of a BASIC program, hit the `RUN/STOP` key (`Esc` in the emulator), or `Ctrl + C`.
 * To insert characters, first insert spaces by pressing `Shift + Backspaces`, then type over those spaces.
 * To clear the screen, press `Shift + Home`.
-* The X16 does not have a `STOP + RESTORE` function.
+* The ChickenLips16 does not have a `STOP + RESTORE` function.
 
 
 SD Card Images
 --------------
 
-The command line argument `-sdcard` lets you attach an image file for the emulated SD card. Using an emulated SD card makes filesystem operations go through the X16's DOS implementation, so it supports all filesystem operations (including directory listing though `DOS"$` command channel commands using the `DOS` statement) and guarantees full compatibility with the real device.
+The command line argument `-sdcard` lets you attach an image file for the emulated SD card. Using an emulated SD card makes filesystem operations go through the ChickenLips16's DOS implementation, so it supports all filesystem operations (including directory listing though `DOS"$` command channel commands using the `DOS` statement) and guarantees full compatibility with the real device.
 
 Images must be greater than 32 MB in size and contain an MBR partition table and a FAT32 filesystem. The file `sdcard.img.zip` in this repository is an empty 100 MB image in this format.
 
@@ -193,7 +193,7 @@ On macOS, you can just double-click an image to mount it, or use the command lin
 
 	# hdiutil attach sdcard.img
 	/dev/disk2              FDisk_partition_scheme
-	/dev/disk2s1            Windows_FAT_32                  /Volumes/X16 DISK
+	/dev/disk2s1            Windows_FAT_32                  /Volumes/ChickenLips16 DISK
 	# [do something with the filesystem]
 	# hdiutil detach /dev/disk[n] # [n] = number of device as printed above
 
@@ -224,8 +224,8 @@ The emulator will interpret filenames relative to the directory it was started i
 
 To avoid incompatibility problems between the PETSCII and ASCII encodings, you can
 
-* use lower case filenames on the host side, and unshifted filenames on the X16 side.
-* use `Ctrl+O` to switch to the X16 to ISO mode for ASCII compatibility.
+* use lower case filenames on the host side, and unshifted filenames on the ChickenLips16 side.
+* use `Ctrl+O` to switch to the ChickenLips16 to ISO mode for ASCII compatibility.
 * use `Ctrl+N` to switch to the upper/lower character set for a workaround.
 
 
@@ -235,7 +235,7 @@ Dealing with BASIC Programs
 BASIC programs are encoded in a tokenized form, they are not simply ASCII files. If you want to edit BASIC programs on the host's text editor, you need to convert it between tokenized BASIC form and ASCII.
 
 * To convert ASCII to BASIC, reboot the machine and paste the ASCII text using `Ctrl + V` (Mac: `Cmd + V`). You can now run the program, or use the `SAVE` BASIC command to write the tokenized version to disk.
-* To convert BASIC to ASCII, start x16emu with the `-echo` argument, `LOAD` the BASIC file, and type `LIST`. Now copy the ASCII version from the terminal.
+* To convert BASIC to ASCII, start cl16emu with the `-echo` argument, `LOAD` the BASIC file, and type `LIST`. Now copy the ASCII version from the terminal.
 
 
 Using the KERNAL/BASIC environment
@@ -287,7 +287,7 @@ Forum
 Wiki
 ----
 
-[https://github.com/commanderx16/x16-emulator/wiki](https://github.com/commanderx16/x16-emulator/wiki)
+[https://github.com/commanderx16/ChickenLips16-emulator/wiki](https://github.com/commanderx16/ChickenLips16-emulator/wiki)
 
 
 License
@@ -452,7 +452,7 @@ Emulator:
 ### Release 27
 
 * Command line overhaul. Supports `-rom`, `-char`, `-sdcard` and `-prg`.
-* ROM and char filename defaults, so x16emu can be started without arguments.
+* ROM and char filename defaults, so cl16emu can be started without arguments.
 * Host Filesystem Interface supports `LOAD"$"`
 * macOS and Windows packaging logic in Makefile
 
@@ -476,11 +476,11 @@ Emulator:
 	* pass path to SD card image as third argument
 	* access SD card as drive 8
 	* the local PC/Mac disk is still drive 1
-	* modulo debugging, this would work on a real X16 with the SD card (plus level shifters) hooked up to VIA#2PB as described in sdcard.c in the emulator surce
+	* modulo debugging, this would work on a real ChickenLips16 with the SD card (plus level shifters) hooked up to VIA#2PB as described in sdcard.c in the emulator surce
 
 ### Release 23
 
-* Updated emulator and ROM to spec 0.6 – the ROM image should work on a real X16 with VERA 0.6 now.
+* Updated emulator and ROM to spec 0.6 – the ROM image should work on a real ChickenLips16 with VERA 0.6 now.
 
 ### Release 22
 
@@ -609,7 +609,7 @@ updated KERNAL with proper power-on message
 
 
 <!-------------------------------------------------------------------->
-[releases]: https://github.com/commanderx16/x16-emulator/releases
+[releases]: https://github.com/commanderx16/ChickenLips16-emulator/releases
 [webassembly]: webassembly/WebAssembly.md
-[x16rom-build]: https://github.com/commanderx16/x16-rom#releases-and-building
-[x16rom]: https://github.com/commanderx16/x16-rom
+[x16rom-build]: https://github.com/commanderx16/ChickenLips16-rom#releases-and-building
+[x16rom]: https://github.com/commanderx16/ChickenLips16-rom

@@ -1,4 +1,4 @@
-// Commander X16 Emulator
+// ChickenLips16 Emulator
 // Copyright (c) 2019 Michael Steil
 // Copyright (c) 2020 Frank van den Hoef
 // All rights reserved. License: 2-clause BSD
@@ -194,7 +194,7 @@ video_init(int window_scale, char *quality)
 									SDL_TEXTUREACCESS_STREAMING,
 									SCREEN_WIDTH, SCREEN_HEIGHT);
 
-	SDL_SetWindowTitle(window, "Commander X16");
+	SDL_SetWindowTitle(window, "ChickenLips16");
 	SDL_SetWindowIcon(window, CommanderX16Icon());
 
 	SDL_ShowCursor(SDL_DISABLE);

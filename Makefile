@@ -18,7 +18,7 @@ ifdef TRACE
 	CFLAGS+=-D TRACE
 endif
 
-OUTPUT=x16emu
+OUTPUT=cl16emu
 
 ifeq ($(MAC_STATIC),1)
 	LDFLAGS=/usr/local/lib/libSDL2.a -lm -liconv -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,ForceFeedback -lobjc -Wl,-framework,CoreVideo -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,IOKit -Wl,-weak_framework,QuartzCore -Wl,-weak_framework,Metal
@@ -32,11 +32,11 @@ ifeq ($(CROSS_COMPILE_WINDOWS),1)
 endif
 
 ifdef EMSCRIPTEN
-	LDFLAGS+=--shell-file webassembly/x16emu-template.html --preload-file rom.bin -s TOTAL_MEMORY=32MB -s ASSERTIONS=1 -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1
+	LDFLAGS+=--shell-file webassembly/cl16emu-template.html --preload-file rom.bin -s TOTAL_MEMORY=32MB -s ASSERTIONS=1 -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1
 	# To the Javascript runtime exported functions
 	LDFLAGS+=-s EXPORTED_FUNCTIONS='["_j2c_reset", "_j2c_paste", "_j2c_start_audio", _main]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]'
 
-	OUTPUT=x16emu.html
+	OUTPUT=cl16emu.html
 endif
 
 OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o vera_spi.o audio.o vera_pcm.o vera_psg.o sdcard.o main.o debugger.o javascript_interface.o joystick.o rendertext.o keyboard.o icon.o
@@ -88,30 +88,30 @@ wasm:
 # hostname of the Linux VM
 LINUX_COMPILE_HOST = ubuntu.local
 # path to the equivalent of `pwd` on the Mac
-LINUX_BASE_DIR = /mnt/Documents/git/x16-emulator
+LINUX_BASE_DIR = /mnt/Documents/git/ChickenLips16-emulator
 
-TMPDIR_NAME=TMP-x16emu-package
+TMPDIR_NAME=TMP-cl16emu-package
 
 define add_extra_files_to_package
 	# ROMs
-	cp ../x16-rom/build/x16/rom.bin $(TMPDIR_NAME)
-	cp ../x16-rom/build/x16/kernal.sym  $(TMPDIR_NAME)
-	cp ../x16-rom/build/x16/keymap.sym  $(TMPDIR_NAME)
-	cp ../x16-rom/build/x16/dos.sym     $(TMPDIR_NAME)
-	cp ../x16-rom/build/x16/geos.sym    $(TMPDIR_NAME)
-	cp ../x16-rom/build/x16/basic.sym   $(TMPDIR_NAME)
-	cp ../x16-rom/build/x16/monitor.sym $(TMPDIR_NAME)
-	cp ../x16-rom/build/x16/charset.sym $(TMPDIR_NAME)
+	cp ../ChickenLips16-rom/build/ChickenLips16/rom.bin $(TMPDIR_NAME)
+	cp ../ChickenLips16-rom/build/ChickenLips16/kernal.sym  $(TMPDIR_NAME)
+	cp ../ChickenLips16-rom/build/ChickenLips16/keymap.sym  $(TMPDIR_NAME)
+	cp ../ChickenLips16-rom/build/ChickenLips16/dos.sym     $(TMPDIR_NAME)
+	cp ../ChickenLips16-rom/build/ChickenLips16/geos.sym    $(TMPDIR_NAME)
+	cp ../ChickenLips16-rom/build/ChickenLips16/basic.sym   $(TMPDIR_NAME)
+	cp ../ChickenLips16-rom/build/ChickenLips16/monitor.sym $(TMPDIR_NAME)
+	cp ../ChickenLips16-rom/build/ChickenLips16/charset.sym $(TMPDIR_NAME)
 
 	# Empty SD card image
 	cp sdcard.img.zip $(TMPDIR_NAME)
 
 	# Documentation
 	mkdir $(TMPDIR_NAME)/docs
-	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="Commander X16 Emulator" README.md --output $(TMPDIR_NAME)/docs/README.html
-	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="Commander X16 KERNAL/BASIC/DOS ROM"  ../x16-rom/README.md --output $(TMPDIR_NAME)/docs/KERNAL-BASIC.html
-	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="Commander X16 Programmer's Reference Guide"  ../x16-docs/Commander\ X16\ Programmer\'s\ Reference\ Guide.md --output $(TMPDIR_NAME)/docs/Programmer\'s\ Reference\ Guide.html --lua-filter=mdtohtml.lua
-	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="VERA Programmer's Reference.md"  ../x16-docs/VERA\ Programmer\'s\ Reference.md --output $(TMPDIR_NAME)/docs/VERA\ Programmer\'s\ Reference.html
+	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="ChickenLips16 Emulator" README.md --output $(TMPDIR_NAME)/docs/README.html
+	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="ChickenLips16 KERNAL/BASIC/DOS ROM"  ../ChickenLips16-rom/README.md --output $(TMPDIR_NAME)/docs/KERNAL-BASIC.html
+	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="ChickenLips16 Programmer's Reference Guide"  ../ChickenLips16-docs/ChickenLips16\ Programmer\'s\ Reference\ Guide.md --output $(TMPDIR_NAME)/docs/Programmer\'s\ Reference\ Guide.html --lua-filter=mdtohtml.lua
+	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="VERA Programmer's Reference.md"  ../ChickenLips16-docs/VERA\ Programmer\'s\ Reference.md --output $(TMPDIR_NAME)/docs/VERA\ Programmer\'s\ Reference.html
 	cp github-pandoc.css $(TMPDIR_NAME)/docs
 endef
 
@@ -119,21 +119,21 @@ package: package_mac package_win package_linux
 	make clean
 
 package_mac:
-	(cd ../x16-rom/; make clean all)
+	(cd ../ChickenLips16-rom/; make clean all)
 	MAC_STATIC=1 make clean all
 	rm -rf $(TMPDIR_NAME) x16emu_mac.zip
 	mkdir $(TMPDIR_NAME)
-	cp x16emu $(TMPDIR_NAME)
+	cp cl16emu $(TMPDIR_NAME)
 	$(call add_extra_files_to_package)
 	(cd $(TMPDIR_NAME)/; zip -r "../x16emu_mac.zip" *)
 	rm -rf $(TMPDIR_NAME)
 
 package_win:
-	(cd ../x16-rom/; make clean all)
+	(cd ../ChickenLips16-rom/; make clean all)
 	CROSS_COMPILE_WINDOWS=1 make clean all
 	rm -rf $(TMPDIR_NAME) x16emu_win.zip
 	mkdir $(TMPDIR_NAME)
-	cp x16emu.exe $(TMPDIR_NAME)
+	cp cl16emu.exe $(TMPDIR_NAME)
 	cp $(MINGW32)/lib/libgcc_s_sjlj-1.dll $(TMPDIR_NAME)/
 	cp $(MINGW32)/bin/libwinpthread-1.dll $(TMPDIR_NAME)/
 	cp $(WIN_SDL2)/bin/SDL2.dll $(TMPDIR_NAME)/
@@ -142,14 +142,14 @@ package_win:
 	rm -rf $(TMPDIR_NAME)
 
 package_linux:
-	(cd ../x16-rom/; make clean all)
+	(cd ../ChickenLips16-rom/; make clean all)
 	ssh $(LINUX_COMPILE_HOST) "cd $(LINUX_BASE_DIR); make clean all"
 	rm -rf $(TMPDIR_NAME) x16emu_linux.zip
 	mkdir $(TMPDIR_NAME)
-	cp x16emu $(TMPDIR_NAME)
+	cp cl16emu $(TMPDIR_NAME)
 	$(call add_extra_files_to_package)
 	(cd $(TMPDIR_NAME)/; zip -r "../x16emu_linux.zip" *)
 	rm -rf $(TMPDIR_NAME)
 
 clean:
-	rm -f *.o cpu/*.o extern/src/*.o x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem
+	rm -f *.o cpu/*.o extern/src/*.o cl16emu cl16emu.exe cl16emu.js cl16emu.wasm cl16emu.data cl16emu.worker.js cl16emu.html cl16emu.html.mem
