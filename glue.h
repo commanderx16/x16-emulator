@@ -69,6 +69,6 @@ extern bool video_is_tilemap_address(int addr);
 extern bool video_is_tiledata_address(int addr);
 extern bool video_is_special_address(int addr);
 
-extern uint8_t led_status;
+extern uint8_t activity_led;
 
 #endif
