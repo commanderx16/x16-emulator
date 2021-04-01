@@ -20,8 +20,6 @@ i2c_step()
     static i2c_port_t old_i2c_port;
     if (old_i2c_port.clk_in != i2c_port.clk_in || old_i2c_port.data_in != i2c_port.data_in) {
         printf("I2C(%d) C:%d D:%d\n", state, i2c_port.clk_in, i2c_port.data_in);
-        i2c_port.clk_out = 1;
-        i2c_port.data_out = 1;
         if (state == STATE_STOP && i2c_port.clk_in == 0 && i2c_port.data_in == 0) {
             printf("I2C START\n");
             state = STATE_START;
@@ -30,13 +28,15 @@ i2c_step()
             printf("I2C STOP\n");
             state = STATE_STOP;
         }
-        if (state >= 0 && i2c_port.clk_in == 1 && old_i2c_port.clk_in == 0) {
+        if (state != STATE_STOP && i2c_port.clk_in == 1 && old_i2c_port.clk_in == 0) {
+            i2c_port.clk_out = 1;
+            i2c_port.data_out = 1;
             if (state < 8) {
                 printf("I2C BIT#%d: %d\n", state, i2c_port.data_in);
                 byte <<= 1;
                 byte |= i2c_port.data_in;
                 state++;
-            } else {
+            } else { // state == 8
                 printf("I2C ACK... $%02X\n", byte);
                 i2c_port.data_out = 0;
                 state = STATE_START;
