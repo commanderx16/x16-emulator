@@ -5,27 +5,13 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "i2c.h"
-
-// SMC
-
-uint8_t led_status;
-
-uint8_t
-smc_read(uint8_t offset) {
-    return 0xff;
-}
-
-void
-smc_write(uint8_t offset, uint8_t value) {
-    switch (offset) {
-        case 5:
-            led_status = value;
-//        default:
-            // no-op
-    }
-}
+#include "smc.h"
+#include "rtc.h"
 
 #define LOG_LEVEL 1
+
+#define DEVICE_SMC 0x42
+#define DEVICE_RTC 0x6F
 
 i2c_port_t i2c_port;
 
@@ -43,8 +29,10 @@ uint8_t
 i2c_read(uint8_t device, uint8_t offset) {
     uint8_t value;
     switch (device) {
-        case 0x42:
+        case DEVICE_SMC:
             return smc_read(offset);
+        case DEVICE_RTC:
+            return rtc_read(offset);
         default:
             value = 0xff;
     }
@@ -57,8 +45,10 @@ i2c_read(uint8_t device, uint8_t offset) {
 void
 i2c_write(uint8_t device, uint8_t offset, uint8_t value) {
     switch (device) {
-        case 0x42:
+        case DEVICE_SMC:
             smc_write(offset, value);
+        case DEVICE_RTC:
+            rtc_write(offset, value);
 //        default:
             // no-op
     }
@@ -119,14 +109,14 @@ i2c_step()
                     __unused bool ack = i2c_port.data_in;
                     offset++;
                 } else {
-#if LOG_LEVEL >= 3
-                    printf("I2C ACK(%d) $%02X\n", count, byte);
-#endif
-                    i2c_port.data_out = 0;
+                    bool ack = true;
                     switch (count) {
                         case 0:
                             device = byte >> 1;
                             read_mode = byte & 1;
+                            if (device != DEVICE_SMC && device != DEVICE_RTC) {
+                                ack = false;
+                            }
                             break;
                         case 1:
                             offset = byte;
@@ -135,6 +125,16 @@ i2c_step()
                             i2c_write(device, offset, byte);
                             offset++;
                             break;
+                    }
+                    if (ack) {
+#if LOG_LEVEL >= 3
+                        printf("I2C ACK(%d) $%02X\n", count, byte);
+#endif
+                        i2c_port.data_out = 0;
+                    } else {
+#if LOG_LEVEL >= 3
+                        printf("I2C NACK(%d) $%02X\n", count, byte);
+#endif
                     }
                     count++;
                 }
