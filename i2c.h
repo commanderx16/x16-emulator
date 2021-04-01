@@ -7,8 +7,8 @@
 
 #include <stdint.h>
 
-#define I2C_DATA_MASK 1
-#define I2C_CLK_MASK 2
+#define I2C_CLK_MASK 1
+#define I2C_DATA_MASK 2
 
 typedef struct {
     int clk_out;

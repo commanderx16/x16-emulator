@@ -108,9 +108,10 @@ uint8_t
 via2_read(uint8_t reg)
 {
     if (reg == 0) { // PB
+//        printf("OUT C:%d D:%d\n", )
         uint8_t value =
-            (via2registers[2] & PS2_CLK_MASK ? 0 : ps2_port[1].clk_out << 1) |
-            (via2registers[2] & PS2_DATA_MASK ? 0 : ps2_port[1].data_out);
+            (via2registers[2] & PS2_DATA_MASK ? 0 : i2c_port.data_out << 1) |
+            (via2registers[2] & PS2_CLK_MASK ? 0 : i2c_port.clk_out);
         return value;
     } else {
         return via2registers[reg];
