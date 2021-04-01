@@ -3,6 +3,7 @@ x16emu
 x16emu.exe
 x16emu_mac.zip
 x16emu_win.zip
+x16-rom
 rom_labels.h
 rom.bin
 chargen.bin
@@ -14,4 +15,3 @@ x16emu.html.mem
 x16emu.js
 x16emu.wasm
 x16emu.worker.js
-

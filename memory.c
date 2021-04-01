@@ -4,6 +4,7 @@
 
 #include <sys/types.h>
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include "glue.h"
 #include "via.h"
@@ -11,6 +12,7 @@
 #include "video.h"
 #include "ym2151.h"
 #include "ps2.h"
+#include "cpu/fake6502.h"
 
 uint8_t ram_bank;
 uint8_t rom_bank;
@@ -18,12 +20,27 @@ uint8_t rom_bank;
 uint8_t *RAM;
 uint8_t ROM[ROM_SIZE];
 
+bool led_status;
+static uint8_t addr_ym = 0;
+
 #define DEVICE_EMULATOR (0x9fb0)
+
+uint8_t cpuio_read(uint8_t reg);
+void cpuio_write(uint8_t reg, uint8_t value);
 
 void
 memory_init()
 {
 	RAM = calloc(RAM_SIZE, sizeof(uint8_t));
+	memory_reset();
+}
+
+void
+memory_reset()
+{
+	// default banks are 0
+	memory_set_ram_bank(0);
+	memory_set_rom_bank(0);
 }
 
 static uint8_t
@@ -45,31 +62,24 @@ read6502(uint16_t address) {
 uint8_t
 real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 {
-	if (address < 0x9f00) { // RAM
+	if (address < 2) { // CPU I/O ports
+		return cpuio_read(address);
+	} else if (address < 0x9f00) { // RAM
 		return RAM[address];
 	} else if (address < 0xa000) { // I/O
-		if (address >= 0x9f00 && address < 0x9f20) {
-			// TODO: sound
-			return 0;
+		if (address >= 0x9f00 && address < 0x9f10) {
+			return via1_read(address & 0xf);
+		} else if (address >= 0x9f10 && address < 0x9f20) {
+			return via2_read(address & 0xf);
 		} else if (address >= 0x9f20 && address < 0x9f40) {
 			return video_read(address & 0x1f, debugOn);
 		} else if (address >= 0x9f40 && address < 0x9f60) {
-			// TODO: character LCD
 			return 0;
-		} else if (address >= 0x9f60 && address < 0x9f70) {
-			return via1_read(address & 0xf);
-		} else if (address >= 0x9f70 && address < 0x9f80) {
-			return via2_read(address & 0xf);
-		} else if (address >= 0x9f80 && address < 0x9fa0) {
-			// TODO: RTC
-			return 0;
-		} else if (address >= 0x9fa0 && address < 0x9fb0) {
-			// fake mouse
-			return mouse_read(address & 0x1f);
 		} else if (address >= 0x9fb0 && address < 0x9fc0) {
 			// emulator state
 			return emu_read(address & 0xf, debugOn);
 		} else {
+			// future expansion
 			return 0;
 		}
 	} else if (address < 0xc000) { // banked RAM
@@ -86,29 +96,28 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 void
 write6502(uint16_t address, uint8_t value)
 {
-	static uint8_t lastAudioAdr = 0;
-	if (address < 0x9f00) { // RAM
+	if (address < 2) { // CPU I/O ports
+		cpuio_write(address, value);
+	} else if (address < 0x9f00) { // RAM
 		RAM[address] = value;
 	} else if (address < 0xa000) { // I/O
-		if (address >= 0x9f00 && address < 0x9f20) {
-			// TODO: sound
+		if (address >= 0x9f00 && address < 0x9f10) {
+			via1_write(address & 0xf, value);
+		} else if (address >= 0x9f10 && address < 0x9f20) {
+			via2_write(address & 0xf, value);
 		} else if (address >= 0x9f20 && address < 0x9f40) {
 			video_write(address & 0x1f, value);
 		} else if (address >= 0x9f40 && address < 0x9f60) {
-			// TODO: character LCD
-		} else if (address >= 0x9f60 && address < 0x9f70) {
-			via1_write(address & 0xf, value);
-		} else if (address >= 0x9f70 && address < 0x9f80) {
-			via2_write(address & 0xf, value);
-		} else if (address >= 0x9f80 && address < 0x9fa0) {
-			// TODO: RTC
+			if (address == 0x9f40) {        // YM address
+				addr_ym = value;
+			} else if (address == 0x9f41) { // YM data
+				YM_write_reg(addr_ym, value);
+			}
+			// TODO:
+			//   $9F42 & $9F43: SAA1099P
 		} else if (address >= 0x9fb0 && address < 0x9fc0) {
 			// emulator state
 			emu_write(address & 0xf, value);
-		} else if (address == 0x9fe0) {
-			lastAudioAdr = value;
-		} else if (address == 0x9fe1) {
-			YM_write_reg(lastAudioAdr, value);
 		} else {
 			// future expansion
 		}
@@ -163,6 +172,31 @@ memory_get_rom_bank()
 	return rom_bank;
 }
 
+uint8_t
+cpuio_read(uint8_t reg)
+{
+	switch (reg) {
+		case 0:
+			return memory_get_ram_bank();
+		case 1:
+			return memory_get_rom_bank();
+	}
+	return 0; // to make the compiler happy
+}
+
+void
+cpuio_write(uint8_t reg, uint8_t value)
+{
+	switch (reg) {
+		case 0:
+			memory_set_ram_bank(value);
+			break;
+		case 1:
+			memory_set_rom_bank(value);
+			break;
+	}
+}
+
 // Control the GIF recorder
 void
 emu_recorder_set(gif_recorder_command_t command)
@@ -202,6 +236,7 @@ emu_write(uint8_t reg, uint8_t value)
 		case 3: echo_mode = value; break;
 		case 4: save_on_exit = v; break;
 		case 5: emu_recorder_set((gif_recorder_command_t) value); break;
+		case 15: led_status = v; break;
 		default: printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
 	}
 }
@@ -221,6 +256,16 @@ emu_read(uint8_t reg, bool debugOn)
 		return save_on_exit ? 1 : 0;
 	} else if (reg == 5) {
 		return record_gif;
+
+	} else if (reg == 8) {
+		return (clockticks6502 >> 0) & 0xff;
+	} else if (reg == 9) {
+		return (clockticks6502 >> 8) & 0xff;
+	} else if (reg == 10) {
+		return (clockticks6502 >> 16) & 0xff;
+	} else if (reg == 11) {
+		return (clockticks6502 >> 24) & 0xff;
+
 	} else if (reg == 13) {
 		return keymap;
 	} else if (reg == 14) {

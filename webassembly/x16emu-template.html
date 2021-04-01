@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <link rel="stylesheet" href="webassembly/styles.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <title>Commander X16 Emulator</title>
 </head>
 
@@ -18,15 +19,20 @@
                 <div class="emu-container">
                     <figure id="spinner">
                         <div class="spinner"></div>
-                        <strong>emscripten</strong>
+                        <strong>Loading</strong>
                     </figure>
                     <div class="emscripten" id="status">Downloading...</div>
                     <div class="emscripten">
                         <progress value="0" max="100" id="progress" hidden=1></progress>
                     </div>
-                    <canvas onclick="this.focus();" tabindex="1" id="canvas" class="" oncontextmenu="event.preventDefault()"></canvas>
-                    <div class="close-fullscreen"><a href="javascript:closeFs();" title="Exit fullscreen">&times;</a></div>
-
+                    <canvas onclick="this.focus();" tabindex="1" id="canvas" class=""
+                        oncontextmenu="event.preventDefault()"></canvas>
+                    <div class="close-fullscreen"><a href="javascript:closeFs();" title="Exit fullscreen">&times;</a>
+                    </div>
+                    <div class="fullscreen-audio"><a href="javascript:toggleAudio();" title="Toggle Audio"><i
+                                id="fullscreen_volume_icon" class="material-icons"
+                                style="font-size:22px;">volume_off</i></a>
+                    </div>
                 </div>
 
 
@@ -40,10 +46,13 @@
             <div class="editor-layout">
 
                 <div class="editor-top">
-                    <h1>Commander X16 Web Emulator <a href="http://commanderx16.com" target="_blank">visit commanderx16.com</a> </h1>
+                    <h1>Commander X16 Emulator <a href="http://commanderx16.com" target="_blank">visit
+                            commanderx16.com</a> </h1>
                     <button type="button" onclick="openFs();">Fullscreen</button>
-                    <button type="button" onclick="runCode();">Run Code</button>
-                    <button type="button" onclick="resetEmulator();">Reset Emulator</button>
+                    <button type="button" onclick="runCode();">Run</button>
+                    <button type="button" onclick="resetEmulator();">Reset</button>
+                    <button type="button" onclick="toggleAudio();"><i id="volume_icon" class="material-icons"
+                            style="font-size:12px;">volume_off</i></button>
                 </div>
                 <div class="editor-middle">
 
@@ -70,7 +79,7 @@
 
         </section>
     </div>
-
+    <script src="webassembly/jszip.min.js"></script>
     <script src="webassembly/main.js"></script>
     {{{ SCRIPT }}}
 

@@ -65,9 +65,6 @@ body {
 }
 
 
-.code-container {
-
-}
 #code {
     width: 100%;
     padding: 0;
@@ -118,6 +115,23 @@ body {
     opacity: 1;
 }
 
+.fullscreen-audio {
+    display:none;
+}
+
+.fullscreen .fullscreen-audio {
+    display:block!important;
+    position: absolute;
+    left:10px;
+    top:10px;
+}
+.fullscreen-audio a {
+    color:#fff;
+    margin-left: 10px;
+}
+
+
+
 .close-fullscreen {
     display:none;
 }
@@ -133,6 +147,7 @@ body {
     font-size: 50px;
     margin-right: 10px;
 }
+
 .emu-container.fullscreen {
     position: absolute;
     top: 0;

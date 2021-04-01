@@ -9,6 +9,40 @@
 
 This is an emulator for the Commander X16 computer system. It only depends on SDL2 and should compile on all modern operating systems.
 
+Features
+--------
+
+* CPU: Full 65C02 instruction set
+* VERA
+	* Mostly cycle exact emulation
+	* Supports almost all features:
+		* composer
+		* two layers
+		* sprites
+		* VSYNC, raster, sprite IRQ
+* Sound
+    * PCM
+    * PSG
+    * YM2151
+* SD card: reading and writing (image file)
+* VIA
+	* ROM/RAM banking
+	* keyboard
+	* mouse
+	* gamepad
+
+Missing Features
+----------------
+
+* VERA
+	* Does not support the "CURRENT_FIELD" bit
+	* Interlaced modes (NTSC/RGB) don't render at the full horizontal fidelity
+* VIA
+	* Does not support counters/timers/IRQs
+* Sound
+	* No SAA support
+
+
 Binaries & Compiling
 --------------------
 
@@ -53,6 +87,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-geos` launches GEOS at startup.
 * `-scale` scales video output to an integer multiple of 640x480
 * `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
+* `-warp` causes the emulator to run as fast as possible, possibly faster than a real X16.
 * `-gif <filename>[,wait]` to record the screen into a GIF. See below for more info.
 * `-quality` change image scaling algorithm quality
 	* `nearest`: nearest pixel sampling
@@ -119,10 +154,11 @@ The following keys can be used for controlling games:
 Functions while running
 -----------------------
 
-* `Ctrl + R` will reset the computer.
-* `Ctrl + V` will paste the clipboard by injecting key presses.
-* `Ctrl + S` will save a system dump (configurable with `-dump`) to disk.
-* `Ctrl + Return` will toggle full screen mode.
+* `Ctrl` + `R` will reset the computer.
+* `Ctrl` + `V` will paste the clipboard by injecting key presses.
+* `Ctrl` + `S` will save a system dump (configurable with `-dump`) to disk.
+* `Ctrl` + `F` and `Ctrl` + `Return` will toggle full screen mode.
+* `Ctrl` + `=` and `Ctrl` + `+` will toggle warp mode.
 
 On the Mac, use the `Cmd` key instead.
 
@@ -146,21 +182,51 @@ On startup, the X16 presents direct mode of BASIC V2. You can enter BASIC statem
 * The X16 does not have a `STOP + RESTORE` function.
 
 
+SD Card Images
+--------------
+
+The command line argument `-sdcard` lets you attach an image file for the emulated SD card. Using an emulated SD card makes filesystem operations go through the X16's DOS implementation, so it supports all filesystem operations (including directory listing though `DOS"$` command channel commands using the `DOS` statement) and guarantees full compatibility with the real device.
+
+Images must be greater than 32 MB in size and contain an MBR partition table and a FAT32 filesystem. The file `sdcard.img.zip` in this repository is an empty 100 MB image in this format.
+
+On macOS, you can just double-click an image to mount it, or use the command line:
+
+	# hdiutil attach sdcard.img
+	/dev/disk2              FDisk_partition_scheme
+	/dev/disk2s1            Windows_FAT_32                  /Volumes/X16 DISK
+	# [do something with the filesystem]
+	# hdiutil detach /dev/disk[n] # [n] = number of device as printed above
+
+On Linux, you can use the command line:
+
+	# sudo losetup -P /dev/loop21 disk.img
+	# sudo mount /dev/loop21p1 /mnt # pick a location to mount it to, like /mnt
+	# [do something with the filesystem]
+	# sudo umount /mnt
+	# sudo losetup -d /dev/loop21
+
+On Windows, you can use the [OSFMount](https://www.osforensics.com/tools/mount-disk-images.html) tool.
+
+
 Host Filesystem Interface
 -------------------------
 
-If the system ROM contains any version of the KERNAL, the LOAD (`$FFD5`) and SAVE (`$FFD8`) KERNAL calls are intercepted by the emulator if the device is 1 (which is the default). So the BASIC statements
+If the system ROM contains any version of the KERNAL, and there is no SD card image attached, the LOAD (`$FFD5`) and SAVE (`$FFD8`) KERNAL calls (and BASIC statements) are intercepted by the emulator for device 8 (the default). So the BASIC statements will target the host computer's local filesystem:
 
       LOAD"$
       LOAD"FOO.PRG
-      LOAD"IMAGE.PRG",1,1
+      LOAD"IMAGE.PRG",8,1
       SAVE"BAR.PRG
 
-will target the host computer's local filesystem.
+Note that this feature is very limited! Manually reading and writing files (e.g. `OPEN` in BASIC) is not supported by the host filesystem interface. Use SD card images for this.
 
-The emulator will interpret filenames relative to the directory it was started in. Note that on macOS, when double-clicking the executable, this is the home directory.
+The emulator will interpret filenames relative to the directory it was started in. On macOS, when double-clicking the executable, this is the home directory.
 
-To avoid incompatibility problems between the PETSCII and ASCII encodings, use lower case filenames on the host side, and unshifted filenames on the X16 side.
+To avoid incompatibility problems between the PETSCII and ASCII encodings, you can
+
+* use lower case filenames on the host side, and unshifted filenames on the X16 side.
+* use `Ctrl+O` to switch to the X16 to ISO mode for ASCII compatibility.
+* use `Ctrl+N` to switch to the upper/lower character set for a workaround.
 
 
 Dealing with BASIC Programs
@@ -207,68 +273,58 @@ The debugger keys are similar to the Microsoft Debugger shortcut keys, and work 
 |F12|is used to break back into the debugger. This does not happen if you do not have -debug|
 |TAB|when stopped, or single stepping, hides the debug information when pressed 			|
 
-When `-debug` is selected the No-Operation $FF will break into the debugger automatically.
+When `-debug` is selected the STP instruction (opcode $DB) will break into the debugger automatically.
 
 Effectively keyboard routines only work when the debugger is running normally. Single stepping through keyboard code will not work at present.
+
+
+Forum
+-----
+
+[https://www.commanderx16.com/forum/](https://www.commanderx16.com/forum/)
 
 
 Wiki
 ----
 
-https://github.com/commanderx16/x16-emulator/wiki
-
-
-Features
---------
-
-* CPU: Full 65C02 instruction set (improved "fake6502")
-* VERA
-	* Mostly cycle exact emulation
-	* Supports almost all features:
-		* composer
-		* two layers
-		* sprites
-		* progressive/interlaced
-		* VSYNC and raster IRQ
-* VIA
-	* ROM/RAM banking
-	* keyboard
-	* mouse
-	* gamepad
-	* SD card (SPI)
-* Sound
-    * PCM
-    * PSG
-    * YM2151
-
-Missing Features
-----------------
-
-* VERA
-	* Does not support the "CURRENT_FIELD" bit
-	* Does not support sprite collisions
-	*	Interlaced modes (NTSC/RGB) don't render at the full horizontal fidelity
-* VIA
-	* Does not support counters/timers/IRQs
-* Sound
-	* No SAA support
+[https://github.com/commanderx16/x16-emulator/wiki](https://github.com/commanderx16/x16-emulator/wiki)
 
 
 License
 -------
 
-Copyright (c) 2019 Michael Steil &lt;mist64@mac.com&gt;, [www.pagetable.com](https://www.pagetable.com/).
+Copyright (c) 2019-2020 Michael Steil &lt;mist64@mac.com&gt;, [www.pagetable.com](https://www.pagetable.com/), et al.
 All rights reserved. License: 2-clause BSD
-
-
-Known Issues
-------------
-
-* Emulator: `LOAD"$` (and `LOAD"$",1`) will show host uppercase filenames as garbage. Use `Ctrl+N` to switch to the X16 upper/lower character set for a workaround.
 
 
 Release Notes
 -------------
+
+## Release 38 ("Kyoto")
+
+* CPU
+	* added WAI, BBS, BBR, SMB, and RMB instructions [Stephen Horn]
+* VERA
+	* VERA speed optimizations [Stephen Horn]
+	* fixed raster line interrupt [Stephen Horn]
+	* added sprite collision interrupt [Stephen Horn]
+	* fixed sprite wrapping [Stephen Horn]
+	* added VERA dump, fill commands to debugger [Stephen Horn]
+	* fixed VRAM memory dump [Stephen Horn]
+* SD card
+	* SD card write support
+	* Ctrl+D/Cmd+D detaches/attaches SD card (for debugging)
+	* improved/cleaned up SD card emulation [Frank van den Hoef]
+	* SD card activity/error LED support
+	* VERA-SPI: support Auto-TX mode
+* misc
+	* added warp mode (Ctrl+'+'/Cmd+'+' to toggle, or `-warp`)
+	* added '-version' shell option [Alice Trillian Osako]
+	* new app icon [Stephen Horn]
+	* expose 32 bit cycle counter (up to 500 sec) in emulator I/O area
+	* zero page register display in debugger [Mike Allison]
+	* Various WebAssembly improvements and fixes [Sebastian Voges]
+
 
 ### Release 37 ("Geneva")
 

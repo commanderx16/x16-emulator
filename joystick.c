@@ -6,32 +6,28 @@
 
 #include "joystick.h"
 
+enum joy_status joy_mode[NUM_JOYSTICKS];
+static SDL_GameController *joystick[NUM_JOYSTICKS];
+static uint16_t joystick_state[NUM_JOYSTICKS];
+bool joystick_data[NUM_JOYSTICKS];
 
-enum joy_status joy1_mode = NONE;
-enum joy_status joy2_mode = NONE;
-
-
-static SDL_GameController *joystick1 = NULL;
-static SDL_GameController *joystick2 = NULL;
 static bool old_clock = false;
 static bool writing = false;
-static uint16_t joystick1_state = 0;
-static uint16_t joystick2_state = 0;
 static uint8_t clock_count = 0;
 
 bool joystick_latch, joystick_clock;
-bool joystick1_data, joystick2_data;
 
 bool joystick_init()
 {
-	int joystick1_number = -1;
-	//Try to get first controller, if it is not set to 1
-	if (joy1_mode != NONE) {
-		for (int i = 0; i < SDL_NumJoysticks(); i++) {
-			if (SDL_IsGameController(i)) {
-				joystick1 = SDL_GameControllerOpen(i);
-				if (joystick1) {
-					joystick1_number = i;
+	for (int i = 0; i < SDL_NumJoysticks(); i++) {
+		if (!SDL_IsGameController(i)) {
+			continue;
+		}
+
+		for (int j = 0; j < NUM_JOYSTICKS; j++) {
+			if (joy_mode[j] != NONE && !joystick[j]) {
+				joystick[j] = SDL_GameControllerOpen(i);
+				if (joystick[j]) {
 					break;
 				} else {
 					fprintf(stderr, "Could not open gamecontroller %i: %s\n", i, SDL_GetError());
@@ -39,18 +35,7 @@ bool joystick_init()
 			}
 		}
 	}
-	if (joy2_mode != NONE) {
-		for (int i=0; i < SDL_NumJoysticks(); i++) {
-			if (SDL_IsGameController(i) && joystick1_number != i) {
-				joystick2 = SDL_GameControllerOpen(i);
-				if (joystick2) {
-					break;
-				} else {
-					fprintf(stderr, "Could not open gamecontroller %i: %s\n", i, SDL_GetError());
-				}
-			}
-		}
-	}
+
 	writing = false;
 	return true;
 }
@@ -74,17 +59,18 @@ void joystick_step()
 				clock_count +=1;
 				old_clock = joystick_clock;
 				if (clock_count < 16) { // write out the next 15 bits
-					joystick1_data = (joy1_mode != NONE) ? (joystick1_state & 1) : 1;
-					joystick2_data = (joy2_mode != NONE) ? (joystick2_state & 1) : 1;
-					joystick1_state = joystick1_state >> 1;
-					joystick2_state = joystick2_state >> 1;
+					for (int i = 0; i < NUM_JOYSTICKS; i++) {
+						joystick_data[i] = (joy_mode[i] != NONE) ? (joystick_state[i] & 1) : 1;
+						joystick_state[i] = joystick_state[i] >> 1;
+					}
 				} else {
 					//Done writing controller data
 					//reset flag and set count to 0
 					writing = false;
 					clock_count = 0;
-					joystick1_data = (joy1_mode != NONE) ? 0 : 1;
-					joystick2_data = (joy2_mode != NONE) ? 0 : 1;
+					for (int i = 0; i < NUM_JOYSTICKS; i++) {
+						joystick_data[i] = (joy_mode[i] != NONE) ? 0 : 1;
+					}
 				}
 			}
 		}
@@ -98,17 +84,16 @@ bool handle_latch(bool latch, bool clock)
 {
 	if (latch){
 		clock_count = 0;
-		//get the 16-representation to put to the VIA
-		joystick1_state = get_joystick_state(joystick1, joy1_mode);
-		joystick2_state = get_joystick_state(joystick2, joy2_mode);
 		//set writing flag to true to signal we will start writing controller data
 		writing = true;
 		old_clock = clock;
-		//preload the first bit onto VIA
-		joystick1_data = (joy1_mode != NONE) ? (joystick1_state & 1) : 1;
-		joystick2_data = (joy2_mode != NONE) ? (joystick2_state & 1) : 1;
-		joystick1_state = joystick1_state >> 1;
-		joystick2_state = joystick2_state >> 1;
+		for (int i = 0; i < NUM_JOYSTICKS; i++) {
+			//get the 16-representation to put to the VIA
+			joystick_state[i] = get_joystick_state(joystick[i], joy_mode[i]);
+			//preload the first bit onto VIA
+			joystick_data[i] = (joy_mode[i] != NONE) ? (joystick_state[i] & 1) : 1;
+			joystick_state[i] = joystick_state[i] >> 1;
+		}
 	}
 
 	return latch;

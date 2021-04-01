@@ -8,6 +8,7 @@
 
 bool ss;
 bool busy;
+bool autotx;
 uint8_t sending_byte, received_byte;
 int outcounter;
 
@@ -16,6 +17,7 @@ vera_spi_init()
 {
 	ss = false;
 	busy = false;
+	autotx = false;
 	received_byte = 0xff;
 }
 
@@ -26,7 +28,7 @@ vera_spi_step()
 		outcounter++;
 		if (outcounter == 8) {
 			busy = false;
-			if (sdcard_file) {
+			if (sdcard_attached) {
 				received_byte = sdcard_handle(sending_byte);
 			} else {
 				received_byte = 0xff;
@@ -40,9 +42,15 @@ vera_spi_read(uint8_t reg)
 {
 	switch (reg) {
 		case 0:
+			if (autotx && ss && !busy) {
+				// autotx mode will automatically send $FF after each read
+				sending_byte = 0xff;
+				busy = true;
+				outcounter = 0;
+			}
 			return received_byte;
 		case 1:
-			return busy << 7 | ss;
+			return busy << 7 | autotx << 3 | ss;
 	}
 	return 0;
 }
@@ -62,9 +70,10 @@ vera_spi_write(uint8_t reg, uint8_t value)
 			if (ss != (value & 1)) {
 				ss = value & 1;
 				if (ss) {
-					sdcard_select();
+					sdcard_select(ss);
 				}
 			}
+			autotx = !!(value & 8);
 			break;
 	}
 }

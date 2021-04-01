@@ -15,7 +15,7 @@
 #define MHZ 8
 
 #define NUM_MAX_RAM_BANKS 256
-#define NUM_ROM_BANKS 8
+#define NUM_ROM_BANKS 32
 
 #define RAM_SIZE (0xa000 + num_ram_banks * 8192) /* $0000-$9FFF + banks at $A000-$BFFF */
 #define ROM_SIZE (NUM_ROM_BANKS * 16384)   /* banks at $C000-$FFFF */
@@ -57,10 +57,16 @@ extern bool save_on_exit;
 extern gif_recorder_state_t record_gif;
 extern char *gif_path;
 extern uint8_t keymap;
+extern bool warp_mode;
 
 extern void machine_dump();
 extern void machine_reset();
 extern void machine_paste();
+extern void machine_toggle_warp();
 extern void init_audio();
+
+extern bool video_is_tilemap_address(int addr);
+extern bool video_is_tiledata_address(int addr);
+extern bool video_is_special_address(int addr);
 
 #endif

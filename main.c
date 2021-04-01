@@ -22,7 +22,6 @@
 #include "video.h"
 #include "via.h"
 #include "ps2.h"
-#include "spi.h"
 #include "vera_spi.h"
 #include "sdcard.h"
 #include "loadsave.h"
@@ -34,6 +33,7 @@
 #include "rom_symbols.h"
 #include "ym2151.h"
 #include "audio.h"
+#include "version.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -77,6 +77,7 @@ bool dump_cpu = false;
 bool dump_ram = true;
 bool dump_bank = true;
 bool dump_vram = false;
+bool warp_mode = false;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
@@ -84,9 +85,12 @@ char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
 char *scale_quality = "best";
+
+int frames;
+int32_t sdlTicks_base;
+int32_t last_perf_update;
+int32_t perf_frame_count;
 char window_title[30];
-int32_t last_perf_update = 0;
-int32_t perf_frame_count = 0;
 
 #ifdef TRACE
 bool trace_mode = false;
@@ -210,7 +214,7 @@ machine_dump()
 void
 machine_reset()
 {
-	spi_init();
+	memory_reset();
 	vera_spi_init();
 	via1_init();
 	via2_init();
@@ -225,6 +229,58 @@ machine_paste(char *s)
 		paste_text = s;
 		pasting_bas = true;
 	}
+}
+
+void
+timing_init() {
+	frames = 0;
+	sdlTicks_base = SDL_GetTicks();
+	last_perf_update = 0;
+	perf_frame_count = 0;
+}
+
+void
+timing_update()
+{
+	frames++;
+	int32_t sdlTicks = SDL_GetTicks() - sdlTicks_base;
+	int32_t diff_time = 1000 * frames / 60 - sdlTicks;
+	if (!warp_mode && diff_time > 0) {
+		usleep(1000 * diff_time);
+	}
+
+	if (sdlTicks - last_perf_update > 5000) {
+		int32_t frameCount = frames - perf_frame_count;
+		int perf = frameCount / 3;
+
+		if (perf < 100 || warp_mode) {
+			sprintf(window_title, "Commander X16 (%d%%)", perf);
+			video_update_title(window_title);
+		} else {
+			video_update_title("Commander X16");
+		}
+
+		perf_frame_count = frames;
+		last_perf_update = sdlTicks;
+	}
+
+	if (log_speed) {
+		float frames_behind = -((float)diff_time / 16.666666);
+		int load = (int)((1 + frames_behind) * 100);
+		printf("Load: %d%%\n", load > 100 ? 100 : load);
+
+		if ((int)frames_behind > 0) {
+			printf("Rendering is behind %d frames.\n", -(int)frames_behind);
+		} else {
+		}
+	}
+}
+
+void
+machine_toggle_warp()
+{
+	warp_mode = !warp_mode;
+	timing_init();
 }
 
 uint8_t
@@ -324,7 +380,8 @@ is_kernal()
 static void
 usage()
 {
-	printf("\nCommander X16 Emulator  (C)2019 Michael Steil\n");
+	printf("\nCommander X16 Emulator r%s (%s)\n", VER, VER_NAME);
+	printf("(C)2019,2020 Michael Steil et al.\n");
 	printf("All rights reserved. License: 2-clause BSD\n\n");
 	printf("Usage: x16emu [option] ...\n\n");
 	printf("-rom <rom.bin>\n");
@@ -348,6 +405,8 @@ usage()
 	printf("\ton the load address.\n");
 	printf("-geos\n");
 	printf("\tLaunch GEOS at startup.\n");
+	printf("-warp\n");
+	printf("\tEnable warp mode, run emulator as fast as possible.\n");
 	printf("-echo [{iso|raw}]\n");
 	printf("\tPrint all KERNAL output to the host's stdout.\n");
 	printf("\tBy default, everything but printable ASCII characters get\n");
@@ -389,6 +448,8 @@ usage()
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
 	printf("\tcan be specified.\n");
 #endif
+	printf("-version\n");
+	printf("\tPrint additional version information the emulator and ROM.\n");
 	printf("\n");
 	exit(1);
 }
@@ -524,6 +585,10 @@ main(int argc, char **argv)
 			sdcard_path = argv[0];
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-warp")) {
+			argc--;
+			argv++;
+			warp_mode = true;
 		} else if (!strcmp(argv[0], "-echo")) {
 			argc--;
 			argv++;
@@ -617,24 +682,47 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			if (!strcmp(argv[0], "NES")) {
-				joy1_mode = NES;
+				joy_mode[0] = NES;
 				argc--;
 				argv++;
 			} else if (!strcmp(argv[0], "SNES")) {
-				joy1_mode = SNES;
+				joy_mode[0] = SNES;
 				argc--;
 				argv++;
 			}
-
 		} else if (!strcmp(argv[0], "-joy2")){
 			argc--;
 			argv++;
 			if (!strcmp(argv[0], "NES")){
-				joy2_mode = NES;
+				joy_mode[1] = NES;
 				argc--;
 				argv++;
 			} else if (!strcmp(argv[0], "SNES")){
-				joy2_mode = SNES;
+				joy_mode[1] = SNES;
+				argc--;
+				argv++;
+			}
+		} else if (!strcmp(argv[0], "-joy3")){
+			argc--;
+			argv++;
+			if (!strcmp(argv[0], "NES")){
+				joy_mode[2] = NES;
+				argc--;
+				argv++;
+			} else if (!strcmp(argv[0], "SNES")){
+				joy_mode[2] = SNES;
+				argc--;
+				argv++;
+			}
+		} else if (!strcmp(argv[0], "-joy4")){
+			argc--;
+			argv++;
+			if (!strcmp(argv[0], "NES")){
+				joy_mode[3] = NES;
+				argc--;
+				argv++;
+			} else if (!strcmp(argv[0], "SNES")){
+				joy_mode[3] = SNES;
 				argc--;
 				argv++;
 			}
@@ -711,6 +799,11 @@ main(int argc, char **argv)
 			audio_buffers = (int)strtol(argv[0], NULL, 10);
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-version")){
+			printf("%s", VER_INFO);
+			argc--;
+			argv++;
+			exit(0);
 		} else {
 			usage();
 		}
@@ -726,11 +819,12 @@ main(int argc, char **argv)
 	SDL_RWclose(f);
 
 	if (sdcard_path) {
-		sdcard_file = SDL_RWFromFile(sdcard_path, "rb");
+		sdcard_file = SDL_RWFromFile(sdcard_path, "r+b");
 		if (!sdcard_file) {
 			printf("Cannot open %s!\n", sdcard_path);
 			exit(1);
 		}
+		sdcard_attach();
 	}
 
 	prg_override_start = -1;
@@ -782,6 +876,8 @@ main(int argc, char **argv)
 	joystick_init();
 
 	machine_reset();
+
+	timing_init();
 
 	instruction_counter = 0;
 
@@ -924,6 +1020,7 @@ emulator_loop(void *param)
 			}
 			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
 			sp += 2;
+			continue;
 		}
 #endif
 
@@ -934,7 +1031,6 @@ emulator_loop(void *param)
 		for (uint8_t i = 0; i < clocks; i++) {
 			ps2_step(0);
 			ps2_step(1);
-			spi_step();
 			joystick_step();
 			vera_spi_step();
 			new_frame |= video_step(MHZ);
@@ -948,39 +1044,7 @@ emulator_loop(void *param)
 				break;
 			}
 
-			static int frames = 0;
-			frames++;
-			int32_t sdlTicks = SDL_GetTicks();
-			int32_t diff_time = 1000 * frames / 60 - sdlTicks;
-			if (diff_time > 0) {
-				usleep(1000 * diff_time);
-			}
-
-			if (sdlTicks - last_perf_update > 5000) {
-				int32_t frameCount = frames - perf_frame_count;
-				int perf = frameCount / 3;
-
-				if (perf < 100) {
-					sprintf(window_title, "Commander X16 (%d%%)", perf);
-					video_update_title(window_title);
-				} else {
-					video_update_title("Commander X16");
-				}
-
-				perf_frame_count = frames;
-				last_perf_update = sdlTicks;
-			}
-
-			if (log_speed) {
-				float frames_behind = -((float)diff_time / 16.666666);
-				int load = (int)((1 + frames_behind) * 100);
-				printf("Load: %d%%\n", load > 100 ? 100 : load);
-
-				if ((int)frames_behind > 0) {
-					printf("Rendering is behind %d frames.\n", -(int)frames_behind);
-				} else {
-				}
-			}
+			timing_update();
 #ifdef __EMSCRIPTEN__
 			// After completing a frame we yield back control to the browser to stay responsive
 			return 0;
@@ -1072,6 +1136,9 @@ emulator_loop(void *param)
 			}
 		}
 
+#if 0 // enable this for slow pasting
+		if (!(instruction_counter % 100000))
+#endif
 		while (pasting_bas && RAM[NDX] < 10) {
 			uint32_t c;
 			int e = 0;

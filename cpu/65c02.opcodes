@@ -44,5 +44,42 @@ trb abso 6 $1c
 tsb zp 5 $04
 tsb abso 6 $0c
 
-dbg imp 1 $FF
+bbr0 zprel 2 $0f
+bbr1 zprel 2 $1f
+bbr2 zprel 2 $2f
+bbr3 zprel 2 $3f
+bbr4 zprel 2 $4f
+bbr5 zprel 2 $5f
+bbr6 zprel 2 $6f
+bbr7 zprel 2 $7f
 
+bbs0 zprel 2 $8f
+bbs1 zprel 2 $9f
+bbs2 zprel 2 $af
+bbs3 zprel 2 $bf
+bbs4 zprel 2 $cf
+bbs5 zprel 2 $df
+bbs6 zprel 2 $ef
+bbs7 zprel 2 $ff
+
+rmb0 zp 5 $07
+rmb1 zp 5 $17
+rmb2 zp 5 $27
+rmb3 zp 5 $37
+rmb4 zp 5 $47
+rmb5 zp 5 $57
+rmb6 zp 5 $67
+rmb7 zp 5 $77
+
+smb0 zp 5 $87
+smb1 zp 5 $97
+smb2 zp 5 $a7
+smb3 zp 5 $b7
+smb4 zp 5 $c7
+smb5 zp 5 $d7
+smb6 zp 5 $e7
+smb7 zp 5 $f7
+
+wai imp 3 $cb
+
+dbg imp 1 $DB

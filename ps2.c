@@ -205,14 +205,12 @@ void
 mouse_button_down(int num)
 {
 	buttons |= 1 << num;
-	mouse_send_state();
 }
 
 void
 mouse_button_up(int num)
 {
 	buttons &= (1 << num) ^ 0xff;
-	mouse_send_state();
 }
 
 void
@@ -220,7 +218,6 @@ mouse_move(int x, int y)
 {
 	mouse_diff_x += x;
 	mouse_diff_y += y;
-	mouse_send_state();
 }
 
 uint8_t

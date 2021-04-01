@@ -12,7 +12,12 @@
 #include <stdlib.h>
 
 #define SAMPLERATE (25000000 / 512)
-#define SAMPLES_PER_BUFFER (256)
+
+#ifdef __EMSCRIPTEN__
+	#define SAMPLES_PER_BUFFER (1024)
+#else
+	#define SAMPLES_PER_BUFFER (256)
+#endif
 
 static SDL_AudioDeviceID audio_dev;
 static int               vera_clks = 0;

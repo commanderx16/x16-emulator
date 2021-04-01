@@ -1,6 +1,6 @@
 
 # the mingw32 path on macOS installed through homebrew
-MINGW32=/usr/local/Cellar/mingw-w64/6.0.0_2/toolchain-i686/i686-w64-mingw32
+MINGW32=/usr/local/Cellar/mingw-w64/7.0.0_2/toolchain-i686/i686-w64-mingw32
 # the Windows SDL2 path on macOS installed through ./configure --prefix=... && make && make install
 WIN_SDL2=~/tmp/sdl2-win32
 
@@ -32,14 +32,14 @@ ifeq ($(CROSS_COMPILE_WINDOWS),1)
 endif
 
 ifdef EMSCRIPTEN
-	LDFLAGS+=--shell-file webassembly/x16emu-template.html --preload-file rom.bin -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1
+	LDFLAGS+=--shell-file webassembly/x16emu-template.html --preload-file rom.bin -s TOTAL_MEMORY=32MB -s ASSERTIONS=1 -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1
 	# To the Javascript runtime exported functions
 	LDFLAGS+=-s EXPORTED_FUNCTIONS='["_j2c_reset", "_j2c_paste", "_j2c_start_audio", _main]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]'
 
 	OUTPUT=x16emu.html
 endif
 
-OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o spi.o vera_spi.o audio.o vera_pcm.o vera_psg.o sdcard.o main.o debugger.o javascript_interface.o joystick.o rendertext.o keyboard.o icon.o
+OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o via.o loadsave.o vera_spi.o audio.o vera_pcm.o vera_psg.o sdcard.o main.o debugger.o javascript_interface.o joystick.o rendertext.o keyboard.o icon.o
 
 HEADERS = disasm.h cpu/fake6502.h glue.h memory.h video.h audio.h vera_pcm.h vera_psg.h ps2.h via.h loadsave.h joystick.h keyboard.h
 
@@ -97,11 +97,14 @@ define add_extra_files_to_package
 	cp ../x16-rom/build/x16/rom.bin $(TMPDIR_NAME)
 	cp ../x16-rom/build/x16/kernal.sym  $(TMPDIR_NAME)
 	cp ../x16-rom/build/x16/keymap.sym  $(TMPDIR_NAME)
-	cp ../x16-rom/build/x16/cbdos.sym   $(TMPDIR_NAME)
+	cp ../x16-rom/build/x16/dos.sym     $(TMPDIR_NAME)
 	cp ../x16-rom/build/x16/geos.sym    $(TMPDIR_NAME)
 	cp ../x16-rom/build/x16/basic.sym   $(TMPDIR_NAME)
 	cp ../x16-rom/build/x16/monitor.sym $(TMPDIR_NAME)
 	cp ../x16-rom/build/x16/charset.sym $(TMPDIR_NAME)
+
+	# Empty SD card image
+	cp sdcard.img.zip $(TMPDIR_NAME)
 
 	# Documentation
 	mkdir $(TMPDIR_NAME)/docs
