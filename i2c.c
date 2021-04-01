@@ -105,11 +105,19 @@ i2c_step()
 				}
 			} else { // state == 8
 				if (read_mode) {
+					bool nack = i2c_port.data_in;
+					if (nack) {
 #if LOG_LEVEL >= 3
-					printf("I2C OUT DONE\n");
+					printf("I2C OUT DONE (NACK)\n");
 #endif
-					__unused bool ack = i2c_port.data_in;
-					offset++;
+						count = 0;
+						read_mode = false;
+					} else {
+#if LOG_LEVEL >= 3
+					printf("I2C OUT DONE (ACK)\n");
+#endif
+						offset++;
+					}
 				} else {
 					bool ack = true;
 					switch (count) {
@@ -139,6 +147,7 @@ i2c_step()
 						printf("I2C NACK(%d) $%02X\n", count, byte);
 #endif
 						count = 0;
+						read_mode = false;
 					}
 				}
 				state = STATE_START;
