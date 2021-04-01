@@ -6,6 +6,25 @@
 #include <stdbool.h>
 #include "i2c.h"
 
+// SMC
+
+uint8_t led_status;
+
+uint8_t
+smc_read(uint8_t offset) {
+    return 0xff;
+}
+
+void
+smc_write(uint8_t offset, uint8_t value) {
+    switch (offset) {
+        case 5:
+            led_status = value;
+//        default:
+            // no-op
+    }
+}
+
 #define LOG_LEVEL 1
 
 i2c_port_t i2c_port;
@@ -21,8 +40,14 @@ uint8_t device;
 uint8_t offset;
 
 uint8_t
-i2c_peek(uint8_t device, uint8_t offset) {
-    uint8_t value = 0xea;
+i2c_read(uint8_t device, uint8_t offset) {
+    uint8_t value;
+    switch (device) {
+        case 0x42:
+            return smc_read(offset);
+        default:
+            value = 0xff;
+    }
 #if LOG_LEVEL >= 1
     printf("I2C PEEK($%02X:$%02X) = $%02X\n", device, offset, value);
 #endif
@@ -30,7 +55,13 @@ i2c_peek(uint8_t device, uint8_t offset) {
 }
 
 void
-i2c_poke(uint8_t device, uint8_t offset, uint8_t value) {
+i2c_write(uint8_t device, uint8_t offset, uint8_t value) {
+    switch (device) {
+        case 0x42:
+            smc_write(offset, value);
+//        default:
+            // no-op
+    }
 #if LOG_LEVEL >= 1
     printf("I2C POKE $%02X:$%02X, $%02X\n", device, offset, byte);
 #endif
@@ -64,7 +95,7 @@ i2c_step()
             if (state < 8) {
                 if (read_mode) {
                     if (state == 0) {
-                        byte = i2c_peek(device, offset);
+                        byte = i2c_read(device, offset);
                     }
                     i2c_port.data_out = !!(byte & 0x80);
                     byte <<= 1;
@@ -101,7 +132,7 @@ i2c_step()
                             offset = byte;
                             break;
                         default:
-                            i2c_poke(device, offset, byte);
+                            i2c_write(device, offset, byte);
                             offset++;
                             break;
                     }
