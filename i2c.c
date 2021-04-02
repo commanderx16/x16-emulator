@@ -8,7 +8,7 @@
 #include "smc.h"
 #include "rtc.h"
 
-#define LOG_LEVEL 4
+#define LOG_LEVEL 0
 
 #define DEVICE_SMC 0x42
 #define DEVICE_RTC 0x6F
@@ -82,7 +82,6 @@ i2c_step()
 			read_mode = false;
 		}
 		if (state != STATE_STOP && i2c_port.clk_in == 1 && old_i2c_port.clk_in == 0) {
-			i2c_port.clk_out = 1;
 			i2c_port.data_out = 1;
 			if (state < 8) {
 				if (read_mode) {
