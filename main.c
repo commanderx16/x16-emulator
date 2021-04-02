@@ -82,6 +82,7 @@ bool dump_vram = false;
 bool warp_mode = false;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
+bool set_system_time = false;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
@@ -222,7 +223,6 @@ machine_reset()
 	vera_spi_init();
 	via1_init();
 	via2_init();
-	rtc_init();
 	video_reset();
 	reset6502();
 }
@@ -451,6 +451,8 @@ usage()
 	printf("\tSet the number of audio buffers used for playback. (default: 8)\n");
 	printf("\tIncreasing this will reduce stutter on slower computers,\n");
 	printf("\tbut will increase audio latency.\n");
+	printf("-rtc\n");
+	printf("\tSet the real-time-clock to the current system time and date.\n");
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
@@ -816,6 +818,10 @@ main(int argc, char **argv)
 			audio_buffers = (int)strtol(argv[0], NULL, 10);
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-rtc")) {
+			argc--;
+			argv++;
+			set_system_time = true;
 		} else if (!strcmp(argv[0], "-version")){
 			printf("%s", VER_INFO);
 			argc--;
@@ -901,6 +907,8 @@ main(int argc, char **argv)
 	video_init(window_scale, scale_quality);
 
 	joystick_init();
+
+	rtc_init(set_system_time);
 
 	machine_reset();
 

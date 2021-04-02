@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <time.h>
 #include "rtc.h"
 #include "glue.h"
 
@@ -33,19 +34,33 @@ static int year;
 #define UNBCD(a) (((a) >> 4) * 10 + ((a) & 0xf))
 
 void
-rtc_init()
+rtc_init(bool set_system_time)
 {
-	running = false; // yes, the MCP7940N starts out this way!
 	vbaten = true;
 	h24 = true;
 	clocks = 0;
-	seconds = 0;
-	minutes = 0;
-	hours = 0;
-	day_of_week = 1;
-	day = 1;
-	month = 1;
-	year = 0;
+
+	if (set_system_time) {
+		running = true;
+		time_t t = time(NULL);
+		struct tm tm = *localtime(&t);
+		seconds = tm.tm_sec;
+		minutes = tm.tm_min;
+		hours = tm.tm_hour;
+		day_of_week = 1;
+		day = tm.tm_mday;
+		month = tm.tm_mon + 1;
+		year = tm.tm_year - 100;
+	} else {
+		running = false; // yes, the MCP7940N starts out this way!
+		seconds = 0;
+		minutes = 0;
+		hours = 0;
+		day_of_week = 1;
+		day = 1;
+		month = 1;
+		year = 0;
+	}
 }
 
 static uint8_t days_per_month[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
