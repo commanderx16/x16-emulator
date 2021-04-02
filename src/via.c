@@ -127,6 +127,13 @@ void
 via1_write(uint8_t reg, uint8_t value)
 {
 	via1registers[reg] = value;
+
+	if (reg == VIA_IFR) {
+		via1registers[VIA_IFR] &= ~value;
+	} else {
+		via1registers[reg] = value;
+	}
+
 	if (reg == 0 || reg == 2) {
 		ps2_autostep(1);
 		// PB

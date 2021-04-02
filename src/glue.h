@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-//#define TRACE
+#define TRACE
 //#define PERFSTAT
 #define LOAD_HYPERCALLS
 
