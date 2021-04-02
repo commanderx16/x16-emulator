@@ -8,6 +8,8 @@
 #include <stdint.h>
 
 void via1_init();
+void via1_step();
+bool via1_get_irq_out();
 uint8_t via1_read(uint8_t reg);
 void via1_write(uint8_t reg, uint8_t value);
 

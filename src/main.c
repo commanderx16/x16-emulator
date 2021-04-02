@@ -1027,6 +1027,14 @@ emulator_loop(void *param)
 			}
 		}
 
+		static bool prev_nmi = false;
+		bool new_nmi = via1_get_irq_out();
+		if (!prev_nmi && new_nmi) {
+			printf("NMI!\n");
+			nmi6502();
+		}
+		prev_nmi = new_nmi;
+
 		if (pc == 0xffff) {
 			if (save_on_exit) {
 				machine_dump();
