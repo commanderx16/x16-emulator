@@ -14,6 +14,14 @@
 #include "glue.h"
 #include "joystick.h"
 
+#define VIA_IFR_CA2 1
+#define VIA_IFR_CA1 2
+#define VIA_IFR_SR  4
+#define VIA_IFR_CB2 8
+#define VIA_IFR_CB1 16
+#define VIA_IFR_T2  32
+#define VIA_IFR_T1  64
+
 //
 // VIA#1
 //
@@ -37,11 +45,50 @@
 
 static uint8_t via1registers[16];
 
+bool via1_old_ca2;
+
 void
 via1_init()
 {
 	srand(time(NULL));
 	i2c_port.clk_in = 1;
+}
+
+#define VIA_PCR 0xc
+#define VIA_IFR 0xd
+#define VIA_IER 0xe
+
+bool via1_old_ca2;
+
+void
+via1_step()
+{
+	bool ca2 = !(!ps2_port[0].clk_out | !ps2_port[0].clk_in);
+	if (via1registers[VIA_IER] & VIA_IFR_CA2 && ca2 != via1_old_ca2) {
+		uint8_t ca2_int_ctrl = (via1registers[VIA_PCR] >> 1) & 7;
+		if (((ca2_int_ctrl == 0 || ca2_int_ctrl == 1) && ca2 == 0) ||
+		    ((ca2_int_ctrl == 2 || ca2_int_ctrl == 3) && ca2 == 1)) {
+			printf("[VIA#1]: NEW CA2 IRQ\n");
+			via1registers[VIA_IFR] |= VIA_IFR_CA2;
+		}
+	}
+	via1_old_ca2 = ca2;
+}
+
+bool
+via1_get_irq_out()
+{
+	static int count;
+	if (((via1registers[VIA_IFR] & via1registers[VIA_IER]) & (VIA_IFR_CA1 | VIA_IFR_CB1)) == (VIA_IFR_CA1 | VIA_IFR_CB1)) {
+		printf("BOTH SOURCES!\n");
+		count++;
+		if (count > 100) {
+			printf("BOTHBOTH!\n");
+		}
+	} else {
+		count = 0;
+	}
+	return !!(via1registers[VIA_IFR] & via1registers[VIA_IER]);
 }
 
 uint8_t

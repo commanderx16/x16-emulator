@@ -1064,6 +1064,7 @@ emulator_loop(void *param)
 		uint8_t clocks = clockticks6502 - old_clockticks6502;
 		bool new_frame = false;
 		for (uint8_t i = 0; i < clocks; i++) {
+			via1_step();
 			ps2_step(0);
 			ps2_step(1);
 			i2c_step();
@@ -1102,6 +1103,14 @@ emulator_loop(void *param)
 				irq6502();
 			}
 		}
+
+		static bool prev_nmi = false;
+		bool new_nmi = via1_get_irq_out();
+		if (!prev_nmi && new_nmi) {
+			printf("NMI!\n");
+			nmi6502();
+		}
+		prev_nmi = new_nmi;
 
 		if (pc == 0xffff) {
 			if (save_on_exit) {
