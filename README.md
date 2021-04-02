@@ -21,15 +21,18 @@ Features
 		* sprites
 		* VSYNC, raster, sprite IRQ
 * Sound
-    * PCM
-    * PSG
-    * YM2151
+	* PCM
+	* PSG
+	* YM2151
+* Real-Time-Clock
+* NVRAM
+* System Management Controller
 * SD card: reading and writing (image file)
 * VIA
 	* ROM/RAM banking
 	* keyboard
 	* mouse
-	* gamepad
+	* gamepads
 
 Missing Features
 ----------------
@@ -39,8 +42,6 @@ Missing Features
 	* Interlaced modes (NTSC/RGB) don't render at the full horizontal fidelity
 * VIA
 	* Does not support counters/timers/IRQs
-* Sound
-	* No SAA support
 
 
 Binaries & Compiling
