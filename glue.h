@@ -70,5 +70,7 @@ extern bool video_is_tiledata_address(int addr);
 extern bool video_is_special_address(int addr);
 
 extern uint8_t activity_led;
+extern bool nvram_dirty;
+extern uint8_t nvram[0x40];
 
 #endif

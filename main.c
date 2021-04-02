@@ -104,6 +104,8 @@ SDL_RWops *prg_file ;
 int prg_override_start = -1;
 bool run_after_load = false;
 
+char *nvram_path = NULL;
+
 #ifdef TRACE
 #include "rom_labels.h"
 char *
@@ -392,6 +394,9 @@ usage()
 	printf("-ram <ramsize>\n");
 	printf("\tSpecify banked RAM size in KB (8, 16, 32, ..., 2048).\n");
 	printf("\tThe default is 512.\n");
+	printf("-nvram <nvram.bin>\n");
+	printf("\tSpecify NVRAM image. By default, the machine starts with\n");
+	printf("\trmpty NVRAM and does not save it to disk.\n");
 	printf("-keymap <keymap>\n");
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
@@ -577,6 +582,15 @@ main(int argc, char **argv)
 			}
 			test_number = atoi(argv[0]);
 			run_test = true;
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-nvram")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			nvram_path = argv[0];
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-sdcard")) {
@@ -821,6 +835,16 @@ main(int argc, char **argv)
 	(void)rom_size;
 	SDL_RWclose(f);
 
+	if (nvram_path) {
+		SDL_RWops *f = SDL_RWFromFile(nvram_path, "rb");
+		if (f) {
+			printf("%s %lu\n", nvram_path, sizeof(nvram));
+			int l = SDL_RWread(f, nvram, 1, sizeof(nvram));
+			printf("%d %x %x\n", l, nvram[0], nvram[1]);
+			SDL_RWclose(f);
+		}
+	}
+
 	if (sdcard_path) {
 		sdcard_file = SDL_RWFromFile(sdcard_path, "r+b");
 		if (!sdcard_file) {
@@ -929,7 +953,7 @@ emscripten_main_loop(void) {
 }
 
 
-void*
+void *
 emulator_loop(void *param)
 {
 	for (;;) {
@@ -1045,6 +1069,14 @@ emulator_loop(void *param)
 		instruction_counter++;
 
 		if (new_frame) {
+			if (nvram_dirty && nvram_path) {
+				SDL_RWops *f = SDL_RWFromFile(nvram_path, "wb");
+				if (f) {
+					SDL_RWwrite(f, nvram, 1, sizeof(nvram));
+					SDL_RWclose(f);
+				}
+			}
+
 			if (!video_update()) {
 				break;
 			}
@@ -1062,12 +1094,6 @@ emulator_loop(void *param)
 				irq6502();
 			}
 		}
-
-#if 0
-		if (clockticks6502 >= 5 * MHZ * 1000 * 1000) {
-			break;
-		}
-#endif
 
 		if (pc == 0xffff) {
 			if (save_on_exit) {

@@ -13,8 +13,8 @@
 #include "rtc.h"
 #include "glue.h"
 
-#define BCD(a) (((a) / 10) << 4 | ((a) % 10))
-#define UNBCD(a) (((a) >> 4) * 10 + ((a) & 0xf))
+bool nvram_dirty = false;
+uint8_t nvram[0x40];
 
 static bool running;
 static bool vbaten;
@@ -29,7 +29,8 @@ static int day;
 static int month;
 static int year;
 
-static uint8_t sram[0x40];
+#define BCD(a) (((a) / 10) << 4 | ((a) % 10))
+#define UNBCD(a) (((a) >> 4) * 10 + ((a) & 0xf))
 
 void
 rtc_init()
@@ -152,7 +153,7 @@ rtc_read(uint8_t a) {
 			return BCD(year);
 		default:
 			if (a >= 0x20 && a < 0x60) {
-				return sram[a - 0x20];
+				return nvram[a - 0x20];
 			} else if (a >= 0x60) {
 				return 0xff;
 			}
@@ -205,7 +206,8 @@ rtc_write(uint8_t a, uint8_t v) {
 			break;
 		default:
 			if (a >= 0x20 && a < 0x60) {
-				sram[a - 0x20] = v;
+				nvram[a - 0x20] = v;
+				nvram_dirty = true;
 			}
 	}
 }
