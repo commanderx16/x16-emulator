@@ -1069,7 +1069,7 @@ emulator_loop(void *param)
 			i2c_step();
 			joystick_step();
 			vera_spi_step();
-			new_frame |= video_step(MHZ);
+			new_frame |= video_step();
 		}
 		rtc_step(clocks);
 		audio_render(clocks);

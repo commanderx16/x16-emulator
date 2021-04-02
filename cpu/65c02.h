@@ -59,10 +59,10 @@ static void stz() {
 // *******************************************************************************************
 
 static void bra() {
-    oldpc = pc;
+    uint16_t oldpc = pc;
     pc += reladdr;
-    if ((oldpc & 0xFF00) != (pc & 0xFF00)) clockticks6502 += 2; //check if jump crossed a page boundary
-        else clockticks6502++;
+    clockticks6502 += 1;
+    clockticks6502 += ((oldpc & 0xFF00) != (pc & 0xFF00)); //check if jump crossed a page boundary
 }
 
 // *******************************************************************************************
