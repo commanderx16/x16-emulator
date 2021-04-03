@@ -41,7 +41,7 @@ endif
 
 OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o i2c.o smc.o rtc.o via.o loadsave.o vera_spi.o audio.o vera_pcm.o vera_psg.o sdcard.o main.o debugger.o javascript_interface.o joystick.o rendertext.o keyboard.o icon.o timing.o
 
-HEADERS = disasm.h cpu/fake6502.h glue.h memory.h video.h audio.h vera_pcm.h vera_psg.h ps2.h via.h loadsave.h joystick.h keyboard.h timing.h
+HEADERS = audio.h cpu/65c02.h cpu/fake6502.h cpu/instructions.h cpu/mnemonics.h cpu/modes.h cpu/support.h cpu/tables.h debugger.h disasm.h extern/include/gif.h extern/src/ym2151.h glue.h i2c.h icon.h joystick.h keyboard.h loadsave.h memory.h ps2.h rendertext.h rom_labels.h rom_symbols.h rtc.h sdcard.h smc.h timing.h utf8.h utf8_encode.h vera_pcm.h vera_psg.h vera_spi.h version.h via.h video.h
 
 OBJS += extern/src/ym2151.o
 HEADERS += extern/src/ym2151.h
