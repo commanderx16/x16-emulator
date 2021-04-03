@@ -21,15 +21,18 @@ Features
 		* sprites
 		* VSYNC, raster, sprite IRQ
 * Sound
-    * PCM
-    * PSG
-    * YM2151
+	* PCM
+	* PSG
+	* YM2151
+* Real-Time-Clock
+* NVRAM
+* System Management Controller
 * SD card: reading and writing (image file)
 * VIA
 	* ROM/RAM banking
 	* keyboard
 	* mouse
-	* gamepad
+	* gamepads
 
 Missing Features
 ----------------
@@ -39,8 +42,6 @@ Missing Features
 	* Interlaced modes (NTSC/RGB) don't render at the full horizontal fidelity
 * VIA
 	* Does not support counters/timers/IRQs
-* Sound
-	* No SAA support
 
 
 Binaries & Compiling
@@ -79,6 +80,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 
 * When starting `x16emu` without arguments, it will pick up the system ROM (`rom.bin`) from the executable's directory.
 * The system ROM filename/path can be overridden with the `-rom` command line argument.
+* `-nvram` lets you specify a 64 byte file for the system's non-volatile RAM. If it does not exist, it will be created once the NVRAM is modified.
 * `-keymap` tells the KERNAL to switch to a specific keyboard layout. Use it without an argument to view the supported layouts.
 * `-sdcard` lets you specify an SD card image (partition table + FAT32).
 * `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
@@ -105,6 +107,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 	* `V`: Video RAM and registers (128 KiB VRAM, 32 B composer registers, 512 B pallete, 16 B layer0 registers, 16 B layer1 registers, 16 B sprite registers, 2 KiB sprite attributes)
 * `-sound` can be used to specify the output sound device.
 * `-abufs` can be used to specify the number of audio buffers (defaults to 8). If you're experiencing stuttering in the audio try to increase this number. This will result in additional audio latency though.
+* `-rtc` causes the real-time-clock set to the system's time and date.
 * When compiled with `#define TRACE`, `-trace` will enable an instruction trace on stdout.
 
 Run `x16emu -h` to see all command line options.

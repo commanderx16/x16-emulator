@@ -1062,15 +1062,20 @@ video_update()
 
 	bool mouse_changed = false;
 
-	// if LED is on, stamp red 8x4 square into top right of framebuffer
-	if (led_status) {
-		for (int y = 0; y < 4; y++) {
-			for (int x = SCREEN_WIDTH - 8; x < SCREEN_WIDTH; x++) {
-				framebuffer[(y * SCREEN_WIDTH + x) * 4 + 0] = 0x00;
-				framebuffer[(y * SCREEN_WIDTH + x) * 4 + 1] = 0x00;
-				framebuffer[(y * SCREEN_WIDTH + x) * 4 + 2] = 0xff;
-				framebuffer[(y * SCREEN_WIDTH + x) * 4 + 3] = 0x00;
-			}
+	// for activity LED, overlay red 8x4 square into top right of framebuffer
+	float factivity_led = (float)activity_led / 255;
+	for (int y = 0; y < 4; y++) {
+		for (int x = SCREEN_WIDTH - 8; x < SCREEN_WIDTH; x++) {
+			uint8_t b = framebuffer[(y * SCREEN_WIDTH + x) * 4 + 0];
+			uint8_t g = framebuffer[(y * SCREEN_WIDTH + x) * 4 + 1];
+			uint8_t r = framebuffer[(y * SCREEN_WIDTH + x) * 4 + 2];
+			r = r * (1 - factivity_led) + activity_led;
+			g = g * (1 - factivity_led);
+			b = b * (1 - factivity_led);
+			framebuffer[(y * SCREEN_WIDTH + x) * 4 + 0] = b;
+			framebuffer[(y * SCREEN_WIDTH + x) * 4 + 1] = g;
+			framebuffer[(y * SCREEN_WIDTH + x) * 4 + 2] = r;
+			framebuffer[(y * SCREEN_WIDTH + x) * 4 + 3] = 0x00;
 		}
 	}
 
