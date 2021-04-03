@@ -16,6 +16,7 @@
 #include <inttypes.h>
 #include <SDL.h>
 #include "glue.h"
+#include "timing.h"
 #include "disasm.h"
 #include "memory.h"
 #include "video.h"
@@ -248,6 +249,7 @@ static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift) {
 			if (opcode == 0x20) { 							// Is it JSR ?
 				stepBreakPoint = pc + 3;					// Then break 3 on.
 				currentMode = DMODE_RUN;					// And run.
+				timing_init();
 			} else {
 				currentMode = DMODE_STEP;					// Otherwise single step.
 			}
@@ -255,6 +257,7 @@ static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift) {
 
 		case DBGKEY_RUN:									// F5 Runs until Break.
 			currentMode = DMODE_RUN;
+			timing_init();
 			break;
 
 		case DBGKEY_SETBRK:									// F9 Set breakpoint to displayed.
