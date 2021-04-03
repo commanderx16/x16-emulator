@@ -22,6 +22,8 @@
 #include "video.h"
 #include "via.h"
 #include "ps2.h"
+#include "i2c.h"
+#include "rtc.h"
 #include "vera_spi.h"
 #include "sdcard.h"
 #include "loadsave.h"
@@ -80,6 +82,7 @@ bool dump_vram = false;
 bool warp_mode = false;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
+bool set_system_time = false;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
@@ -101,6 +104,8 @@ int instruction_counter;
 SDL_RWops *prg_file ;
 int prg_override_start = -1;
 bool run_after_load = false;
+
+char *nvram_path = NULL;
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -389,6 +394,9 @@ usage()
 	printf("-ram <ramsize>\n");
 	printf("\tSpecify banked RAM size in KB (8, 16, 32, ..., 2048).\n");
 	printf("\tThe default is 512.\n");
+	printf("-nvram <nvram.bin>\n");
+	printf("\tSpecify NVRAM image. By default, the machine starts with\n");
+	printf("\trmpty NVRAM and does not save it to disk.\n");
 	printf("-keymap <keymap>\n");
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
@@ -447,6 +455,8 @@ usage()
 	printf("\tSet the number of audio buffers used for playback. (default: 8)\n");
 	printf("\tIncreasing this will reduce stutter on slower computers,\n");
 	printf("\tbut will increase audio latency.\n");
+	printf("-rtc\n");
+	printf("\tSet the real-time-clock to the current system time and date.\n");
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
@@ -578,6 +588,15 @@ main(int argc, char **argv)
 			}
 			test_number = atoi(argv[0]);
 			run_test = true;
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-nvram")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			nvram_path = argv[0];
 			argc--;
 			argv++;
 		} else if (!strcmp(argv[0], "-sdcard")) {
@@ -771,6 +790,10 @@ main(int argc, char **argv)
 			audio_buffers = (int)strtol(argv[0], NULL, 10);
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-rtc")) {
+			argc--;
+			argv++;
+			set_system_time = true;
 		} else if (!strcmp(argv[0], "-version")){
 			printf("%s", VER_INFO);
 			argc--;
@@ -789,6 +812,16 @@ main(int argc, char **argv)
 	size_t rom_size = SDL_RWread(f, ROM, ROM_SIZE, 1);
 	(void)rom_size;
 	SDL_RWclose(f);
+
+	if (nvram_path) {
+		SDL_RWops *f = SDL_RWFromFile(nvram_path, "rb");
+		if (f) {
+			printf("%s %lu\n", nvram_path, sizeof(nvram));
+			int l = SDL_RWread(f, nvram, 1, sizeof(nvram));
+			printf("%d %x %x\n", l, nvram[0], nvram[1]);
+			SDL_RWclose(f);
+		}
+	}
 
 	if (sdcard_path) {
 		sdcard_file = SDL_RWFromFile(sdcard_path, "r+b");
@@ -847,6 +880,8 @@ main(int argc, char **argv)
 
 	joystick_init();
 
+	rtc_init(set_system_time);
+
 	machine_reset();
 
 	timing_init();
@@ -898,7 +933,7 @@ emscripten_main_loop(void) {
 }
 
 
-void*
+void *
 emulator_loop(void *param)
 {
 	for (;;) {
@@ -1002,11 +1037,23 @@ emulator_loop(void *param)
 		bool new_frame = false;
 		vera_spi_step(clocks);
 		new_frame |= video_step(MHZ, clocks);
+		for (uint8_t i = 0; i < clocks; i++) {
+			i2c_step();
+		}
+		rtc_step(clocks);
 		audio_render(clocks);
 
 		instruction_counter++;
 
 		if (new_frame) {
+			if (nvram_dirty && nvram_path) {
+				SDL_RWops *f = SDL_RWFromFile(nvram_path, "wb");
+				if (f) {
+					SDL_RWwrite(f, nvram, 1, sizeof(nvram));
+					SDL_RWclose(f);
+				}
+			}
+
 			if (!video_update()) {
 				break;
 			}
@@ -1024,12 +1071,6 @@ emulator_loop(void *param)
 				irq6502();
 			}
 		}
-
-#if 0
-		if (clockticks6502 >= 5 * MHZ * 1000 * 1000) {
-			break;
-		}
-#endif
 
 		if (pc == 0xffff) {
 			if (save_on_exit) {
