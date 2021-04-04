@@ -2,6 +2,10 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
+#ifndef __APPLE__
+#define _XOPEN_SOURCE   600
+#define _POSIX_C_SOURCE 1
+#endif
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
