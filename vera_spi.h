@@ -5,6 +5,6 @@
 #include <inttypes.h>
 
 void vera_spi_init();
-void vera_spi_step();
+void vera_spi_step(int clocks);
 uint8_t vera_spi_read(uint8_t address);
 void vera_spi_write(uint8_t address, uint8_t value);

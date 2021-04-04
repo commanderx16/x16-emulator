@@ -2,14 +2,15 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <time.h>
-#include <stdlib.h>
 #include "via.h"
 #include "ps2.h"
 #include "i2c.h"
 #include "memory.h"
+#include "ps2.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 //XXX
 #include "glue.h"
 #include "joystick.h"
@@ -33,6 +34,9 @@
 // PB5: IECDATAO  Serial DATA out
 // PB6: IECCLKI   Serial CLK  in
 // PB7: IECDATAI  Serial DATA in
+// CA1: PS2MCLK   PS/2 CLK  mouse
+// CA2: PS2KCLK   PS/2 CLK  keyboard
+// CB1: IECSRQ
 // CB2: I2CCLK    I2C CLK
 
 static uint8_t via1registers[16];
@@ -49,28 +53,26 @@ via1_read(uint8_t reg)
 {
 	// DDR=0 (input)  -> take input bit
 	// DDR=1 (output) -> take output bit
-	if (reg == 0) { // PB
-		uint8_t value =
-		(via1registers[2] & I2C_DATA_MASK ? 0 : i2c_port.data_out << 2) |
-		(via1registers[2] & PS2_CLK_MASK ? 0 : ps2_port[1].clk_out << 1) |
-		(via1registers[2] & PS2_DATA_MASK ? 0 : ps2_port[1].data_out);
-		return value;
-	} else if (reg == 1) { // PA
-		uint8_t value =
-		(via1registers[3] & PS2_CLK_MASK ? 0 : ps2_port[0].clk_out << 1) |
-		(via1registers[3] & PS2_DATA_MASK ? 0 : ps2_port[0].data_out);
-		value = value |
-		(joystick_data[0] ? JOY_DATA0_MASK : 0) |
-		(joystick_data[1] ? JOY_DATA1_MASK : 0) |
-		(joystick_data[2] ? JOY_DATA2_MASK : 0) |
-		(joystick_data[3] ? JOY_DATA3_MASK : 0);
-		return value;
-	} else if (reg == 4 || reg == 5 || reg == 8 || reg == 9) { // timer
-		// timer A and B: return random numbers for RND(0)
-		// XXX TODO: these should be real timers :)
-		return rand() & 0xff;
-	} else {
-		return via1registers[reg];
+	switch (reg) {
+		case 0: // PB
+			ps2_autostep(1);
+			return (~via1registers[2] & ps2_port[1].out) |
+				(via1registers[2] & I2C_DATA_MASK ? 0 : i2c_port.data_out << 2);
+
+		case 1: // PA
+			ps2_autostep(0);
+			return (~via1registers[3] & ps2_port[0].out) | Joystick_data;
+
+		case 4: // timer
+		case 5: // timer
+		case 8: // timer
+		case 9: // timer
+			// timer A and B: return random numbers for RND(0)
+			// XXX TODO: these should be real timers :)
+			return rand() & 0xff;
+
+		default:
+			return via1registers[reg];
 	}
 }
 
@@ -78,18 +80,19 @@ void
 via1_write(uint8_t reg, uint8_t value)
 {
 	via1registers[reg] = value;
-
 	if (reg == 0 || reg == 2) {
+		ps2_autostep(1);
 		// PB
+		const uint8_t pb = via1registers[0] | ~via1registers[2];
+		ps2_port[1].in   = pb & PS2_VIA_MASK;
 		i2c_port.data_in = via1registers[2] & I2C_DATA_MASK ? via1registers[0] & I2C_DATA_MASK : 1;
-		ps2_port[1].clk_in = via1registers[2] & PS2_CLK_MASK ? via1registers[0] & PS2_CLK_MASK : 1;
-		ps2_port[1].data_in = via1registers[2] & PS2_DATA_MASK ? via1registers[0] & PS2_DATA_MASK : 1;
 	} else if (reg == 1 || reg == 3) {
+		ps2_autostep(0);
 		// PA
-		ps2_port[0].clk_in = via1registers[3] & PS2_CLK_MASK ? via1registers[1] & PS2_CLK_MASK : 1;
-		ps2_port[0].data_in = via1registers[3] & PS2_DATA_MASK ? via1registers[1] & PS2_DATA_MASK : 1;
-		joystick_latch = via1registers[1] & JOY_LATCH_MASK;
-		joystick_clock = via1registers[1] & JOY_CLK_MASK;
+		const uint8_t pa = via1registers[1] | ~via1registers[3];
+		ps2_port[0].in   = pa & PS2_VIA_MASK;
+		joystick_set_latch(via1registers[1] & JOY_LATCH_MASK);
+		joystick_set_clock(via1registers[1] & JOY_CLK_MASK);
 	} else if (reg == 12) {
 		switch (value >> 5) {
 			case 6: // %110xxxxx
@@ -125,4 +128,3 @@ via2_write(uint8_t reg, uint8_t value)
 {
 	via2registers[reg] = value;
 }
-

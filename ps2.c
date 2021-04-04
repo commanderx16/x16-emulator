@@ -2,135 +2,130 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
-#include <stdio.h>
-#include <stdbool.h>
 #include "ps2.h"
+#include <stdbool.h>
+#include <stdio.h>
 
 #define HOLD 25 * 8 /* 25 x ~3 cycles at 8 MHz = 75µs */
 
 #define PS2_BUFFER_SIZE 32
 
+enum ps2_state {
+	PS2_READY,
+	PS2_SEND_LO,
+	PS2_SEND_HI,
+};
+
+struct ring_buffer {
+	int     m_oldest;
+	int     m_count;
+	uint8_t m_elems[PS2_BUFFER_SIZE];
+};
+
 static struct {
-	bool sending;
-	bool has_byte;
+	enum ps2_state state;
 	uint8_t current_byte;
-	int bit_index;
 	int data_bits;
-	int send_state;
-	struct
-	{
-		uint8_t data[PS2_BUFFER_SIZE];
-		uint8_t read;
-		uint8_t write;
-	} buffer;
+	int send_time;
+	struct ring_buffer buffer;
 } state[2];
 
 ps2_port_t ps2_port[2];
 
-bool
-ps2_buffer_can_fit(int i, int n)
-{
-	// Math is hard. There's certainly a way to do this without a loop.
-	for (int n2 = 1; n2 < n; n2++) {
-		if ((state[i].buffer.write + n2) % PS2_BUFFER_SIZE == state[i].buffer.read) {
-			return false;
-		}
-	}
-	return true;
-}
-
 void
 ps2_buffer_add(int i, uint8_t byte)
 {
-	if (!ps2_buffer_can_fit(i, 1)) {
+	const int index = (state[i].buffer.m_oldest + state[i].buffer.m_count) % PS2_BUFFER_SIZE;
+	if (state[i].buffer.m_count >= PS2_BUFFER_SIZE) {
 		return;
 	}
-
-	state[i].buffer.data[state[i].buffer.write] = byte;
-	state[i].buffer.write = (state[i].buffer.write + 1) % PS2_BUFFER_SIZE;
+	++state[i].buffer.m_count;
+	state[i].buffer.m_elems[index] = byte;
 }
 
-int
-ps2_buffer_remove(int i)
+uint8_t
+ps2_buffer_pop_oldest(int i)
 {
-	if (state[i].buffer.read == state[i].buffer.write) {
-		return -1; // empty
-	} else {
-		uint8_t byte = state[i].buffer.data[state[i].buffer.read];
-		state[i].buffer.read = (state[i].buffer.read + 1) % PS2_BUFFER_SIZE;
-		return byte;
+	const uint8_t value      = state[i].buffer.m_elems[state[i].buffer.m_oldest];
+	state[i].buffer.m_oldest = (state[i].buffer.m_oldest + 1) % PS2_BUFFER_SIZE;
+	--state[i].buffer.m_count;
+	return value;
+}
+
+void
+ps2_step(int i, int clocks)
+{
+	switch (ps2_port[i].in) {
+		case PS2_DATA_MASK:
+			// Communication inhibited
+			ps2_port[i].out = 0;
+			state[i].state  = PS2_READY;
+			return;
+
+		case PS2_VIA_MASK:
+			// Idle
+			switch (state[i].state) {
+				case PS2_READY:
+				CASE_PS2_READY:
+					// get next byte
+					if (state[i].data_bits <= 0) {
+						if (state[i].buffer.m_count <= 0) {
+							// we have nothing to send
+							ps2_port[i].out = PS2_CLK_MASK;
+							return;
+						}
+						state[i].current_byte = ps2_buffer_pop_oldest(i);
+					}
+
+					state[i].data_bits = state[i].current_byte << 1 | (1 - __builtin_parity(state[i].current_byte)) << 9 | (1 << 10);
+					state[i].send_time = 0;
+					state[i].state     = PS2_SEND_LO;
+					// Fall-thru
+				case PS2_SEND_LO:
+				CASE_PS2_SEND_LO:
+					ps2_port[i].out = state[i].data_bits & 1;
+					state[i].send_time += clocks;
+					if (state[i].send_time >= HOLD) {
+						state[i].data_bits >>= 1;
+						state[i].state     = PS2_SEND_HI;
+						state[i].send_time = 0;
+						clocks -= HOLD;
+						goto CASE_PS2_SEND_HI;
+					}
+					break;
+				case PS2_SEND_HI:
+				CASE_PS2_SEND_HI:
+					ps2_port[i].out = PS2_CLK_MASK; // not ready
+					state[i].send_time += clocks;
+					if (state[i].send_time >= HOLD) {
+						clocks -= HOLD;
+						if (state[i].data_bits > 0) {
+							state[i].send_time = 0;
+							state[i].state     = PS2_SEND_LO;
+							goto CASE_PS2_SEND_LO;
+						} else {
+							state[i].state = PS2_READY;
+							goto CASE_PS2_READY;
+						}
+					}
+					break;
+			}
+			break;
+		default:
+			ps2_port[i].out = 0;
 	}
 }
 
 void
-ps2_step(int i)
+ps2_autostep(int i)
 {
-	if (!ps2_port[i].clk_in && ps2_port[i].data_in) { // communication inhibited
-		ps2_port[i].clk_out = 0;
-		ps2_port[i].data_out = 0;
-		state[i].sending = false;
-//		printf("PS2[%d]: STATE: communication inhibited.\n", i);
-		return;
-	} else if (ps2_port[i].clk_in && ps2_port[i].data_in) { // idle state
-//		printf("PS2[%d]: STATE: idle\n", i);
-		if (!state[i].sending) {
-			// get next byte
-			if (!state[i].has_byte) {
-				int current_byte = ps2_buffer_remove(i);
-				if (current_byte < 0) {
-					// we have nothing to send
-					ps2_port[i].clk_out = 1;
-					ps2_port[i].data_out = 0;
-//					printf("PS2[%d]: nothing to send.\n", i);
-					return;
-				}
-				state[i].current_byte = current_byte;
-//				printf("PS2[%d]: current_byte: %x\n", i, state[i].current_byte);
-				state[i].has_byte = true;
-			}
+	static uint32_t port_clocks[2] = {0, 0};
+	extern uint32_t clockticks6502;
 
-			state[i].data_bits = state[i].current_byte << 1 | (1 - __builtin_parity(state[i].current_byte)) << 9 | (1 << 10);
-//			printf("PS2[%d]: data_bits: %x\n", i, state[i].data_bits);
-			state[i].bit_index = 0;
-			state[i].send_state = 0;
-			state[i].sending = true;
-		}
+	int clocks     = clockticks6502 - port_clocks[i];
+	port_clocks[i] = clockticks6502;
 
-		if (state[i].send_state <= HOLD) {
-			ps2_port[i].clk_out = 0; // data ready
-			ps2_port[i].data_out = state[i].data_bits & 1;
-//			printf("PS2[%d]: [%d]sending #%d: %x\n", i, state[i].send_state, state[i].bit_index, state[i].data_bits & 1);
-			if (state[i].send_state == 0 && state[i].bit_index == 10) {
-				// we have sent the last bit, if the host
-				// inhibits now, we'll send the next byte
-				state[i].has_byte = false;
-			}
-			if (state[i].send_state == HOLD) {
-				state[i].data_bits >>= 1;
-				state[i].bit_index++;
-			}
-			state[i].send_state++;
-		} else if (state[i].send_state <= 2 * HOLD) {
-//			printf("PS2[%d]: [%d]not ready\n", i, state[i].send_state);
-			ps2_port[i].clk_out = 1; // not ready
-			ps2_port[i].data_out = 0;
-			if (state[i].send_state == 2 * HOLD) {
-//				printf("XXX bit_index: %d\n", state[i].bit_index);
-				if (state[i].bit_index < 11) {
-					state[i].send_state = 0;
-				} else {
-					state[i].sending = false;
-				}
-			}
-			if (state[i].send_state) {
-				state[i].send_state++;
-			}
-		}
-	} else {
-//		printf("PS2[%d]: Warning: unknown PS/2 bus state: CLK_IN=%d, DATA_IN=%d\n", i, ps2_port[i].clk_in, ps2_port[i].data_in);
-		ps2_port[i].clk_out = 0;
-		ps2_port[i].data_out = 0;
-	}
+	ps2_step(i, clocks);
 }
 
 // fake mouse
@@ -150,56 +145,39 @@ static int16_t mouse_diff_y = 0;
 // byte 2:        X Movement
 // byte 3:        Y Movement
 
-
 static bool
 mouse_send(int x, int y, int b)
 {
-	if (ps2_buffer_can_fit(1, 3)) {
+	if (PS2_BUFFER_SIZE - state[1].buffer.m_count >= 3) {
 		uint8_t byte0 =
-			((y >> 9) & 1) << 5 |
-			((x >> 9) & 1) << 4 |
-			1 << 3 |
-			b;
-		uint8_t byte1 = x;
-		uint8_t byte2 = y;
-//		printf("%02X %02X %02X\n", byte0, byte1, byte2);
-
+		    ((y >> 9) & 1) << 5 |
+		    ((x >> 9) & 1) << 4 |
+		    1 << 3 |
+		    b;
 		ps2_buffer_add(1, byte0);
-		ps2_buffer_add(1, byte1);
-		ps2_buffer_add(1, byte2);
+		ps2_buffer_add(1, x);
+		ps2_buffer_add(1, y);
 
 		return true;
 	} else {
-//		printf("buffer full, skipping...\n");
+		//		printf("buffer full, skipping...\n");
 		return false;
 	}
 }
 
 void
-mouse_send_state()
+mouse_send_state(void)
 {
-	if (mouse_diff_x > 255) {
-		mouse_send(255, 0, buttons);
-		mouse_diff_x -= 255;
-	}
-	if (mouse_diff_x < -256) {
-		mouse_send(-256, 0, buttons);
-		mouse_diff_x -= -256;
-	}
-	if (mouse_diff_y > 255) {
-		mouse_send(0, 255, buttons);
-		mouse_diff_y -= 255;
-	}
-	if (mouse_diff_y < -256) {
-		mouse_send(0, -256, buttons);
-		mouse_diff_y -= -256;
-	}
-	if (mouse_send(mouse_diff_x, mouse_diff_y, buttons)) {
-		mouse_diff_x = 0;
-		mouse_diff_y = 0;
-	}
-}
+	do {
+		int send_diff_x = mouse_diff_x > 255 ? 255 : (mouse_diff_x < -256 ? -256 : mouse_diff_x);
+		int send_diff_y = mouse_diff_y > 255 ? 255 : (mouse_diff_y < -256 ? -256 : mouse_diff_y);
 
+		mouse_send(send_diff_x, send_diff_y, buttons);
+
+		mouse_diff_x -= send_diff_x;
+		mouse_diff_y -= send_diff_y;
+	} while (mouse_diff_x != 0 && mouse_diff_y != 0);
+}
 
 void
 mouse_button_down(int num)
@@ -225,4 +203,3 @@ mouse_read(uint8_t reg)
 {
 	return 0xff;
 }
-

@@ -20,7 +20,7 @@ i2c_port_t i2c_port;
 
 static int state = STATE_STOP;
 static bool read_mode = false;
-static uint8_t byte = 0;
+static uint8_t value = 0;
 static int count = 0;
 static uint8_t device;
 static uint8_t offset;
@@ -86,10 +86,10 @@ i2c_step()
 			if (state < 8) {
 				if (read_mode) {
 					if (state == 0) {
-						byte = i2c_read(device, offset);
+						value = i2c_read(device, offset);
 					}
-					i2c_port.data_out = !!(byte & 0x80);
-					byte <<= 1;
+					i2c_port.data_out = !!(value & 0x80);
+					value <<= 1;
 #if LOG_LEVEL >= 4
 					printf("I2C OUT#%d: %d\n", state, i2c_port.data_out);
 #endif
@@ -98,8 +98,8 @@ i2c_step()
 #if LOG_LEVEL >= 4
 					printf("I2C BIT#%d: %d\n", state, i2c_port.data_in);
 #endif
-					byte <<= 1;
-					byte |= i2c_port.data_in;
+					value <<= 1;
+					value |= i2c_port.data_in;
 					state++;
 				}
 			} else { // state == 8
@@ -121,17 +121,17 @@ i2c_step()
 					bool ack = true;
 					switch (count) {
 						case 0:
-							device = byte >> 1;
-							read_mode = byte & 1;
+							device = value >> 1;
+							read_mode = value & 1;
 							if (device != DEVICE_SMC && device != DEVICE_RTC) {
 								ack = false;
 							}
 							break;
 						case 1:
-							offset = byte;
+							offset = value;
 							break;
 						default:
-							i2c_write(device, offset, byte);
+							i2c_write(device, offset, value);
 							offset++;
 							break;
 					}

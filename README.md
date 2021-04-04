@@ -142,10 +142,10 @@ Since the emulator tells the computer the *position* of keys that are pressed, y
 
 The following keys can be used for controlling games:
 
-|Keyboard Key  | NES Equivalent |
+|Keyboard Key  | SNES Equivalent |
 |--------------|----------------|
-|Ctrl          | A 		|
-|Alt 	       | B		|
+|Ctrl          | B 		|
+|Alt 	       | Y		|
 |Space         | SELECT         |
 |Enter         | START		|
 |Cursor Up     | UP		|

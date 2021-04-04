@@ -10,6 +10,7 @@
 #include "debugger.h"
 #include "keyboard.h"
 #include "gif.h"
+#include "joystick.h"
 #include "vera_spi.h"
 #include "vera_psg.h"
 #include "vera_pcm.h"
@@ -990,12 +991,12 @@ render_line(uint16_t y)
 }
 
 bool
-video_step(float mhz)
+video_step(float mhz, float steps)
 {
 	uint8_t out_mode = reg_composer[0] & 3;
 
 	bool new_frame = false;
-	float advance = ((out_mode & 2) ? NTSC_PIXEL_FREQ :  VGA_PIXEL_FREQ) / mhz;
+	float advance = ((out_mode & 2) ? NTSC_PIXEL_FREQ : VGA_PIXEL_FREQ) * steps / mhz;
 	scan_pos_x += advance;
 	if (scan_pos_x > SCAN_WIDTH) {
 		scan_pos_x -= SCAN_WIDTH;
@@ -1183,6 +1184,20 @@ video_update()
 			mouse_y = event.motion.y;
 			mouse_changed = true;
 		}
+
+		if (event.type == SDL_JOYDEVICEADDED) {
+			joystick_add(event.jdevice.which);
+		}
+	    if (event.type == SDL_JOYDEVICEREMOVED) {
+		    joystick_remove(event.jdevice.which);
+	    }
+	    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+		    joystick_button_down(event.cbutton.which, event.cbutton.button);
+	    }
+		if (event.type == SDL_CONTROLLERBUTTONUP) {
+		    joystick_button_up(event.cbutton.which, event.cbutton.button);
+	    }
+
 	}
 	if (mouse_changed) {
 		mouse_send_state();
