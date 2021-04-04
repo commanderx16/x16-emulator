@@ -1002,6 +1002,7 @@ emulator_loop(void *param)
 					SDL_RWwrite(f, nvram, 1, sizeof(nvram));
 					SDL_RWclose(f);
 				}
+				nvram_dirty = false;
 			}
 
 			if (!video_update()) {
