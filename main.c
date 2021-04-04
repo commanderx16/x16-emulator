@@ -763,9 +763,7 @@ main(int argc, char **argv)
 	if (nvram_path) {
 		SDL_RWops *f = SDL_RWFromFile(nvram_path, "rb");
 		if (f) {
-			printf("%s %lu\n", nvram_path, sizeof(nvram));
-			int l = SDL_RWread(f, nvram, 1, sizeof(nvram));
-			printf("%d %x %x\n", l, nvram[0], nvram[1]);
+			SDL_RWread(f, nvram, 1, sizeof(nvram));
 			SDL_RWclose(f);
 		}
 	}
