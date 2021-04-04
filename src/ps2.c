@@ -46,7 +46,7 @@ ps2_buffer_add(int i, uint8_t byte)
 uint8_t
 ps2_buffer_pop_oldest(int i)
 {
-	const uint8_t value      = state[i].buffer.m_elems[state[i].buffer.m_oldest];
+	const uint8_t value = state[i].buffer.m_elems[state[i].buffer.m_oldest];
 	state[i].buffer.m_oldest = (state[i].buffer.m_oldest + 1) % PS2_BUFFER_SIZE;
 	--state[i].buffer.m_count;
 	return value;
@@ -79,7 +79,7 @@ ps2_step(int i, int clocks)
 
 					state[i].data_bits = state[i].current_byte << 1 | (1 - __builtin_parity(state[i].current_byte)) << 9 | (1 << 10);
 					state[i].send_time = 0;
-					state[i].state     = PS2_SEND_LO;
+					state[i].state = PS2_SEND_LO;
 					// Fall-thru
 				case PS2_SEND_LO:
 				CASE_PS2_SEND_LO:
@@ -87,7 +87,7 @@ ps2_step(int i, int clocks)
 					state[i].send_time += clocks;
 					if (state[i].send_time >= HOLD) {
 						state[i].data_bits >>= 1;
-						state[i].state     = PS2_SEND_HI;
+						state[i].state = PS2_SEND_HI;
 						state[i].send_time = 0;
 						clocks -= HOLD;
 						goto CASE_PS2_SEND_HI;
@@ -101,7 +101,7 @@ ps2_step(int i, int clocks)
 						clocks -= HOLD;
 						if (state[i].data_bits > 0) {
 							state[i].send_time = 0;
-							state[i].state     = PS2_SEND_LO;
+							state[i].state = PS2_SEND_LO;
 							goto CASE_PS2_SEND_LO;
 						} else {
 							state[i].state = PS2_READY;

@@ -65,9 +65,9 @@ via1_init()
 bool via1_old_ca2;
 
 void
-via1_step()
+via1_update_interrupts()
 {
-	bool ca2 = !(!ps2_port[0].clk_out | !ps2_port[0].clk_in);
+	bool ca2 = !(!(ps2_port[0].out & PS2_CLK_MASK) | !(ps2_port[0].in & PS2_CLK_MASK));
 	if (via1registers[VIA_IER] & VIA_IFR_CA2 && ca2 != via1_old_ca2) {
 		uint8_t ca2_int_ctrl = (via1registers[VIA_PCR] >> 1) & 7;
 		if (((ca2_int_ctrl == 0 || ca2_int_ctrl == 1) && ca2 == 0) ||
@@ -82,6 +82,7 @@ via1_step()
 bool
 via1_get_irq_out()
 {
+	via1_update_interrupts();
 	static int count;
 	if (((via1registers[VIA_IFR] & via1registers[VIA_IER]) & (VIA_IFR_CA1 | VIA_IFR_CB1)) == (VIA_IFR_CA1 | VIA_IFR_CB1)) {
 		printf("BOTH SOURCES!\n");
@@ -118,6 +119,10 @@ via1_read(uint8_t reg)
 			// XXX TODO: these should be real timers :)
 			return rand() & 0xff;
 
+		case VIA_IFR:
+			via1_update_interrupts();
+			return via1registers[reg];
+
 		default:
 			return via1registers[reg];
 	}
@@ -138,13 +143,13 @@ via1_write(uint8_t reg, uint8_t value)
 		ps2_autostep(1);
 		// PB
 		const uint8_t pb = via1registers[0] | ~via1registers[2];
-		ps2_port[1].in   = pb & PS2_VIA_MASK;
+		ps2_port[1].in = pb & PS2_VIA_MASK;
 		i2c_port.data_in = via1registers[2] & I2C_DATA_MASK ? via1registers[0] & I2C_DATA_MASK : 1;
 	} else if (reg == 1 || reg == 3) {
 		ps2_autostep(0);
 		// PA
 		const uint8_t pa = via1registers[1] | ~via1registers[3];
-		ps2_port[0].in   = pa & PS2_VIA_MASK;
+		ps2_port[0].in = pa & PS2_VIA_MASK;
 		joystick_set_latch(via1registers[1] & JOY_LATCH_MASK);
 		joystick_set_clock(via1registers[1] & JOY_CLK_MASK);
 	} else if (reg == 12) {
