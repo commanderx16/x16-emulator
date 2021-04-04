@@ -18,7 +18,7 @@
 #endif
 #include "cpu/fake6502.h"
 #include "timing.h"
-#include "disasm.h"
+#include "debugger/disasm.h"
 #include "memory.h"
 #include "video.h"
 #include "via.h"
@@ -29,7 +29,7 @@
 #include "sdcard.h"
 #include "loadsave.h"
 #include "glue.h"
-#include "debugger.h"
+#include "debugger/debugger.h"
 #include "utf8.h"
 #include "joystick.h"
 #include "utf8_encode.h"

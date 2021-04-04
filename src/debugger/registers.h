@@ -1,0 +1,24 @@
+#ifndef _REGISTERS_H
+#define _REGISTERS_H
+
+typedef enum {
+		REG_PC= 1,
+		REG_A, REG_X, REG_Y,
+		REG_SP,
+		REG_P,
+		REG_BKA, REG_BKO,
+		REG_VA, REG_VD0, REG_VD1, REG_VCT,
+		REG_R0, REG_R1, REG_R2, REG_R3, REG_R4, REG_R5, REG_R6, REG_R7,
+		REG_R8, REG_R9, REG_R10, REG_R11, REG_R12, REG_R13, REG_R14, REG_R15,
+		REG_x16, REG_x17, REG_x18, REG_x19,
+		REG_BP0, REG_BP1, REG_BP2, REG_BP3, REG_BP4,
+		REG_BP5, REG_BP6, REG_BP7, REG_BP8, REG_BP9
+} TRegister_code;
+
+typedef enum {
+	KIND_CPU,
+	KIND_BP,
+	KIND_ZP,
+} TRegister_kind;
+
+#endif
