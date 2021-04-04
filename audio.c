@@ -31,6 +31,10 @@ static int               num_bufs = 0;
 static void
 audio_callback(void *userdata, Uint8 *stream, int len)
 {
+	if (audio_dev == 0) {
+		return;
+	}
+
 	int expected = 2 * SAMPLES_PER_BUFFER * sizeof(int16_t);
 	if (len != expected) {
 		printf("Audio buffer size mismatch! (expected: %d, got: %d)\n", expected, len);
@@ -54,6 +58,12 @@ audio_init(const char *dev_name, int num_audio_buffers)
 {
 	if (audio_dev > 0) {
 		audio_close();
+	}
+
+	if (dev_name) {
+		if (!strcmp("none", dev_name)) {
+			return;
+		}
 	}
 
 	// Set number of buffers
@@ -102,6 +112,10 @@ audio_init(const char *dev_name, int num_audio_buffers)
 void
 audio_close(void)
 {
+	if (audio_dev == 0) {
+		return;
+	}
+
 	SDL_CloseAudioDevice(audio_dev);
 	audio_dev = 0;
 
@@ -121,6 +135,10 @@ audio_close(void)
 void
 audio_render(int cpu_clocks)
 {
+	if (audio_dev == 0) {
+		return;
+	}
+
 	cpu_clks += cpu_clocks;
 	if (cpu_clks > 8) {
 		int c = cpu_clks / 8;
@@ -131,36 +149,34 @@ audio_render(int cpu_clocks)
 	while (vera_clks >= 512 * SAMPLES_PER_BUFFER) {
 		vera_clks -= 512 * SAMPLES_PER_BUFFER;
 
-		if (audio_dev != 0) {
-			int16_t psg_buf[2 * SAMPLES_PER_BUFFER];
-			psg_render(psg_buf, SAMPLES_PER_BUFFER);
+		int16_t psg_buf[2 * SAMPLES_PER_BUFFER];
+		psg_render(psg_buf, SAMPLES_PER_BUFFER);
 
-			int16_t pcm_buf[2 * SAMPLES_PER_BUFFER];
-			pcm_render(pcm_buf, SAMPLES_PER_BUFFER);
+		int16_t pcm_buf[2 * SAMPLES_PER_BUFFER];
+		pcm_render(pcm_buf, SAMPLES_PER_BUFFER);
 
-			int16_t ym_buf[2 * SAMPLES_PER_BUFFER];
-			YM_stream_update((uint16_t *)ym_buf, SAMPLES_PER_BUFFER);
+		int16_t ym_buf[2 * SAMPLES_PER_BUFFER];
+		YM_stream_update((uint16_t *)ym_buf, SAMPLES_PER_BUFFER);
 
-			bool buf_available;
-			SDL_LockAudioDevice(audio_dev);
-			buf_available = buf_cnt < num_bufs;
-			SDL_UnlockAudioDevice(audio_dev);
+		bool buf_available;
+		SDL_LockAudioDevice(audio_dev);
+		buf_available = buf_cnt < num_bufs;
+		SDL_UnlockAudioDevice(audio_dev);
 
-			if (buf_available) {
-				// Mix PSG, PCM and YM output
-				int16_t *buf = buffers[wridx];
-				for (int i = 0; i < 2 * SAMPLES_PER_BUFFER; i++) {
-					buf[i] = ((int)psg_buf[i] + (int)pcm_buf[i] + (int)ym_buf[i]) / 3;
-				}
-
-				SDL_LockAudioDevice(audio_dev);
-				wridx++;
-				if (wridx == num_bufs) {
-					wridx = 0;
-				}
-				buf_cnt++;
-				SDL_UnlockAudioDevice(audio_dev);
+		if (buf_available) {
+			// Mix PSG, PCM and YM output
+			int16_t *buf = buffers[wridx];
+			for (int i = 0; i < 2 * SAMPLES_PER_BUFFER; i++) {
+				buf[i] = ((int)psg_buf[i] + (int)pcm_buf[i] + (int)ym_buf[i]) / 3;
 			}
+
+			SDL_LockAudioDevice(audio_dev);
+			wridx++;
+			if (wridx == num_bufs) {
+				wridx = 0;
+			}
+			buf_cnt++;
+			SDL_UnlockAudioDevice(audio_dev);
 		}
 	}
 }
