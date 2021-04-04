@@ -67,7 +67,8 @@ bool via1_old_ca2;
 void
 via1_update_interrupts()
 {
-	bool ca2 = !(!(ps2_port[0].out & PS2_CLK_MASK) | !(ps2_port[0].in & PS2_CLK_MASK));
+	ps2_autostep(0);
+	bool ca2 = !(!(ps2_port[0].out & PS2_CLK_MASK) || !(ps2_port[0].in & PS2_CLK_MASK));
 	if (via1registers[VIA_IER] & VIA_IFR_CA2 && ca2 != via1_old_ca2) {
 		uint8_t ca2_int_ctrl = (via1registers[VIA_PCR] >> 1) & 7;
 		if (((ca2_int_ctrl == 0 || ca2_int_ctrl == 1) && ca2 == 0) ||
