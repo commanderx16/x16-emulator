@@ -4,7 +4,7 @@ x16emu.exe
 x16emu_mac.zip
 x16emu_win.zip
 x16-rom
-rom_labels.h
+src/rom_labels.h
 rom.bin
 chargen.bin
 .vscode/

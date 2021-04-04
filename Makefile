@@ -10,8 +10,11 @@ else
 	SDL2CONFIG=sdl2-config
 endif
 
-CFLAGS=-std=c99 -O3 -Wall -Werror -g $(shell $(SDL2CONFIG) --cflags) -Iextern/include -Iextern/src
+CFLAGS=-std=c99 -O3 -Wall -Werror -g $(shell $(SDL2CONFIG) --cflags) -Isrc/extern/include -Isrc/extern/src
 LDFLAGS=$(shell $(SDL2CONFIG) --libs) -lm
+
+ODIR = build
+SDIR = src
 
 
 ifdef TRACE
@@ -39,21 +42,25 @@ ifdef EMSCRIPTEN
 	OUTPUT=x16emu.html
 endif
 
-OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o i2c.o smc.o rtc.o via.o loadsave.o vera_spi.o audio.o vera_pcm.o vera_psg.o sdcard.o main.o debugger.o javascript_interface.o joystick.o rendertext.o keyboard.o icon.o timing.o
+_OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o i2c.o smc.o rtc.o via.o loadsave.o vera_spi.o audio.o vera_pcm.o vera_psg.o sdcard.o main.o debugger.o javascript_interface.o joystick.o rendertext.o keyboard.o icon.o timing.o
 
-HEADERS = audio.h cpu/65c02.h cpu/fake6502.h cpu/instructions.h cpu/mnemonics.h cpu/modes.h cpu/support.h cpu/tables.h debugger.h disasm.h extern/include/gif.h extern/src/ym2151.h glue.h i2c.h icon.h joystick.h keyboard.h loadsave.h memory.h ps2.h rendertext.h rom_labels.h rom_symbols.h rtc.h sdcard.h smc.h timing.h utf8.h utf8_encode.h vera_pcm.h vera_psg.h vera_spi.h version.h via.h video.h
+_HEADERS = audio.h cpu/65c02.h cpu/fake6502.h cpu/instructions.h cpu/mnemonics.h cpu/modes.h cpu/support.h cpu/tables.h debugger.h disasm.h extern/include/gif.h extern/src/ym2151.h glue.h i2c.h icon.h joystick.h keyboard.h loadsave.h memory.h ps2.h rendertext.h rom_symbols.h rtc.h sdcard.h smc.h timing.h utf8.h utf8_encode.h vera_pcm.h vera_psg.h vera_spi.h version.h via.h video.h
 
-OBJS += extern/src/ym2151.o
-HEADERS += extern/src/ym2151.h
+_OBJS += extern/src/ym2151.o
+_HEADERS += extern/src/ym2151.h
 
-ifneq ("$(wildcard ./rom_labels.h)","")
-HEADERS+=rom_labels.h
+OBJS = $(patsubst %,$(ODIR)/%,$(_OBJS))
+HEADERS = $(patsubst %,$(SDIR)/%,$(_HEADERS))
+
+ifneq ("$(wildcard ./src/rom_labels.h)","")
+HEADERS+=src/rom_labels.h
 endif
 
 
 all: $(OBJS) $(HEADERS)
 	$(CC) -o $(OUTPUT) $(OBJS) $(LDFLAGS)
-%.o: %.c
+$(ODIR)/%.o: $(SDIR)/%.c
+	@mkdir -p $$(dirname $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 cpu/tables.h cpu/mnemonics.h: cpu/buildtables.py cpu/6502.opcodes cpu/65c02.opcodes
@@ -152,4 +159,4 @@ package_linux:
 	rm -rf $(TMPDIR_NAME)
 
 clean:
-	rm -f *.o cpu/*.o extern/src/*.o x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem
+	rm -rf $(ODIR) x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem
