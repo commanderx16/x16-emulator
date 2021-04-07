@@ -320,6 +320,11 @@ static void DEBUGHighlightRow(int row, int xPos, int w) {
 	SDL_RenderFillRect(dbgRenderer, &rc);
 }
 
+void DEBUGDataNextPage(int dir) {
+	int inc= layout.dataLinecount * 16 * dir;
+	currentData = (currentData + inc) & (dumpmode == DDUMP_RAM ? 0xFFFF : 0x1FFFF);
+}
+
 // *******************************************************************************************
 //
 //			This is used to determine who is in control. If it returns zero then
@@ -421,8 +426,7 @@ int DEBUGGetCurrentStatus(void) {
 						}
 						case MZ_DATA:
 						{
-							int inc= layout.dataLinecount * 16 * ((event.wheel.y > 0) ? -1 : 1);
-							currentData = (currentData + inc) & (dumpmode == DDUMP_RAM ? 0xFFFF : 0x1FFFF);
+							DEBUGDataNextPage((event.wheel.y > 0) ? -1 : 1);
 							break;
 						}
 						case MZ_STACK:
@@ -532,7 +536,7 @@ void DEBUGsetKeyBinding(const dictionary *dict, const char *key, const char *ent
 	*keyName= 0;
 	subStr= binding;
 	for(int idx= 0; keyBindings[idx].binding; idx++) {
-		if(!strcmp(keyBindings[idx].name, entry)) {
+		if(!stricmp(keyBindings[idx].name, entry)) {
 
 			do {
 				sep= strstr(subStr, "::");
@@ -557,7 +561,7 @@ void DEBUGsetKeyBinding(const dictionary *dict, const char *key, const char *ent
 
 			keycode= SDL_GetKeyFromName(ltrim(keyName));
 			if(keycode == SDLK_UNKNOWN) {
-				CON_Out(console, "%sERR: unkown binding for %s %s", DT_color_red, entry, DT_color_default);
+				CON_Out(console, "%sERR: unknown binding for %s %s", DT_color_red, entry, DT_color_default);
 				return;
 			}
 
@@ -738,14 +742,14 @@ static int DEBUGHandleKeyEvent(SDL_Event *event) {
 				}
 				case DBGKEY_PAGE_NEXT:
 					if(mouseZone == MZ_DATA) {
-						currentBank += 1;
+						DEBUGDataNextPage(1);
 						return 1;
 					}
 					break;
 
 				case DBGKEY_PAGE_PREV:
 					if(mouseZone == MZ_DATA) {
-						currentBank -= 1;
+						DEBUGDataNextPage(-1);
 						return 1;
 					}
 					break;
