@@ -10,6 +10,13 @@
 
 #define PS2_BUFFER_SIZE 32
 
+enum ps2_mode {
+	PS2_MODE_UNKNOWN,
+	PS2_MODE_INHIBITED,
+	PS2_MODE_RECEIVING,
+	PS2_MODE_SENDING,
+}
+
 enum ps2_state {
 	PS2_READY,
 	PS2_SEND_LO,
@@ -23,9 +30,11 @@ struct ring_buffer {
 };
 
 static struct {
+	enum ps2_mode mode;
 	enum ps2_state state;
 	uint8_t current_byte;
 	int data_bits;
+	int count;
 	int send_time;
 	struct ring_buffer buffer;
 } state[2];
@@ -52,17 +61,82 @@ ps2_buffer_pop_oldest(int i)
 	return value;
 }
 
+int bit;
+
 void
 ps2_step(int i, int clocks)
 {
-	switch (ps2_port[i].in) {
-		case PS2_DATA_MASK:
+	if (state[i].mode == PS2_MODE_UNKNOWN) {
+		switch (ps2_port[i].in) {
+			default:
+			case PS2_DATA_MASK: // DATA=1, CLK=0
+				printf("** Communication inhibited\n");
+				state[i].mode == PS2_MODE_INHIBITED
+				break;
+			case PS2_CLK_MASK: // DATA=0, CLK=1
+				printf("** Host Request-to-Send\n");
+				state[i].mode = PS2_MODE_RECEIVING;
+				break;
+			case PS2_DATA_MASK | PS2_CLK_MASK: // DATA=1, CLK=1
+				printf("** Idle\n");
+				state[i].mode = PS2_MODE_SENDING;
+				break;
+		}
+	}
+
+	switch (state[i].mode) {
+		case PS2_MODE_INHIBITED:
+			printf("Communication inhibited\n");
 			// Communication inhibited
 			ps2_port[i].out = 0;
-			state[i].state  = PS2_READY;
-			return;
+			state[i].state = PS2_READY;
+			break;
 
-		case PS2_VIA_MASK:
+		case PS2_MODE_RECEIVING:
+			printf("Host Request-to-Send\n");
+			// Host Request-to-Send
+			switch (state[i].state) {
+				case PS2_READY:
+				XCASE_PS2_READY:
+					state[i].count = 0;
+					state[i].data_bits = 0;
+					state[i].send_time = 0;
+					state[i].state = PS2_SEND_LO;
+					// Fall-thru
+				case PS2_SEND_LO:
+				XCASE_PS2_SEND_LO:
+					ps2_port[i].out = PS2_DATA_MASK; // CLK=0
+					state[i].send_time += clocks;
+					if (state[i].send_time < HOLD) {
+						break;
+					}
+					state[i].state = PS2_SEND_HI;
+					state[i].send_time = 0;
+					clocks -= HOLD;
+					state[i].data_bits <<= 1;
+					printf("BIT%d: %d\n", state[i].count, (ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0);
+					state[i].data_bits |= (ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0;
+					state[i].count++;
+					if (state[i].count >= 12) {
+						state[i].state = PS2_READY;
+						goto XCASE_PS2_READY;
+					}
+					// Fall-thru
+				case PS2_SEND_HI:
+					ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1
+					state[i].send_time += clocks;
+					if (state[i].send_time < HOLD) {
+						break;
+					}
+					clocks -= HOLD;
+					state[i].send_time = 0;
+					state[i].state = PS2_SEND_LO;
+					goto XCASE_PS2_SEND_LO;
+			}
+			break;
+
+		case PS2_MODE_SENDING:
+			printf("Idle\n");
 			// Idle
 			switch (state[i].state) {
 				case PS2_READY:
@@ -83,36 +157,33 @@ ps2_step(int i, int clocks)
 					// Fall-thru
 				case PS2_SEND_LO:
 				CASE_PS2_SEND_LO:
-					ps2_port[i].out = state[i].data_bits & 1;
+					ps2_port[i].out = (state[i].data_bits & 1) ? PS2_DATA_MASK : 0;
 					state[i].send_time += clocks;
-					if (state[i].send_time >= HOLD) {
-						state[i].data_bits >>= 1;
-						state[i].state = PS2_SEND_HI;
-						state[i].send_time = 0;
-						clocks -= HOLD;
-						goto CASE_PS2_SEND_HI;
+					if (state[i].send_time < HOLD) {
+						break;
 					}
-					break;
+					state[i].data_bits >>= 1;
+					state[i].state = PS2_SEND_HI;
+					state[i].send_time = 0;
+					clocks -= HOLD;
+					// Fall-thru
 				case PS2_SEND_HI:
-				CASE_PS2_SEND_HI:
 					ps2_port[i].out = PS2_CLK_MASK; // not ready
 					state[i].send_time += clocks;
-					if (state[i].send_time >= HOLD) {
-						clocks -= HOLD;
-						if (state[i].data_bits > 0) {
-							state[i].send_time = 0;
-							state[i].state = PS2_SEND_LO;
-							goto CASE_PS2_SEND_LO;
-						} else {
-							state[i].state = PS2_READY;
-							goto CASE_PS2_READY;
-						}
+					if (state[i].send_time < HOLD) {
+						break;
 					}
-					break;
+					clocks -= HOLD;
+					if (state[i].data_bits > 0) {
+						state[i].send_time = 0;
+						state[i].state = PS2_SEND_LO;
+						goto CASE_PS2_SEND_LO;
+					} else {
+						state[i].state = PS2_READY;
+						goto CASE_PS2_READY;
+					}
 			}
 			break;
-		default:
-			ps2_port[i].out = 0;
 	}
 }
 
