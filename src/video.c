@@ -1098,7 +1098,7 @@ video_update()
 	SDL_RenderCopy(renderer, sdlTexture, NULL, NULL);
 
 	if (debugger_enabled && showDebugOnRender != 0) {
-		DEBUGRenderDisplay(SCREEN_WIDTH, SCREEN_HEIGHT);
+		// DEBUGRenderDisplay(SCREEN_WIDTH, SCREEN_HEIGHT);
 		SDL_RenderPresent(renderer);
 		return true;
 	}
