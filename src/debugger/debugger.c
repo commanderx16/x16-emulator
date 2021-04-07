@@ -110,16 +110,15 @@ typedef struct {
 #define KMOD_MASK ~(KMOD_NUM || KMOD_CAPS || KMOD_MODE)
 
 KeyBinding keyBindings[]= {
-	{"DBG_STEP", DBGKEY_STEP, SDLK_F11, KMOD_NONE},
-	{"DBG_STEPOVER", DBGKEY_STEPOVER, SDLK_F10, KMOD_NONE},
-	{"DBG_RUN", DBGKEY_RUN, SDLK_F5, KMOD_NONE},
-	{"DBG_SETBRK", DBGKEY_SETBRK, SDLK_F9, KMOD_NONE},
-	{"DBG_HOME", DBGKEY_HOME, SDLK_F1, KMOD_NONE},
-	{"DBG_RESET", DBGKEY_RESET, SDLK_F2, KMOD_NONE},
-	{"DBG_PASTE", DBGKEY_PASTE, SDLK_v, CMD_KEY},
-
-	{"DBG_PAGE_NEXT", DBGKEY_PAGE_NEXT, SDLK_KP_PLUS, KMOD_NONE},
-	{"DBG_PAGE_PREV", DBGKEY_PAGE_PREV, SDLK_KP_MINUS, KMOD_NONE},
+	{"dbg_step", DBGKEY_STEP, SDLK_F11, KMOD_NONE},
+	{"dbg_stepover", DBGKEY_STEPOVER, SDLK_F10, KMOD_NONE},
+	{"dbg_run", DBGKEY_RUN, SDLK_F5, KMOD_NONE},
+	{"dbg_setbrk", DBGKEY_SETBRK, SDLK_F9, KMOD_NONE},
+	{"dbg_home", DBGKEY_HOME, SDLK_F1, KMOD_NONE},
+	{"dbg_reset", DBGKEY_RESET, SDLK_F2, KMOD_NONE},
+	{"dbg_paste", DBGKEY_PASTE, SDLK_v, CMD_KEY},
+	{"dbg_page_next", DBGKEY_PAGE_NEXT, SDLK_KP_PLUS, KMOD_NONE},
+	{"dbg_page_prev", DBGKEY_PAGE_PREV, SDLK_KP_MINUS, KMOD_NONE},
 	{NULL, 0, 0, 0},
 };
 
@@ -536,7 +535,7 @@ void DEBUGsetKeyBinding(const dictionary *dict, const char *key, const char *ent
 	*keyName= 0;
 	subStr= binding;
 	for(int idx= 0; keyBindings[idx].binding; idx++) {
-		if(!stricmp(keyBindings[idx].name, entry)) {
+		if(!strcmp(keyBindings[idx].name, entry)) {
 
 			do {
 				sep= strstr(subStr, "::");
