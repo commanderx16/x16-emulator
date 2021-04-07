@@ -328,7 +328,7 @@ static void DEBUGHighlightRow(int row, int xPos, int w) {
 //			If it returns -ve, then exit.
 //
 // *******************************************************************************************
-int  DEBUGGetCurrentStatus(void) {
+int DEBUGGetCurrentStatus(void) {
 
 	SDL_Event event;
 
@@ -367,8 +367,12 @@ int  DEBUGGetCurrentStatus(void) {
 
 			switch(event.type) {
 				case SDL_WINDOWEVENT:
-					if(event.window.event == SDL_WINDOWEVENT_CLOSE)
-						return -1;
+					if(event.window.event == SDL_WINDOWEVENT_CLOSE) {
+						if(dbgWindowID == event.window.windowID)
+							currentMode= DMODE_RUN;
+						else
+							return -1;
+					}
 					break;
 
 				case SDL_QUIT:									// Time for exit
