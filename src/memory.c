@@ -241,7 +241,7 @@ emu_write(uint8_t reg, uint8_t value)
 		case 3: echo_mode = value; break;
 		case 4: save_on_exit = v; break;
 		case 5: emu_recorder_set((gif_recorder_command_t) value); break;
-		default: printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
+		default: printf("WARN: Write to invalid register %x\n", DEVICE_EMULATOR + reg);
 	}
 }
 
@@ -277,7 +277,7 @@ emu_read(uint8_t reg, bool debugOn)
 	} else if (reg == 15) {
 		return '6'; // emulator detection
 	}
-	if (!debugOn) printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
+	if (!debugOn) printf("WARN: Read from invalid register %x\n", DEVICE_EMULATOR + reg);
 	return -1;
 }
 
