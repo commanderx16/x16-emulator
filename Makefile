@@ -116,6 +116,10 @@ define add_extra_files_to_package
 	cp ../x16-rom/build/x16/monitor.sym $(TMPDIR_NAME)
 	cp ../x16-rom/build/x16/charset.sym $(TMPDIR_NAME)
 
+	# ASSETs
+	cp assets/*.bmp $(TMPDIR_NAME)
+	cp assets/x16emu.ini $(TMPDIR_NAME)
+
 	# Empty SD card image
 	cp sdcard.img.zip $(TMPDIR_NAME)
 
