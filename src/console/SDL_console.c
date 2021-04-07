@@ -43,6 +43,7 @@
 #include "DT_drawtext.h"
 #include "internal.h"
 #include "SDL_timer.h"
+#include "../iniparser/utils.h"
 
 #include <SDL.h>
 // #include <SDL2/SDL_image.h>
@@ -945,7 +946,7 @@ void CON_SetPrompt(ConsoleInformation *console, const char* newprompt) {
 
 	/* check length so we can still see at least 1 char :-) */
 	if(strlen(newprompt) < (size_t)console->VChars)
-		console->Prompt = strdup(newprompt);
+		console->Prompt = xstrdup(newprompt);
 	else
 		CON_Out(console, "prompt too long. (max. %i chars)", console->VChars - 1);
 }
@@ -986,7 +987,7 @@ void CON_TabCompletion(ConsoleInformation *console) {
 	if(!console)
 		return;
 
-	command = strdup(console->LCommand);
+	command = xstrdup(console->LCommand);
 	command = console->TabFunction(command);
 
 	if(!command)

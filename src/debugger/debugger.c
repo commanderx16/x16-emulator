@@ -27,6 +27,7 @@
 #include "commands.h"
 #include "symbols.h"
 #include "breakpoints.h"
+#include "../iniparser/utils.h"
 
 static int DEBUGHandleKeyEvent(SDL_Event *event);
 
@@ -771,7 +772,7 @@ void DEBUG_Command_Handler(ConsoleInformation *console, char* command) {
 	char* argv[128];
 	char* linecopy;
 
-	linecopy= strdup(command);
+	linecopy= xstrdup(command);
 	argc= splitline(argv, (sizeof argv)/(sizeof argv[0]), linecopy);
 	if(!argc) {
 		free(linecopy);

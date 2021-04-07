@@ -45,12 +45,12 @@ endif
 _OBJS = cpu/fake6502.o memory.o video.o ps2.o i2c.o smc.o rtc.o via.o loadsave.o vera_spi.o audio.o vera_pcm.o vera_psg.o sdcard.o main.o javascript_interface.o joystick.o keyboard.o icon.o timing.o
 _OBJS += debugger/commands.o debugger/debugger.o debugger/disasm.o debugger/symbols.o
 _OBJS += console/DT_drawtext.o console/SDL_console.o console/internal.o console/split.o
-_OBJS += iniparser/dictionary.o iniparser/iniparser.o
+_OBJS += iniparser/dictionary.o iniparser/iniparser.o iniparser/utils.o
 
 _HEADERS = audio.h cpu/65c02.h cpu/fake6502.h cpu/instructions.h cpu/mnemonics.h cpu/modes.h cpu/support.h cpu/tables.h extern/include/gif.h extern/src/ym2151.h glue.h i2c.h icon.h joystick.h keyboard.h loadsave.h memory.h ps2.h rom_symbols.h rtc.h sdcard.h smc.h timing.h utf8.h utf8_encode.h vera_pcm.h vera_psg.h vera_spi.h version.h via.h video.h
 _HEADERS += debugger/breakpoints.h debugger/commands.h debugger/debugger.h debugger/disasm.h debugger/registers.h debugger/symbols.h debugger/version.h
 _HEADERS += console/DT_drawtext.h console/SDL_console.h console/internal.h console/split.h
-_HEADERS += iniparser/dictionary.h iniparser/iniparser.h
+_HEADERS += iniparser/dictionary.h iniparser/iniparser.h iniparser/utils.h
 
 _OBJS += extern/src/ym2151.o
 _HEADERS += extern/src/ym2151.h

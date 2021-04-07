@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "utils.h"
 
 /** Maximum value size for integers and doubles. */
 #define MAXVALSZ    1024
@@ -32,31 +33,6 @@
 /*---------------------------------------------------------------------------
                             Private functions
  ---------------------------------------------------------------------------*/
-
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Duplicate a string
-  @param    s String to duplicate
-  @return   Pointer to a newly allocated string, to be freed with free()
-
-  This is a replacement for strdup(). This implementation is provided
-  for systems that do not have it.
- */
-/*--------------------------------------------------------------------------*/
-static char * xstrdup(const char * s)
-{
-    char * t ;
-    size_t len ;
-    if (!s)
-        return NULL ;
-
-    len = strlen(s) + 1 ;
-    t = (char*) malloc(len) ;
-    if (t) {
-        memcpy(t, s, len) ;
-    }
-    return t ;
-}
 
 /*-------------------------------------------------------------------------*/
 /**
