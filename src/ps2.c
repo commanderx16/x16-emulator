@@ -11,11 +11,10 @@
 #define PS2_BUFFER_SIZE 32
 
 enum ps2_mode {
-	PS2_MODE_UNKNOWN,
 	PS2_MODE_INHIBITED,
 	PS2_MODE_RECEIVING,
 	PS2_MODE_SENDING,
-}
+};
 
 enum ps2_state {
 	PS2_READY,
@@ -66,12 +65,12 @@ int bit;
 void
 ps2_step(int i, int clocks)
 {
-	if (state[i].mode == PS2_MODE_UNKNOWN) {
+	if (state[i].mode == PS2_MODE_INHIBITED) {
 		switch (ps2_port[i].in) {
 			default:
 			case PS2_DATA_MASK: // DATA=1, CLK=0
 				printf("** Communication inhibited\n");
-				state[i].mode == PS2_MODE_INHIBITED
+				state[i].mode = PS2_MODE_INHIBITED;
 				break;
 			case PS2_CLK_MASK: // DATA=0, CLK=1
 				printf("** Host Request-to-Send\n");
