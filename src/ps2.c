@@ -109,13 +109,16 @@ ps2_step(int i, int clocks)
 					state[i].state = PS2_SEND_HI;
 					state[i].send_time = 0;
 					clocks -= HOLD;
-					state[i].data_bits <<= 1;
-					printf("BIT%d: %d\n", state[i].count, (ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0);
-					state[i].data_bits |= (ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0;
+					state[i].data_bits >>= 1;
+					state[i].data_bits |= ((ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0) << 9;
+					printf("BIT%d: %d -> $%02X\n", state[i].count, (ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0, state[i].data_bits);
 					state[i].count++;
-					if (state[i].count >= 12) {
-						//XXX state[i].state = PS2_READY;
-						//XXX goto XCASE_PS2_READY;
+					if (state[i].count >= 10) {
+						bool parity_ok = !__builtin_parity(state[i].data_bits & 0x1ff);
+						bool stop_ok = !!(state[i].data_bits & 0x200);
+						printf("BYTE $%02X (%d/%d)\n", state[i].data_bits & 0xff, parity_ok, stop_ok);
+						state[i].mode = PS2_MODE_INHIBITED;
+						break;
 					}
 					// Fall-thru
 				case PS2_SEND_HI:
