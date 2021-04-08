@@ -68,12 +68,19 @@ void
 via1_update_interrupts()
 {
 	ps2_autostep(0);
-	bool ca2 = !(!(ps2_port[0].out & PS2_CLK_MASK) || !(ps2_port[0].in & PS2_CLK_MASK));
+	uint8_t effective_pa = (~via1registers[3] & ps2_port[0].out) |
+	                        (via1registers[3] & ps2_port[0].in);
+	bool ca2 = !!(effective_pa & PS2_CLK_MASK);
+	printf("ddr: $%02X, out: $%02X, in: $%02X, pa: $%02X\n", via1registers[3], ps2_port[0].out, ps2_port[0].in, effective_pa);
+//	printf("CA2 out: %d\n", !!((via1registers[3] & ps2_port[0].out) & PS2_CLK_MASK));
+//	printf("CA2 in: %d\n", !!(ps2_port[0].in & PS2_CLK_MASK));
+	printf("CA2: %d, IER: $%02X\n", ca2, via1registers[VIA_IER] & VIA_IFR_CA2);
 	if (via1registers[VIA_IER] & VIA_IFR_CA2 && ca2 != via1_old_ca2) {
 		uint8_t ca2_int_ctrl = (via1registers[VIA_PCR] >> 1) & 7;
+		printf("ca2_int_ctrl: %d\n", ca2_int_ctrl);
 		if (((ca2_int_ctrl == 0 || ca2_int_ctrl == 1) && ca2 == 0) ||
 		    ((ca2_int_ctrl == 2 || ca2_int_ctrl == 3) && ca2 == 1)) {
-			printf("[VIA#1]: NEW CA2 IRQ, IER: $%02X\n", via1registers[VIA_IER]);
+			printf("[VIA#1]: NEW CA2 IRQ, CA2: %d\n", ca2);
 			via1registers[VIA_IFR] |= VIA_IFR_CA2;
 		}
 	}
@@ -132,8 +139,6 @@ via1_read(uint8_t reg)
 void
 via1_write(uint8_t reg, uint8_t value)
 {
-	via1registers[reg] = value;
-
 	if (reg == VIA_IFR) {
 		via1registers[VIA_IFR] &= ~value;
 	} else if (reg == VIA_IER) {
@@ -142,6 +147,7 @@ via1_write(uint8_t reg, uint8_t value)
 		} else {
 			via1registers[VIA_IER] &= (~value) & 0x7f;
 		}
+		printf("via1registers[VIA_IER] = $%02X\n", via1registers[VIA_IER]);
 	} else {
 		via1registers[reg] = value;
 	}

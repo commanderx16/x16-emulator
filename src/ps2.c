@@ -67,18 +67,21 @@ ps2_step(int i, int clocks)
 {
 	if (state[i].mode == PS2_MODE_INHIBITED) {
 		switch (ps2_port[i].in) {
-			default:
-			case PS2_DATA_MASK: // DATA=1, CLK=0
+			default:                           // DATA=0, CLK=0
+			case PS2_DATA_MASK:                // DATA=1, CLK=0
 				printf("** Communication inhibited\n");
 				state[i].mode = PS2_MODE_INHIBITED;
 				break;
-			case PS2_CLK_MASK: // DATA=0, CLK=1
+			case PS2_CLK_MASK:                 // DATA=0, CLK=1
 				printf("** Host Request-to-Send\n");
 				state[i].mode = PS2_MODE_RECEIVING;
+				state[i].state = PS2_SEND_HI;
+				state[i].count = 0;
 				break;
 			case PS2_DATA_MASK | PS2_CLK_MASK: // DATA=1, CLK=1
 				printf("** Idle\n");
 				state[i].mode = PS2_MODE_SENDING;
+				state[i].state = PS2_READY;
 				break;
 		}
 	}
@@ -95,14 +98,6 @@ ps2_step(int i, int clocks)
 			printf("Host Request-to-Send\n");
 			// Host Request-to-Send
 			switch (state[i].state) {
-				case PS2_READY:
-				XCASE_PS2_READY:
-					printf("PS2_READY\n");
-					state[i].count = 0;
-					state[i].data_bits = 0;
-					state[i].send_time = 0;
-					state[i].state = PS2_SEND_LO;
-					// Fall-thru
 				case PS2_SEND_LO:
 				XCASE_PS2_SEND_LO:
 					printf("PS2_SEND_LO\n");
@@ -119,8 +114,8 @@ ps2_step(int i, int clocks)
 					state[i].data_bits |= (ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0;
 					state[i].count++;
 					if (state[i].count >= 12) {
-						state[i].state = PS2_READY;
-						goto XCASE_PS2_READY;
+						//XXX state[i].state = PS2_READY;
+						//XXX goto XCASE_PS2_READY;
 					}
 					// Fall-thru
 				case PS2_SEND_HI:
@@ -134,6 +129,9 @@ ps2_step(int i, int clocks)
 					state[i].send_time = 0;
 					state[i].state = PS2_SEND_LO;
 					goto XCASE_PS2_SEND_LO;
+				default:
+					printf("XXX");
+					break;
 			}
 			break;
 
