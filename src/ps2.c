@@ -97,6 +97,7 @@ ps2_step(int i, int clocks)
 			switch (state[i].state) {
 				case PS2_READY:
 				XCASE_PS2_READY:
+					printf("PS2_READY\n");
 					state[i].count = 0;
 					state[i].data_bits = 0;
 					state[i].send_time = 0;
@@ -104,6 +105,7 @@ ps2_step(int i, int clocks)
 					// Fall-thru
 				case PS2_SEND_LO:
 				XCASE_PS2_SEND_LO:
+					printf("PS2_SEND_LO\n");
 					ps2_port[i].out = PS2_DATA_MASK; // CLK=0
 					state[i].send_time += clocks;
 					if (state[i].send_time < HOLD) {
@@ -122,6 +124,7 @@ ps2_step(int i, int clocks)
 					}
 					// Fall-thru
 				case PS2_SEND_HI:
+					printf("PS2_SEND_HI\n");
 					ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1
 					state[i].send_time += clocks;
 					if (state[i].send_time < HOLD) {

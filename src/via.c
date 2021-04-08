@@ -73,7 +73,7 @@ via1_update_interrupts()
 		uint8_t ca2_int_ctrl = (via1registers[VIA_PCR] >> 1) & 7;
 		if (((ca2_int_ctrl == 0 || ca2_int_ctrl == 1) && ca2 == 0) ||
 		    ((ca2_int_ctrl == 2 || ca2_int_ctrl == 3) && ca2 == 1)) {
-			printf("[VIA#1]: NEW CA2 IRQ\n");
+			printf("[VIA#1]: NEW CA2 IRQ, IER: $%02X\n", via1registers[VIA_IER]);
 			via1registers[VIA_IFR] |= VIA_IFR_CA2;
 		}
 	}
@@ -136,6 +136,12 @@ via1_write(uint8_t reg, uint8_t value)
 
 	if (reg == VIA_IFR) {
 		via1registers[VIA_IFR] &= ~value;
+	} else if (reg == VIA_IER) {
+		if (value & 0x80) {
+			via1registers[VIA_IER] |= value & 0x7f;
+		} else {
+			via1registers[VIA_IER] &= (~value) & 0x7f;
+		}
 	} else {
 		via1registers[reg] = value;
 	}
