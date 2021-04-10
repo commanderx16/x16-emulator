@@ -100,7 +100,7 @@ ps2_step(int i, int clocks)
 			switch (state[i].state) {
 				case PS2_SEND_LO:
 				XCASE_PS2_SEND_LO:
-					printf("PS2_SEND_LO\n");
+					printf("PS2_SEND_LO %d\n", state[i].count);
 					ps2_port[i].out = PS2_DATA_MASK; // CLK=0
 					state[i].send_time += clocks;
 					if (state[i].send_time < HOLD) {
@@ -109,20 +109,20 @@ ps2_step(int i, int clocks)
 					state[i].state = PS2_SEND_HI;
 					state[i].send_time = 0;
 					clocks -= HOLD;
-					state[i].data_bits >>= 1;
-					state[i].data_bits |= ((ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0) << 9;
-					printf("BIT%d: %d -> $%02X\n", state[i].count, (ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0, state[i].data_bits);
-					state[i].count++;
-					if (state[i].count >= 10) {
+					if (state[i].count == 10) {
 						bool parity_ok = !__builtin_parity(state[i].data_bits & 0x1ff);
 						bool stop_ok = !!(state[i].data_bits & 0x200);
-						printf("BYTE $%02X (%d/%d)\n", state[i].data_bits & 0xff, parity_ok, stop_ok);
-						state[i].mode = PS2_MODE_INHIBITED;
-						break;
+						printf("ACK BYTE $%02X (%d/%d)\n", state[i].data_bits & 0xff, parity_ok, stop_ok);
+						ps2_port[i].out &= ~PS2_DATA_MASK; // ACK
+					} else {
+						state[i].data_bits >>= 1;
+						state[i].data_bits |= ((ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0) << 9;
+						printf("BIT%d: %d -> $%02X\n", state[i].count, (ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0, state[i].data_bits);
 					}
+					state[i].count++;
 					// Fall-thru
 				case PS2_SEND_HI:
-					printf("PS2_SEND_HI\n");
+					printf("PS2_SEND_HI %d\n", state[i].count - 1);
 					ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1
 					state[i].send_time += clocks;
 					if (state[i].send_time < HOLD) {
@@ -130,8 +130,14 @@ ps2_step(int i, int clocks)
 					}
 					clocks -= HOLD;
 					state[i].send_time = 0;
-					state[i].state = PS2_SEND_LO;
-					goto XCASE_PS2_SEND_LO;
+					if (state[i].count == 11) {
+						printf("ACK end\n");
+						state[i].mode = PS2_MODE_INHIBITED;
+						break;
+					} else {
+						state[i].state = PS2_SEND_LO;
+						goto XCASE_PS2_SEND_LO;
+					}
 				default:
 					printf("XXX");
 					break;
