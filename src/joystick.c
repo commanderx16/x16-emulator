@@ -133,8 +133,6 @@ joystick_init(void)
 void
 joystick_add(int index)
 {
-	printf("joystick_add(%d)\n", index);
-
 	if (!SDL_IsGameController(index)) {
 		return;
 	}
@@ -182,8 +180,6 @@ joystick_add(int index)
 void
 joystick_remove(int instance_id)
 {
-	printf("joystick_remove(%d)\n", instance_id);
-
 	for (int i = 0; i < NUM_JOYSTICKS; ++i) {
 		if (Joystick_slots[i] == instance_id) {
 			Joystick_slots[i] = -1;
@@ -203,8 +199,6 @@ joystick_remove(int instance_id)
 void
 joystick_button_down(int instance_id, uint8_t button)
 {
-	printf("joystick_button_down(%d, %d)\n", instance_id, button);
-
 	struct joystick_info *joy = find_joystick_controller(instance_id);
 	if (joy != NULL) {
 		joy->button_mask &= ~(button_map[button]);
@@ -214,8 +208,6 @@ joystick_button_down(int instance_id, uint8_t button)
 void
 joystick_button_up(int instance_id, uint8_t button)
 {
-	printf("joystick_button_up(%d, %d)\n", instance_id, button);
-
 	struct joystick_info *joy = find_joystick_controller(instance_id);
 	if (joy != NULL) {
 		joy->button_mask |= button_map[button];
