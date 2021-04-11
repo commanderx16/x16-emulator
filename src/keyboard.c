@@ -125,7 +125,7 @@ ps2_scancode_from_SDL_Scancode(SDL_Scancode scancode)
 		case SDL_SCANCODE_Z:
 			return 0x1A;
 		case SDL_SCANCODE_DELETE:
-			return 0;
+			return 0x71 | EXTENDED_FLAG;
 		case SDL_SCANCODE_UP:
 			return 0x75 | EXTENDED_FLAG;
 		case SDL_SCANCODE_DOWN:
@@ -135,15 +135,15 @@ ps2_scancode_from_SDL_Scancode(SDL_Scancode scancode)
 		case SDL_SCANCODE_LEFT:
 			return 0x6b | EXTENDED_FLAG;
 		case SDL_SCANCODE_INSERT:
-			return 0;
+			return 0x70 | EXTENDED_FLAG;
 		case SDL_SCANCODE_HOME:
 			return 0x6c | EXTENDED_FLAG;
 		case SDL_SCANCODE_END:
-			return 0;
+			return 0x69 | EXTENDED_FLAG;
 		case SDL_SCANCODE_PAGEUP:
-			return 0;
+			return 0x7d | EXTENDED_FLAG;
 		case SDL_SCANCODE_PAGEDOWN:
-			return 0;
+			return 0x7a | EXTENDED_FLAG;
 		case SDL_SCANCODE_F1:
 			return 0x05;
 		case SDL_SCANCODE_F2:
