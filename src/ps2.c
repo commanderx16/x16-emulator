@@ -2,9 +2,11 @@
 // Copyright (c) 2019 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
-#include "ps2.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include "ps2.h"
+
+void keyboard_command_callback();
 
 #define HOLD 25 * 8 /* 25 x ~3 cycles at 8 MHz = 75µs */
 
@@ -107,6 +109,12 @@ ps2_inbuffer_get_count(int i)
 }
 
 uint8_t
+ps2_inbuffer_get_oldest(int i)
+{
+	return buffer_get_oldest(&state[i].inbuffer);
+}
+
+uint8_t
 ps2_inbuffer_pop_oldest(int i)
 {
 	return buffer_pop_oldest(&state[i].inbuffer);
@@ -183,6 +191,8 @@ ps2_step(int i, int clocks)
 							bool parity_ok = !__builtin_parity(state[i].data_bits & 0x1ff);
 							bool stop_ok = !!(state[i].data_bits & 0x200);
 							printf("ACK BYTE $%02X (%d/%d)\n", state[i].data_bits & 0xff, parity_ok, stop_ok);
+							ps2_inbuffer_add(i, state[i].data_bits & 0xff);
+							keyboard_command_callback();
 							ps2_port[i].out = 0;             // CLK=0, DATA=0
 						} else {
 							ps2_port[i].out = PS2_DATA_MASK; // CLK=0, DATA=1

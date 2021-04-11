@@ -262,4 +262,38 @@ handle_keyboard(bool down, SDL_Keycode sym, SDL_Scancode scancode)
 	}
 }
 
+void
+keyboard_command_callback()
+{
+	uint8_t cmd = ps2_inbuffer_get_oldest(0);
+	printf("PS2KBD: keyboard_command_callback $%02X\n", cmd);
+	uint8_t arg;
+	// some commands take an argument; return if argument has not been
+	// transmitted yet
+	if (cmd == 0xf3 || // Set Typematic Rate/Delay
+		cmd == 0xed) { // Set/Reset LEDs
+		if (ps2_inbuffer_get_count(0) < 2) {
+			return;
+		} else {
+			arg = ps2_inbuffer_pop_oldest(0);
+		}
+	}
 
+	switch (ps2_inbuffer_pop_oldest(0)) {
+		case 0xf3: {
+			printf("PS2KBD: Set Typematic Rate/Delay $%02X\n", arg);
+			ps2_outbuffer_add(0, 0xfa);
+			break;
+		}
+		case 0xee: {
+			printf("PS2KBD: Echo\n");
+			ps2_outbuffer_add(0, 0xee);
+			break;
+		}
+		case 0xed: {
+			printf("PS2KBD: Set/Reset LEDs $%02X\n", arg);
+			ps2_outbuffer_add(0, 0xfa);
+			break;
+		}
+	}
+}

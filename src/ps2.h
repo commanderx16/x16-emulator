@@ -19,6 +19,11 @@ typedef struct {
 extern ps2_port_t ps2_port[2];
 
 void ps2_outbuffer_add(int i, uint8_t byte);
+
+uint8_t ps2_inbuffer_get_count(int i);
+uint8_t ps2_inbuffer_get_oldest(int i);
+uint8_t ps2_inbuffer_pop_oldest(int i);
+
 void ps2_step(int i, int clocks);
 void ps2_autostep(int i);
 
