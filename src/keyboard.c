@@ -233,19 +233,19 @@ handle_keyboard(bool down, SDL_Keycode sym, SDL_Scancode scancode)
 		int ps2_scancode = ps2_scancode_from_SDL_Scancode(scancode);
 		if (ps2_scancode == 0xff) {
 			// "Pause/Break" sequence
-			ps2_buffer_add(0, 0xe1);
-			ps2_buffer_add(0, 0x14);
-			ps2_buffer_add(0, 0x77);
-			ps2_buffer_add(0, 0xe1);
-			ps2_buffer_add(0, 0xf0);
-			ps2_buffer_add(0, 0x14);
-			ps2_buffer_add(0, 0xf0);
-			ps2_buffer_add(0, 0x77);
+			ps2_outbuffer_add(0, 0xe1);
+			ps2_outbuffer_add(0, 0x14);
+			ps2_outbuffer_add(0, 0x77);
+			ps2_outbuffer_add(0, 0xe1);
+			ps2_outbuffer_add(0, 0xf0);
+			ps2_outbuffer_add(0, 0x14);
+			ps2_outbuffer_add(0, 0xf0);
+			ps2_outbuffer_add(0, 0x77);
 		} else {
 			if (ps2_scancode & EXTENDED_FLAG) {
-				ps2_buffer_add(0, 0xe0);
+				ps2_outbuffer_add(0, 0xe0);
 			}
-			ps2_buffer_add(0, ps2_scancode & 0xff);
+			ps2_outbuffer_add(0, ps2_scancode & 0xff);
 		}
 	} else {
 		if (log_keyboard) {
@@ -255,10 +255,10 @@ handle_keyboard(bool down, SDL_Keycode sym, SDL_Scancode scancode)
 
 		int ps2_scancode = ps2_scancode_from_SDL_Scancode(scancode);
 		if (ps2_scancode & EXTENDED_FLAG) {
-			ps2_buffer_add(0, 0xe0);
+			ps2_outbuffer_add(0, 0xe0);
 		}
-		ps2_buffer_add(0, 0xf0); // BREAK
-		ps2_buffer_add(0, ps2_scancode & 0xff);
+		ps2_outbuffer_add(0, 0xf0); // BREAK
+		ps2_outbuffer_add(0, ps2_scancode & 0xff);
 	}
 }
 

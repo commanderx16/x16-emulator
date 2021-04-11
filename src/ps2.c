@@ -38,29 +38,78 @@ static struct {
 	int data_bits;
 	int count;
 	int send_time;
-	struct ring_buffer buffer;
+	struct ring_buffer outbuffer;
+	struct ring_buffer inbuffer;
 } state[2];
 
 ps2_port_t ps2_port[2];
 
 void
-ps2_buffer_add(int i, uint8_t byte)
+buffer_add(struct ring_buffer *buffer, uint8_t byte)
 {
-	const int index = (state[i].buffer.m_oldest + state[i].buffer.m_count) % PS2_BUFFER_SIZE;
-	if (state[i].buffer.m_count >= PS2_BUFFER_SIZE) {
+	const int index = (buffer->m_oldest + buffer->m_count) % PS2_BUFFER_SIZE;
+	if (buffer->m_count >= PS2_BUFFER_SIZE) {
 		return;
 	}
-	++state[i].buffer.m_count;
-	state[i].buffer.m_elems[index] = byte;
+	buffer->m_count++;
+	buffer->m_elems[index] = byte;
 }
 
 uint8_t
-ps2_buffer_pop_oldest(int i)
+buffer_get_count(struct ring_buffer *buffer)
 {
-	const uint8_t value = state[i].buffer.m_elems[state[i].buffer.m_oldest];
-	state[i].buffer.m_oldest = (state[i].buffer.m_oldest + 1) % PS2_BUFFER_SIZE;
-	--state[i].buffer.m_count;
+	return buffer->m_count;
+}
+
+uint8_t
+buffer_get_oldest(struct ring_buffer *buffer)
+{
+	return buffer->m_elems[buffer->m_oldest];
+}
+
+uint8_t
+buffer_pop_oldest(struct ring_buffer *buffer)
+{
+	const uint8_t value = buffer_get_oldest(buffer);
+	buffer->m_oldest = (buffer->m_oldest + 1) % PS2_BUFFER_SIZE;
+	buffer->m_count--;
 	return value;
+}
+
+void
+ps2_outbuffer_add(int i, uint8_t byte)
+{
+	buffer_add(&state[i].outbuffer, byte);
+}
+
+uint8_t
+ps2_outbuffer_get_count(int i)
+{
+	return buffer_get_count(&state[i].outbuffer);
+}
+
+uint8_t
+ps2_outbuffer_pop_oldest(int i)
+{
+	return buffer_pop_oldest(&state[i].outbuffer);
+}
+
+void
+ps2_inbuffer_add(int i, uint8_t byte)
+{
+	buffer_add(&state[i].inbuffer, byte);
+}
+
+uint8_t
+ps2_inbuffer_get_count(int i)
+{
+	return buffer_get_count(&state[i].inbuffer);
+}
+
+uint8_t
+ps2_inbuffer_pop_oldest(int i)
+{
+	return buffer_pop_oldest(&state[i].inbuffer);
 }
 
 int bit;
@@ -154,12 +203,12 @@ ps2_step(int i, int clocks)
 						printf("PS2_READY\n");
 						// get next byte
 						if (state[i].data_bits <= 0) {
-							if (state[i].buffer.m_count <= 0) {
+							if (ps2_outbuffer_get_count(i) <= 0) {
 								// we have nothing to send
 								ps2_port[i].out = PS2_CLK_MASK;
 								return;
 							}
-							state[i].current_byte = ps2_buffer_pop_oldest(i);
+							state[i].current_byte = ps2_outbuffer_pop_oldest(i);
 						}
 
 						state[i].data_bits = state[i].current_byte << 1 | (1 - __builtin_parity(state[i].current_byte)) << 9 | (1 << 10);
@@ -225,21 +274,20 @@ static int16_t mouse_diff_y = 0;
 static bool
 mouse_send(int x, int y, int b)
 {
-	if (PS2_BUFFER_SIZE - state[1].buffer.m_count >= 3) {
-		uint8_t byte0 =
-		    ((y >> 9) & 1) << 5 |
-		    ((x >> 9) & 1) << 4 |
-		    1 << 3 |
-		    b;
-		ps2_buffer_add(1, byte0);
-		ps2_buffer_add(1, x);
-		ps2_buffer_add(1, y);
-
-		return true;
-	} else {
-		//		printf("buffer full, skipping...\n");
+	if (PS2_BUFFER_SIZE - ps2_outbuffer_get_count(1) < 3) {
+		//		printf("mouse buffer full, skipping...\n");
 		return false;
 	}
+
+	uint8_t byte0 =
+		((y >> 9) & 1) << 5 |
+		((x >> 9) & 1) << 4 |
+		1 << 3 |
+		b;
+	ps2_outbuffer_add(1, byte0);
+	ps2_outbuffer_add(1, x);
+	ps2_outbuffer_add(1, y);
+	return true;
 }
 
 void
