@@ -11,6 +11,7 @@
 #define PS2_BUFFER_SIZE 32
 
 enum ps2_mode {
+	PS2_MODE_DETECT,
 	PS2_MODE_INHIBITED,
 	PS2_MODE_RECEIVING,
 	PS2_MODE_SENDING,
@@ -72,145 +73,128 @@ ps2_step(int i, int clocks)
 		return;
 	}
 
-	if (state[i].mode == PS2_MODE_INHIBITED) {
-		ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1 DATA=1
-		switch (ps2_port[i].in) {
-			default:                           // DATA=0, CLK=0
-			case PS2_DATA_MASK:                // DATA=1, CLK=0
-				printf("** Communication inhibited %i\n", i);
-				state[i].mode = PS2_MODE_INHIBITED;
+	for (;;) {
+		state[i].send_time += clocks;
+		if (state[i].send_time < HOLD) {
+			return;
+		}
+		state[i].send_time -= HOLD;
+		clocks -= HOLD;
+
+		if (state[i].mode == PS2_MODE_DETECT || state[i].mode == PS2_MODE_INHIBITED) {
+			ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1 DATA=1
+			switch (ps2_port[i].in) {
+				default:                           // DATA=0, CLK=0
+				case PS2_DATA_MASK:                // DATA=1, CLK=0
+					printf("** Communication inhibited %i\n", i);
+					state[i].mode = PS2_MODE_INHIBITED;
+					break;
+				case PS2_CLK_MASK:                 // DATA=0, CLK=1
+					printf("** Host Request-to-Send %i\n", i);
+					state[i].mode = PS2_MODE_RECEIVING;
+					state[i].state = PS2_RECV_HI;
+					state[i].count = -1;
+					break;
+				case PS2_DATA_MASK | PS2_CLK_MASK: // DATA=1, CLK=1
+					printf("** Idle %i\n", i);
+					state[i].data_bits = 0;
+					state[i].mode = PS2_MODE_SENDING;
+					state[i].state = PS2_READY;
+					break;
+			}
+		}
+
+		switch (state[i].mode) {
+			case PS2_MODE_INHIBITED:
+				printf("Communication inhibited\n");
+				// Communication inhibited
+				ps2_port[i].out = 0;
 				break;
-			case PS2_CLK_MASK:                 // DATA=0, CLK=1
-				printf("** Host Request-to-Send %i\n", i);
-				state[i].mode = PS2_MODE_RECEIVING;
-				state[i].state = PS2_RECV_HI;
-				state[i].count = -1;
+
+			case PS2_MODE_RECEIVING:
+	//			printf("Host Request-to-Send\n");
+				// Host Request-to-Send
+				switch (state[i].state) {
+					case PS2_RECV_LO:
+	//					printf("PS2_RECV_LO %d\n", state[i].count);
+						// HI transition
+						printf("RECV HI transition %d\n", state[i].count);
+						if (state[i].count == 10) {
+							printf("ACK end\n");
+							ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1
+							state[i].mode = PS2_MODE_DETECT;
+							break;
+						}
+						state[i].data_bits |= ((ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0) << state[i].count;
+						printf("BIT%d: %d -> $%02X\n", state[i].count, (ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0, state[i].data_bits);
+						ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1
+						state[i].state = PS2_RECV_HI;
+						break;
+					case PS2_RECV_HI:
+	//					printf("PS2_RECV_HI %d\n", state[i].count);
+						// LO transition
+						state[i].count++;
+						printf("RECV LO transition %d\n", state[i].count);
+						if (state[i].count == 10) {
+							bool parity_ok = !__builtin_parity(state[i].data_bits & 0x1ff);
+							bool stop_ok = !!(state[i].data_bits & 0x200);
+							printf("ACK BYTE $%02X (%d/%d)\n", state[i].data_bits & 0xff, parity_ok, stop_ok);
+							ps2_port[i].out = 0;             // CLK=0, DATA=0
+						} else {
+							ps2_port[i].out = PS2_DATA_MASK; // CLK=0, DATA=1
+						}
+						state[i].state = PS2_RECV_LO;
+						break;
+					default:
+						printf("XXX");
+						break;
+				}
 				break;
-			case PS2_DATA_MASK | PS2_CLK_MASK: // DATA=1, CLK=1
-				printf("** Idle %i\n", i);
-				state[i].data_bits = 0;
-				state[i].mode = PS2_MODE_SENDING;
-				state[i].state = PS2_READY;
+
+			case PS2_MODE_SENDING:
+				printf("Idle\n");
+				// Idle
+				switch (state[i].state) {
+					case PS2_READY:
+						printf("PS2_READY\n");
+						// get next byte
+						if (state[i].data_bits <= 0) {
+							if (state[i].buffer.m_count <= 0) {
+								// we have nothing to send
+								ps2_port[i].out = PS2_CLK_MASK;
+								return;
+							}
+							state[i].current_byte = ps2_buffer_pop_oldest(i);
+						}
+
+						state[i].data_bits = state[i].current_byte << 1 | (1 - __builtin_parity(state[i].current_byte)) << 9 | (1 << 10);
+						state[i].state = PS2_SEND_LO;
+						break;
+					case PS2_SEND_LO:
+						printf("PS2_SEND_LO\n");
+						ps2_port[i].out = (state[i].data_bits & 1) ? PS2_DATA_MASK : 0;
+						state[i].data_bits >>= 1;
+						state[i].state = PS2_SEND_HI;
+						break;
+					case PS2_SEND_HI:
+						printf("PS2_SEND_HI\n");
+						ps2_port[i].out = PS2_CLK_MASK; // not ready
+						if (state[i].data_bits != 0) {
+							state[i].state = PS2_SEND_LO;
+							break;
+						} else {
+							state[i].mode = PS2_MODE_DETECT;
+							break;
+						}
+					default:
+						printf("XXX");
+						break;
+				}
+				break;
+			default:
+				printf("XXX");
 				break;
 		}
-	}
-
-	switch (state[i].mode) {
-		case PS2_MODE_INHIBITED:
-			printf("Communication inhibited\n");
-			// Communication inhibited
-			ps2_port[i].out = 0;
-			state[i].state = PS2_READY;
-			break;
-
-		case PS2_MODE_RECEIVING:
-//			printf("Host Request-to-Send\n");
-			// Host Request-to-Send
-			switch (state[i].state) {
-				case PS2_RECV_LO:
-				CASE_PS2_RECV_LO:
-//					printf("PS2_RECV_LO %d\n", state[i].count);
-					state[i].send_time += clocks;
-					if (state[i].send_time < HOLD) {
-						break;
-					}
-					clocks -= HOLD;
-					state[i].send_time = 0;
-					// HI transition
-					printf("RECV HI transition %d\n", state[i].count);
-					if (state[i].count == 10) {
-						printf("ACK end\n");
-						ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1
-						state[i].mode = PS2_MODE_INHIBITED;
-						break;
-					}
-					state[i].data_bits |= ((ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0) << state[i].count;
-					printf("BIT%d: %d -> $%02X\n", state[i].count, (ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0, state[i].data_bits);
-					ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1
-					state[i].state = PS2_RECV_HI;
-					// Fall-thru
-				case PS2_RECV_HI:
-//					printf("PS2_RECV_HI %d\n", state[i].count);
-					state[i].send_time += clocks;
-					if (state[i].send_time < HOLD) {
-						break;
-					}
-					clocks -= HOLD;
-					state[i].send_time = 0;
-					// LO transition
-					state[i].count++;
-					printf("RECV LO transition %d\n", state[i].count);
-					if (state[i].count == 10) {
-						bool parity_ok = !__builtin_parity(state[i].data_bits & 0x1ff);
-						bool stop_ok = !!(state[i].data_bits & 0x200);
-						printf("ACK BYTE $%02X (%d/%d)\n", state[i].data_bits & 0xff, parity_ok, stop_ok);
-						ps2_port[i].out = 0;             // CLK=0, DATA=0
-					} else {
-						ps2_port[i].out = PS2_DATA_MASK; // CLK=0, DATA=1
-					}
-					state[i].state = PS2_RECV_LO;
-					goto CASE_PS2_RECV_LO;
-				default:
-					printf("XXX");
-					break;
-			}
-			break;
-
-		case PS2_MODE_SENDING:
-			printf("Idle\n");
-			// Idle
-			switch (state[i].state) {
-				case PS2_READY:
-				CASE_PS2_READY:
-					printf("PS2_READY\n");
-					// get next byte
-					if (state[i].data_bits <= 0) {
-						if (state[i].buffer.m_count <= 0) {
-							// we have nothing to send
-							ps2_port[i].out = PS2_CLK_MASK;
-							return;
-						}
-						state[i].current_byte = ps2_buffer_pop_oldest(i);
-					}
-
-					state[i].data_bits = state[i].current_byte << 1 | (1 - __builtin_parity(state[i].current_byte)) << 9 | (1 << 10);
-					state[i].send_time = 0;
-					state[i].state = PS2_SEND_LO;
-					// Fall-thru
-				case PS2_SEND_LO:
-				CASE_PS2_SEND_LO:
-					printf("PS2_SEND_LO\n");
-					ps2_port[i].out = (state[i].data_bits & 1) ? PS2_DATA_MASK : 0;
-					state[i].send_time += clocks;
-					if (state[i].send_time < HOLD) {
-						break;
-					}
-					state[i].data_bits >>= 1;
-					state[i].state = PS2_SEND_HI;
-					state[i].send_time = 0;
-					clocks -= HOLD;
-					// Fall-thru
-				case PS2_SEND_HI:
-					printf("PS2_SEND_HI\n");
-					ps2_port[i].out = PS2_CLK_MASK; // not ready
-					state[i].send_time += clocks;
-					if (state[i].send_time < HOLD) {
-						break;
-					}
-					clocks -= HOLD;
-					if (state[i].data_bits > 0) {
-						state[i].send_time = 0;
-						state[i].state = PS2_SEND_LO;
-						goto CASE_PS2_SEND_LO;
-					} else {
-						state[i].state = PS2_READY;
-						goto CASE_PS2_READY;
-					}
-				default:
-					printf("XXX");
-					break;
-			}
-			break;
 	}
 }
 

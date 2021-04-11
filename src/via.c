@@ -69,7 +69,7 @@ effective_ps2_pa()
 {
 	uint8_t res = (~via1registers[3] & ps2_port[0].out) |
 	       (via1registers[3] & ps2_port[0].in);
-       printf("effective_ps2_pa: $%02X\n", res);
+//       printf("effective_ps2_pa: $%02X\n", res);
        return res;
 }
 
@@ -79,7 +79,7 @@ via1_update_interrupts()
 	ps2_autostep(0);
 	uint8_t effective_pa = effective_ps2_pa();
 	bool ca2 = !!(effective_pa & PS2_CLK_MASK);
-	printf("ddr: $%02X, out: $%02X, in: $%02X, pa: $%02X\n", via1registers[3], ps2_port[0].out, ps2_port[0].in, effective_pa);
+//	printf("ddr: $%02X, out: $%02X, in: $%02X, pa: $%02X\n", via1registers[3], ps2_port[0].out, ps2_port[0].in, effective_pa);
 //	printf("CA2: %d, IER: $%02X\n", ca2, via1registers[VIA_IER] & VIA_IFR_CA2);
 	if (via1registers[VIA_IER] & VIA_IFR_CA2 && ca2 != via1_old_ca2) {
 		uint8_t ca2_int_ctrl = (via1registers[VIA_PCR] >> 1) & 7;
