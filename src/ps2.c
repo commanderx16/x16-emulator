@@ -20,6 +20,8 @@ enum ps2_state {
 	PS2_READY,
 	PS2_SEND_LO,
 	PS2_SEND_HI,
+	PS2_RECV_LO,
+	PS2_RECV_HI,
 };
 
 struct ring_buffer {
@@ -65,21 +67,28 @@ int bit;
 void
 ps2_step(int i, int clocks)
 {
+	// XXX
+	if (i != 0) {
+		return;
+	}
+
 	if (state[i].mode == PS2_MODE_INHIBITED) {
+		ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1 DATA=1
 		switch (ps2_port[i].in) {
 			default:                           // DATA=0, CLK=0
 			case PS2_DATA_MASK:                // DATA=1, CLK=0
-				printf("** Communication inhibited\n");
+				printf("** Communication inhibited %i\n", i);
 				state[i].mode = PS2_MODE_INHIBITED;
 				break;
 			case PS2_CLK_MASK:                 // DATA=0, CLK=1
-				printf("** Host Request-to-Send\n");
+				printf("** Host Request-to-Send %i\n", i);
 				state[i].mode = PS2_MODE_RECEIVING;
-				state[i].state = PS2_SEND_HI;
-				state[i].count = 0;
+				state[i].state = PS2_RECV_HI;
+				state[i].count = -1;
 				break;
 			case PS2_DATA_MASK | PS2_CLK_MASK: // DATA=1, CLK=1
-				printf("** Idle\n");
+				printf("** Idle %i\n", i);
+				state[i].data_bits = 0;
 				state[i].mode = PS2_MODE_SENDING;
 				state[i].state = PS2_READY;
 				break;
@@ -95,49 +104,52 @@ ps2_step(int i, int clocks)
 			break;
 
 		case PS2_MODE_RECEIVING:
-			printf("Host Request-to-Send\n");
+//			printf("Host Request-to-Send\n");
 			// Host Request-to-Send
 			switch (state[i].state) {
-				case PS2_SEND_LO:
-				XCASE_PS2_SEND_LO:
-					printf("PS2_SEND_LO %d\n", state[i].count);
-					ps2_port[i].out = PS2_DATA_MASK; // CLK=0
+				case PS2_RECV_LO:
+				CASE_PS2_RECV_LO:
+//					printf("PS2_RECV_LO %d\n", state[i].count);
 					state[i].send_time += clocks;
 					if (state[i].send_time < HOLD) {
 						break;
 					}
-					state[i].state = PS2_SEND_HI;
-					state[i].send_time = 0;
 					clocks -= HOLD;
+					state[i].send_time = 0;
+					// HI transition
+					printf("RECV HI transition %d\n", state[i].count);
+					if (state[i].count == 10) {
+						printf("ACK end\n");
+						ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1
+						state[i].mode = PS2_MODE_INHIBITED;
+						break;
+					}
+					state[i].data_bits |= ((ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0) << state[i].count;
+					printf("BIT%d: %d -> $%02X\n", state[i].count, (ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0, state[i].data_bits);
+					ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1
+					state[i].state = PS2_RECV_HI;
+					// Fall-thru
+				case PS2_RECV_HI:
+//					printf("PS2_RECV_HI %d\n", state[i].count);
+					state[i].send_time += clocks;
+					if (state[i].send_time < HOLD) {
+						break;
+					}
+					clocks -= HOLD;
+					state[i].send_time = 0;
+					// LO transition
+					state[i].count++;
+					printf("RECV LO transition %d\n", state[i].count);
 					if (state[i].count == 10) {
 						bool parity_ok = !__builtin_parity(state[i].data_bits & 0x1ff);
 						bool stop_ok = !!(state[i].data_bits & 0x200);
 						printf("ACK BYTE $%02X (%d/%d)\n", state[i].data_bits & 0xff, parity_ok, stop_ok);
-						ps2_port[i].out &= ~PS2_DATA_MASK; // ACK
+						ps2_port[i].out = 0;             // CLK=0, DATA=0
 					} else {
-						state[i].data_bits >>= 1;
-						state[i].data_bits |= ((ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0) << 9;
-						printf("BIT%d: %d -> $%02X\n", state[i].count, (ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0, state[i].data_bits);
+						ps2_port[i].out = PS2_DATA_MASK; // CLK=0, DATA=1
 					}
-					state[i].count++;
-					// Fall-thru
-				case PS2_SEND_HI:
-					printf("PS2_SEND_HI %d\n", state[i].count - 1);
-					ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1
-					state[i].send_time += clocks;
-					if (state[i].send_time < HOLD) {
-						break;
-					}
-					clocks -= HOLD;
-					state[i].send_time = 0;
-					if (state[i].count == 11) {
-						printf("ACK end\n");
-						state[i].mode = PS2_MODE_INHIBITED;
-						break;
-					} else {
-						state[i].state = PS2_SEND_LO;
-						goto XCASE_PS2_SEND_LO;
-					}
+					state[i].state = PS2_RECV_LO;
+					goto CASE_PS2_RECV_LO;
 				default:
 					printf("XXX");
 					break;
@@ -150,6 +162,7 @@ ps2_step(int i, int clocks)
 			switch (state[i].state) {
 				case PS2_READY:
 				CASE_PS2_READY:
+					printf("PS2_READY\n");
 					// get next byte
 					if (state[i].data_bits <= 0) {
 						if (state[i].buffer.m_count <= 0) {
@@ -166,6 +179,7 @@ ps2_step(int i, int clocks)
 					// Fall-thru
 				case PS2_SEND_LO:
 				CASE_PS2_SEND_LO:
+					printf("PS2_SEND_LO\n");
 					ps2_port[i].out = (state[i].data_bits & 1) ? PS2_DATA_MASK : 0;
 					state[i].send_time += clocks;
 					if (state[i].send_time < HOLD) {
@@ -177,6 +191,7 @@ ps2_step(int i, int clocks)
 					clocks -= HOLD;
 					// Fall-thru
 				case PS2_SEND_HI:
+					printf("PS2_SEND_HI\n");
 					ps2_port[i].out = PS2_CLK_MASK; // not ready
 					state[i].send_time += clocks;
 					if (state[i].send_time < HOLD) {
@@ -191,6 +206,9 @@ ps2_step(int i, int clocks)
 						state[i].state = PS2_READY;
 						goto CASE_PS2_READY;
 					}
+				default:
+					printf("XXX");
+					break;
 			}
 			break;
 	}
