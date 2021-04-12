@@ -287,7 +287,7 @@ keyboard_command_callback()
 		}
 		case 0xee: {
 			printf("PS2KBD: Echo\n");
-			ps2_outbuffer_add(0, 0xee);
+			ps2_outbuffer_add(0, 0x1c /*0xee*/);
 			break;
 		}
 		case 0xed: {

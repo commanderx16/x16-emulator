@@ -142,17 +142,17 @@ ps2_step(int i, int clocks)
 			switch (ps2_port[i].in) {
 				default:                           // DATA=0, CLK=0
 				case PS2_DATA_MASK:                // DATA=1, CLK=0
-					printf("** Communication inhibited %i\n", i);
+					printf("PS2 ** Communication inhibited %i\n", i);
 					state[i].mode = PS2_MODE_INHIBITED;
 					break;
 				case PS2_CLK_MASK:                 // DATA=0, CLK=1
-					printf("** Host Request-to-Send %i\n", i);
+					printf("PS2 ** Host Request-to-Send %i\n", i);
 					state[i].mode = PS2_MODE_RECEIVING;
 					state[i].state = PS2_RECV_LO;
 					state[i].count = 0;
 					break;
 				case PS2_DATA_MASK | PS2_CLK_MASK: // DATA=1, CLK=1
-					printf("** Idle %i\n", i);
+					printf("PS2 ** Idle %i\n", i);
 					state[i].data_bits = 0;
 					state[i].mode = PS2_MODE_SENDING;
 					state[i].state = PS2_READY;
@@ -162,7 +162,7 @@ ps2_step(int i, int clocks)
 
 		switch (state[i].mode) {
 			case PS2_MODE_INHIBITED:
-				printf("Communication inhibited\n");
+				printf("PS2 Communication inhibited\n");
 				// Communication inhibited
 				ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1 DATA=1
 				break;
@@ -172,25 +172,25 @@ ps2_step(int i, int clocks)
 				// Host Request-to-Send
 				switch (state[i].state) {
 					case PS2_RECV_HI:
-						printf("RECV HI transition %d\n", state[i].count);
+						printf("PS2 RECV HI transition %d\n", state[i].count);
 						if (state[i].count == 10) {
-							printf("ACK end\n");
+							printf("PS2 ACK end\n");
 							ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1
 							state[i].mode = PS2_MODE_DETECT;
 							break;
 						}
 						state[i].data_bits |= ((ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0) << state[i].count;
-						printf("BIT%d: %d -> $%02X\n", state[i].count, (ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0, state[i].data_bits);
+						printf("PS2 BIT%d: %d -> $%02X\n", state[i].count, (ps2_port[i].in & PS2_DATA_MASK) ? 1 : 0, state[i].data_bits);
 						ps2_port[i].out = PS2_DATA_MASK | PS2_CLK_MASK; // CLK=1
 						state[i].state = PS2_RECV_LO;
 						state[i].count++;
 						break;
 					case PS2_RECV_LO:
-						printf("RECV LO transition %d\n", state[i].count);
+						printf("PS2 RECV LO transition %d\n", state[i].count);
 						if (state[i].count == 10) {
 							bool parity_ok = !__builtin_parity(state[i].data_bits & 0x1ff);
 							bool stop_ok = !!(state[i].data_bits & 0x200);
-							printf("ACK BYTE $%02X (%d/%d)\n", state[i].data_bits & 0xff, parity_ok, stop_ok);
+							printf("PS2 ACK BYTE $%02X (%d/%d)\n", state[i].data_bits & 0xff, parity_ok, stop_ok);
 							ps2_inbuffer_add(i, state[i].data_bits & 0xff);
 							keyboard_command_callback();
 							ps2_port[i].out = 0;             // CLK=0, DATA=0
@@ -200,17 +200,23 @@ ps2_step(int i, int clocks)
 						state[i].state = PS2_RECV_HI;
 						break;
 					default:
-						printf("XXX");
+						printf("PS2 XXX");
 						break;
 				}
 				break;
 
 			case PS2_MODE_SENDING:
-				printf("Idle\n");
-				// Idle
+				printf("PS2 SEND\n");
+
+				if (ps2_port[i].in == PS2_DATA_MASK) {
+					printf("PS2 INHIBIT\n");
+					state[i].mode = PS2_MODE_DETECT;
+					continue;
+				}
+
 				switch (state[i].state) {
 					case PS2_READY:
-						printf("PS2_READY\n");
+						printf("PS2 PS2_READY\n");
 						// get next byte
 						if (state[i].data_bits <= 0) {
 							if (ps2_outbuffer_get_count(i) <= 0) {
@@ -225,13 +231,13 @@ ps2_step(int i, int clocks)
 						state[i].state = PS2_SEND_LO;
 						break;
 					case PS2_SEND_LO:
-						printf("SEND LO transition\n");
+						printf("PS2 SEND LO transition\n");
 						ps2_port[i].out = (state[i].data_bits & 1) ? PS2_DATA_MASK : 0; // CLK=0 DATA=bit
 						state[i].data_bits >>= 1;
 						state[i].state = PS2_SEND_HI;
 						break;
 					case PS2_SEND_HI:
-						printf("SEND HI transition\n");
+						printf("PS2 SEND HI transition\n");
 						ps2_port[i].out |= PS2_CLK_MASK; // CLK=1: not ready
 						if (state[i].data_bits != 0) {
 							state[i].state = PS2_SEND_LO;
@@ -241,12 +247,12 @@ ps2_step(int i, int clocks)
 							break;
 						}
 					default:
-						printf("XXX");
+						printf("PS2 XXX");
 						break;
 				}
 				break;
 			default:
-				printf("XXX");
+				printf("PS2 XXX");
 				break;
 		}
 	}
