@@ -7,7 +7,7 @@
 #include "memory.h"
 #include "ps2.h"
 #include "glue.h"
-#include "debugger.h"
+#include "debugger/debugger.h"
 #include "keyboard.h"
 #include "gif.h"
 #include "joystick.h"
@@ -56,6 +56,7 @@
 // visible area we're drawing
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
+#define UI_WIDTH 100
 
 #define SCREEN_RAM_OFFSET 0x00000
 
@@ -75,6 +76,23 @@ static SDL_Window *window;
 static SDL_Renderer *renderer;
 static SDL_Texture *sdlTexture;
 static bool is_fullscreen = false;
+static SDL_Rect screenRect= { 0, 0, 0, 0};
+static SDL_Rect uiRect= { 0, 0, UI_WIDTH, 0};
+static SDL_Texture *uiTexture;
+static 	SDL_Cursor* handCursor;
+static 	SDL_Cursor* arrowCursor;
+static SDL_Rect uiBtns[]= {
+	{ 8, 9, 84, 14},
+	{ 8, 25, 84, 14},
+	{ 8, 41, 84, 14},
+	{ 8, 57, 84, 14},
+	{ 8, 73, 84, 14},
+	{ 8, 89, 84, 14},
+	{ 8, 105, 84, 14},
+	{ 8, 137, 84, 14},
+	{ 0, 0, 0, 0}
+};
+static int uiBtnSelected= -1;
 
 static uint8_t video_ram[0x20000];
 static uint8_t palette[256 * 2];
@@ -184,11 +202,11 @@ video_init(int window_scale, char *quality)
 	video_reset();
 
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, quality);
-	SDL_CreateWindowAndRenderer(SCREEN_WIDTH * window_scale, SCREEN_HEIGHT * window_scale, window_flags, &window, &renderer);
+	SDL_CreateWindowAndRenderer(SCREEN_WIDTH * window_scale + UI_WIDTH, SCREEN_HEIGHT * window_scale, window_flags, &window, &renderer);
 #ifndef __MORPHOS__
 	SDL_SetWindowResizable(window, true);
 #endif
-	SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+	// SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	sdlTexture = SDL_CreateTexture(renderer,
 									SDL_PIXELFORMAT_RGB888,
@@ -217,6 +235,27 @@ video_init(int window_scale, char *quality)
 
 	if (debugger_enabled) {
 		DEBUGInitUI(renderer);
+	}
+
+	SDL_Surface *Temp;
+	SDL_RWops * rw= SDL_RWFromFile("ui.bmp", "rb");
+	Temp= SDL_LoadBMP_RW(rw, 0);
+	SDL_RWclose(rw);
+	uiTexture= SDL_CreateTextureFromSurface(renderer, Temp);
+
+	handCursor= SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+	arrowCursor= SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+
+	screenRect.w= SCREEN_WIDTH * window_scale;
+	screenRect.h= SCREEN_HEIGHT * window_scale;
+
+	uiRect.x= screenRect.w;
+	uiRect.h= screenRect.h;
+
+	for(int idx= 0; uiBtns[idx].w; idx++) {
+		uiBtns[idx].x= uiBtns[idx].x + uiRect.x;
+		uiBtns[idx].y= uiBtns[idx].y * window_scale;
+		uiBtns[idx].h*= window_scale;
 	}
 
 	return true;
@@ -1056,10 +1095,21 @@ video_save(SDL_RWops *f)
 	SDL_RWwrite(f, &sprite_data[0], sizeof(uint8_t), sizeof(sprite_data));
 }
 
+void
+video_render_ui() {
+
+	SDL_Rect dest= { screenRect.w, 0, UI_WIDTH, screenRect.h };
+	SDL_RenderCopy(renderer, uiTexture, NULL, &dest);
+
+	SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+	SDL_RenderDrawRect(renderer, &(uiBtns[uiBtnSelected]));
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+}
+
 bool
 video_update()
 {
-	static bool cmd_down = false;
+	// static bool cmd_down = false;
 
 	bool mouse_changed = false;
 
@@ -1095,108 +1145,137 @@ video_update()
 	}
 
 	SDL_RenderClear(renderer);
-	SDL_RenderCopy(renderer, sdlTexture, NULL, NULL);
+	SDL_RenderCopy(renderer, sdlTexture, NULL, &screenRect);
+	video_render_ui();
+	SDL_RenderPresent(renderer);
 
 	if (debugger_enabled && showDebugOnRender != 0) {
-		DEBUGRenderDisplay(SCREEN_WIDTH, SCREEN_HEIGHT);
-		SDL_RenderPresent(renderer);
 		return true;
 	}
 
-	SDL_RenderPresent(renderer);
-
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
-		if (event.type == SDL_QUIT) {
-			return false;
-		}
-		if (event.type == SDL_KEYDOWN) {
-			bool consumed = false;
-			if (cmd_down) {
-				if (event.key.keysym.sym == SDLK_s) {
-					machine_dump();
-					consumed = true;
-				} else if (event.key.keysym.sym == SDLK_r) {
-					machine_reset();
-					consumed = true;
-				} else if (event.key.keysym.sym == SDLK_v) {
-					machine_paste(SDL_GetClipboardText());
-					consumed = true;
-				} else if (event.key.keysym.sym == SDLK_f || event.key.keysym.sym == SDLK_RETURN) {
-					is_fullscreen = !is_fullscreen;
-					SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
-					consumed = true;
-				} else if (event.key.keysym.sym == SDLK_PLUS || event.key.keysym.sym == SDLK_EQUALS) {
-					machine_toggle_warp();
-					consumed = true;
-				} else if (event.key.keysym.sym == SDLK_a) {
-					sdcard_attach();
-					consumed = true;
-				} else if (event.key.keysym.sym == SDLK_d) {
-					sdcard_detach();
-					consumed = true;
-				}
-			}
-			if (!consumed) {
-				if (event.key.keysym.scancode == LSHORTCUT_KEY || event.key.keysym.scancode == RSHORTCUT_KEY) {
-					cmd_down = true;
-				}
-				handle_keyboard(true, event.key.keysym.sym, event.key.keysym.scancode);
-			}
-			return true;
-		}
-		if (event.type == SDL_KEYUP) {
-			if (event.key.keysym.scancode == LSHORTCUT_KEY || event.key.keysym.scancode == RSHORTCUT_KEY) {
-				cmd_down = false;
-			}
-			handle_keyboard(false, event.key.keysym.sym, event.key.keysym.scancode);
-			return true;
-		}
-		if (event.type == SDL_MOUSEBUTTONDOWN) {
-			switch (event.button.button) {
-				case SDL_BUTTON_LEFT:
-					mouse_button_down(0);
-					mouse_changed = true;
-					break;
-				case SDL_BUTTON_RIGHT:
-					mouse_button_down(1);
-					mouse_changed = true;
-					break;
-			}
-		}
-		if (event.type == SDL_MOUSEBUTTONUP) {
-			switch (event.button.button) {
-				case SDL_BUTTON_LEFT:
-					mouse_button_up(0);
-					mouse_changed = true;
-					break;
-				case SDL_BUTTON_RIGHT:
-					mouse_button_up(1);
-					mouse_changed = true;
-					break;
-			}
-		}
-		if (event.type == SDL_MOUSEMOTION) {
-			static int mouse_x;
-			static int mouse_y;
-			mouse_move(event.motion.x - mouse_x, event.motion.y - mouse_y);
-			mouse_x = event.motion.x;
-			mouse_y = event.motion.y;
-			mouse_changed = true;
-		}
 
-		if (event.type == SDL_JOYDEVICEADDED) {
-			joystick_add(event.jdevice.which);
+		switch(event.type) {
+
+			case SDL_QUIT:
+				return false;
+
+			case SDL_WINDOWEVENT:
+				if(event.window.event == SDL_WINDOWEVENT_CLOSE)
+					return false;
+				break;
+
+			case SDL_KEYDOWN:
+				handle_keyboard(true, event.key.keysym.sym, event.key.keysym.scancode);
+				return true;
+
+			case SDL_KEYUP:
+				handle_keyboard(false, event.key.keysym.sym, event.key.keysym.scancode);
+				return true;
+
+			case SDL_JOYDEVICEADDED:
+				joystick_add(event.jdevice.which);
+				break;
+
+			case SDL_JOYDEVICEREMOVED:
+				joystick_remove(event.jdevice.which);
+				break;
+
+			case SDL_CONTROLLERBUTTONDOWN:
+				joystick_button_down(event.cbutton.which, event.cbutton.button);
+				break;
+
+			case SDL_CONTROLLERBUTTONUP:
+				joystick_button_up(event.cbutton.which, event.cbutton.button);
+				break;
+
+			case SDL_MOUSEBUTTONDOWN:
+			{
+				SDL_Point mouse_position= {event.button.x, event.button.y};
+				if(SDL_PointInRect(&mouse_position, &uiRect)) {
+					switch(uiBtnSelected) {
+						case 0:
+							machine_reset();
+							break;
+						case 1:
+							machine_dump();
+							break;
+						case 2:
+							machine_paste(SDL_GetClipboardText());
+							break;
+						case 3:
+							is_fullscreen = !is_fullscreen;
+							SDL_SetWindowFullscreen(window, is_fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
+							break;
+						case 4:
+							machine_toggle_warp();
+							break;
+						case 5:
+							sdcard_attach();
+							break;
+						case 6:
+							sdcard_detach();
+							break;
+						case 7:
+							DEBUGstop();
+							break;
+					}
+					break;
+				}
+
+				switch (event.button.button) {
+					case SDL_BUTTON_LEFT:
+						mouse_button_down(0);
+						break;
+					case SDL_BUTTON_RIGHT:
+						mouse_button_down(1);
+						break;
+				}
+				break;
+			}
+
+			case SDL_MOUSEBUTTONUP:
+			{
+				SDL_Point mouse_position= {event.button.x, event.button.y};
+				if(SDL_PointInRect(&mouse_position, &uiRect)) {
+					break;
+				}
+
+				switch (event.button.button) {
+					case SDL_BUTTON_LEFT:
+						mouse_button_up(0);
+						break;
+					case SDL_BUTTON_RIGHT:
+						mouse_button_up(1);
+						break;
+				}
+				break;
+			}
+
+			case SDL_MOUSEMOTION:
+			{
+				SDL_Point mouse_position= {event.motion.x, event.motion.y};
+				if(SDL_PointInRect(&mouse_position, &uiRect)) {
+					uiBtnSelected= -1;
+					for(int idx= 0; uiBtns[idx].w; idx++) {
+						if(SDL_PointInRect(&mouse_position, &(uiBtns[idx]))) {
+							uiBtnSelected= idx;
+							break;
+						}
+					}
+					SDL_SetCursor(uiBtnSelected<0 ? arrowCursor : handCursor);
+					break;
+				}
+
+				static int mouse_x= 0;
+				static int mouse_y= 0;
+				mouse_move(event.motion.x - mouse_x, event.motion.y - mouse_y);
+				mouse_x = event.motion.x;
+				mouse_y = event.motion.y;
+				break;
+			}
 		}
-	    if (event.type == SDL_JOYDEVICEREMOVED) {
-		    joystick_remove(event.jdevice.which);
-	    }
-	    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
-		    joystick_button_down(event.cbutton.which, event.cbutton.button);
-	    }
-		if (event.type == SDL_CONTROLLERBUTTONUP) {
-		    joystick_button_up(event.cbutton.which, event.cbutton.button);
-	    }
 
 	}
 	if (mouse_changed) {
@@ -1208,6 +1287,10 @@ video_update()
 void
 video_end()
 {
+	SDL_DestroyTexture(uiTexture);
+	SDL_FreeCursor(handCursor);
+	SDL_FreeCursor(arrowCursor);
+
 	if (debugger_enabled) {
 		DEBUGFreeUI();
 	}
@@ -1484,4 +1567,25 @@ bool video_is_tiledata_address(int addr)
 bool video_is_special_address(int addr)
 {
 	return addr >= 0x1F9C0;
+}
+
+/*
+	Return address type
+	0 : tilemap
+	1 : tiledata
+	2 : special
+	3 : other
+*/
+int video_get_address_type(int addr)
+{
+	if(video_is_tilemap_address(addr))
+		return 0;
+
+	if(video_is_tiledata_address(addr))
+		return 1;
+
+	if(video_is_special_address(addr))
+		return 2;
+
+	return 3;
 }

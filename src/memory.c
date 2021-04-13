@@ -172,6 +172,12 @@ memory_get_rom_bank()
 }
 
 uint8_t
+memory_get_bank(uint16_t addr)
+{
+	return addr < 0xC000 ? (addr < 0xA000 ? 0 : memory_get_ram_bank()) : memory_get_rom_bank();
+}
+
+uint8_t
 cpuio_read(uint8_t reg)
 {
 	switch (reg) {
@@ -235,7 +241,7 @@ emu_write(uint8_t reg, uint8_t value)
 		case 3: echo_mode = value; break;
 		case 4: save_on_exit = v; break;
 		case 5: emu_recorder_set((gif_recorder_command_t) value); break;
-		default: printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
+		default: printf("WARN: Write to invalid register %x\n", DEVICE_EMULATOR + reg);
 	}
 }
 
@@ -271,6 +277,17 @@ emu_read(uint8_t reg, bool debugOn)
 	} else if (reg == 15) {
 		return '6'; // emulator detection
 	}
-	if (!debugOn) printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
+	if (!debugOn) printf("WARN: Read from invalid register %x\n", DEVICE_EMULATOR + reg);
 	return -1;
+}
+
+/*
+	true if address is in EXISTING memory (RAM & ROM)
+*/
+bool isValidAddr(int bank, int addr) {
+	return 		addr < 0xA000
+				||
+				(addr < 0xC000 && (bank % num_ram_banks == bank))
+				||
+				(addr >= 0xc000 && (bank % NUM_ROM_BANKS == bank));
 }
