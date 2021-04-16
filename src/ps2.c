@@ -49,12 +49,23 @@ ps2_port_t ps2_port[2];
 void
 buffer_add(struct ring_buffer *buffer, uint8_t byte)
 {
-	const int index = (buffer->m_oldest + buffer->m_count) % PS2_BUFFER_SIZE;
 	if (buffer->m_count >= PS2_BUFFER_SIZE) {
 		return;
 	}
+	const int index = (buffer->m_oldest + buffer->m_count) % PS2_BUFFER_SIZE;
 	buffer->m_count++;
 	buffer->m_elems[index] = byte;
+}
+
+void
+buffer_prepend(struct ring_buffer *buffer, uint8_t byte)
+{
+	if (buffer->m_count >= PS2_BUFFER_SIZE) {
+		return;
+	}
+	buffer->m_oldest = (buffer->m_oldest + PS2_BUFFER_SIZE - 1) % PS2_BUFFER_SIZE;
+	buffer->m_count++;
+	buffer->m_elems[buffer->m_oldest] = byte;
 }
 
 uint8_t
@@ -82,6 +93,12 @@ void
 ps2_outbuffer_add(int i, uint8_t byte)
 {
 	buffer_add(&state[i].outbuffer, byte);
+}
+
+void
+ps2_outbuffer_prepend(int i, uint8_t byte)
+{
+	buffer_prepend(&state[i].outbuffer, byte);
 }
 
 uint8_t
@@ -206,7 +223,7 @@ ps2_step(int i, int clocks)
 				break;
 
 			case PS2_MODE_SENDING:
-				printf("PS2 SEND\n");
+//				printf("PS2 SEND\n");
 
 				if (ps2_port[i].in == PS2_DATA_MASK) {
 					printf("PS2 INHIBIT\n");
@@ -216,7 +233,7 @@ ps2_step(int i, int clocks)
 
 				switch (state[i].state) {
 					case PS2_READY:
-						printf("PS2 PS2_READY\n");
+//						printf("PS2 PS2_READY\n");
 						// get next byte
 						if (state[i].data_bits <= 0) {
 							if (ps2_outbuffer_get_count(i) <= 0) {

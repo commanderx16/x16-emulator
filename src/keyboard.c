@@ -282,17 +282,17 @@ keyboard_command_callback()
 	switch (ps2_inbuffer_pop_oldest(0)) {
 		case 0xf3: {
 			printf("PS2KBD: Set Typematic Rate/Delay $%02X\n", arg);
-			ps2_outbuffer_add(0, 0xfa);
+			ps2_outbuffer_prepend(0, 0xfa);
 			break;
 		}
 		case 0xee: {
 			printf("PS2KBD: Echo\n");
-			ps2_outbuffer_add(0, 0x1c /*0xee*/);
+			ps2_outbuffer_prepend(0, 0x1c /*0xee*/);
 			break;
 		}
 		case 0xed: {
 			printf("PS2KBD: Set/Reset LEDs $%02X\n", arg);
-			ps2_outbuffer_add(0, 0xfa);
+			ps2_outbuffer_prepend(0, 0xfa);
 			break;
 		}
 	}
