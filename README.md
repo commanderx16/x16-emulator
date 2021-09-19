@@ -260,8 +260,11 @@ The debugger uses its own command line with the following syntax:
 |---------|----------------------------------------------------------------------------------------------------|
 |d %x|Change the code panel to view disassembly starting from the address %x.|
 |m %x|Change the data panel to view memory starting from the address %x.|
-|b %s %d|Changes the current memory bank for disassembly and data. The %s param can be either 'ram' or 'rom', the %d is the memory bank to display.|
+|v %x|Display VERA RAM (VRAM) starting from address %x.|
+|b %s %d|Changes the current memory bank for disassembly and data. The %s param can be either 'ram' or 'rom', the %d is the memory bank to display (but see NOTE below!).|
 |r %s %x|Changes the value in the specified register. Valid registers in the %s param are 'pc', 'a', 'x', 'y', and 'sp'. %x is the value to store in that register.|
+
+NOTE. To dissassemble or dump memory locations in banked RAM or ROM, prepend the bank number to the address; for example, "m 4a300" displays memory contents of BANK 4, starting at addresss $a300.  This also works for the 'd' command.
 
 The debugger keys are similar to the Microsoft Debugger shortcut keys, and work as follows
 
