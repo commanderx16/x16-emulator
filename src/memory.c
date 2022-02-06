@@ -20,7 +20,6 @@ uint8_t rom_bank;
 uint8_t *RAM;
 uint8_t ROM[ROM_SIZE];
 
-bool led_status;
 static uint8_t addr_ym = 0;
 
 #define DEVICE_EMULATOR (0x9fb0)
@@ -236,7 +235,6 @@ emu_write(uint8_t reg, uint8_t value)
 		case 3: echo_mode = value; break;
 		case 4: save_on_exit = v; break;
 		case 5: emu_recorder_set((gif_recorder_command_t) value); break;
-		case 15: led_status = v; break;
 		default: printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
 	}
 }

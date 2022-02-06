@@ -17,11 +17,14 @@
 #include <ctype.h>
 #endif
 #include "cpu/fake6502.h"
+#include "timing.h"
 #include "disasm.h"
 #include "memory.h"
 #include "video.h"
 #include "via.h"
 #include "ps2.h"
+#include "i2c.h"
+#include "rtc.h"
 #include "vera_spi.h"
 #include "sdcard.h"
 #include "loadsave.h"
@@ -80,17 +83,12 @@ bool dump_vram = false;
 bool warp_mode = false;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
+bool set_system_time = false;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
 char *scale_quality = "best";
-
-int frames;
-int32_t sdlTicks_base;
-int32_t last_perf_update;
-int32_t perf_frame_count;
-char window_title[30];
 
 #ifdef TRACE
 bool trace_mode = false;
@@ -101,6 +99,8 @@ int instruction_counter;
 SDL_RWops *prg_file ;
 int prg_override_start = -1;
 bool run_after_load = false;
+
+char *nvram_path = NULL;
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -232,51 +232,6 @@ machine_paste(char *s)
 }
 
 void
-timing_init() {
-	frames = 0;
-	sdlTicks_base = SDL_GetTicks();
-	last_perf_update = 0;
-	perf_frame_count = 0;
-}
-
-void
-timing_update()
-{
-	frames++;
-	int32_t sdlTicks = SDL_GetTicks() - sdlTicks_base;
-	int32_t diff_time = 1000 * frames / 60 - sdlTicks;
-	if (!warp_mode && diff_time > 0) {
-		usleep(1000 * diff_time);
-	}
-
-	if (sdlTicks - last_perf_update > 5000) {
-		int32_t frameCount = frames - perf_frame_count;
-		int perf = frameCount / 3;
-
-		if (perf < 100 || warp_mode) {
-			sprintf(window_title, "Commander X16 (%d%%)", perf);
-			video_update_title(window_title);
-		} else {
-			video_update_title("Commander X16");
-		}
-
-		perf_frame_count = frames;
-		last_perf_update = sdlTicks;
-	}
-
-	if (log_speed) {
-		float frames_behind = -((float)diff_time / 16.666666);
-		int load = (int)((1 + frames_behind) * 100);
-		printf("Load: %d%%\n", load > 100 ? 100 : load);
-
-		if ((int)frames_behind > 0) {
-			printf("Rendering is behind %d frames.\n", -(int)frames_behind);
-		} else {
-		}
-	}
-}
-
-void
 machine_toggle_warp()
 {
 	warp_mode = !warp_mode;
@@ -389,6 +344,9 @@ usage()
 	printf("-ram <ramsize>\n");
 	printf("\tSpecify banked RAM size in KB (8, 16, 32, ..., 2048).\n");
 	printf("\tThe default is 512.\n");
+	printf("-nvram <nvram.bin>\n");
+	printf("\tSpecify NVRAM image. By default, the machine starts with\n");
+	printf("\trmpty NVRAM and does not save it to disk.\n");
 	printf("-keymap <keymap>\n");
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
@@ -433,16 +391,23 @@ usage()
 	printf("-dump {C|R|B|V}...\n");
 	printf("\tConfigure system dump: (C)PU, (R)AM, (B)anked-RAM, (V)RAM\n");
 	printf("\tMultiple characters are possible, e.g. -dump CV ; Default: RB\n");
-	printf("-joy1 {NES | SNES}\n");
-	printf("\tChoose what type of joystick to use, e.g. -joy1 SNES\n");
-	printf("-joy2 {NES | SNES}\n");
-	printf("\tChoose what type of joystick to use, e.g. -joy2 SNES\n");
+	printf("-joy1\n");
+	printf("\tEnable binding a gamepad to SNES controller port 1\n");
+	printf("-joy2\n");
+	printf("\tEnable binding a gamepad to SNES controller port 2\n");
+	printf("-joy3\n");
+	printf("\tEnable binding a gamepad to SNES controller port 3\n");
+	printf("-joy4\n");
+	printf("\tEnable binding a gamepad to SNES controller port 4\n");
 	printf("-sound <output device>\n");
 	printf("\tSet the output device used for audio emulation\n");
+	printf("\tIf output device is 'none', no audio is generated\n");
 	printf("-abufs <number of audio buffers>\n");
 	printf("\tSet the number of audio buffers used for playback. (default: 8)\n");
 	printf("\tIncreasing this will reduce stutter on slower computers,\n");
 	printf("\tbut will increase audio latency.\n");
+	printf("-rtc\n");
+	printf("\tSet the real-time-clock to the current system time and date.\n");
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
@@ -576,6 +541,15 @@ main(int argc, char **argv)
 			run_test = true;
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-nvram")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			nvram_path = argv[0];
+			argc--;
+			argv++;
 		} else if (!strcmp(argv[0], "-sdcard")) {
 			argc--;
 			argv++;
@@ -681,51 +655,19 @@ main(int argc, char **argv)
 		} else if (!strcmp(argv[0], "-joy1")) {
 			argc--;
 			argv++;
-			if (!strcmp(argv[0], "NES")) {
-				joy_mode[0] = NES;
-				argc--;
-				argv++;
-			} else if (!strcmp(argv[0], "SNES")) {
-				joy_mode[0] = SNES;
-				argc--;
-				argv++;
-			}
+			Joystick_slots_enabled[0] = true;
 		} else if (!strcmp(argv[0], "-joy2")){
 			argc--;
 			argv++;
-			if (!strcmp(argv[0], "NES")){
-				joy_mode[1] = NES;
-				argc--;
-				argv++;
-			} else if (!strcmp(argv[0], "SNES")){
-				joy_mode[1] = SNES;
-				argc--;
-				argv++;
-			}
-		} else if (!strcmp(argv[0], "-joy3")){
+			Joystick_slots_enabled[1] = true;
+		} else if (!strcmp(argv[0], "-joy3")) {
 			argc--;
 			argv++;
-			if (!strcmp(argv[0], "NES")){
-				joy_mode[2] = NES;
-				argc--;
-				argv++;
-			} else if (!strcmp(argv[0], "SNES")){
-				joy_mode[2] = SNES;
-				argc--;
-				argv++;
-			}
-		} else if (!strcmp(argv[0], "-joy4")){
+			Joystick_slots_enabled[2] = true;
+		} else if (!strcmp(argv[0], "-joy4")) {
 			argc--;
 			argv++;
-			if (!strcmp(argv[0], "NES")){
-				joy_mode[3] = NES;
-				argc--;
-				argv++;
-			} else if (!strcmp(argv[0], "SNES")){
-				joy_mode[3] = SNES;
-				argc--;
-				argv++;
-			}
+			Joystick_slots_enabled[3] = true;
 #ifdef TRACE
 		} else if (!strcmp(argv[0], "-trace")) {
 			argc--;
@@ -799,6 +741,10 @@ main(int argc, char **argv)
 			audio_buffers = (int)strtol(argv[0], NULL, 10);
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-rtc")) {
+			argc--;
+			argv++;
+			set_system_time = true;
 		} else if (!strcmp(argv[0], "-version")){
 			printf("%s", VER_INFO);
 			argc--;
@@ -817,6 +763,14 @@ main(int argc, char **argv)
 	size_t rom_size = SDL_RWread(f, ROM, ROM_SIZE, 1);
 	(void)rom_size;
 	SDL_RWclose(f);
+
+	if (nvram_path) {
+		SDL_RWops *f = SDL_RWFromFile(nvram_path, "rb");
+		if (f) {
+			SDL_RWread(f, nvram, 1, sizeof(nvram));
+			SDL_RWclose(f);
+		}
+	}
 
 	if (sdcard_path) {
 		sdcard_file = SDL_RWFromFile(sdcard_path, "r+b");
@@ -866,6 +820,11 @@ main(int argc, char **argv)
 		snprintf(paste_text, sizeof(paste_text_data), "TEST %d\r", test_number);
 	}
 
+#ifdef SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR
+	// Don't disable compositing (on KDE for example)
+	// Available since SDL 2.0.8
+	SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
+#endif
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
 
 	audio_init(audio_dev_name, audio_buffers);
@@ -874,6 +833,8 @@ main(int argc, char **argv)
 	video_init(window_scale, scale_quality);
 
 	joystick_init();
+
+	rtc_init(set_system_time);
 
 	machine_reset();
 
@@ -926,7 +887,7 @@ emscripten_main_loop(void) {
 }
 
 
-void*
+void *
 emulator_loop(void *param)
 {
 	for (;;) {
@@ -1028,18 +989,26 @@ emulator_loop(void *param)
 		step6502();
 		uint8_t clocks = clockticks6502 - old_clockticks6502;
 		bool new_frame = false;
+		vera_spi_step(clocks);
+		new_frame |= video_step(MHZ, clocks);
 		for (uint8_t i = 0; i < clocks; i++) {
-			ps2_step(0);
-			ps2_step(1);
-			joystick_step();
-			vera_spi_step();
-			new_frame |= video_step(MHZ);
+			i2c_step();
 		}
+		rtc_step(clocks);
 		audio_render(clocks);
 
 		instruction_counter++;
 
 		if (new_frame) {
+			if (nvram_dirty && nvram_path) {
+				SDL_RWops *f = SDL_RWFromFile(nvram_path, "wb");
+				if (f) {
+					SDL_RWwrite(f, nvram, 1, sizeof(nvram));
+					SDL_RWclose(f);
+				}
+				nvram_dirty = false;
+			}
+
 			if (!video_update()) {
 				break;
 			}
@@ -1057,12 +1026,6 @@ emulator_loop(void *param)
 				irq6502();
 			}
 		}
-
-#if 0
-		if (clockticks6502 >= 5 * MHZ * 1000 * 1000) {
-			break;
-		}
-#endif
 
 		if (pc == 0xffff) {
 			if (save_on_exit) {

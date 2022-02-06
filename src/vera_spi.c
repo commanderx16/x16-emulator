@@ -22,11 +22,11 @@ vera_spi_init()
 }
 
 void
-vera_spi_step()
+vera_spi_step(int clocks)
 {
 	if (busy) {
-		outcounter++;
-		if (outcounter == 8) {
+		outcounter += clocks;
+		if (outcounter >= 8) {
 			busy = false;
 			if (sdcard_attached) {
 				received_byte = sdcard_handle(sending_byte);
