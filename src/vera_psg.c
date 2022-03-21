@@ -8,6 +8,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+// enable anti-aliasing for saw and pulse
+#define AA_PULSE
+#define AA_SAWTOOTH
+
+// aliasing in triangle is already barely audible, so don't bother
+// #define AA_TRIANGLE
+
 enum waveform {
 	WF_PULSE = 0,
 	WF_SAWTOOTH,
@@ -22,8 +29,16 @@ struct channel {
 	uint8_t  pw;
 	uint8_t  waveform;
 
-	unsigned phase;
 	uint8_t  noiseval;
+	unsigned phase;
+
+	#if defined(AA_PULSE) || defined(AA_SAWTOOTH) || defined(AA_TRIANGLE)
+	unsigned inv_freq;
+	#endif
+
+	#ifdef AA_TRIANGLE
+	uint16_t freq_3;
+	#endif
 };
 
 static struct channel channels[16];
@@ -36,6 +51,33 @@ psg_reset(void)
 	memset(channels, 0, sizeof(channels));
 }
 
+static unsigned
+calc_inv_freq(const unsigned freq)
+{
+	static const unsigned n = 0x7FFFFFFF;
+	return freq ? n / freq : n;
+}
+
+static unsigned
+calc_freq_3(const unsigned freq)
+{
+	return (freq << 1) / 3;
+}
+
+static void
+set_freq(struct channel *ch, const unsigned freq)
+{
+	ch->freq = freq;
+
+	#if defined(AA_PULSE) || defined(AA_SAWTOOTH) || defined(AA_TRIANGLE)
+	ch->inv_freq = calc_inv_freq(freq);
+	#endif
+
+	#ifdef AA_TRIANGLE
+	ch->freq_3 = calc_freq_3(freq);
+	#endif
+}
+
 void
 psg_writereg(uint8_t reg, uint8_t val)
 {
@@ -45,8 +87,8 @@ psg_writereg(uint8_t reg, uint8_t val)
 	int idx = reg & 3;
 
 	switch (idx) {
-		case 0: channels[ch].freq = (channels[ch].freq & 0xFF00) | val; break;
-		case 1: channels[ch].freq = (channels[ch].freq & 0x00FF) | (val << 8); break;
+		case 0: set_freq(&channels[ch], (channels[ch].freq & 0xFF00) | val); break;
+		case 1: set_freq(&channels[ch], (channels[ch].freq & 0x00FF) | (val << 8)); break;
 		case 2: {
 			channels[ch].right  = (val & 0x80) != 0;
 			channels[ch].left   = (val & 0x40) != 0;
@@ -59,6 +101,77 @@ psg_writereg(uint8_t reg, uint8_t val)
 			break;
 		}
 	}
+}
+
+static unsigned
+poly_x(const unsigned phase, const unsigned inv_freq)
+{
+	return ~((phase * inv_freq) >> 16) & 0x7FFF;
+}
+
+static int
+poly_blep(unsigned phase, const unsigned inv_freq, const unsigned freq)
+{
+	const bool dir = phase >= freq;
+	if (dir && (phase ^= 0x1FFFF) >= freq) {
+		return 0;
+	}
+
+	const unsigned x = poly_x(phase, inv_freq);
+	const int y1 = (x * x) >> 25, y2 = -y1;
+
+	return dir ? y1 : y2;
+}
+
+static int
+pulse_blep(unsigned phase, const unsigned inv_freq, const unsigned freq, const unsigned pw)
+{
+	int y = 0;
+
+	for (int i = 0; i < 2; ++ i) {
+		const int x1 = poly_blep(phase, inv_freq, freq), x2 = -x1;
+		y += !i ? x1 : x2;
+
+		if (!i) {
+			phase = (phase + 0x20000 - ((pw + 1) << 10)) & 0x1FFFF;
+		} else {
+			break;
+		}
+	}
+
+	return y;
+}
+
+static int
+poly_blamp(unsigned phase, const unsigned inv_freq, const unsigned freq)
+{
+	if (phase >= freq && (phase ^= 0x1FFFF) >= freq) {
+		return 0;
+	}
+
+	const unsigned x = poly_x(phase, inv_freq);
+	const int y = ((x * x) >> 14) * x;
+
+	return y;
+}
+
+static int
+triangle_blamp(unsigned phase, const unsigned inv_freq, const unsigned freq, const int freq_3)
+{
+	int y = 0;
+
+	for (int i = 0; i < 2; ++i) {
+		const int x1 = poly_blamp(phase, inv_freq, freq), x2 = -x1;
+		y += !i ? x1 : x2;
+
+		if (!i) {
+			phase = (phase + 0x10000) & 0x1FFFF;
+		} else {
+			break;
+		}
+	}
+
+	return ((y >> 16) * freq_3) >> 26;
 }
 
 static void
@@ -76,19 +189,37 @@ render(int16_t *left, int16_t *right)
 		}
 		ch->phase = new_phase;
 
-		uint8_t v = 0;
+		int v = 0;
 		switch (ch->waveform) {
-			case WF_PULSE: v = (ch->phase >> 10) > ch->pw ? 0 : 63; break;
-			case WF_SAWTOOTH: v = ch->phase >> 11; break;
-			case WF_TRIANGLE: v = (ch->phase & 0x10000) ? (~(ch->phase >> 10) & 0x3F) : ((ch->phase >> 10) & 0x3F); break;
+			case WF_PULSE: {
+				v = (ch->phase >> 10) > ch->pw ? 0 : 63;
+
+				#ifdef AA_PULSE
+				v += pulse_blep(ch->phase, ch->inv_freq, ch->freq, ch->pw);
+				#endif
+				break;
+			}
+			case WF_SAWTOOTH: {
+				v = ch->phase >> 11;
+
+				#ifdef AA_SAWTOOTH
+				v -= poly_blep(ch->phase, ch->inv_freq, ch->freq);
+				#endif
+				break;
+			}
+			case WF_TRIANGLE: {
+				v = (ch->phase & 0x10000) ? (~(ch->phase >> 10) & 0x3F) : ((ch->phase >> 10) & 0x3F);
+
+				#ifdef AA_TRIANGLE
+				v += triangle_blamp(ch->phase, ch->inv_freq, ch->freq, ch->freq_3);
+				#endif
+				break;
+			}
 			case WF_NOISE: v = ch->noiseval; break;
 		}
-		int8_t sv = (v ^ 0x20);
-		if (sv & 0x20) {
-			sv |= 0xC0;
-		}
+		v -= 32;
 
-		int val = (int)sv * (int)ch->volume;
+		int val = v * (int)ch->volume;
 
 		if (ch->left) {
 			l += val;
