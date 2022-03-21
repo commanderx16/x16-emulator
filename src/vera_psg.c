@@ -8,6 +8,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+// enable anti-aliasing for saw and pulse
+#define AA_PULSE
+#define AA_SAWTOOTH
+
+// aliasing in triangle is already barely audible, so don't bother
+// #define AA_TRIANGLE
+
 enum waveform {
 	WF_PULSE = 0,
 	WF_SAWTOOTH,
@@ -23,9 +30,15 @@ struct channel {
 	uint8_t  waveform;
 
 	uint8_t  noiseval;
-	unsigned phase, inv_freq;
+	unsigned phase;
 
-	// uint16_t freq_3;
+	#if defined(AA_PULSE) || defined(AA_SAWTOOTH) || defined(AA_TRIANGLE)
+	unsigned inv_freq;
+	#endif
+
+	#ifdef AA_TRIANGLE
+	uint16_t freq_3;
+	#endif
 };
 
 static struct channel channels[16];
@@ -38,13 +51,31 @@ psg_reset(void)
 	memset(channels, 0, sizeof(channels));
 }
 
+static unsigned
+calc_inv_freq(const unsigned freq)
+{
+	static const unsigned n = 0x7FFFFFFF;
+	return freq ? n / freq : n;
+}
+
+static unsigned
+calc_freq_3(const unsigned freq)
+{
+	return (freq << 1) / 3;
+}
+
 static void
 set_freq(struct channel *ch, const unsigned freq)
 {
-	static const unsigned n = 0x7FFFFFFF;
 	ch->freq = freq;
-	ch->inv_freq = freq ? n / freq : n;
-	// ch->freq_3 = (freq << 1) / 3;
+
+	#if defined(AA_PULSE) || defined(AA_SAWTOOTH) || defined(AA_TRIANGLE)
+	ch->inv_freq = calc_inv_freq(freq);
+	#endif
+
+	#ifdef AA_TRIANGLE
+	ch->freq_3 = calc_freq_3(freq);
+	#endif
 }
 
 void
@@ -79,7 +110,7 @@ poly_x(const unsigned phase, const unsigned inv_freq)
 }
 
 static int
-poly_blep(unsigned phase, const unsigned freq, const unsigned inv_freq)
+poly_blep(unsigned phase, const unsigned inv_freq, const unsigned freq)
 {
 	const bool dir = phase >= freq;
 	if (dir && (phase ^= 0x1FFFF) >= freq) {
@@ -93,20 +124,16 @@ poly_blep(unsigned phase, const unsigned freq, const unsigned inv_freq)
 }
 
 static int
-pulse_blep(const struct channel *ch)
+pulse_blep(unsigned phase, const unsigned inv_freq, const unsigned freq, const unsigned pw)
 {
-	const unsigned freq = ch->freq;
-	unsigned phase = ch->phase;
-	const unsigned inv_freq = ch->inv_freq;
-
 	int y = 0;
 
 	for (int i = 0; i < 2; ++ i) {
-		const int x1 = poly_blep(phase, freq, inv_freq), x2 = -x1;
+		const int x1 = poly_blep(phase, inv_freq, freq), x2 = -x1;
 		y += !i ? x1 : x2;
 
 		if (!i) {
-			phase = (phase + 0x20000 - ((ch->pw + 1) << 10)) & 0x1FFFF;
+			phase = (phase + 0x20000 - ((pw + 1) << 10)) & 0x1FFFF;
 		} else {
 			break;
 		}
@@ -115,8 +142,8 @@ pulse_blep(const struct channel *ch)
 	return y;
 }
 
-/* static int
-poly_blamp(unsigned phase, const unsigned freq, const unsigned inv_freq)
+static int
+poly_blamp(unsigned phase, const unsigned inv_freq, const unsigned freq)
 {
 	if (phase >= freq && (phase ^= 0x1FFFF) >= freq) {
 		return 0;
@@ -129,16 +156,12 @@ poly_blamp(unsigned phase, const unsigned freq, const unsigned inv_freq)
 }
 
 static int
-triangle_blamp(const struct channel *ch)
+triangle_blamp(unsigned phase, const unsigned inv_freq, const unsigned freq, const int freq_3)
 {
-	const unsigned freq = ch->freq;
-	unsigned phase = ch->phase;
-	const unsigned inv_freq = ch->inv_freq;
-
 	int y = 0;
 
 	for (int i = 0; i < 2; ++i) {
-		const int x1 = poly_blamp(phase, freq, inv_freq), x2 = -x1;
+		const int x1 = poly_blamp(phase, inv_freq, freq), x2 = -x1;
 		y += !i ? x1 : x2;
 
 		if (!i) {
@@ -148,8 +171,8 @@ triangle_blamp(const struct channel *ch)
 		}
 	}
 
-	return ((y >> 16) * ch->freq_3) >> 26;
-} */
+	return ((y >> 16) * freq_3) >> 26;
+}
 
 static void
 render(int16_t *left, int16_t *right)
@@ -170,18 +193,26 @@ render(int16_t *left, int16_t *right)
 		switch (ch->waveform) {
 			case WF_PULSE: {
 				v = (ch->phase >> 10) > ch->pw ? 0 : 63;
-				v += pulse_blep(ch);
+
+				#ifdef AA_PULSE
+				v += pulse_blep(ch->phase, ch->inv_freq, ch->freq, ch->pw);
+				#endif
 				break;
 			}
 			case WF_SAWTOOTH: {
 				v = ch->phase >> 11;
-				v -= poly_blep(ch->phase, ch->freq, ch->inv_freq);
+
+				#ifdef AA_SAWTOOTH
+				v -= poly_blep(ch->phase, ch->inv_freq, ch->freq);
+				#endif
 				break;
 			}
 			case WF_TRIANGLE: {
 				v = (ch->phase & 0x10000) ? (~(ch->phase >> 10) & 0x3F) : ((ch->phase >> 10) & 0x3F);
-				// aliasing in triangle is already barely audible, so don't bother
-				// v += triangle_blamp(ch);
+
+				#ifdef AA_TRIANGLE
+				v += triangle_blamp(ch->phase, ch->inv_freq, ch->freq, ch->freq_3);
+				#endif
 				break;
 			}
 			case WF_NOISE: v = ch->noiseval; break;
