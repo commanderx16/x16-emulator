@@ -989,6 +989,9 @@ emulator_loop(void *param)
 		step6502();
 		uint8_t clocks = clockticks6502 - old_clockticks6502;
 		bool new_frame = false;
+		bool via1_irq_old = via1_irq();
+		via1_step(clocks);
+		via2_step(clocks);
 		vera_spi_step(clocks);
 		new_frame |= video_step(MHZ, clocks);
 		for (uint8_t i = 0; i < clocks; i++) {
@@ -1020,7 +1023,11 @@ emulator_loop(void *param)
 #endif
 		}
 
-		if (video_get_irq_out()) {
+		if (!via1_irq_old && via1_irq()) {
+			nmi6502();
+		}
+
+		if (video_get_irq_out() || via2_irq()) {
 			if (!(status & 4)) {
 //				printf("IRQ!\n");
 				irq6502();

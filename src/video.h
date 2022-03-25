@@ -22,7 +22,7 @@ uint8_t video_read(uint8_t reg, bool debugOn);
 void video_write(uint8_t reg, uint8_t value);
 void video_update_title(const char* window_title);
 
-uint8_t via1_read(uint8_t reg);
+uint8_t via1_read(uint8_t reg, bool debug);
 void via1_write(uint8_t reg, uint8_t value);
 
 // For debugging purposes only:
