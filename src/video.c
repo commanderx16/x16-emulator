@@ -101,6 +101,7 @@ static uint8_t sprite_line_z[SCREEN_WIDTH];
 static uint8_t sprite_line_mask[SCREEN_WIDTH];
 static uint8_t sprite_line_collisions;
 static bool layer_line_enable[2];
+static bool old_layer_line_enable[2];
 static bool sprite_line_enable;
 
 float scan_pos_x;
@@ -826,6 +827,17 @@ render_line(uint16_t y)
 	uint8_t dc_video = reg_composer[0];
 	layer_line_enable[0] = dc_video & 0x10;
 	layer_line_enable[1] = dc_video & 0x20;
+
+	// clear layer_line once if layer gets disabled
+	for (uint8_t layer = 0; layer < 2; layer++) {
+		if (!layer_line_enable[layer] && old_layer_line_enable[layer]) {
+			for (uint16_t i = 0; i < SCREEN_WIDTH; i++) {
+				layer_line[layer][i] = 0;
+			}
+		}
+		old_layer_line_enable[layer] = layer_line_enable[layer];
+	}
+
 	sprite_line_enable   = dc_video & 0x40;
 
 	if (sprite_line_enable) {
