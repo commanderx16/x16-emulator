@@ -58,7 +58,7 @@ calc_inv_freq(const unsigned freq)
 	return freq ? n / freq : n;
 }
 
-__unused static unsigned
+__attribute__((unused)) static unsigned
 calc_freq_3(const unsigned freq)
 {
 	return (freq << 1) / 3;
@@ -155,7 +155,7 @@ poly_blamp(unsigned phase, const unsigned inv_freq, const unsigned freq)
 	return y;
 }
 
-__unused static int
+__attribute__((unused)) static int
 triangle_blamp(unsigned phase, const unsigned inv_freq, const unsigned freq, const int freq_3)
 {
 	int y = 0;
