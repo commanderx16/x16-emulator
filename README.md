@@ -308,6 +308,36 @@ All rights reserved. License: 2-clause BSD
 Release Notes
 -------------
 
+## Release 39 ("Buenos Aires")
+
+* Switch to Proto2 Hardware
+	* banking through zp addresses 0 and 1
+	* modified I/O layout
+	* modified VIA GPIO layout
+	* support for 4 controllers
+	* I2C bus with SMC and RTC/NVRAM
+* Features
+	* implemented VIA timers [Natt Akuma]
+	* added option to disable sound [Jimmy Dansbo]
+	* added support for Delete, Insert, End, PgUp and PgDn keys [Stefan B Jakobsson]
+	* debugger scroll up & down description [Matas Lesinskas]
+	* added anti-aliasing to VERA PSG waveforms [TaleTN]
+* Bugs
+	* fixed sending only one mouse update per frame [Elektron72]
+	* fixed VSYNC timing [Elektron72]
+	* switched front and back porches [Elektron72]
+	* fixed LOAD/SAVE hypercall so debugger doesn't break [Stephen Horn]
+	* fixed YM2151 frequency from 4MHz ->3.579545MHz [Stephen Horn]
+	* do not set compositor bypass hint for SDL Window [Stephen Horn]
+	* reset timing after exiting debugger [Elektron72]
+	* don't write nvram after every frame
+	* fixed write outside of line buffer [Stephen Horn]
+	* fixed BRA extra CPU cycle [LRFLEW]
+	* fix: clear layer line once layer is disabled
+	* fixed BBSx/BBRx timing [Natt Akuma]
+* Other
+	* misc speed optimizations [Stephen Horn]
+
 ## Release 38 ("Kyoto")
 
 * CPU
@@ -332,7 +362,6 @@ Release Notes
 	* expose 32 bit cycle counter (up to 500 sec) in emulator I/O area
 	* zero page register display in debugger [Mike Allison]
 	* Various WebAssembly improvements and fixes [Sebastian Voges]
-
 
 ### Release 37 ("Geneva")
 
