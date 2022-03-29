@@ -1,7 +1,13 @@
+##################################################################################################
+#
+# COMMANDER X16 EMULATOR MAKEFILE
+#
+##################################################################################################
 
-# the mingw32 path on macOS installed through homebrew
-MINGW32=/usr/local/Cellar/mingw-w64/7.0.0_2/toolchain-i686/i686-w64-mingw32
-# the Windows SDL2 path on macOS installed through ./configure --prefix=... && make && make install
+# the mingw-w64 path on macOS installed through homebrew
+MINGW32=/opt/homebrew/Cellar/mingw-w64/9.0.0_4/toolchain-x86_64/x86_64-w64-mingw32
+# the Windows SDL2 path on macOS installed through
+# ./configure  --host=x86_64-w64-mingw32 --prefix=... && make && make install
 WIN_SDL2=~/tmp/sdl2-win32
 
 ifeq ($(CROSS_COMPILE_WINDOWS),1)
@@ -31,7 +37,7 @@ ifeq ($(CROSS_COMPILE_WINDOWS),1)
 	LDFLAGS+=-L$(MINGW32)/lib
 	# this enables printf() to show, but also forces a console window
 	LDFLAGS+=-Wl,--subsystem,console
-	CC=i686-w64-mingw32-gcc
+	CC=x86_64-w64-mingw32-gcc
 endif
 
 ifdef EMSCRIPTEN
@@ -73,6 +79,14 @@ cpu/tables.h cpu/mnemonics.h: cpu/buildtables.py cpu/6502.opcodes cpu/65c02.opco
 wasm:
 	emmake make
 
+clean:
+	rm -rf $(ODIR) x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem
+
+##################################################################################################
+
+
+
+##################################################################################################
 #
 # PACKAGING
 #
@@ -91,6 +105,7 @@ wasm:
 # * For converting the documentation from Markdown to HTML, pandoc is required:
 #   brew install pandoc
 #
+##################################################################################################
 
 # hostname of the Linux VM
 LINUX_COMPILE_HOST = ubuntu.local
@@ -141,8 +156,6 @@ package_win:
 	rm -rf $(TMPDIR_NAME) x16emu_win.zip
 	mkdir $(TMPDIR_NAME)
 	cp x16emu.exe $(TMPDIR_NAME)
-	cp $(MINGW32)/lib/libgcc_s_sjlj-1.dll $(TMPDIR_NAME)/
-	cp $(MINGW32)/bin/libwinpthread-1.dll $(TMPDIR_NAME)/
 	cp $(WIN_SDL2)/bin/SDL2.dll $(TMPDIR_NAME)/
 	$(call add_extra_files_to_package)
 	(cd $(TMPDIR_NAME)/; zip -r "../x16emu_win.zip" *)
@@ -157,6 +170,3 @@ package_linux:
 	$(call add_extra_files_to_package)
 	(cd $(TMPDIR_NAME)/; zip -r "../x16emu_linux.zip" *)
 	rm -rf $(TMPDIR_NAME)
-
-clean:
-	rm -rf $(ODIR) x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem
