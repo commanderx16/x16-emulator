@@ -949,9 +949,6 @@ emulator_loop(void *param)
 				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 			}
 
-			printf(" RAM:%01x", memory_get_ram_bank());
-			printf(" AC07:%01x", RAM[0xac07]);
-
 #if 0
 			printf(" ---");
 			for (int i = 0; i < 6; i++) {
