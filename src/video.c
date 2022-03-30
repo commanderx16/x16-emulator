@@ -101,6 +101,7 @@ static uint8_t sprite_line_z[SCREEN_WIDTH];
 static uint8_t sprite_line_mask[SCREEN_WIDTH];
 static uint8_t sprite_line_collisions;
 static bool layer_line_enable[2];
+static bool old_layer_line_enable[2];
 static bool sprite_line_enable;
 
 float scan_pos_x;
@@ -826,6 +827,17 @@ render_line(uint16_t y)
 	uint8_t dc_video = reg_composer[0];
 	layer_line_enable[0] = dc_video & 0x10;
 	layer_line_enable[1] = dc_video & 0x20;
+
+	// clear layer_line once if layer gets disabled
+	for (uint8_t layer = 0; layer < 2; layer++) {
+		if (!layer_line_enable[layer] && old_layer_line_enable[layer]) {
+			for (uint16_t i = 0; i < SCREEN_WIDTH; i++) {
+				layer_line[layer][i] = 0;
+			}
+		}
+		old_layer_line_enable[layer] = layer_line_enable[layer];
+	}
+
 	sprite_line_enable   = dc_video & 0x40;
 
 	if (sprite_line_enable) {
@@ -865,96 +877,26 @@ render_line(uint16_t y)
 
 	// If video output is enabled, calculate color indices for line.
 	if (out_mode != 0) {
-		uint8_t spr_col_index[LAYER_PIXELS_PER_ITERATION];
-		uint8_t l1_col_index[LAYER_PIXELS_PER_ITERATION];
-		uint8_t l2_col_index[LAYER_PIXELS_PER_ITERATION];
-		uint8_t spr_zindex[LAYER_PIXELS_PER_ITERATION];
-
-		memset(spr_col_index, 0, sizeof(spr_col_index));
-		memset(l1_col_index, 0, sizeof(l1_col_index));
-		memset(l2_col_index, 0, sizeof(l2_col_index));
-		memset(spr_zindex, 0, sizeof(spr_zindex));
-
-		// Calculate color without border.
-		for (uint16_t x = 0; x < SCREEN_WIDTH; x+=LAYER_PIXELS_PER_ITERATION) {
-			uint8_t col_index[LAYER_PIXELS_PER_ITERATION];
-			memset(col_index, 0, sizeof(col_index));
-
-			int eff_x[LAYER_PIXELS_PER_ITERATION];
-			for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-				eff_x[i] = (reg_composer[1] * (x + i - hstart)) >> 7;
-			}
-
-			if (sprite_line_enable) {
-				for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-					spr_col_index[i] = sprite_line_col[eff_x[i]];
-				}
-			}
-
-			if (layer_line_enable[0]) {
-				for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-					l1_col_index[i] = layer_line[0][eff_x[i]];
-				}
-			}
-
-			if (layer_line_enable[1]) {
-				for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-					l2_col_index[i] = layer_line[1][eff_x[i]];
-				}
-			}
-
-			for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-				spr_zindex[i] = sprite_line_z[eff_x[i]];
-			}
-
-			bool same_sprite = true;
-			for (int i = 1; same_sprite && i < LAYER_PIXELS_PER_ITERATION; ++i) {
-				same_sprite &= spr_zindex[0] == spr_zindex[i];
-			}
-
-			if (same_sprite) {
-				switch (spr_zindex[0]) {
-					case 3:
-						for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-							col_index[i] = spr_col_index[i] ? spr_col_index[i] : (l2_col_index[i] ? l2_col_index[i] : l1_col_index[i]);
-						}
-						break;
-					case 2:
-						for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-							col_index[i] = l2_col_index[i] ? l2_col_index[i] : (spr_col_index[i] ? spr_col_index[i] : l1_col_index[i]);
-						}
-						break;
-					case 1:
-						for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-							col_index[i] = l2_col_index[i] ? l2_col_index[i] : (l1_col_index[i] ? l1_col_index[i] : spr_col_index[i]);
-						}
-						break;
-					case 0:
-						for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-							col_index[i] = l2_col_index[i] ? l2_col_index[i] : l1_col_index[i];
-						}
-						break;
-				}
-			} else {
-				for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-					col_index[i] = calculate_line_col_index(spr_zindex[i], spr_col_index[i], l1_col_index[i], l2_col_index[i]);
-				}
-			}
-
-			for (int i = 0; i < LAYER_PIXELS_PER_ITERATION; ++i) {
-				col_line[x+i] = col_index[i];
-			}
-		}
-
 		// Add border after if required.
 		if (y < vstart || y > vstop) {
 			uint32_t border_fill = border_color;
-			border_fill     = border_fill | (border_fill << 8);
-			border_fill     = border_fill | (border_fill << 16);
+			border_fill = border_fill | (border_fill << 8);
+			border_fill = border_fill | (border_fill << 16);
 			memset(col_line, border_fill, SCREEN_WIDTH);
 		} else {
+			hstart = hstart < 640 ? hstart : 640;
+			hstop = hstop < 640 ? hstop : 640;
+
 			for (uint16_t x = 0; x < hstart; ++x) {
 				col_line[x] = border_color;
+			}
+
+			const uint32_t scale = reg_composer[1];
+			uint32_t scaled_x = 0;
+			for (uint16_t x = hstart; x < hstop; ++x) {
+				const uint16_t eff_x = scaled_x >> 7;
+				col_line[x] = calculate_line_col_index(sprite_line_z[eff_x], sprite_line_col[eff_x], layer_line[0][eff_x], layer_line[1][eff_x]);
+				scaled_x += scale;
 			}
 			for (uint16_t x = hstop; x < SCREEN_WIDTH; ++x) {
 				col_line[x] = border_color;
