@@ -110,7 +110,7 @@ clean:
 # hostname of the Linux VM
 LINUX_COMPILE_HOST = ubuntu.local
 # path to the equivalent of `pwd` on the Mac
-LINUX_BASE_DIR = /mnt/Documents/git/x16-emulator
+LINUX_BASE_DIR = /tmp/
 
 TMPDIR_NAME=TMP-x16emu-package
 
@@ -163,10 +163,11 @@ package_win:
 
 package_linux:
 	(cd ../x16-rom/; make clean all)
-	ssh $(LINUX_COMPILE_HOST) "cd $(LINUX_BASE_DIR); make clean all"
+	(cd ..; tar cp x16-rom x16-emulator x16-docs | ssh $(LINUX_COMPILE_HOST) "cd $(LINUX_BASE_DIR); tar xp")
+	ssh $(LINUX_COMPILE_HOST) "cd $(LINUX_BASE_DIR)/x16-emulator; make clean all"
 	rm -rf $(TMPDIR_NAME) x16emu_linux.zip
 	mkdir $(TMPDIR_NAME)
-	cp x16emu $(TMPDIR_NAME)
+	scp $(LINUX_COMPILE_HOST):$(LINUX_BASE_DIR)/x16-emulator/x16emu $(TMPDIR_NAME)
 	$(call add_extra_files_to_package)
 	(cd $(TMPDIR_NAME)/; zip -r "../x16emu_linux.zip" *)
 	rm -rf $(TMPDIR_NAME)
