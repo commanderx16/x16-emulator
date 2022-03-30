@@ -346,7 +346,7 @@ usage()
 	printf("\tThe default is 512.\n");
 	printf("-nvram <nvram.bin>\n");
 	printf("\tSpecify NVRAM image. By default, the machine starts with\n");
-	printf("\trmpty NVRAM and does not save it to disk.\n");
+	printf("\tempty NVRAM and does not save it to disk.\n");
 	printf("-keymap <keymap>\n");
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
