@@ -35,21 +35,18 @@
 #define NUM_SPRITES 128
 
 // both VGA and NTSC
-#define SCAN_WIDTH 800
 #define SCAN_HEIGHT 525
+#define PIXEL_FREQ 25.0
 
 // VGA
-#define VGA_BACK_PORCH_X 48
-#define VGA_FRONT_PORCH_X 16
-#define	VGA_BACK_PORCH_Y 33
-#define VGA_FRONT_PORCH_Y 10
-#define VGA_PIXEL_FREQ 25.175
+#define VGA_SCAN_WIDTH 800
+#define VGA_Y_OFFSET 0
 
 // NTSC: 262.5 lines per frame, lower field first
-#define NTSC_FRONT_PORCH_X 80
-#define NTSC_BACK_PORCH_Y 23
-#define NTSC_FRONT_PORCH_Y 7
-#define NTSC_PIXEL_FREQ (15.750 * 800 / 1000)
+#define NTSC_HALF_SCAN_WIDTH 794
+#define NTSC_X_OFFSET 270
+#define NTSC_Y_OFFSET_LOW 42
+#define NTSC_Y_OFFSET_HIGH 568
 #define TITLE_SAFE_X 0.067
 #define TITLE_SAFE_Y 0.05
 
@@ -104,8 +101,11 @@ static bool layer_line_enable[2];
 static bool old_layer_line_enable[2];
 static bool sprite_line_enable;
 
-float scan_pos_x;
-uint16_t scan_pos_y;
+float vga_scan_pos_x;
+uint16_t vga_scan_pos_y;
+float ntsc_half_cnt;
+uint16_t ntsc_scan_pos_x;
+uint16_t ntsc_scan_pos_y;
 int frame_count = 0;
 
 static uint8_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT * 4];
@@ -165,8 +165,11 @@ video_reset()
 
 	sprite_line_collisions = 0;
 
-	scan_pos_x = 0;
-	scan_pos_y = 0;
+	vga_scan_pos_x = 0;
+	vga_scan_pos_y = 0;
+	ntsc_half_cnt = 0;
+	ntsc_scan_pos_x = 0;
+	ntsc_scan_pos_y = 0;
 
 	psg_reset();
 	pcm_reset();
@@ -814,6 +817,10 @@ static uint8_t calculate_line_col_index(uint8_t spr_zindex, uint8_t spr_col_inde
 static void
 render_line(uint16_t y)
 {
+	if (y >= SCREEN_HEIGHT) {
+		return;
+	}
+
 	uint8_t out_mode = reg_composer[0] & 3;
 
 	uint8_t border_color = reg_composer[3];
@@ -932,47 +939,92 @@ render_line(uint16_t y)
 	}
 }
 
+static void
+update_isr_and_coll(uint16_t y, uint16_t compare)
+{
+	if (y == SCREEN_HEIGHT) {
+		if (ien & 4) {
+			if (sprite_line_collisions != 0) {
+				isr |= 4;
+			}
+			isr = (isr & 0xf) | sprite_line_collisions;
+		}
+		sprite_line_collisions = 0;
+		if (ien & 1) { // VSYNC IRQ
+			isr |= 1;
+		}
+	}
+	if ((ien & 2) && (y < SCREEN_HEIGHT) && (y == compare)) { // LINE IRQ
+		isr |= 2;
+	}
+}
+
 bool
 video_step(float mhz, float steps)
 {
-	uint8_t out_mode = reg_composer[0] & 3;
-
+	uint16_t y = 0;
+	bool ntsc_mode = reg_composer[0] & 2;
 	bool new_frame = false;
-	float advance = ((out_mode & 2) ? NTSC_PIXEL_FREQ : VGA_PIXEL_FREQ) * steps / mhz;
-	scan_pos_x += advance;
-	if (scan_pos_x > SCAN_WIDTH) {
-		scan_pos_x -= SCAN_WIDTH;
-		uint16_t back_porch = (out_mode & 2) ? NTSC_BACK_PORCH_Y : VGA_BACK_PORCH_Y;
-		uint16_t y = scan_pos_y - back_porch;
-		if (y < SCREEN_HEIGHT) {
-			render_line(y);
+	vga_scan_pos_x += PIXEL_FREQ * steps / mhz;
+	if (vga_scan_pos_x > VGA_SCAN_WIDTH) {
+		vga_scan_pos_x -= VGA_SCAN_WIDTH;
+		if (!ntsc_mode) {
+			render_line(vga_scan_pos_y - VGA_Y_OFFSET);
 		}
-		y++;
-		if (y == SCREEN_HEIGHT) {
-			if (ien & 4) {
-				if (sprite_line_collisions != 0) {
-					isr |= 4;
+		vga_scan_pos_y++;
+		if (vga_scan_pos_y == SCAN_HEIGHT) {
+			vga_scan_pos_y = 0;
+			if (!ntsc_mode) {
+				new_frame = true;
+				frame_count++;
+			}
+		}
+		if (!ntsc_mode) {
+			update_isr_and_coll(vga_scan_pos_y - VGA_Y_OFFSET, irq_line);
+		}
+	}
+	ntsc_half_cnt += PIXEL_FREQ * steps / mhz;
+	if (ntsc_half_cnt > NTSC_HALF_SCAN_WIDTH) {
+		ntsc_half_cnt -= NTSC_HALF_SCAN_WIDTH;
+		if (ntsc_mode) {
+			if (ntsc_scan_pos_y < SCAN_HEIGHT) {
+				y = ntsc_scan_pos_y - NTSC_Y_OFFSET_LOW;
+				if ((y & 1) == 0) {
+					render_line(y);
 				}
-				isr = (isr & 0xf) | sprite_line_collisions;
-			}
-			sprite_line_collisions = 0;
-			if (ien & 1) { // VSYNC IRQ
-				isr |= 1;
+			} else {
+				y = ntsc_scan_pos_y - NTSC_Y_OFFSET_HIGH;
+				if ((y & 1) == 0) {
+					render_line(y | 1);
+				}
 			}
 		}
-		scan_pos_y++;
-		if (scan_pos_y == SCAN_HEIGHT) {
-			scan_pos_y = 0;
-			new_frame = true;
-			frame_count++;
+		ntsc_scan_pos_y++;
+		if (ntsc_scan_pos_y == SCAN_HEIGHT) {
+			reg_composer[0] |= 0x80;
+			if (ntsc_mode) {
+				new_frame = true;
+				frame_count++;
+			}
 		}
-		if (ien & 2) { // LINE IRQ
-			y = scan_pos_y - back_porch;
-			if (y < SCREEN_HEIGHT && y == irq_line) {
-				isr |= 2;
+		if (ntsc_scan_pos_y == SCAN_HEIGHT*2) {
+			reg_composer[0] &= ~0x80;
+			ntsc_scan_pos_y = 0;
+			if (ntsc_mode) {
+				new_frame = true;
+				frame_count++;
+			}
+		}
+		if (ntsc_mode) {
+			// this is correct enough for even screen heights
+			if (ntsc_scan_pos_y < SCAN_HEIGHT) {
+				update_isr_and_coll(ntsc_scan_pos_y - NTSC_Y_OFFSET_LOW, irq_line & ~1);
+			} else {
+				update_isr_and_coll(ntsc_scan_pos_y - NTSC_Y_OFFSET_HIGH, irq_line & ~1);
 			}
 		}
 	}
+	ntsc_scan_pos_x = (uint16_t)ntsc_half_cnt + (ntsc_scan_pos_y & 1) * NTSC_HALF_SCAN_WIDTH;
 
 	return new_frame;
 }
@@ -1344,9 +1396,12 @@ void video_write(uint8_t reg, uint8_t value) {
 		case 0x0B:
 		case 0x0C: {
 			int i = reg - 0x09 + (io_dcsel ? 4 : 0);
-			reg_composer[i] = value;
 			if (i == 0) {
+				// interlace field bit is read-only
+				reg_composer[0] = (reg_composer[0] & ~0x7f) | (value & 0x7f);
 				video_palette.dirty = true;
+			} else {
+				reg_composer[i] = value;
 			}
 			break;
 		}
