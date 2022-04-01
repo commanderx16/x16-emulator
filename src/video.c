@@ -104,7 +104,6 @@ static bool sprite_line_enable;
 float vga_scan_pos_x;
 uint16_t vga_scan_pos_y;
 float ntsc_half_cnt;
-uint16_t ntsc_scan_pos_x;
 uint16_t ntsc_scan_pos_y;
 int frame_count = 0;
 
@@ -168,7 +167,6 @@ video_reset()
 	vga_scan_pos_x = 0;
 	vga_scan_pos_y = 0;
 	ntsc_half_cnt = 0;
-	ntsc_scan_pos_x = 0;
 	ntsc_scan_pos_y = 0;
 
 	psg_reset();
@@ -1024,7 +1022,6 @@ video_step(float mhz, float steps)
 			}
 		}
 	}
-	ntsc_scan_pos_x = (uint16_t)ntsc_half_cnt + (ntsc_scan_pos_y & 1) * NTSC_HALF_SCAN_WIDTH;
 
 	return new_frame;
 }
