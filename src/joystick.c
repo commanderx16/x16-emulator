@@ -1,6 +1,7 @@
 #include "joystick.h"
 
 #include <SDL.h>
+#include <stdio.h>
 
 struct joystick_info {
 	int                 instance_id;

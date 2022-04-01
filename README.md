@@ -72,6 +72,17 @@ Type `make` to build the source. The output will be `x16emu` in the current dire
 
 Steps for compiling WebAssembly/HTML5 can be found [here][webassembly].
 
+### Windows Build
+
+Currently macOS/Linux/MSYS2 is needed to build for Windows. Install mingw-w64 toolchain and mingw32 version of SDL.
+Type the following command to build the source:
+```
+CROSS_COMPILE_WINDOWS=1 MINGW32=/usr/x86_64-w64-mingw32 WIN_SDL2=/usr/x86_64-w64-mingw32 make
+```
+Paths to those libraries can be changed to your installation directory if they aren't located there.
+
+The output will be `x16emu.exe` in the current directory. Remember you will also need a `rom.bin` as described above and `SDL2.dll` in SDL2's binary folder.
+
 
 Starting
 --------

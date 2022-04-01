@@ -15,3 +15,4 @@ x16emu.html.mem
 x16emu.js
 x16emu.wasm
 x16emu.worker.js
+*.dll

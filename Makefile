@@ -5,13 +5,17 @@
 ##################################################################################################
 
 # the mingw-w64 path on macOS installed through homebrew
-MINGW32=/opt/homebrew/Cellar/mingw-w64/9.0.0_4/toolchain-x86_64/x86_64-w64-mingw32
+ifndef MINGW32
+	MINGW32=/opt/homebrew/Cellar/mingw-w64/9.0.0_4/toolchain-x86_64/x86_64-w64-mingw32
+endif
 # the Windows SDL2 path on macOS installed through
 # ./configure  --host=x86_64-w64-mingw32 --prefix=... && make && make install
-WIN_SDL2=~/tmp/sdl2-win32
+ifndef WIN_SDL2
+	WIN_SDL2=~/tmp/sdl2-win32
+endif
 
 ifeq ($(CROSS_COMPILE_WINDOWS),1)
-	SDL2CONFIG=$(WIN_SDL2)/bin/sdl2-config
+	SDL2CONFIG=$(WIN_SDL2)/bin/sdl2-config --prefix=$(WIN_SDL2)
 else
 	SDL2CONFIG=sdl2-config
 endif
