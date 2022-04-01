@@ -115,7 +115,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 	* `C`: CPU registers (7 B: A,X,Y,SP,STATUS,PC)
 	* `R`: RAM (40 KiB)
 	* `B`: Banked RAM (2 MiB)
-	* `V`: Video RAM and registers (128 KiB VRAM, 32 B composer registers, 512 B pallete, 16 B layer0 registers, 16 B layer1 registers, 16 B sprite registers, 2 KiB sprite attributes)
+	* `V`: Video RAM and registers (128 KiB VRAM, 32 B composer registers, 512 B palette, 16 B layer0 registers, 16 B layer1 registers, 16 B sprite registers, 2 KiB sprite attributes)
 * `-sound` can be used to specify the output sound device.
 * `-abufs` can be used to specify the number of audio buffers (defaults to 8). If you're experiencing stuttering in the audio try to increase this number. This will result in additional audio latency though.
 * `-rtc` causes the real-time-clock set to the system's time and date.
@@ -275,7 +275,7 @@ The debugger uses its own command line with the following syntax:
 |b %s %d|Changes the current memory bank for disassembly and data. The %s param can be either 'ram' or 'rom', the %d is the memory bank to display (but see NOTE below!).|
 |r %s %x|Changes the value in the specified register. Valid registers in the %s param are 'pc', 'a', 'x', 'y', and 'sp'. %x is the value to store in that register.|
 
-NOTE. To dissassemble or dump memory locations in banked RAM or ROM, prepend the bank number to the address; for example, "m 4a300" displays memory contents of BANK 4, starting at addresss $a300.  This also works for the 'd' command.
+NOTE. To disassemble or dump memory locations in banked RAM or ROM, prepend the bank number to the address; for example, "m 4a300" displays memory contents of BANK 4, starting at address $a300.  This also works for the 'd' command.
 
 The debugger keys are similar to the Microsoft Debugger shortcut keys, and work as follows
 
