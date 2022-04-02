@@ -27,7 +27,7 @@
 #include "rtc.h"
 #include "vera_spi.h"
 #include "sdcard.h"
-#include "loadsave.h"
+#include "ieee.h"
 #include "glue.h"
 #include "debugger.h"
 #include "utf8.h"
@@ -973,15 +973,30 @@ emulator_loop(void *param)
 #endif
 
 #ifdef LOAD_HYPERCALLS
-		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && RAM[FA] == 8 && !sdcard_file) {
-			if (pc == 0xffd5) {
-				LOAD();
-			} else {
-				SAVE();
+		if (!sdcard_file && is_kernal() && pc > 0xFF80) {
+			bool handled = true;
+//			printf("%x\n", pc);
+			switch(pc) {
+				// IEEE-488
+				case 0xFF93:	SECOND();	break;
+				case 0xFF96:	TKSA();		break;
+				case 0xFFA2:	SETTMO();	break;
+				case 0xFFA5:	ACPTR();	break;
+				case 0xFFA8:	CIOUT();	break;
+				case 0xFFAB:	UNTLK();	break;
+				case 0xFFAE:	UNLSN();	break;
+				case 0xFFB1:	LISTEN();	break;
+				case 0xFFB4:	TALK();		break;
+				default:
+					handled = false;
+					break;
 			}
-			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
-			sp += 2;
-			continue;
+
+			if (handled) {
+				pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
+				sp += 2;
+				continue;
+			}
 		}
 #endif
 
