@@ -22,6 +22,7 @@
 #include "memory.h"
 #include "video.h"
 #include "via.h"
+#include "serial.h"
 #include "ps2.h"
 #include "i2c.h"
 #include "rtc.h"

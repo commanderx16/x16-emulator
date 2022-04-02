@@ -6,6 +6,7 @@
 #include "ps2.h"
 #include "i2c.h"
 #include "memory.h"
+#include "serial.h"
 #include "ps2.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -245,6 +246,8 @@ via1_init()
 {
 	via_init(&via[0]);
 	i2c_port.clk_in = 1;
+	serial_port.clk_out = 0;
+	serial_port.data_out = 0;
 }
 
 uint8_t
@@ -261,6 +264,7 @@ via1_read(uint8_t reg, bool debug)
 		case 0: // PB
 			ps2_autostep(1);
 			i2c_step();
+			serial_step();
 			if (!debug) via_clear_prb_irqs(&via[0]);
 			if (via[0].registers[11] & 2) {
 				// TODO latching mechanism (requires IEC implementation)
@@ -294,6 +298,7 @@ via1_write(uint8_t reg, uint8_t value)
 	if (reg == 0 || reg == 2) {
 		ps2_autostep(1);
 		i2c_step();
+		serial_step();
 		// PB
 		const uint8_t pb = via[0].registers[0] | ~via[0].registers[2];
 		ps2_port[1].in   = pb & PS2_VIA_MASK;
