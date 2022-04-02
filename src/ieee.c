@@ -235,24 +235,24 @@ SETTMO()
 void
 ACPTR()
 {
-	if (channels[channel].name[0] == '$') {
-		if (dirlist_ptr < dirlist_len) {
-			a = dirlist[dirlist_ptr++];
-		}
-		if (dirlist_ptr == dirlist_len) {
-			RAM[STATUS] = 0x40;
-		}
-	} else {
-		if (!channels[channel].write && channels[channel].f) {
+	if (!channels[channel].write) {
+		if (channels[channel].name[0] == '$') {
+			if (dirlist_ptr < dirlist_len) {
+				a = dirlist[dirlist_ptr++];
+			}
+			if (dirlist_ptr == dirlist_len) {
+				RAM[STATUS] = 0x40;
+			}
+		} else if (channels[channel].f) {
 			a = SDL_ReadU8(channels[channel].f);
 			if (channels[channel].pos == channels[channel].size - 1) {
 				RAM[STATUS] = 0x40;
 			} else {
 				channels[channel].pos++;
 			}
-		} else {
-			RAM[STATUS] = 2; // FNF
 		}
+	} else {
+		RAM[STATUS] = 2; // FNF
 	}
 	set_z(!a);
 	printf("%s-> $%02x\n", __func__, a);
