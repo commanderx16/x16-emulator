@@ -3,11 +3,16 @@
 // All rights reserved. License: 2-clause BSD
 
 #include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include "serial.h"
 
 serial_port_t serial_port;
 
 static int state = 0;
+static bool valid;
+static int bit;
+static uint8_t byte;
 
 void
 serial_step()
@@ -38,10 +43,32 @@ serial_step()
 					break;
 				}
 				if (serial_port.clk_in) {
-					serial_port.data_out = 0;
+					serial_port.data_out = 1;
 					state = 2;
+					valid = true;
+					bit = 0;
 				}
 			case 2:
+				if (valid) {
+					// wait for CLK=0, data not valid
+					if (!serial_port.clk_in) {
+						valid = false;
+					}
+				} else {
+					// wait for CLK=1, data valid
+					if (serial_port.clk_in) {
+						bool b = serial_port.data_in;
+						byte |= (b << bit);
+						printf("*** BIT%d IN: %d\n", bit, b);
+						valid = true;
+						if (++bit == 8) {
+							printf("*** BYTE IN: %02x\n", byte);
+							state = 3;
+						}
+					}
+				}
+				break;
+			case 3:
 				break;
 
 		}
