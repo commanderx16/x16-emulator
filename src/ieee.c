@@ -15,8 +15,8 @@
 
 extern SDL_RWops *prg_file;
 
-bool log_ieee = true;
-//bool log_ieee = false;
+//bool log_ieee = true;
+bool log_ieee = false;
 
 char error[80];
 int error_len = 0;

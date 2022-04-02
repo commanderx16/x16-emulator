@@ -1093,23 +1093,22 @@ emulator_loop(void *param)
 			// as soon as BASIC starts reading a line...
 			static bool prg_done = false;
 			if (prg_file && !prg_done) {
+				paste_text = paste_text_data;
 				if (prg_override_start >= 0) {
-					paste_text = paste_text_data;
-					snprintf(paste_text, sizeof(paste_text_data), "LOAD\":*\",8,1,$%04X\r", prg_override_start);
+					snprintf(paste_text_data, sizeof(paste_text_data), "LOAD\":*\",8,1,$%04X\r", prg_override_start);
 				} else {
-					paste_text = "LOAD\r";
+					snprintf(paste_text_data, sizeof(paste_text_data), "LOAD\r");
 				}
 				prg_done = true;
 
 
-//				if (run_after_load) {
-//					if (start == 0x0801) {
-//						paste_text = "RUN\r";
-//					} else {
-//						paste_text = paste_text_data;
-//						snprintf(paste_text, sizeof(paste_text_data), "SYS$%04X\r", start);
-//					}
-//				}
+				if (run_after_load) {
+					if (prg_override_start >= 0) {
+						snprintf(strchr(paste_text_data, 0), sizeof(paste_text_data), "SYS$%04X\r", prg_override_start);
+					} else {
+						snprintf(strchr(paste_text_data, 0), sizeof(paste_text_data), "RUN\r");
+					}
+				}
 			}
 
 			if (paste_text) {
