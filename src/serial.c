@@ -45,9 +45,9 @@ serial_step()
 					printf("*** END OF ATN\n");
 					if (listening) {
 						serial_port.data_out = 0;
-						state = 2;
-						valid = true;
-						bit = 0;
+//						state = 2;
+//						valid = true;
+//						bit = 0;
 						printf("XXX START OF DATA\n");
 					} else {
 						state = 0;
