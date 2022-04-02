@@ -137,29 +137,27 @@ create_directory_listing(uint8_t *data)
 
 void
 copen(int channel) {
-	printf("  OPEN \"%s\",%d\n", channels[channel].name, channel);
+	// decode ",P,W"-like suffix to know whether we're writing
+	channels[channel].write = false;
+	char *first = strchr(channels[channel].name, ',');
+	if (first) {
+		*first = 0; // truncate name here
+		char *second = strchr(first+1, ',');
+		if (second && second[1] == 'W') {
+			channels[channel].write = true;
+		}
+	}
+	if (channel <= 1) {
+		// channels 0 and 1 are magic
+		channels[channel].write = channel;
+	}
+	printf("  OPEN \"%s\",%d (%c)\n", channels[channel].name, channel, channels[channel].write ? 'W' : 'R');
+
 	if (channels[channel].name[0] == '$') {
 		dirlist_len = create_directory_listing(dirlist);
 		dirlist_ptr = 0;
 	} else {
-		// decode ",P,W"-like suffix to know whether we're writing
-		bool write = false;
-		char *first = strchr(channels[channel].name, ',');
-		if (first) {
-			*first = 0; // truncate name here
-			char *second = strchr(first+1, ',');
-			if (second && second[1] == 'W') {
-				write = true;
-			}
-		}
-		if (channel <= 1) {
-			// channels 0 and 1 are magic
-			write = channel;
-		}
-		printf("  WRITING? %d\n", write);
-		channels[channel].write = write;
-
-		channels[channel].f = SDL_RWFromFile(channels[channel].name, "rb");
+		channels[channel].f = SDL_RWFromFile(channels[channel].name, channels[channel].write ? "wb" : "rb");
 		if (!channels[channel].f) {
 			printf("  FILE NOT FOUND\n");
 			a = 2; // FNF
@@ -167,10 +165,12 @@ copen(int channel) {
 			status |= 1;
 			return;
 		}
-		SDL_RWseek(channels[channel].f, 0, RW_SEEK_END);
-		channels[channel].size = SDL_RWtell(channels[channel].f);
-		SDL_RWseek(channels[channel].f, 0, RW_SEEK_SET);
-		channels[channel].pos = 0;
+		if (!channels[channel].write) {
+			SDL_RWseek(channels[channel].f, 0, RW_SEEK_END);
+			channels[channel].size = SDL_RWtell(channels[channel].f);
+			SDL_RWseek(channels[channel].f, 0, RW_SEEK_SET);
+			channels[channel].pos = 0;
+		}
 	}
 }
 
@@ -233,7 +233,7 @@ ACPTR()
 			RAM[STATUS] = 0x40;
 		}
 	} else {
-		if (channels[channel].f) {
+		if (!channels[channel].write && channels[channel].f) {
 			a = SDL_ReadU8(channels[channel].f);
 			if (channels[channel].pos == channels[channel].size - 1) {
 				RAM[STATUS] = 0x40;
