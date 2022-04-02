@@ -12,9 +12,8 @@
 #include "rom_symbols.h"
 #include "glue.h"
 
-uint8_t name[80];
 int namelen = 0;
-char channel = 0;
+int channel = 0;
 bool listening = false;
 bool talking = false;
 bool opening = false;
@@ -22,6 +21,16 @@ bool opening = false;
 uint8_t dirlist[65536];
 int dirlist_len = 0;
 int dirlist_ptr = 0;
+
+typedef struct {
+	uint8_t name[80];
+	bool write;
+	int pos;
+	int size;
+	SDL_RWops *f;
+} channel_t;
+
+channel_t channels[16];
 
 __attribute__((unused)) static void
 set_z(char f)
@@ -127,6 +136,27 @@ create_directory_listing(uint8_t *data)
 }
 
 void
+open(int channel) {
+	printf("  OPEN \"%s\",%d\n", channels[channel].name, channel);
+	if (channels[channel].name[0] == '$') {
+		dirlist_len = create_directory_listing(dirlist);
+		dirlist_ptr = 0;
+	} else {
+		channels[channel].f = SDL_RWFromFile((const char *)channels[channel].name, "rb");
+		if (!channels[channel].f) {
+			a = 4; // FNF
+			RAM[STATUS] = a;
+			status |= 1;
+			return;
+		}
+		SDL_RWseek(channels[channel].f, 0, RW_SEEK_END);
+		channels[channel].size = SDL_RWtell(channels[channel].f);
+		SDL_RWseek(channels[channel].f, 0, RW_SEEK_SET);
+		channels[channel].pos = 0;
+	}
+}
+
+void
 SECOND()
 {
 	printf("%s $%02x\n", __func__, a);
@@ -167,11 +197,20 @@ SETTMO()
 void
 ACPTR()
 {
-	if (dirlist_ptr < dirlist_len) {
-		a = dirlist[dirlist_ptr++];
-	}
-	if (dirlist_ptr == dirlist_len) {
-		RAM[STATUS] = 0x40;
+	if (channels[channel].name[0] == '$') {
+		if (dirlist_ptr < dirlist_len) {
+			a = dirlist[dirlist_ptr++];
+		}
+		if (dirlist_ptr == dirlist_len) {
+			RAM[STATUS] = 0x40;
+		}
+	} else {
+		a = SDL_ReadU8(channels[channel].f);
+		if (channels[channel].pos == channels[channel].size - 1) {
+			RAM[STATUS] = 0x40;
+		} else {
+			channels[channel].pos++;
+		}
 	}
 	set_z(!a);
 	printf("%s-> $%02x\n", __func__, a);
@@ -183,8 +222,8 @@ CIOUT()
 	printf("%s $%02x\n", __func__, a);
 	if (listening) {
 		if (opening) {
-			if (namelen < sizeof(name)) {
-				name[namelen++] = a;
+			if (namelen < sizeof(channels[channel].name) - 1) {
+				channels[channel].name[namelen++] = a;
 			}
 		} else {
 			// write to file
@@ -203,9 +242,8 @@ UNLSN() {
 	printf("%s\n", __func__);
 	listening = false;
 	if (opening) {
-		printf("  OPEN \"%s\",%d\n", name, channel);
-		dirlist_len = create_directory_listing(dirlist);
-		dirlist_ptr = 0;
+		channels[channel].name[namelen] = 0; // term
+		open(channel);
 		opening = false;
 	}
 }
