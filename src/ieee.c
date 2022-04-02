@@ -144,7 +144,8 @@ open(int channel) {
 	} else {
 		channels[channel].f = SDL_RWFromFile((const char *)channels[channel].name, "rb");
 		if (!channels[channel].f) {
-			a = 4; // FNF
+			printf("  FILE NOT FOUND\n");
+			a = 2; // FNF
 			RAM[STATUS] = a;
 			status |= 1;
 			return;
@@ -213,7 +214,7 @@ ACPTR()
 				channels[channel].pos++;
 			}
 		} else {
-			RAM[STATUS] = 0x40;
+			RAM[STATUS] = 2; // FNF
 		}
 	}
 	set_z(!a);
