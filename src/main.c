@@ -784,6 +784,11 @@ main(int argc, char **argv)
 
 	prg_override_start = -1;
 	if (prg_path) {
+		if (sdcard_file) {
+			printf("'-prg' cannot be combined with '-sdcard'!\n");
+			exit(1);
+		}
+
 		char *comma = strchr(prg_path, ',');
 		if (comma) {
 			prg_override_start = (uint16_t)strtol(comma + 1, NULL, 16);
@@ -1093,14 +1098,15 @@ emulator_loop(void *param)
 			// as soon as BASIC starts reading a line...
 			static bool prg_done = false;
 			if (prg_file && !prg_done) {
-				paste_text = paste_text_data;
+				// LOAD":*" will cause the IEEE library
+				// to load from "prg_file"
 				if (prg_override_start >= 0) {
 					snprintf(paste_text_data, sizeof(paste_text_data), "LOAD\":*\",8,1,$%04X\r", prg_override_start);
 				} else {
 					snprintf(paste_text_data, sizeof(paste_text_data), "LOAD\r");
 				}
+				paste_text = paste_text_data;
 				prg_done = true;
-
 
 				if (run_after_load) {
 					if (prg_override_start >= 0) {

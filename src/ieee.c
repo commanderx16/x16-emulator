@@ -13,8 +13,6 @@
 
 #define UNIT_NO 8
 
-extern SDL_RWops *prg_file;
-
 //bool log_ieee = true;
 bool log_ieee = false;
 
