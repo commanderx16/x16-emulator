@@ -34,11 +34,6 @@ serial_step()
 					state = 1;
 					during_atn = true;
 					printf("XXX START OF ATN\n");
-				} else if (listening && serial_port.clk_in) {
-					serial_port.data_out = 0;
-					state = 1;
-					during_atn = false;
-					printf("XXX START OF DATA\n");
 				}
 				break;
 			case 1:
@@ -46,8 +41,17 @@ serial_step()
 					// cancelled ATN
 					serial_port.data_out = 1;
 					serial_port.clk_out = 1;
-					state = 0;
+					during_atn = false;
 					printf("*** END OF ATN\n");
+					if (listening) {
+						serial_port.data_out = 0;
+						state = 2;
+						valid = true;
+						bit = 0;
+						printf("XXX START OF DATA\n");
+					} else {
+						state = 0;
+					}
 					break;
 				}
 				// wait for CLK=1
@@ -63,8 +67,8 @@ serial_step()
 					// cancelled ATN
 					serial_port.data_out = 1;
 					serial_port.clk_out = 1;
-					state = 0;
 					printf("*** XEND OF ATN\n");
+					state = 0;
 					break;
 				}
 				if (valid) {
