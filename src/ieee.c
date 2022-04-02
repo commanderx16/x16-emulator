@@ -282,6 +282,7 @@ copen(int channel)
 			}
 			a = 2; // FNF
 			status |= 1;
+			set_error(0x62, 0, 0);
 			ret = a;
 		} else {
 			if (!channels[channel].write) {
@@ -292,6 +293,7 @@ copen(int channel)
 			} else if (append) {
 				SDL_RWseek(channels[channel].f, 0, RW_SEEK_END);
 			}
+			clear_error();
 		}
 	}
 	return ret;
