@@ -34,7 +34,8 @@ static void
 via_init(via_t *via)
 {
 	// timer latches, timer counters and SR are not cleared
-	for (int i = 0; i < 4; i++) via->registers[i] = 0;
+	for (int i = 0; i < 2; i++) via->registers[i] = 0;
+	for (int i = 2; i < 4; i++) via->registers[i] = 0xff;
 	for (int i = 11; i < 15; i++) via->registers[i] = 0;
 	via->timer_running[0] = false;
 	via->timer_running[1] = false;
@@ -246,7 +247,7 @@ via1_init()
 {
 	via_init(&via[0]);
 	i2c_port.clk_in = 1;
-	serial_port.atn_in = 1;
+	serial_port.atn_in = 0;
 	serial_port.clk_in = 1;
 	serial_port.data_in = 1;
 	serial_port.clk_out = 1;
@@ -268,6 +269,7 @@ via1_read(uint8_t reg, bool debug)
 			ps2_autostep(1);
 			i2c_step();
 			serial_step();
+			printf("***** SERIAL READ { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d }\n", serial_port.atn_in, serial_port.clk_in, serial_port.data_in, serial_port.clk_out, serial_port.data_out);
 			if (!debug) via_clear_prb_irqs(&via[0]);
 			if (via[0].registers[11] & 2) {
 				// TODO latching mechanism (requires IEC implementation)
