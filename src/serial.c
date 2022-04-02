@@ -28,8 +28,7 @@ serial_step()
 			case 0:
 				// wait for ATN=1
 				if (serial_port.atn_in) {
-					serial_port.data_out = 0; // immediately
-//					serial_port.clk_out = 1;  // "eventually"
+					serial_port.data_out = 0;
 					state = 1;
 				}
 				break;
@@ -49,6 +48,13 @@ serial_step()
 					bit = 0;
 				}
 			case 2:
+				if (!serial_port.atn_in) {
+					// cancelled ATN
+					serial_port.data_out = 1;
+					serial_port.clk_out = 1;
+					state = 0;
+					break;
+				}
 				if (valid) {
 					// wait for CLK=0, data not valid
 					if (!serial_port.clk_in) {
@@ -63,7 +69,8 @@ serial_step()
 						valid = true;
 						if (++bit == 8) {
 							printf("*** BYTE IN: %02x\n", byte);
-							state = 3;
+							serial_port.data_out = 0;
+							state = 1;
 						}
 					}
 				}
