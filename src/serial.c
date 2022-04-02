@@ -34,7 +34,7 @@ serial_step()
 					state = 1;
 					during_atn = true;
 					printf("XXX START OF ATN\n");
-				} else if (listening && !serial_port.clk_in) {
+				} else if (listening && serial_port.clk_in) {
 					serial_port.data_out = 0;
 					state = 1;
 					during_atn = false;
