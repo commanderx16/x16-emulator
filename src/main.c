@@ -1150,7 +1150,7 @@ emulator_loop(void *param)
 				if (prg_override_start >= 0) {
 					snprintf(paste_text_data, sizeof(paste_text_data), "LOAD\":*\",8,1,$%04X\r", prg_override_start);
 				} else {
-					snprintf(paste_text_data, sizeof(paste_text_data), "LOAD\r");
+					snprintf(paste_text_data, sizeof(paste_text_data), "LOAD\":*\",8,1\r");
 				}
 				paste_text = paste_text_data;
 				prg_done = true;
