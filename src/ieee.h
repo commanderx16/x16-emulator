@@ -5,9 +5,9 @@
 void ieee_init();
 void SECOND();
 void TKSA();
-void ACPTR();
-void CIOUT();
+int ACPTR();
+int CIOUT();
 void UNTLK();
-void UNLSN();
+int UNLSN();
 void LISTEN();
 void TALK();

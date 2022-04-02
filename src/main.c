@@ -976,15 +976,15 @@ emulator_loop(void *param)
 #ifdef LOAD_HYPERCALLS
 		if (!sdcard_file && is_kernal() && pc > 0xFF80) {
 			bool handled = true;
-//			printf("%x\n", pc);
+			int s = -1;
 			switch(pc) {
 				// IEEE-488
 				case 0xFF93:	SECOND();	break;
 				case 0xFF96:	TKSA();		break;
-				case 0xFFA5:	ACPTR();	break;
-				case 0xFFA8:	CIOUT();	break;
+				case 0xFFA5:	s=ACPTR();	break;
+				case 0xFFA8:	s=CIOUT();	break;
 				case 0xFFAB:	UNTLK();	break;
-				case 0xFFAE:	UNLSN();	break;
+				case 0xFFAE:	s=UNLSN();	break;
 				case 0xFFB1:	LISTEN();	break;
 				case 0xFFB4:	TALK();		break;
 				default:
@@ -993,6 +993,11 @@ emulator_loop(void *param)
 			}
 
 			if (handled) {
+				if (s >= 0) {
+					// set status
+					RAM[STATUS] = s;
+				}
+
 				pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
 				sp += 2;
 				continue;

@@ -9,7 +9,6 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <SDL.h>
-#include "rom_symbols.h"
 #include "glue.h"
 
 #define UNIT_NO 8
@@ -236,13 +235,15 @@ command(char *cmd)
 	set_error(0x30, 0, 0);
 }
 
-static void
+static int
 copen(int channel)
 {
 	if (channel == 15) {
 		command(channels[channel].name);
-		return;
+		return -1;
 	}
+
+	int ret = -1;
 
 	// decode ",P,W"-like suffix to know whether we're writing
 	bool append = false;
@@ -280,19 +281,20 @@ copen(int channel)
 				printf("  FILE NOT FOUND\n");
 			}
 			a = 2; // FNF
-			RAM[STATUS] = a;
 			status |= 1;
-			return;
-		}
-		if (!channels[channel].write) {
-			SDL_RWseek(channels[channel].f, 0, RW_SEEK_END);
-			channels[channel].size = SDL_RWtell(channels[channel].f);
-			SDL_RWseek(channels[channel].f, 0, RW_SEEK_SET);
-			channels[channel].pos = 0;
-		} else if (append) {
-			SDL_RWseek(channels[channel].f, 0, RW_SEEK_END);
+			ret = a;
+		} else {
+			if (!channels[channel].write) {
+				SDL_RWseek(channels[channel].f, 0, RW_SEEK_END);
+				channels[channel].size = SDL_RWtell(channels[channel].f);
+				SDL_RWseek(channels[channel].f, 0, RW_SEEK_SET);
+				channels[channel].pos = 0;
+			} else if (append) {
+				SDL_RWseek(channels[channel].f, 0, RW_SEEK_END);
+			}
 		}
 	}
+	return ret;
 }
 
 static void
@@ -355,9 +357,10 @@ TKSA()
 }
 
 
-void
+int
 ACPTR()
 {
+	int ret = -1;
 	if (channel == 15) {
 		if (error_pos >= error_len) {
 			clear_error();
@@ -369,28 +372,30 @@ ACPTR()
 				a = dirlist[dirlist_pos++];
 			}
 			if (dirlist_pos == dirlist_len) {
-				RAM[STATUS] = 0x40;
+				ret = 0x40;
 			}
 		} else if (channels[channel].f) {
 			a = SDL_ReadU8(channels[channel].f);
 			if (channels[channel].pos == channels[channel].size - 1) {
-				RAM[STATUS] = 0x40;
+				ret = 0x40;
 			} else {
 				channels[channel].pos++;
 			}
 		}
 	} else {
-		RAM[STATUS] = 2; // FNF
+		ret = 2; // FNF
 	}
 	set_z(!a);
 	if (log_ieee) {
 		printf("%s-> $%02x\n", __func__, a);
 	}
+	return ret;
 }
 
-void
+int
 CIOUT()
 {
+	int ret = -1;
 	if (log_ieee) {
 		printf("%s $%02x\n", __func__, a);
 	}
@@ -413,10 +418,11 @@ CIOUT()
 			} else if (channels[channel].write && channels[channel].f) {
 				SDL_WriteU8(channels[channel].f, a);
 			} else {
-				RAM[STATUS] = 2; // FNF
+				ret = 2; // FNF
 			}
 		}
 	}
+	return ret;
 }
 
 void
@@ -427,21 +433,23 @@ UNTLK() {
 	talking = false;
 }
 
-void
+int
 UNLSN() {
+	int ret = -1;
 	if (log_ieee) {
 		printf("%s\n", __func__);
 	}
 	listening = false;
 	if (opening) {
 		channels[channel].name[namelen] = 0; // term
-		copen(channel);
 		opening = false;
+		ret = copen(channel);
 	} else if (channel == 15) {
 		cmd[cmdlen] = 0;
 		command(cmd);
 		cmdlen = 0;
 	}
+	return ret;
 }
 
 void
