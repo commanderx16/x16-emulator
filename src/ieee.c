@@ -205,11 +205,15 @@ ACPTR()
 			RAM[STATUS] = 0x40;
 		}
 	} else {
-		a = SDL_ReadU8(channels[channel].f);
-		if (channels[channel].pos == channels[channel].size - 1) {
-			RAM[STATUS] = 0x40;
+		if (channels[channel].f) {
+			a = SDL_ReadU8(channels[channel].f);
+			if (channels[channel].pos == channels[channel].size - 1) {
+				RAM[STATUS] = 0x40;
+			} else {
+				channels[channel].pos++;
+			}
 		} else {
-			channels[channel].pos++;
+			RAM[STATUS] = 0x40;
 		}
 	}
 	set_z(!a);
