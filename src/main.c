@@ -27,7 +27,7 @@
 #include "rtc.h"
 #include "vera_spi.h"
 #include "sdcard.h"
-#include "loadsave.h"
+#include "ieee.h"
 #include "glue.h"
 #include "debugger.h"
 #include "utf8.h"
@@ -96,7 +96,7 @@ uint16_t trace_address = 0;
 #endif
 
 int instruction_counter;
-SDL_RWops *prg_file ;
+SDL_RWops *prg_file;
 int prg_override_start = -1;
 bool run_after_load = false;
 
@@ -214,6 +214,7 @@ machine_dump()
 void
 machine_reset()
 {
+	ieee_init();
 	memory_reset();
 	vera_spi_init();
 	via1_init();
@@ -783,6 +784,11 @@ main(int argc, char **argv)
 
 	prg_override_start = -1;
 	if (prg_path) {
+		if (sdcard_file) {
+			printf("'-prg' cannot be combined with '-sdcard'!\n");
+			exit(1);
+		}
+
 		char *comma = strchr(prg_path, ',');
 		if (comma) {
 			prg_override_start = (uint16_t)strtol(comma + 1, NULL, 16);
@@ -881,6 +887,52 @@ main(int argc, char **argv)
 	return 0;
 }
 
+bool
+set_kernal_status(s)
+{
+	// There is no KERNAL API to write the STATUS variable.
+	// But there is code to read it, READST, which should
+	// always look like this:
+	// 00:.,d6a0 ad 89 02 lda $0289
+	// 00:.,d6a3 0d 89 02 ora $0289
+	// 00:.,d6a6 8d 89 02 sta $0289
+	// We can extract the location of the STATUS variable
+	// from it.
+
+	// JMP in the KERNAL API vectors
+	if (read6502(0xffb7) != 0x4c) {
+		return false;
+	}
+	// target of KERNAL API vector JMP
+	uint16_t readst = read6502(0xffb8) | read6502(0xffb9) << 8;
+	if (readst < 0xc000) {
+		return false;
+	}
+	// ad 89 02 lda $0289
+	if (read6502(readst) != 0xad) {
+		return false;
+	}
+	// ad 89 02 lda $0289
+	if (read6502(readst + 3) != 0x0d) {
+		return false;
+	}
+	// ad 89 02 lda $0289
+	if (read6502(readst + 6) != 0x8d) {
+		return false;
+	}
+	uint16_t status0 = read6502(readst+1) | read6502(readst+2) << 8;
+	uint16_t status1 = read6502(readst+4) | read6502(readst+5) << 8;
+	uint16_t status2 = read6502(readst+7) | read6502(readst+8) << 8;
+	// all three addresses must be the same
+	if (status0 != status1 || status0 != status2) {
+		return false;
+	}
+
+	// everything okay, write the status!
+	RAM[status0] = s;
+	return true;
+}
+
 void
 emscripten_main_loop(void) {
 	emulator_loop(NULL);
@@ -973,15 +1025,35 @@ emulator_loop(void *param)
 #endif
 
 #ifdef LOAD_HYPERCALLS
-		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && RAM[FA] == 8 && !sdcard_file) {
-			if (pc == 0xffd5) {
-				LOAD();
-			} else {
-				SAVE();
+		if (!sdcard_file && is_kernal() && pc > 0xFF80) {
+			bool handled = true;
+			int s = -1;
+			switch(pc) {
+				// IEEE-488
+				case 0xFF93:	SECOND();	break;
+				case 0xFF96:	TKSA();		break;
+				case 0xFFA5:	s=ACPTR();	break;
+				case 0xFFA8:	s=CIOUT();	break;
+				case 0xFFAB:	UNTLK();	break;
+				case 0xFFAE:	s=UNLSN();	break;
+				case 0xFFB1:	LISTEN();	break;
+				case 0xFFB4:	TALK();		break;
+				default:
+					handled = false;
+					break;
 			}
-			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
-			sp += 2;
-			continue;
+
+			if (handled) {
+				if (s >= 0) {
+					if (!set_kernal_status(s)) {
+						printf("Warning: Could not set STATUS!\n");
+					}
+				}
+
+				pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
+				sp += 2;
+				continue;
+			}
 		}
 #endif
 
@@ -1071,31 +1143,23 @@ emulator_loop(void *param)
 
 		if (pc == 0xffcf && is_kernal()) {
 			// as soon as BASIC starts reading a line...
-			if (prg_file) {
-				// ...inject the app into RAM
-				uint8_t start_lo = SDL_ReadU8(prg_file);
-				uint8_t start_hi = SDL_ReadU8(prg_file);
-				uint16_t start;
+			static bool prg_done = false;
+			if (prg_file && !prg_done) {
+				// LOAD":*" will cause the IEEE library
+				// to load from "prg_file"
 				if (prg_override_start >= 0) {
-					start = prg_override_start;
+					snprintf(paste_text_data, sizeof(paste_text_data), "LOAD\":*\",8,1,$%04X\r", prg_override_start);
 				} else {
-					start = start_hi << 8 | start_lo;
+					snprintf(paste_text_data, sizeof(paste_text_data), "LOAD\r");
 				}
-				uint16_t end = start + SDL_RWread(prg_file, RAM + start, 1, 65536-start);
-				SDL_RWclose(prg_file);
-				prg_file = NULL;
-				if (start == 0x0801) {
-					// set start of variables
-					RAM[VARTAB] = end & 0xff;
-					RAM[VARTAB + 1] = end >> 8;
-				}
+				paste_text = paste_text_data;
+				prg_done = true;
 
 				if (run_after_load) {
-					if (start == 0x0801) {
-						paste_text = "RUN\r";
+					if (prg_override_start >= 0) {
+						snprintf(strchr(paste_text_data, 0), sizeof(paste_text_data), "SYS$%04X\r", prg_override_start);
 					} else {
-						paste_text = paste_text_data;
-						snprintf(paste_text, sizeof(paste_text_data), "SYS$%04X\r", start);
+						snprintf(strchr(paste_text_data, 0), sizeof(paste_text_data), "RUN\r");
 					}
 				}
 			}
