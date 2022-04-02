@@ -887,6 +887,52 @@ main(int argc, char **argv)
 	return 0;
 }
 
+bool
+set_kernal_status(s)
+{
+	// There is no KERNAL API to write the STATUS variable.
+	// But there is code to read it, READST, which should
+	// always look like this:
+	// 00:.,d6a0 ad 89 02 lda $0289
+	// 00:.,d6a3 0d 89 02 ora $0289
+	// 00:.,d6a6 8d 89 02 sta $0289
+	// We can extract the location of the STATUS variable
+	// from it.
+
+	// JMP in the KERNAL API vectors
+	if (read6502(0xffb7) != 0x4c) {
+		return false;
+	}
+	// target of KERNAL API vector JMP
+	uint16_t readst = read6502(0xffb8) | read6502(0xffb9) << 8;
+	if (readst < 0xc000) {
+		return false;
+	}
+	// ad 89 02 lda $0289
+	if (read6502(readst) != 0xad) {
+		return false;
+	}
+	// ad 89 02 lda $0289
+	if (read6502(readst + 3) != 0x0d) {
+		return false;
+	}
+	// ad 89 02 lda $0289
+	if (read6502(readst + 6) != 0x8d) {
+		return false;
+	}
+	uint16_t status0 = read6502(readst+1) | read6502(readst+2) << 8;
+	uint16_t status1 = read6502(readst+4) | read6502(readst+5) << 8;
+	uint16_t status2 = read6502(readst+7) | read6502(readst+8) << 8;
+	// all three addresses must be the same
+	if (status0 != status1 || status0 != status2) {
+		return false;
+	}
+
+	// everything okay, write the status!
+	RAM[status0] = s;
+	return true;
+}
+
 void
 emscripten_main_loop(void) {
 	emulator_loop(NULL);
@@ -999,8 +1045,9 @@ emulator_loop(void *param)
 
 			if (handled) {
 				if (s >= 0) {
-					// set status
-					RAM[STATUS] = s;
+					if (!set_kernal_status(s)) {
+						printf("Warning: Could not set STATUS!\n");
+					}
 				}
 
 				pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
