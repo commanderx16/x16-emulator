@@ -246,8 +246,11 @@ via1_init()
 {
 	via_init(&via[0]);
 	i2c_port.clk_in = 1;
+	serial_port.atn_in = 1;
 	serial_port.clk_in = 1;
 	serial_port.data_in = 1;
+	serial_port.clk_out = 1;
+	serial_port.data_out = 1;
 }
 
 uint8_t
