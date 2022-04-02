@@ -248,8 +248,8 @@ via1_init()
 	via_init(&via[0]);
 	i2c_port.clk_in = 1;
 	serial_port.atn_in = 0;
-	serial_port.clk_in = 1;
-	serial_port.data_in = 1;
+	serial_port.clk_in = 0;
+	serial_port.data_in = 0;
 	serial_port.clk_out = 1;
 	serial_port.data_out = 1;
 }
@@ -286,8 +286,8 @@ via1_read(uint8_t reg, bool debug)
 						ps2_port[1].in |
 						(i2c_port.data_in << 2) |
 						(serial_port.atn_in << 3) |
-						(serial_port.clk_in << 4) |
-						(serial_port.data_in << 5)
+						((!serial_port.clk_in) << 4) |
+						((!serial_port.data_in) << 5)
 					));
 			}
 			
@@ -321,8 +321,8 @@ via1_write(uint8_t reg, uint8_t value)
 		i2c_port.data_in = (pb & I2C_DATA_MASK) != 0;
 //		printf("!SERIAL ATN:%d CLK:%d DATA:%d\n", !!(pb & SERIAL_ATNIN_MASK), !!(pb & SERIAL_CLOCKIN_MASK), !!(pb & SERIAL_DATAIN_MASK));
 		serial_port.atn_in = (pb & SERIAL_ATNIN_MASK) != 0;
-		serial_port.clk_in = (pb & SERIAL_CLOCKIN_MASK) != 0;
-		serial_port.data_in = (pb & SERIAL_DATAIN_MASK) != 0;
+		serial_port.clk_in = (pb & SERIAL_CLOCKIN_MASK) == 0;
+		serial_port.data_in = (pb & SERIAL_DATAIN_MASK) == 0;
 		serial_step();
 	} else if (reg == 1 || reg == 3) {
 		ps2_autostep(0);
