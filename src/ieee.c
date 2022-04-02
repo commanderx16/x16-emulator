@@ -225,10 +225,13 @@ command(char *cmd)
 	switch(cmd[0]) {
 		case 'U':
 			switch(cmd[1]) {
-				case 'I':
+				case 'I': // UI: Reset
 					set_error(0x73, 0, 0);
 					return;
 			}
+		case 'I': // Initialize
+			clear_error();
+			return;
 	}
 	set_error(0x30, 0, 0);
 }
