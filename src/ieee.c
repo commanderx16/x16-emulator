@@ -12,6 +12,7 @@
 #include "rom_symbols.h"
 #include "glue.h"
 
+bool log_ieee = false;
 int namelen = 0;
 int channel = 0;
 bool listening = false;
@@ -159,7 +160,9 @@ copen(int channel) {
 		// channels 0 and 1 are magic
 		channels[channel].write = channel;
 	}
-	printf("  OPEN \"%s\",%d (%c)\n", channels[channel].name, channel, channels[channel].write ? 'W' : 'R');
+	if (log_ieee) {
+		printf("  OPEN \"%s\",%d (%c)\n", channels[channel].name, channel, channels[channel].write ? 'W' : 'R');
+	}
 
 	if (!channels[channel].write && channels[channel].name[0] == '$') {
 		dirlist_len = create_directory_listing(dirlist);
@@ -167,7 +170,9 @@ copen(int channel) {
 	} else {
 		channels[channel].f = SDL_RWFromFile(channels[channel].name, channels[channel].write ? "wb" : "rb");
 		if (!channels[channel].f) {
-			printf("  FILE NOT FOUND\n");
+			if (log_ieee) {
+				printf("  FILE NOT FOUND\n");
+			}
 			a = 2; // FNF
 			RAM[STATUS] = a;
 			status |= 1;
@@ -186,7 +191,9 @@ copen(int channel) {
 
 void
 cclose(int channel) {
-	printf("  CLOSE %d\n", channel);
+	if (log_ieee) {
+		printf("  CLOSE %d\n", channel);
+	}
 	channels[channel].name[0] = 0;
 	if (channels[channel].f) {
 		SDL_RWclose(channels[channel].f);
@@ -197,19 +204,25 @@ cclose(int channel) {
 void
 SECOND()
 {
-	printf("%s $%02x\n", __func__, a);
+	if (log_ieee) {
+		printf("%s $%02x\n", __func__, a);
+	}
 	if (listening) {
 		channel = a & 0xf;
 		opening = false;
 		switch (a & 0xf0) {
 			case 0x60:
-				printf("  WRITE %d...\n", channel);
+				if (log_ieee) {
+					printf("  WRITE %d...\n", channel);
+				}
 				break;
 			case 0xe0:
 				cclose(channel);
 				break;
 			case 0xf0:
-				printf("  OPEN %d...\n", channel);
+				if (log_ieee) {
+					printf("  OPEN %d...\n", channel);
+				}
 				opening = true;
 				namelen = 0;
 				break;
@@ -220,16 +233,12 @@ SECOND()
 void
 TKSA()
 {
-	printf("%s $%02x\n", __func__, a);
+	if (log_ieee) {
+		printf("%s $%02x\n", __func__, a);
+	}
 	if (talking) {
 		channel = a & 0xf;
 	}
-}
-
-void
-SETTMO()
-{
-	printf("%s\n", __func__);
 }
 
 void
@@ -255,13 +264,17 @@ ACPTR()
 		RAM[STATUS] = 2; // FNF
 	}
 	set_z(!a);
-	printf("%s-> $%02x\n", __func__, a);
+	if (log_ieee) {
+		printf("%s-> $%02x\n", __func__, a);
+	}
 }
 
 void
 CIOUT()
 {
-	printf("%s $%02x\n", __func__, a);
+	if (log_ieee) {
+		printf("%s $%02x\n", __func__, a);
+	}
 	if (listening) {
 		if (opening) {
 			if (namelen < sizeof(channels[channel].name) - 1) {
@@ -279,13 +292,17 @@ CIOUT()
 
 void
 UNTLK() {
-	printf("%s\n", __func__);
+	if (log_ieee) {
+		printf("%s\n", __func__);
+	}
 	talking = false;
 }
 
 void
 UNLSN() {
-	printf("%s\n", __func__);
+	if (log_ieee) {
+		printf("%s\n", __func__);
+	}
 	listening = false;
 	if (opening) {
 		channels[channel].name[namelen] = 0; // term
@@ -297,7 +314,9 @@ UNLSN() {
 void
 LISTEN()
 {
-	printf("%s $%02x\n", __func__, a);
+	if (log_ieee) {
+		printf("%s $%02x\n", __func__, a);
+	}
 	if (a == 8) {
 		listening = true;
 	}
@@ -306,7 +325,9 @@ LISTEN()
 void
 TALK()
 {
-	printf("%s $%02x\n", __func__, a);
+	if (log_ieee) {
+		printf("%s $%02x\n", __func__, a);
+	}
 	if (a == 8) {
 		talking = true;
 	}

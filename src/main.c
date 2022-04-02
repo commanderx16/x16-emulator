@@ -980,7 +980,6 @@ emulator_loop(void *param)
 				// IEEE-488
 				case 0xFF93:	SECOND();	break;
 				case 0xFF96:	TKSA();		break;
-				case 0xFFA2:	SETTMO();	break;
 				case 0xFFA5:	ACPTR();	break;
 				case 0xFFA8:	CIOUT();	break;
 				case 0xFFAB:	UNTLK();	break;

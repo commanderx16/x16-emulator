@@ -4,7 +4,6 @@
 
 void SECOND();
 void TKSA();
-void SETTMO();
 void ACPTR();
 void CIOUT();
 void UNTLK();
