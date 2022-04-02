@@ -888,7 +888,7 @@ main(int argc, char **argv)
 }
 
 bool
-set_kernal_status(s)
+set_kernal_status(uint8_t s)
 {
 	// There is no KERNAL API to write the STATUS variable.
 	// But there is code to read it, READST, which should
