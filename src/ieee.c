@@ -13,6 +13,8 @@
 
 #define UNIT_NO 8
 
+extern SDL_RWops *prg_file;
+
 bool log_ieee = true;
 //bool log_ieee = false;
 
@@ -275,7 +277,11 @@ copen(int channel)
 		dirlist_len = create_directory_listing(dirlist);
 		dirlist_pos = 0;
 	} else {
-		channels[channel].f = SDL_RWFromFile(channels[channel].name, channels[channel].write ? "wb" : "rb");
+		if (!strcmp(channels[channel].name, ":*")) {
+			channels[channel].f = prg_file;
+		} else {
+			channels[channel].f = SDL_RWFromFile(channels[channel].name, channels[channel].write ? "wb" : "rb");
+		}
 		if (!channels[channel].f) {
 			if (log_ieee) {
 				printf("  FILE NOT FOUND\n");

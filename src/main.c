@@ -96,7 +96,7 @@ uint16_t trace_address = 0;
 #endif
 
 int instruction_counter;
-SDL_RWops *prg_file ;
+SDL_RWops *prg_file;
 int prg_override_start = -1;
 bool run_after_load = false;
 
@@ -1091,33 +1091,25 @@ emulator_loop(void *param)
 
 		if (pc == 0xffcf && is_kernal()) {
 			// as soon as BASIC starts reading a line...
-			if (prg_file) {
-				// ...inject the app into RAM
-				uint8_t start_lo = SDL_ReadU8(prg_file);
-				uint8_t start_hi = SDL_ReadU8(prg_file);
-				uint16_t start;
+			static bool prg_done = false;
+			if (prg_file && !prg_done) {
 				if (prg_override_start >= 0) {
-					start = prg_override_start;
+					paste_text = paste_text_data;
+					snprintf(paste_text, sizeof(paste_text_data), "LOAD\":*\",8,1,$%04X\r", prg_override_start);
 				} else {
-					start = start_hi << 8 | start_lo;
+					paste_text = "LOAD\r";
 				}
-				uint16_t end = start + SDL_RWread(prg_file, RAM + start, 1, 65536-start);
-				SDL_RWclose(prg_file);
-				prg_file = NULL;
-				if (start == 0x0801) {
-					// set start of variables
-					RAM[VARTAB] = end & 0xff;
-					RAM[VARTAB + 1] = end >> 8;
-				}
+				prg_done = true;
 
-				if (run_after_load) {
-					if (start == 0x0801) {
-						paste_text = "RUN\r";
-					} else {
-						paste_text = paste_text_data;
-						snprintf(paste_text, sizeof(paste_text_data), "SYS$%04X\r", start);
-					}
-				}
+
+//				if (run_after_load) {
+//					if (start == 0x0801) {
+//						paste_text = "RUN\r";
+//					} else {
+//						paste_text = paste_text_data;
+//						snprintf(paste_text, sizeof(paste_text_data), "SYS$%04X\r", start);
+//					}
+//				}
 			}
 
 			if (paste_text) {
