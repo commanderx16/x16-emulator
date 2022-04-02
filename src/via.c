@@ -270,8 +270,20 @@ via1_read(uint8_t reg, bool debug)
 				// TODO latching mechanism (requires IEC implementation)
 				return 0;
 			} else {
-				return (~via[0].registers[2] & (ps2_port[1].out | (i2c_port.data_out << 2))) |
-					(via[0].registers[2] & (ps2_port[1].in | (i2c_port.data_in << 2)));
+				return
+					(~via[0].registers[2] & (
+						ps2_port[1].out |
+						(i2c_port.data_out << 2) |
+						(serial_port.atn_out << 3) |
+						(serial_port.clk_out << 4) |
+						(serial_port.data_out << 5)
+					)) |
+					(via[0].registers[2] & (
+						ps2_port[1].in |
+						(i2c_port.data_in << 2) |
+						(serial_port.clk_in << 6) |
+						(serial_port.data_in << 7)
+					));
 			}
 			
 		case 1: // PA
