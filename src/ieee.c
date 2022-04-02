@@ -14,13 +14,14 @@
 
 uint8_t name[80];
 int namelen = 0;
-char secaddr = 0;
+char channel = 0;
 bool listening = false;
 bool talking = false;
+bool opening = false;
 
-uint8_t data[65536];
-int data_len = 0;
-int data_ptr = 0;
+uint8_t dirlist[65536];
+int dirlist_len = 0;
+int dirlist_ptr = 0;
 
 __attribute__((unused)) static void
 set_z(char f)
@@ -37,10 +38,7 @@ create_directory_listing(uint8_t *data)
 	struct dirent *dp;
 	int file_size;
 
-	// We inject this directly into RAM, so
-	// this does not include the load address!
-
-	// start
+	// load address
 	*data++ = 1;
 	*data++ = 8;
 	// link
@@ -133,16 +131,18 @@ SECOND()
 {
 	printf("%s $%02x\n", __func__, a);
 	if (listening) {
-		secaddr = a;
-		switch (secaddr & 0xf0) {
+		channel = a & 0xf;
+		opening = false;
+		switch (a & 0xf0) {
 			case 0x60:
-				printf("  WRITE %d...\n", a & 0xf);
+				printf("  WRITE %d...\n", channel);
 				break;
 			case 0xe0:
-				printf("  CLOSE %d\n", a & 0xf);
+				printf("  CLOSE %d\n", channel);
 				break;
 			case 0xf0:
-				printf("  OPEN %d...\n", a & 0xf);
+				printf("  OPEN %d...\n", channel);
+				opening = true;
 				namelen = 0;
 				break;
 		}
@@ -154,7 +154,7 @@ TKSA()
 {
 	printf("%s $%02x\n", __func__, a);
 	if (talking) {
-		secaddr = a;
+		channel = a & 0xf;
 	}
 }
 
@@ -167,10 +167,10 @@ SETTMO()
 void
 ACPTR()
 {
-	if (data_ptr < data_len) {
-		a = data[data_ptr++];
+	if (dirlist_ptr < dirlist_len) {
+		a = dirlist[dirlist_ptr++];
 	}
-	if (data_ptr == data_len) {
+	if (dirlist_ptr == dirlist_len) {
 		RAM[STATUS] = 0x40;
 	}
 	set_z(!a);
@@ -182,7 +182,7 @@ CIOUT()
 {
 	printf("%s $%02x\n", __func__, a);
 	if (listening) {
-		if ((secaddr & 0xf0) == 0xf0) {
+		if (opening) {
 			if (namelen < sizeof(name)) {
 				name[namelen++] = a;
 			}
@@ -202,10 +202,11 @@ void
 UNLSN() {
 	printf("%s\n", __func__);
 	listening = false;
-	if ((secaddr & 0xf0) == 0xf0) {
-		printf("  OPEN \"%s\",%d\n", name, secaddr & 0xf);
-		data_len = create_directory_listing(data);
-		data_ptr = 0;
+	if (opening) {
+		printf("  OPEN \"%s\",%d\n", name, channel);
+		dirlist_len = create_directory_listing(dirlist);
+		dirlist_ptr = 0;
+		opening = false;
 	}
 }
 
