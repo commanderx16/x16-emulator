@@ -23,7 +23,7 @@ int dirlist_len = 0;
 int dirlist_ptr = 0;
 
 typedef struct {
-	uint8_t name[80];
+	char name[80];
 	bool write;
 	int pos;
 	int size;
@@ -142,7 +142,24 @@ copen(int channel) {
 		dirlist_len = create_directory_listing(dirlist);
 		dirlist_ptr = 0;
 	} else {
-		channels[channel].f = SDL_RWFromFile((const char *)channels[channel].name, "rb");
+		// decode ",P,W"-like suffix to know whether we're writing
+		bool write = false;
+		char *first = strchr(channels[channel].name, ',');
+		if (first) {
+			*first = 0; // truncate name here
+			char *second = strchr(first+1, ',');
+			if (second && second[1] == 'W') {
+				write = true;
+			}
+		}
+		if (channel <= 1) {
+			// channels 0 and 1 are magic
+			write = channel;
+		}
+		printf("  WRITING? %d\n", write);
+		channels[channel].write = write;
+
+		channels[channel].f = SDL_RWFromFile(channels[channel].name, "rb");
 		if (!channels[channel].f) {
 			printf("  FILE NOT FOUND\n");
 			a = 2; // FNF
