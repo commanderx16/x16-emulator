@@ -12,7 +12,11 @@
 #include "rom_symbols.h"
 #include "glue.h"
 
-bool log_ieee = false;
+bool log_ieee = true;
+//bool log_ieee = false;
+
+char cmd[80];
+int cmdlen = 0;
 int namelen = 0;
 int channel = 0;
 bool listening = false;
@@ -137,7 +141,17 @@ create_directory_listing(uint8_t *data)
 }
 
 void
+command(char *cmd) {
+	printf("  COMMAND \"%s\"\n", cmd);
+}
+
+void
 copen(int channel) {
+	if (channel == 15) {
+		command(channels[channel].name);
+		return;
+	}
+
 	// decode ",P,W"-like suffix to know whether we're writing
 	bool append = false;
 	channels[channel].write = false;
@@ -281,7 +295,16 @@ CIOUT()
 				channels[channel].name[namelen++] = a;
 			}
 		} else {
-			if (channels[channel].write && channels[channel].f) {
+			if (channel == 15) {
+				if (a == 13) {
+					cmd[cmdlen] = 0;
+					command(cmd);
+				} else {
+					if (cmdlen < sizeof(cmd) - 1) {
+						cmd[cmdlen++] = a;
+					}
+				}
+			} else if (channels[channel].write && channels[channel].f) {
 				SDL_WriteU8(channels[channel].f, a);
 			} else {
 				RAM[STATUS] = 2; // FNF
@@ -308,6 +331,9 @@ UNLSN() {
 		channels[channel].name[namelen] = 0; // term
 		copen(channel);
 		opening = false;
+	} else if (channel == 15) {
+		cmd[cmdlen] = 0;
+		command(cmd);
 	}
 }
 
