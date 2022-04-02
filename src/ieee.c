@@ -138,13 +138,21 @@ create_directory_listing(uint8_t *data)
 void
 copen(int channel) {
 	// decode ",P,W"-like suffix to know whether we're writing
+	bool append = false;
 	channels[channel].write = false;
 	char *first = strchr(channels[channel].name, ',');
 	if (first) {
 		*first = 0; // truncate name here
 		char *second = strchr(first+1, ',');
-		if (second && second[1] == 'W') {
-			channels[channel].write = true;
+		if (second) {
+			switch (second[1]) {
+				case 'A':
+					append = true;
+					// fallthrough
+				case 'W':
+					channels[channel].write = true;
+					break;
+			}
 		}
 	}
 	if (channel <= 1) {
@@ -153,7 +161,7 @@ copen(int channel) {
 	}
 	printf("  OPEN \"%s\",%d (%c)\n", channels[channel].name, channel, channels[channel].write ? 'W' : 'R');
 
-	if (channels[channel].name[0] == '$') {
+	if (!channels[channel].write && channels[channel].name[0] == '$') {
 		dirlist_len = create_directory_listing(dirlist);
 		dirlist_ptr = 0;
 	} else {
@@ -170,6 +178,8 @@ copen(int channel) {
 			channels[channel].size = SDL_RWtell(channels[channel].f);
 			SDL_RWseek(channels[channel].f, 0, RW_SEEK_SET);
 			channels[channel].pos = 0;
+		} else if (append) {
+			SDL_RWseek(channels[channel].f, 0, RW_SEEK_END);
 		}
 	}
 }
