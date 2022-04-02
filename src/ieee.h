@@ -2,6 +2,7 @@
 // Copyright (c) 2022 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
+void ieee_init();
 void SECOND();
 void TKSA();
 void ACPTR();

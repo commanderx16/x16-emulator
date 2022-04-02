@@ -214,6 +214,7 @@ machine_dump()
 void
 machine_reset()
 {
+	ieee_init();
 	memory_reset();
 	vera_spi_init();
 	via1_init();

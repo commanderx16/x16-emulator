@@ -148,7 +148,7 @@ create_directory_listing(uint8_t *data)
 static char*
 error_string(int e)
 {
-	switch (e) {
+	switch(e) {
 		case 0x00:
 			return " OK";
 		case 0x01:
@@ -203,7 +203,7 @@ error_string(int e)
 static void
 set_error(int e, int t, int s)
 {
-	snprintf(error, sizeof(error), "%02d,%s,%02d,%02d\r", e, error_string(e), t, s);
+	snprintf(error, sizeof(error), "%02x,%s,%02d,%02d\r", e, error_string(e), t, s);
 	error_len = strlen(error);
 	error_pos = 0;
 }
@@ -218,7 +218,19 @@ clear_error()
 static void
 command(char *cmd)
 {
+	if (!cmd[0]) {
+		return;
+	}
 	printf("  COMMAND \"%s\"\n", cmd);
+	switch(cmd[0]) {
+		case 'U':
+			switch(cmd[1]) {
+				case 'I':
+					set_error(0x73, 0, 0);
+					return;
+			}
+	}
+	set_error(0x30, 0, 0);
 }
 
 static void
@@ -237,7 +249,7 @@ copen(int channel)
 		*first = 0; // truncate name here
 		char *second = strchr(first+1, ',');
 		if (second) {
-			switch (second[1]) {
+			switch(second[1]) {
 				case 'A':
 					append = true;
 					// fallthrough
@@ -294,6 +306,12 @@ cclose(int channel)
 }
 
 void
+ieee_init()
+{
+	set_error(0x73, 0, 0);
+}
+
+void
 SECOND()
 {
 	if (log_ieee) {
@@ -302,7 +320,7 @@ SECOND()
 	if (listening) {
 		channel = a & 0xf;
 		opening = false;
-		switch (a & 0xf0) {
+		switch(a & 0xf0) {
 			case 0x60:
 				if (log_ieee) {
 					printf("  WRITE %d...\n", channel);
@@ -383,6 +401,7 @@ CIOUT()
 				if (a == 13) {
 					cmd[cmdlen] = 0;
 					command(cmd);
+					cmdlen = 0;
 				} else {
 					if (cmdlen < sizeof(cmd) - 1) {
 						cmd[cmdlen++] = a;
@@ -418,6 +437,7 @@ UNLSN() {
 	} else if (channel == 15) {
 		cmd[cmdlen] = 0;
 		command(cmd);
+		cmdlen = 0;
 	}
 }
 
