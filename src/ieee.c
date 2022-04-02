@@ -66,11 +66,11 @@ create_directory_listing(uint8_t *data)
 	}
 	*data++ = '"';
 	*data++ = ' ';
-	*data++ = '0';
-	*data++ = '0';
+	*data++ = 'H';
+	*data++ = 'O';
+	*data++ = 'S';
+	*data++ = 'T';
 	*data++ = ' ';
-	*data++ = 'P';
-	*data++ = 'C';
 	*data++ = 0;
 
 	if (!(dirp = opendir("."))) {
@@ -136,7 +136,7 @@ create_directory_listing(uint8_t *data)
 }
 
 void
-open(int channel) {
+copen(int channel) {
 	printf("  OPEN \"%s\",%d\n", channels[channel].name, channel);
 	if (channels[channel].name[0] == '$') {
 		dirlist_len = create_directory_listing(dirlist);
@@ -158,6 +158,16 @@ open(int channel) {
 }
 
 void
+cclose(int channel) {
+	printf("  CLOSE %d\n", channel);
+	channels[channel].name[0] = 0;
+	if (channels[channel].f) {
+		SDL_RWclose(channels[channel].f);
+		channels[channel].f = NULL;
+	}
+}
+
+void
 SECOND()
 {
 	printf("%s $%02x\n", __func__, a);
@@ -169,7 +179,7 @@ SECOND()
 				printf("  WRITE %d...\n", channel);
 				break;
 			case 0xe0:
-				printf("  CLOSE %d\n", channel);
+				cclose(channel);
 				break;
 			case 0xf0:
 				printf("  OPEN %d...\n", channel);
@@ -248,7 +258,7 @@ UNLSN() {
 	listening = false;
 	if (opening) {
 		channels[channel].name[namelen] = 0; // term
-		open(channel);
+		copen(channel);
 		opening = false;
 	}
 }
