@@ -23,8 +23,8 @@ serial_step()
 	if (old_serial_port.atn_in != serial_port.atn_in ||
 		old_serial_port.clk_in != serial_port.clk_in ||
 		old_serial_port.data_in != serial_port.data_in) {
-		printf("-XXX SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d }\n", old_serial_port.atn_in, old_serial_port.clk_in, old_serial_port.data_in, old_serial_port.clk_out, old_serial_port.data_out);
-		printf("+XXX SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d } -- #%d\n", serial_port.atn_in, serial_port.clk_in, serial_port.data_in, serial_port.clk_out, serial_port.data_out, state);
+		printf("-SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d }\n", old_serial_port.atn_in, old_serial_port.clk_in, old_serial_port.data_in, old_serial_port.clk_out, old_serial_port.data_out);
+		printf("+SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d } -- #%d\n", serial_port.atn_in, serial_port.clk_in, serial_port.data_in, serial_port.clk_out, serial_port.data_out, state);
 
 		switch(state) {
 			case 0:
@@ -47,7 +47,7 @@ serial_step()
 					serial_port.data_out = 1;
 					serial_port.clk_out = 1;
 					state = 0;
-					printf("*** XXX END OF ATN\n");
+					printf("*** END OF ATN\n");
 					break;
 				}
 				// wait for CLK=1
@@ -64,7 +64,7 @@ serial_step()
 					serial_port.data_out = 1;
 					serial_port.clk_out = 1;
 					state = 0;
-					printf("*** XXX XEND OF ATN\n");
+					printf("*** XEND OF ATN\n");
 					break;
 				}
 				if (valid) {
@@ -78,10 +78,10 @@ serial_step()
 					if (serial_port.clk_in) {
 						bool b = serial_port.data_in;
 						byte |= (b << bit);
-						printf("*** XXX BIT%d IN: %d\n", bit, b);
+						printf("*** BIT%d IN: %d\n", bit, b);
 						valid = true;
 						if (++bit == 8) {
-							printf("*** XXX BYTE IN: %02x\n", byte);
+							printf("*** BYTE IN: %02x\n", byte);
 							if ((byte & 0xf0) == 0x20) {
 								listening = true;
 							}
@@ -95,7 +95,7 @@ serial_step()
 				break;
 
 		}
-		printf(">XXX SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d } -- #%d\n", serial_port.atn_in, serial_port.clk_in, serial_port.data_in, serial_port.clk_out, serial_port.data_out, state);
+		printf(">SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d } -- #%d\n", serial_port.atn_in, serial_port.clk_in, serial_port.data_in, serial_port.clk_out, serial_port.data_out, state);
 		old_serial_port = serial_port;
 	}
 }
