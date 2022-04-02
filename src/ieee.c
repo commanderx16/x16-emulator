@@ -268,7 +268,11 @@ CIOUT()
 				channels[channel].name[namelen++] = a;
 			}
 		} else {
-			// write to file
+			if (channels[channel].write && channels[channel].f) {
+				SDL_WriteU8(channels[channel].f, a);
+			} else {
+				RAM[STATUS] = 2; // FNF
+			}
 		}
 	}
 }
