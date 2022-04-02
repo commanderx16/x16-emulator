@@ -12,9 +12,14 @@
 #include "rom_symbols.h"
 #include "glue.h"
 
+#define UNIT_NO 8
+
 bool log_ieee = true;
 //bool log_ieee = false;
 
+char error[80];
+int error_len = 0;
+int error_pos = 0;
 char cmd[80];
 int cmdlen = 0;
 int namelen = 0;
@@ -25,7 +30,7 @@ bool opening = false;
 
 uint8_t dirlist[65536];
 int dirlist_len = 0;
-int dirlist_ptr = 0;
+int dirlist_pos = 0;
 
 typedef struct {
 	char name[80];
@@ -140,13 +145,85 @@ create_directory_listing(uint8_t *data)
 	return data - data_start;
 }
 
-void
-command(char *cmd) {
+static char*
+error_string(int e)
+{
+	switch (e) {
+		case 0x00:
+			return " OK";
+		case 0x01:
+			return " FILES SCRATCHED";
+		case 0x02:
+			return "PARTITION SELECTED";
+		// 0x2x: Physical disk error
+		case 0x20:
+			return "READ ERROR"; // generic read error
+		case 0x25:
+			return "WRITE ERROR"; // generic write error
+		case 0x26:
+			return "WRITE PROTECT ON";
+		// 0x3x: Error parsing the command
+		case 0x30: // generic
+		case 0x31: // invalid command
+		case 0x32: // command buffer overflow
+		case 0x33: // illegal filename
+		case 0x34: // empty file name
+		case 0x39: // subdirectory not found
+			return "SYNTAX ERROR";
+		// 0x4x: Controller error (CMD addition)
+		case 0x49:
+			return "INVALID FORMAT"; // partition present, but not FAT32
+		// 0x5x: Relative file related error
+		// unsupported
+		// 0x6x: File error
+		case 0x62:
+			return " FILE NOT FOUND";
+		case 0x63:
+			return "FILE EXISTS";
+		// 0x7x: Generic disk or device error
+		case 0x70:
+			return "NO CHANNEL"; // error allocating context
+		case 0x71:
+			return "DIRECTORY ERROR"; // FAT error
+		case 0x72:
+			return "PARTITION FULL"; // filesystem full
+		case 0x73:
+			return "HOST FS V1.0 X16";
+		case 0x74:
+			return "DRIVE NOT READY"; // illegal partition for any command but "CP"
+		case 0x75:
+			return "FORMAT ERROR";
+		case 0x77:
+			return "SELECTED PARTITION ILLEGAL";
+		default:
+			return "";
+	}
+}
+
+static void
+set_error(int e, int t, int s)
+{
+	snprintf(error, sizeof(error), "%02d,%s,%02d,%02d\r", e, error_string(e), t, s);
+	error_len = strlen(error);
+	error_pos = 0;
+}
+
+static void
+clear_error()
+{
+	set_error(0, 0, 0);
+}
+
+
+static void
+command(char *cmd)
+{
 	printf("  COMMAND \"%s\"\n", cmd);
 }
 
-void
-copen(int channel) {
+static void
+copen(int channel)
+{
 	if (channel == 15) {
 		command(channels[channel].name);
 		return;
@@ -180,7 +257,7 @@ copen(int channel) {
 
 	if (!channels[channel].write && channels[channel].name[0] == '$') {
 		dirlist_len = create_directory_listing(dirlist);
-		dirlist_ptr = 0;
+		dirlist_pos = 0;
 	} else {
 		channels[channel].f = SDL_RWFromFile(channels[channel].name, channels[channel].write ? "wb" : "rb");
 		if (!channels[channel].f) {
@@ -203,8 +280,9 @@ copen(int channel) {
 	}
 }
 
-void
-cclose(int channel) {
+static void
+cclose(int channel)
+{
 	if (log_ieee) {
 		printf("  CLOSE %d\n", channel);
 	}
@@ -255,15 +333,21 @@ TKSA()
 	}
 }
 
+
 void
 ACPTR()
 {
-	if (!channels[channel].write) {
+	if (channel == 15) {
+		if (error_pos >= error_len) {
+			clear_error();
+		}
+		a = error[error_pos++];
+	} else if (!channels[channel].write) {
 		if (channels[channel].name[0] == '$') {
-			if (dirlist_ptr < dirlist_len) {
-				a = dirlist[dirlist_ptr++];
+			if (dirlist_pos < dirlist_len) {
+				a = dirlist[dirlist_pos++];
 			}
-			if (dirlist_ptr == dirlist_len) {
+			if (dirlist_pos == dirlist_len) {
 				RAM[STATUS] = 0x40;
 			}
 		} else if (channels[channel].f) {
@@ -343,7 +427,7 @@ LISTEN()
 	if (log_ieee) {
 		printf("%s $%02x\n", __func__, a);
 	}
-	if (a == 8) {
+	if (a == UNIT_NO) {
 		listening = true;
 	}
 }
@@ -354,7 +438,7 @@ TALK()
 	if (log_ieee) {
 		printf("%s $%02x\n", __func__, a);
 	}
-	if (a == 8) {
+	if (a == UNIT_NO) {
 		talking = true;
 	}
 }
