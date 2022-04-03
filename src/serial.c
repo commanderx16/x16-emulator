@@ -16,7 +16,7 @@ static int bit;
 static uint8_t byte;
 static bool listening = false;
 static bool during_atn = false;
-static eoi = false;
+static bool eoi = false;
 static int clocks_since_last_change = 0;
 
 void
@@ -46,15 +46,15 @@ serial_step(int clocks)
 	printf("-SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d }\n", old_serial_port.atn_in, old_serial_port.clk_in, old_serial_port.data_in, old_serial_port.clk_out, old_serial_port.data_out);
 	printf("+SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d } -- #%d\n", serial_port.atn_in, serial_port.clk_in, serial_port.data_in, serial_port.clk_out, serial_port.data_out, state);
 
+	if (!during_atn && serial_port.atn_in) {
+		serial_port.data_out = 0;
+		state = 1;
+		during_atn = true;
+		printf("XXX START OF ATN\n");
+	}
+
 	switch(state) {
 		case 0:
-			// wait for ATN=1
-			if (serial_port.atn_in) {
-				serial_port.data_out = 0;
-				state = 1;
-				during_atn = true;
-				printf("XXX START OF ATN\n");
-			}
 			break;
 		case 1:
 			if (during_atn && !serial_port.atn_in) {
@@ -106,9 +106,17 @@ serial_step(int clocks)
 					printf("*** BIT%d IN: %d\n", bit, b);
 					valid = true;
 					if (++bit == 8) {
-						printf("*** BYTE IN: %02x\n", byte);
-						if ((byte & 0xf0) == 0x20) {
-							listening = true;
+						printf("*** %s BYTE IN: %02x%s\n", during_atn ? "ATN" : "DATA", byte, eoi ? " (EOI)" : "");
+						if (during_atn) {
+							if ((byte & 0xe0) == 0x20) {
+								if (byte == 0x3f) {
+									printf("UNLISTEN\n");
+									listening = false;
+								} else {
+									printf("LISTEN\n");
+									listening = true;
+								}
+							}
 						}
 						serial_port.data_out = 0;
 						state = 1;
