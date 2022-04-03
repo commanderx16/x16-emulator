@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "serial.h"
+#include "glue.h"
 
 serial_port_t serial_port;
 
@@ -15,6 +16,7 @@ static int bit;
 static uint8_t byte;
 static bool listening = false;
 static bool during_atn = false;
+static eoi = false;
 static int clocks_since_last_change = 0;
 
 void
@@ -25,6 +27,17 @@ serial_step(int clocks)
 		old_serial_port.clk_in == serial_port.clk_in &&
 		old_serial_port.data_in == serial_port.data_in) {
 		clocks_since_last_change += clocks;
+		if (state == 2 && valid == true && bit == 0 && clocks_since_last_change > 200 * MHZ) {
+			if (clocks_since_last_change < (200 + 60) * MHZ) {
+				printf("XXX EOI ACK\n");
+				serial_port.data_out = 0;
+				eoi = true;
+			} else {
+				printf("XXX EOI ACK END\n");
+				serial_port.data_out = 1;
+				clocks_since_last_change = 0;
+			}
+		}
 		return;
 	}
 
@@ -53,9 +66,6 @@ serial_step(int clocks)
 				if (listening) {
 					// keep holding DATA to indicate we're here
 					serial_port.data_out = 0;
-//						state = 2;
-//						valid = true;
-//						bit = 0;
 					printf("XXX START OF DATA\n");
 				} else {
 					state = 0;
@@ -69,6 +79,7 @@ serial_step(int clocks)
 				valid = true;
 				bit = 0;
 				byte = 0;
+				eoi = false;
 				printf("XXX START OF BYTE\n");
 			}
 			break;
