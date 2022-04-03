@@ -44,6 +44,7 @@ serial_step()
 					during_atn = false;
 					printf("*** END OF ATN\n");
 					if (listening) {
+						// keep holding DATA to indicate we're here
 						serial_port.data_out = 0;
 //						state = 2;
 //						valid = true;
@@ -60,6 +61,7 @@ serial_step()
 					state = 2;
 					valid = true;
 					bit = 0;
+					byte = 0;
 					printf("XXX START OF BYTE\n");
 				}
 			case 2:
