@@ -75,6 +75,7 @@ serial_step(int clocks)
 					serial_port.data_out = 0;
 					printf("XXX START OF DATA RECEIVE\n");
 				} else if (talking) {
+					serial_port.clk_out = 0;
 					printf("XXX START OF DATA SEND\n");
 				} else {
 					state = 0;
