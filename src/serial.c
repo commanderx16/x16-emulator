@@ -62,10 +62,19 @@ serial_step(int clocks)
 				serial_port.clk_out = 1;
 				printf("*** BIT%d OUT: %d\n", bit, serial_port.data_out);
 				bit++;
+				if (bit == 8) {
+					state = 13;
+				}
 			} else {
 				serial_port.clk_out = 0;
 			}
 			valid = !valid;
+			clocks_since_last_change = 0;
+			print = true;
+		} else if (state == 13 && clocks_since_last_change > 60 * MHZ) {
+			serial_port.data_out = 1;
+			serial_port.clk_out = 0;
+			state = 10;
 			clocks_since_last_change = 0;
 			print = true;
 		}
