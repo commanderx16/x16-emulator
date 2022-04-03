@@ -268,7 +268,7 @@ via1_read(uint8_t reg, bool debug)
 		case 0: // PB
 			ps2_autostep(1);
 			i2c_step();
-			serial_step();
+//			serial_step();
 			printf("***** SERIAL READ { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d }\n", serial_port.atn_in, serial_port.clk_in, serial_port.data_in, serial_port.clk_out, serial_port.data_out);
 			if (!debug) via_clear_prb_irqs(&via[0]);
 			if (via[0].registers[11] & 2) {
@@ -323,7 +323,7 @@ via1_write(uint8_t reg, uint8_t value)
 		serial_port.atn_in = (pb & SERIAL_ATNIN_MASK) != 0;
 		serial_port.clk_in = (pb & SERIAL_CLOCKIN_MASK) == 0;
 		serial_port.data_in = (pb & SERIAL_DATAIN_MASK) == 0;
-		serial_step();
+//		serial_step();
 	} else if (reg == 1 || reg == 3) {
 		ps2_autostep(0);
 		// PA
