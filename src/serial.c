@@ -15,6 +15,7 @@ static bool valid;
 static int bit;
 static uint8_t byte;
 static bool listening = false;
+static bool talking = false;
 static bool during_atn = false;
 static bool eoi = false;
 static int clocks_since_last_change = 0;
@@ -72,7 +73,9 @@ serial_step(int clocks)
 				if (listening) {
 					// keep holding DATA to indicate we're here
 					serial_port.data_out = 0;
-					printf("XXX START OF DATA\n");
+					printf("XXX START OF DATA RECEIVE\n");
+				} else if (talking) {
+					printf("XXX START OF DATA SEND\n");
 				} else {
 					state = 0;
 				}
@@ -127,10 +130,10 @@ serial_step(int clocks)
 								case 0x40:
 									if (byte == 0x5f) {
 										printf("UNTALK\n");
-										listening = false;
+										talking = false;
 									} else {
 										printf("TALK\n");
-										listening = true;
+										talking = true;
 									}
 									break;
 							}
