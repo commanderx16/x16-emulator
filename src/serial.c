@@ -48,13 +48,19 @@ serial_step(int clocks)
 
 	if (!during_atn && serial_port.atn_in) {
 		serial_port.data_out = 0;
-		state = 1;
+		state = 99;
 		during_atn = true;
 		printf("XXX START OF ATN\n");
 	}
 
 	switch(state) {
 		case 0:
+			break;
+		case 99:
+			// wait for CLK=0
+			if (!serial_port.clk_in) {
+				state = 1;
+			}
 			break;
 		case 1:
 			if (during_atn && !serial_port.atn_in) {
@@ -108,14 +114,25 @@ serial_step(int clocks)
 					if (++bit == 8) {
 						printf("*** %s BYTE IN: %02x%s\n", during_atn ? "ATN" : "DATA", byte, eoi ? " (EOI)" : "");
 						if (during_atn) {
-							if ((byte & 0xe0) == 0x20) {
-								if (byte == 0x3f) {
-									printf("UNLISTEN\n");
-									listening = false;
-								} else {
-									printf("LISTEN\n");
-									listening = true;
-								}
+							switch (byte & 0xe0) {
+								case 0x20:
+									if (byte == 0x3f) {
+										printf("UNLISTEN\n");
+										listening = false;
+									} else {
+										printf("LISTEN\n");
+										listening = true;
+									}
+									break;
+								case 0x40:
+									if (byte == 0x5f) {
+										printf("UNTALK\n");
+										listening = false;
+									} else {
+										printf("TALK\n");
+										listening = true;
+									}
+									break;
 							}
 						}
 						serial_port.data_out = 0;
