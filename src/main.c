@@ -1066,7 +1066,7 @@ emulator_loop(void *param)
 		via1_step(clocks);
 		via2_step(clocks);
 		vera_spi_step(clocks);
-		serial_step();
+		serial_step(clocks);
 		new_frame |= video_step(MHZ, clocks);
 		for (uint8_t i = 0; i < clocks; i++) {
 			i2c_step();

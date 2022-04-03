@@ -21,6 +21,6 @@ typedef struct {
 
 extern serial_port_t serial_port;
 
-void serial_step();
+void serial_step(int clocks);
 
 #endif

@@ -15,16 +15,20 @@ static int bit;
 static uint8_t byte;
 static bool listening = false;
 static bool during_atn = false;
+static int clocks_since_last_change = 0;
 
 void
-serial_step()
+serial_step(int clocks)
 {
 	static serial_port_t old_serial_port;
 	if (old_serial_port.atn_in == serial_port.atn_in &&
 		old_serial_port.clk_in == serial_port.clk_in &&
 		old_serial_port.data_in == serial_port.data_in) {
+		clocks_since_last_change += clocks;
 		return;
 	}
+
+	clocks_since_last_change = 0;
 
 	printf("-SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d }\n", old_serial_port.atn_in, old_serial_port.clk_in, old_serial_port.data_in, old_serial_port.clk_out, old_serial_port.data_out);
 	printf("+SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d } -- #%d\n", serial_port.atn_in, serial_port.clk_in, serial_port.data_in, serial_port.clk_out, serial_port.data_out, state);
