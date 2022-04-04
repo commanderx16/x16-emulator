@@ -22,14 +22,11 @@ static bool eoi = false;
 static int clocks_since_last_change = 0;
 
 static uint8_t
-read_byte() {
+read_byte(bool *eoi) {
 	static int count = 0;
 	static uint8_t data[] = { 1, 8, 1, 1, 0, 0, 0x12, '"', 'H', 'E', 'L', 'L', 'O' };
-	if (count >= sizeof(data)) {
-		return 0;
-	} else {
-		return data[count++];
-	}
+	*eoi = count == sizeof(data) - 1;
+	return data[count++];
 }
 
 void
@@ -61,13 +58,13 @@ serial_step(int clocks)
 			print = true;
 		} else if (state == 11 && serial_port.data_in) {
 			serial_port.clk_out = 0;
-			state = 12;
+			state = 13;
 			clocks_since_last_change = 0;
-			byte = read_byte();
+			byte = read_byte(&eoi);
 			bit = 0;
 			valid = true;
 			print = true;
-		} else if (state == 12 && clocks_since_last_change > 60 * MHZ) {
+		} else if (state == 13 && clocks_since_last_change > 60 * MHZ) {
 			if (valid) {
 				// send bit
 				serial_port.data_out = (byte >> bit) & 1;
@@ -75,7 +72,7 @@ serial_step(int clocks)
 				printf("*** BIT%d OUT: %d\n", bit, serial_port.data_out);
 				bit++;
 				if (bit == 8) {
-					state = 13;
+					state = 14;
 				}
 			} else {
 				serial_port.clk_out = 0;
@@ -83,7 +80,7 @@ serial_step(int clocks)
 			valid = !valid;
 			clocks_since_last_change = 0;
 			print = true;
-		} else if (state == 13 && clocks_since_last_change > 60 * MHZ) {
+		} else if (state == 14 && clocks_since_last_change > 60 * MHZ) {
 			serial_port.data_out = 1;
 			serial_port.clk_out = 0;
 			state = 10;
