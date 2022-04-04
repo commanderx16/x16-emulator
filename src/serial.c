@@ -21,6 +21,17 @@ static bool during_atn = false;
 static bool eoi = false;
 static int clocks_since_last_change = 0;
 
+static uint8_t
+read_byte() {
+	static int count = 0;
+	static uint8_t data[] = { 1, 8, 1, 1, 0, 0, 0x12, '"', 'H', 'E', 'L', 'L', 'O' };
+	if (count >= sizeof(data)) {
+		return 0;
+	} else {
+		return data[count++];
+	}
+}
+
 void
 serial_step(int clocks)
 {
@@ -52,7 +63,7 @@ serial_step(int clocks)
 			serial_port.clk_out = 0;
 			state = 12;
 			clocks_since_last_change = 0;
-			byte = 0x4d;
+			byte = read_byte();
 			bit = 0;
 			valid = true;
 			print = true;
