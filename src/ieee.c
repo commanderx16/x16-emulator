@@ -41,11 +41,13 @@ typedef struct {
 
 channel_t channels[16];
 
+#if 0
 __attribute__((unused)) static void
 set_z(char f)
 {
 	status = (status & ~2) | (!!f << 1);
 }
+#endif
 
 static int
 create_directory_listing(uint8_t *data)
@@ -284,10 +286,13 @@ copen(int channel)
 			if (log_ieee) {
 				printf("  FILE NOT FOUND\n");
 			}
+			set_error(0x62, 0, 0);
+#if 0
 			a = 2; // FNF
 			status |= 1;
-			set_error(0x62, 0, 0);
 			ret = a;
+#endif
+
 		} else {
 			if (!channels[channel].write) {
 				SDL_RWseek(channels[channel].f, 0, RW_SEEK_END);
@@ -323,7 +328,7 @@ ieee_init()
 }
 
 void
-SECOND()
+SECOND(uint8_t a)
 {
 	if (log_ieee) {
 		printf("%s $%02x\n", __func__, a);
@@ -352,7 +357,7 @@ SECOND()
 }
 
 void
-TKSA()
+TKSA(uint8_t a)
 {
 	if (log_ieee) {
 		printf("%s $%02x\n", __func__, a);
@@ -364,24 +369,24 @@ TKSA()
 
 
 int
-ACPTR()
+ACPTR(uint8_t *a)
 {
 	int ret = -1;
 	if (channel == 15) {
 		if (error_pos >= error_len) {
 			clear_error();
 		}
-		a = error[error_pos++];
+		*a = error[error_pos++];
 	} else if (!channels[channel].write) {
 		if (channels[channel].name[0] == '$') {
 			if (dirlist_pos < dirlist_len) {
-				a = dirlist[dirlist_pos++];
+				*a = dirlist[dirlist_pos++];
 			}
 			if (dirlist_pos == dirlist_len) {
 				ret = 0x40;
 			}
 		} else if (channels[channel].f) {
-			a = SDL_ReadU8(channels[channel].f);
+			*a = SDL_ReadU8(channels[channel].f);
 			if (channels[channel].pos == channels[channel].size - 1) {
 				ret = 0x40;
 			} else {
@@ -391,15 +396,17 @@ ACPTR()
 	} else {
 		ret = 2; // FNF
 	}
+#if 0
 	set_z(!a);
+#endif
 	if (log_ieee) {
-		printf("%s-> $%02x\n", __func__, a);
+		printf("%s-> $%02x\n", __func__, *a);
 	}
 	return ret;
 }
 
 int
-CIOUT()
+CIOUT(uint8_t a)
 {
 	int ret = -1;
 	if (log_ieee) {
@@ -459,7 +466,7 @@ UNLSN() {
 }
 
 void
-LISTEN()
+LISTEN(uint8_t a)
 {
 	if (log_ieee) {
 		printf("%s $%02x\n", __func__, a);
@@ -470,7 +477,7 @@ LISTEN()
 }
 
 void
-TALK()
+TALK(uint8_t a)
 {
 	if (log_ieee) {
 		printf("%s $%02x\n", __func__, a);

@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "serial.h"
+#include "ieee.h"
 //#include "glue.h"
 #define MHZ 1
 
@@ -71,6 +72,8 @@ serial_step(int clocks)
 			}
 			print = true;
 		} else if (state == 12 && clocks_since_last_change > 512 * MHZ) {
+			// EOI delay
+			// XXX we'd have to check for the ACK
 			clocks_since_last_change = 0;
 			serial_port.clk_out = 0;
 			state = 13;
@@ -176,25 +179,39 @@ serial_step(int clocks)
 						if (++bit == 8) {
 							printf("*** %s BYTE IN: %02x%s\n", during_atn ? "ATN" : "DATA", byte, eoi ? " (EOI)" : "");
 							if (during_atn) {
-								switch (byte & 0xe0) {
+								printf("HHH %x\n", byte);
+								switch (byte & 0x60) {
 									case 0x20:
 										if (byte == 0x3f) {
 											printf("UNLISTEN\n");
+											UNLSN(byte);
 											listening = false;
 										} else {
 											printf("LISTEN\n");
+											UNTLK();
 											listening = true;
 										}
 										break;
 									case 0x40:
 										if (byte == 0x5f) {
 											printf("UNTALK\n");
+											UNLSN(byte);
 											talking = false;
 										} else {
 											printf("TALK\n");
+											TALK(byte);
 											talking = true;
 										}
 										break;
+									case 0x60:
+										if (listening) {
+											printf("SECOND\n");
+											SECOND(byte);
+										} else { // talking
+											printf("TKSA\n");
+											TKSA(byte);
+										}
+
 								}
 							}
 							serial_port.data_out = 0;
