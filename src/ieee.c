@@ -371,6 +371,7 @@ TKSA(uint8_t a)
 int
 ACPTR(uint8_t *a)
 {
+	printf("channel %d\n", channel);
 	int ret = -1;
 	if (channel == 15) {
 		if (error_pos >= error_len) {

@@ -26,12 +26,9 @@ static int clocks_since_last_change = 0;
 
 static uint8_t
 read_byte(bool *eoi) {
-//	static int count = 0;
-//	static uint8_t data[] = { 1, 8, 1, 1, 0, 0, 0x12, '"', 'H', 'E', 'L', 'L', 'O' };
-//	*eoi = count == sizeof(data) - 1;
-//	return data[count++];
 	uint8_t byte;
-	*eoi = !!ACPTR(&byte);
+	int ret = ACPTR(&byte);
+	*eoi = ret >= 0;
 	return byte;
 }
 
