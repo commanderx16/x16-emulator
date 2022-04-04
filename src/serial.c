@@ -23,7 +23,7 @@ static bool eoi = false;
 static bool fnf = false; // file not found
 static int clocks_since_last_change = 0;
 
-#define printf(...)
+//#define printf(...)
 
 static uint8_t
 read_byte(bool *eoi) {
@@ -182,37 +182,31 @@ serial_step(int clocks)
 						if (++bit == 8) {
 							printf("*** %s BYTE IN: %02x%s\n", during_atn ? "ATN" : "DATA", byte, eoi ? " (EOI)" : "");
 							if (during_atn) {
-								printf("HHH %x\n", byte);
+								printf("IEEE CMD %x\n", byte);
 								switch (byte & 0x60) {
 									case 0x20:
 										if (byte == 0x3f) {
-											printf("UNLISTEN\n");
 											int ret = UNLSN(byte);
 											fnf = ret == 2;
 											listening = false;
 										} else {
-											printf("LISTEN\n");
 											LISTEN();
 											listening = true;
 										}
 										break;
 									case 0x40:
 										if (byte == 0x5f) {
-											printf("UNTALK\n");
 											UNTLK(byte);
 											talking = false;
 										} else {
-											printf("TALK\n");
 											TALK(byte);
 											talking = true;
 										}
 										break;
 									case 0x60:
 										if (listening) {
-											printf("SECOND\n");
 											SECOND(byte);
 										} else { // talking
-											printf("TKSA\n");
 											TKSA(byte);
 										}
 										break;

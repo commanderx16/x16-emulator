@@ -9,7 +9,8 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <SDL.h>
-#include "glue.h"
+//#include "glue.h"
+extern SDL_RWops *prg_file;
 
 #define UNIT_NO 8
 
