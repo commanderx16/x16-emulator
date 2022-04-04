@@ -20,6 +20,7 @@ static bool listening = false;
 static bool talking = false;
 static bool during_atn = false;
 static bool eoi = false;
+static bool fnf = false; // file not found
 static int clocks_since_last_change = 0;
 
 #define printf(...)
@@ -59,7 +60,7 @@ serial_step(int clocks)
 			state = 11;
 			clocks_since_last_change = 0;
 			print = true;
-		} else if (state == 11 && serial_port.data_in) {
+		} else if (state == 11 && serial_port.data_in && !fnf) {
 			clocks_since_last_change = 0;
 			byte = read_byte(&eoi);
 			bit = 0;
@@ -186,7 +187,8 @@ serial_step(int clocks)
 									case 0x20:
 										if (byte == 0x3f) {
 											printf("UNLISTEN\n");
-											UNLSN(byte);
+											int ret = UNLSN(byte);
+											fnf = ret == 2;
 											listening = false;
 										} else {
 											printf("LISTEN\n");

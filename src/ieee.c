@@ -287,10 +287,10 @@ copen(int channel)
 				printf("  FILE NOT FOUND\n");
 			}
 			set_error(0x62, 0, 0);
+			ret = 2; // FNF
 #if 0
-			a = 2; // FNF
+			a = ret;
 			status |= 1;
-			ret = a;
 #endif
 
 		} else {
