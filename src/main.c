@@ -415,7 +415,7 @@ usage()
 	printf("\tcan be specified.\n");
 #endif
 	printf("-version\n");
-	printf("\tPrint additional version information the emulator and ROM.\n");
+	printf("\tPrint additional version information of the emulator and ROM.\n");
 	printf("\n");
 	exit(1);
 }
