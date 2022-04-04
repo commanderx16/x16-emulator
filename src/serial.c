@@ -57,12 +57,23 @@ serial_step(int clocks)
 			clocks_since_last_change = 0;
 			print = true;
 		} else if (state == 11 && serial_port.data_in) {
-			serial_port.clk_out = 0;
-			state = 13;
 			clocks_since_last_change = 0;
 			byte = read_byte(&eoi);
 			bit = 0;
 			valid = true;
+			if (eoi) {
+				printf("XXXEOI1\n");
+				state = 12;
+			} else {
+				printf("XXXEOI0\n");
+				serial_port.clk_out = 0;
+				state = 13;
+			}
+			print = true;
+		} else if (state == 12 && clocks_since_last_change > 512 * MHZ) {
+			clocks_since_last_change = 0;
+			serial_port.clk_out = 0;
+			state = 13;
 			print = true;
 		} else if (state == 13 && clocks_since_last_change > 60 * MHZ) {
 			if (valid) {
