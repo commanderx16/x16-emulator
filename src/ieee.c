@@ -13,8 +13,8 @@
 
 #define UNIT_NO 8
 
-//bool log_ieee = true;
-bool log_ieee = false;
+bool log_ieee = true;
+//bool log_ieee = false;
 
 char error[80];
 int error_len = 0;
@@ -471,7 +471,7 @@ LISTEN(uint8_t a)
 	if (log_ieee) {
 		printf("%s $%02x\n", __func__, a);
 	}
-	if (a == UNIT_NO) {
+	if ((a & 0x1f) == UNIT_NO) {
 		listening = true;
 	}
 }
@@ -482,7 +482,7 @@ TALK(uint8_t a)
 	if (log_ieee) {
 		printf("%s $%02x\n", __func__, a);
 	}
-	if (a == UNIT_NO) {
+	if ((a & 0x1f) == UNIT_NO) {
 		talking = true;
 	}
 }

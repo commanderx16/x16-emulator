@@ -269,7 +269,7 @@ via1_read(uint8_t reg, bool debug)
 			ps2_autostep(1);
 			i2c_step();
 //			serial_step();
-			printf("***** SERIAL READ { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d }\n", serial_port.atn_in, serial_port.clk_in, serial_port.data_in, serial_port.clk_out, serial_port.data_out);
+//			printf("***** SERIAL READ { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d }\n", serial_port.atn_in, serial_port.clk_in, serial_port.data_in, serial_port.clk_out, serial_port.data_out);
 			if (!debug) via_clear_prb_irqs(&via[0]);
 			if (via[0].registers[11] & 2) {
 				// TODO latching mechanism (requires IEC implementation)

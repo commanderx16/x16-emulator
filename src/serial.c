@@ -22,12 +22,17 @@ static bool during_atn = false;
 static bool eoi = false;
 static int clocks_since_last_change = 0;
 
+#define printf(...)
+
 static uint8_t
 read_byte(bool *eoi) {
-	static int count = 0;
-	static uint8_t data[] = { 1, 8, 1, 1, 0, 0, 0x12, '"', 'H', 'E', 'L', 'L', 'O' };
-	*eoi = count == sizeof(data) - 1;
-	return data[count++];
+//	static int count = 0;
+//	static uint8_t data[] = { 1, 8, 1, 1, 0, 0, 0x12, '"', 'H', 'E', 'L', 'L', 'O' };
+//	*eoi = count == sizeof(data) - 1;
+//	return data[count++];
+	uint8_t byte;
+	*eoi = !!ACPTR(&byte);
+	return byte;
 }
 
 void
@@ -188,14 +193,14 @@ serial_step(int clocks)
 											listening = false;
 										} else {
 											printf("LISTEN\n");
-											UNTLK();
+											LISTEN();
 											listening = true;
 										}
 										break;
 									case 0x40:
 										if (byte == 0x5f) {
 											printf("UNTALK\n");
-											UNLSN(byte);
+											UNTLK(byte);
 											talking = false;
 										} else {
 											printf("TALK\n");
@@ -211,8 +216,10 @@ serial_step(int clocks)
 											printf("TKSA\n");
 											TKSA(byte);
 										}
-
+										break;
 								}
+							} else {
+								CIOUT(byte);
 							}
 							serial_port.data_out = 0;
 							state = 1;
