@@ -7,8 +7,7 @@
 #include <stdbool.h>
 #include "serial.h"
 #include "ieee.h"
-//#include "glue.h"
-#define MHZ 1
+#include "glue.h"
 
 serial_port_t serial_port;
 
