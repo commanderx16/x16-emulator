@@ -1,5 +1,5 @@
 // Commander X16 Emulator
-// Copyright (c) 2019 Michael Steil
+// Copyright (c) 2022 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
 #ifndef SERIAL_H

@@ -1,12 +1,13 @@
 // Commander X16 Emulator
-// Copyright (c) 2019 Michael Steil
+// Copyright (c) 2022 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include "serial.h"
-#include "glue.h"
+//#include "glue.h"
+#define MHZ 1
 
 serial_port_t serial_port;
 
@@ -47,7 +48,7 @@ serial_step(int clocks)
 			state = 11;
 			clocks_since_last_change = 0;
 			print = true;
-		} else if (state == 11 && clocks_since_last_change > 60 * MHZ) {
+		} else if (state == 11 && serial_port.data_in) {
 			serial_port.clk_out = 0;
 			state = 12;
 			clocks_since_last_change = 0;
