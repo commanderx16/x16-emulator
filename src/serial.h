@@ -12,11 +12,15 @@
 #define SERIAL_DATAIN_MASK  (1<<5)
 
 typedef struct {
-	int atn_in;
-	int clk_in;
-	int data_in;
-	int clk_out;
-	int data_out;
+	struct {
+		int atn;
+		int clk;
+		int data;
+	} in;
+	struct {
+		int clk;
+		int data;
+	} out;
 } serial_port_t;
 
 extern serial_port_t serial_port;

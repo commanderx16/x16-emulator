@@ -247,11 +247,11 @@ via1_init()
 {
 	via_init(&via[0]);
 	i2c_port.clk_in = 1;
-	serial_port.atn_in = 0;
-	serial_port.clk_in = 0;
-	serial_port.data_in = 0;
-	serial_port.clk_out = 1;
-	serial_port.data_out = 1;
+	serial_port.in.atn = 0;
+	serial_port.in.clk = 0;
+	serial_port.in.data = 0;
+	serial_port.out.clk = 1;
+	serial_port.out.data = 1;
 }
 
 uint8_t
@@ -269,7 +269,7 @@ via1_read(uint8_t reg, bool debug)
 			ps2_autostep(1);
 			i2c_step();
 //			serial_step();
-//			printf("***** SERIAL READ { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d }\n", serial_port.atn_in, serial_port.clk_in, serial_port.data_in, serial_port.clk_out, serial_port.data_out);
+//			printf("***** SERIAL READ { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d }\n", serial_port.in.atn, serial_port.in.clk, serial_port.in.data, serial_port.out.clk, serial_port.out.data);
 			if (!debug) via_clear_prb_irqs(&via[0]);
 			if (via[0].registers[11] & 2) {
 				// TODO latching mechanism (requires IEC implementation)
@@ -279,15 +279,15 @@ via1_read(uint8_t reg, bool debug)
 					(~via[0].registers[2] & (
 						ps2_port[1].out |
 						(i2c_port.data_out << 2) |
-						(serial_port.clk_out << 6) |
-						(serial_port.data_out << 7)
+						(serial_port.out.clk << 6) |
+						(serial_port.out.data << 7)
 					)) |
 					(via[0].registers[2] & (
 						ps2_port[1].in |
 						(i2c_port.data_in << 2) |
-						(serial_port.atn_in << 3) |
-						((!serial_port.clk_in) << 4) |
-						((!serial_port.data_in) << 5)
+						(serial_port.in.atn << 3) |
+						((!serial_port.in.clk) << 4) |
+						((!serial_port.in.data) << 5)
 					));
 			}
 			
@@ -320,9 +320,9 @@ via1_write(uint8_t reg, uint8_t value)
 		ps2_port[1].in   = pb & PS2_VIA_MASK;
 		i2c_port.data_in = (pb & I2C_DATA_MASK) != 0;
 //		printf("!SERIAL ATN:%d CLK:%d DATA:%d\n", !!(pb & SERIAL_ATNIN_MASK), !!(pb & SERIAL_CLOCKIN_MASK), !!(pb & SERIAL_DATAIN_MASK));
-		serial_port.atn_in = (pb & SERIAL_ATNIN_MASK) != 0;
-		serial_port.clk_in = (pb & SERIAL_CLOCKIN_MASK) == 0;
-		serial_port.data_in = (pb & SERIAL_DATAIN_MASK) == 0;
+		serial_port.in.atn = (pb & SERIAL_ATNIN_MASK) != 0;
+		serial_port.in.clk = (pb & SERIAL_CLOCKIN_MASK) == 0;
+		serial_port.in.data = (pb & SERIAL_DATAIN_MASK) == 0;
 //		serial_step();
 	} else if (reg == 1 || reg == 3) {
 		ps2_autostep(0);
