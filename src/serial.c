@@ -50,7 +50,7 @@ serial_step(int clocks)
 {
 	bool print = false;
 
-	bool old_atn = false, old_clk = false, old_data = false;
+	static bool old_atn = false, old_clk = false, old_data = false;
 	if (old_atn == serial_port.in.atn &&
 		old_clk == serial_port_read_clk() &&
 		old_data == serial_port_read_data()) {
