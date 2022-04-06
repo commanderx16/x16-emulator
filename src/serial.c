@@ -50,10 +50,10 @@ serial_step(int clocks)
 {
 	bool print = false;
 
-	static serial_port_t old_serial_port;
-	if (old_serial_port.in.atn == serial_port.in.atn &&
-		old_serial_port.in.clk == serial_port.in.clk &&
-		old_serial_port.in.data == serial_port.in.data) {
+	bool old_atn = false, old_clk = false, old_data = false;
+	if (old_atn == serial_port.in.atn &&
+		old_clk == serial_port_read_clk() &&
+		old_data == serial_port_read_data()) {
 		clocks_since_last_change += clocks;
 		if (state == 2 && valid == true && bit == 0 && clocks_since_last_change > 200 * MHZ) {
 			if (clocks_since_last_change < (200 + 60) * MHZ) {
@@ -72,7 +72,7 @@ serial_step(int clocks)
 			state = 11;
 			clocks_since_last_change = 0;
 			print = true;
-		} else if (state == 11 && serial_port.in.data && !fnf) {
+		} else if (state == 11 && serial_port_read_data() && !fnf) {
 			clocks_since_last_change = 0;
 			byte = read_byte(&eoi);
 			bit = 0;
@@ -119,8 +119,8 @@ serial_step(int clocks)
 	} else {
 		clocks_since_last_change = 0;
 
-		printf("-SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d }\n", old_serial_port.in.atn, old_serial_port.in.clk, old_serial_port.in.data, old_serial_port.out.clk, old_serial_port.out.data);
-		printf("+SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d } ==> { CLK:%d DATA:%d } -- #%d\n", serial_port.in.atn, serial_port.in.clk, serial_port.in.data, serial_port.out.clk, serial_port.out.data, serial_port_read_clk(), serial_port_read_data(), state);
+		printf("-SERIAL IN { ATN:%d CLK:%d DATA:%d }\n", serial_port.in.atn, old_clk, old_data);
+		printf("+SERIAL IN { ATN:%d CLK:%d DATA:%d } --- IN { CLK:%d DATA:%d } OUT { CLK:%d DATA:%d } -- #%d\n", serial_port.in.atn, serial_port_read_clk(), serial_port_read_data(), serial_port.in.clk, serial_port.in.data, serial_port.out.clk, serial_port.out.data, state);
 
 		if (!during_atn && serial_port.in.atn) {
 			serial_port.out.data = 0;
@@ -134,7 +134,7 @@ serial_step(int clocks)
 				break;
 			case 99:
 				// wait for CLK=0
-				if (!serial_port.in.clk) {
+				if (!serial_port_read_clk()) {
 					state = 1;
 				}
 				break;
@@ -159,7 +159,7 @@ serial_step(int clocks)
 					break;
 				}
 				// wait for CLK=1
-				if (serial_port.in.clk) {
+				if (serial_port_read_clk()) {
 					serial_port.out.data = 1;
 					state = 2;
 					valid = true;
@@ -180,14 +180,14 @@ serial_step(int clocks)
 				}
 				if (valid) {
 					// wait for CLK=0, data not valid
-					if (!serial_port.in.clk) {
+					if (!serial_port_read_clk()) {
 						valid = false;
 						printf("XXX NOT VALID\n");
 					}
 				} else {
 					// wait for CLK=1, data valid
-					if (serial_port.in.clk) {
-						bool b = serial_port.in.data;
+					if (serial_port_read_clk()) {
+						bool b = serial_port_read_data();
 						byte |= (b << bit);
 						printf("*** BIT%d IN: %d\n", bit, b);
 						valid = true;
@@ -239,8 +239,11 @@ serial_step(int clocks)
 	}
 
 	if (print) {
-		printf(">SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d } ==> { CLK:%d DATA:%d } -- #%d\n", serial_port.in.atn, serial_port.in.clk, serial_port.in.data, serial_port.out.clk, serial_port.out.data, serial_port_read_clk(), serial_port_read_data(), state);
+		printf(">SERIAL IN { ATN:%d CLK:%d DATA:%d } --- IN { CLK:%d DATA:%d } OUT { CLK:%d DATA:%d } -- #%d\n", serial_port.in.atn, serial_port_read_clk(), serial_port_read_data(), serial_port.in.clk, serial_port.in.data, serial_port.out.clk, serial_port.out.data, state);
 	}
-	old_serial_port = serial_port;
+
+	old_atn = serial_port.in.atn;
+	old_clk = serial_port_read_clk();
+	old_data = serial_port_read_data();
 }
 
