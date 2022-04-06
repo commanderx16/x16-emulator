@@ -25,11 +25,24 @@ static int clocks_since_last_change = 0;
 //#define printf(...)
 
 static uint8_t
-read_byte(bool *eoi) {
+read_byte(bool *eoi)
+{
 	uint8_t byte;
 	int ret = ACPTR(&byte);
 	*eoi = ret >= 0;
 	return byte;
+}
+
+bool
+serial_port_read_clk()
+{
+	return serial_port.out.clk & serial_port.in.clk;
+}
+
+bool
+serial_port_read_data()
+{
+	return serial_port.out.data & serial_port.in.data;
 }
 
 void
@@ -107,7 +120,7 @@ serial_step(int clocks)
 		clocks_since_last_change = 0;
 
 		printf("-SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d }\n", old_serial_port.in.atn, old_serial_port.in.clk, old_serial_port.in.data, old_serial_port.out.clk, old_serial_port.out.data);
-		printf("+SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d } -- #%d\n", serial_port.in.atn, serial_port.in.clk, serial_port.in.data, serial_port.out.clk, serial_port.out.data, state);
+		printf("+SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d } ==> { CLK:%d DATA:%d } -- #%d\n", serial_port.in.atn, serial_port.in.clk, serial_port.in.data, serial_port.out.clk, serial_port.out.data, serial_port_read_clk(), serial_port_read_data(), state);
 
 		if (!during_atn && serial_port.in.atn) {
 			serial_port.out.data = 0;
@@ -226,7 +239,7 @@ serial_step(int clocks)
 	}
 
 	if (print) {
-		printf(">SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d } -- #%d\n", serial_port.in.atn, serial_port.in.clk, serial_port.in.data, serial_port.out.clk, serial_port.out.data, state);
+		printf(">SERIAL IN { ATN:%d CLK:%d DATA:%d } --- OUT { CLK:%d DATA:%d } ==> { CLK:%d DATA:%d } -- #%d\n", serial_port.in.atn, serial_port.in.clk, serial_port.in.data, serial_port.out.clk, serial_port.out.data, serial_port_read_clk(), serial_port_read_data(), state);
 	}
 	old_serial_port = serial_port;
 }

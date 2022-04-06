@@ -27,4 +27,7 @@ extern serial_port_t serial_port;
 
 void serial_step(int clocks);
 
+bool serial_port_read_clk();
+bool serial_port_read_data();
+
 #endif
