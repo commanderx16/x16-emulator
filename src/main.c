@@ -190,7 +190,7 @@ lst_for_address(uint16_t address)
 		default:
 			return NULL;
 	}
-	return lst[address-0xc000];
+	return lst[address - 0xc000];
 }
 #endif
 
