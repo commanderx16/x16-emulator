@@ -268,8 +268,6 @@ via1_read(uint8_t reg, bool debug)
 		case 0: // PB
 			ps2_autostep(1);
 			i2c_step();
-//			serial_step();
-			printf("*SERIAL RD { ATN:%d CLK:%d DATA:%d } --- IN { CLK:%d DATA:%d } OUT { CLK:%d DATA:%d }\n", serial_port.in.atn, serial_port_read_clk(), serial_port_read_data(), serial_port.in.clk, serial_port.in.data, serial_port.out.clk, serial_port.out.data);
 			if (!debug) via_clear_prb_irqs(&via[0]);
 			if (via[0].registers[11] & 2) {
 				// TODO latching mechanism (requires IEC implementation)
@@ -319,11 +317,9 @@ via1_write(uint8_t reg, uint8_t value)
 		const uint8_t pb = via[0].registers[0] | ~via[0].registers[2];
 		ps2_port[1].in   = pb & PS2_VIA_MASK;
 		i2c_port.data_in = (pb & I2C_DATA_MASK) != 0;
-//		printf("!SERIAL ATN:%d CLK:%d DATA:%d\n", !!(pb & SERIAL_ATNIN_MASK), !!(pb & SERIAL_CLOCKIN_MASK), !!(pb & SERIAL_DATAIN_MASK));
 		serial_port.in.atn = (pb & SERIAL_ATNIN_MASK) != 0;
 		serial_port.in.clk = (pb & SERIAL_CLOCKIN_MASK) == 0;
 		serial_port.in.data = (pb & SERIAL_DATAIN_MASK) == 0;
-//		serial_step();
 	} else if (reg == 1 || reg == 3) {
 		ps2_autostep(0);
 		// PA
