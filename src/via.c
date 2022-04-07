@@ -34,8 +34,7 @@ static void
 via_init(via_t *via)
 {
 	// timer latches, timer counters and SR are not cleared
-	for (int i = 0; i < 2; i++) via->registers[i] = 0;
-	for (int i = 2; i < 4; i++) via->registers[i] = 0xff;
+	for (int i = 0; i < 4; i++) via->registers[i] = 0;
 	for (int i = 11; i < 15; i++) via->registers[i] = 0;
 	via->timer_running[0] = false;
 	via->timer_running[1] = false;

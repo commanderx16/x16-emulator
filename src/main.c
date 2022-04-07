@@ -85,6 +85,7 @@ bool warp_mode = false;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
 bool set_system_time = false;
+bool has_serial = false;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
@@ -747,6 +748,10 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			set_system_time = true;
+		} else if (!strcmp(argv[0], "-serial")) {
+			argc--;
+			argv++;
+			has_serial = true;
 		} else if (!strcmp(argv[0], "-version")){
 			printf("%s", VER_INFO);
 			argc--;
@@ -1026,7 +1031,7 @@ emulator_loop(void *param)
 #endif
 
 #ifdef LOAD_HYPERCALLS
-		if (!sdcard_file && is_kernal() && pc > 0xFF80) {
+		if (!has_serial && !sdcard_file && is_kernal() && pc > 0xFF80) {
 			bool handled = true;
 			int s = -1;
 			switch(pc) {
@@ -1069,7 +1074,9 @@ emulator_loop(void *param)
 		via1_step(clocks);
 		via2_step(clocks);
 		vera_spi_step(clocks);
-		serial_step(clocks);
+		if (has_serial) {
+			serial_step(clocks);
+		}
 		new_frame |= video_step(MHZ, clocks);
 		for (uint8_t i = 0; i < clocks; i++) {
 			i2c_step();
