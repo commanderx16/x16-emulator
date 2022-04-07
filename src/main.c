@@ -106,6 +106,7 @@ char *nvram_path = NULL;
 
 #ifdef TRACE
 #include "rom_labels.h"
+#include "rom_lst.h"
 char *
 label_for_address(uint16_t address)
 {
@@ -170,6 +171,24 @@ label_for_address(uint16_t address)
 		}
 	}
 	return NULL;
+}
+
+char *
+lst_for_address(uint16_t address)
+{
+	if (address < 0xc000) {
+		return NULL;
+	}
+
+	char **lst;
+	switch (memory_get_rom_bank()) {
+		case 0: lst = lst_bank0; break;
+		case 2: lst = lst_bank2; break;
+		case 4: lst = lst_bank4; break;
+		default:
+			return NULL;
+	}
+	return lst[address-0xc000];
 }
 #endif
 
@@ -987,8 +1006,22 @@ emulator_loop(void *param)
 			trace_mode = true;
 		}
 		if (trace_mode) {
-			//printf("\t\t\t\t");
-			printf("[%6d] ", instruction_counter);
+			char *lst = lst_for_address(pc);
+			if (lst) {
+				char *lf;
+				while ((lf = strchr(lst, '\n'))) {
+					for (int i = 0; i < 104; i++) {
+						printf(" ");
+					}
+					for (char *c = lst; c < lf; c++) {
+						printf("%c", *c);
+					}
+					printf("\n");
+					lst = lf + 1;
+				}
+			}
+
+			printf("[%8d] ", instruction_counter);
 
 			char *label = label_for_address(pc);
 			int label_len = label ? strlen(label) : 0;
@@ -1015,6 +1048,10 @@ emulator_loop(void *param)
 			printf("a=$%02x x=$%02x y=$%02x s=$%02x p=", a, x, y, sp);
 			for (int i = 7; i >= 0; i--) {
 				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
+			}
+
+			if (lst) {
+				printf("    %s", lst);
 			}
 
 #if 0
