@@ -202,7 +202,7 @@ serial_step(int clocks)
 											fnf = ret == 2;
 											listening = false;
 										} else {
-											LISTEN();
+											LISTEN(byte);
 											listening = true;
 										}
 										break;

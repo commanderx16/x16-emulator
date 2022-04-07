@@ -9,13 +9,13 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <SDL.h>
-//#include "glue.h"
+#include "ieee.h"
 extern SDL_RWops *prg_file;
 
 #define UNIT_NO 8
 
-bool log_ieee = true;
-//bool log_ieee = false;
+//bool log_ieee = true;
+bool log_ieee = false;
 
 char error[80];
 int error_len = 0;
@@ -42,13 +42,6 @@ typedef struct {
 
 channel_t channels[16];
 
-#if 0
-__attribute__((unused)) static void
-set_z(char f)
-{
-	status = (status & ~2) | (!!f << 1);
-}
-#endif
 
 static int
 create_directory_listing(uint8_t *data)
@@ -289,11 +282,6 @@ copen(int channel)
 			}
 			set_error(0x62, 0, 0);
 			ret = 2; // FNF
-#if 0
-			a = ret;
-			status |= 1;
-#endif
-
 		} else {
 			if (!channels[channel].write) {
 				SDL_RWseek(channels[channel].f, 0, RW_SEEK_END);
@@ -397,9 +385,6 @@ ACPTR(uint8_t *a)
 	} else {
 		ret = 2; // FNF
 	}
-#if 0
-	set_z(!a);
-#endif
 	if (log_ieee) {
 		printf("%s-> $%02x\n", __func__, *a);
 	}

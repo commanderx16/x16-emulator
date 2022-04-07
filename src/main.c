@@ -1031,14 +1031,17 @@ emulator_loop(void *param)
 			int s = -1;
 			switch(pc) {
 				// IEEE-488
-				case 0xFF93:	SECOND();	break;
-				case 0xFF96:	TKSA();		break;
-				case 0xFFA5:	s=ACPTR();	break;
-				case 0xFFA8:	s=CIOUT();	break;
+				case 0xFF93:	SECOND(a);	break;
+				case 0xFF96:	TKSA(a);		break;
+				case 0xFFA5:
+					s=ACPTR(&a);
+					status = (status & ~2) | (!a << 1);
+					break;
+				case 0xFFA8:	s=CIOUT(a);	break;
 				case 0xFFAB:	UNTLK();	break;
 				case 0xFFAE:	s=UNLSN();	break;
-				case 0xFFB1:	LISTEN();	break;
-				case 0xFFB4:	TALK();		break;
+				case 0xFFB1:	LISTEN(a);	break;
+				case 0xFFB4:	TALK(a);		break;
 				default:
 					handled = false;
 					break;

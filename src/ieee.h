@@ -8,6 +8,6 @@ void TKSA(uint8_t a);
 int ACPTR(uint8_t *a);
 int CIOUT(uint8_t a);
 void UNTLK();
-int UNLSN(uint8_t a);
-void LISTEN();
+int UNLSN();
+void LISTEN(uint8_t a);
 void TALK(uint8_t a);
