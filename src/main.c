@@ -354,6 +354,8 @@ usage()
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
 	printf("\tSpecify SD card image (partition map + FAT32)\n");
+	printf("-serial\n");
+	printf("\tConnect host fs through Serial Bus [experimental]\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
 	printf("\tLoad application from the local disk into RAM\n");
 	printf("\t(.PRG file with 2 byte start address header)\n");
@@ -762,6 +764,19 @@ main(int argc, char **argv)
 		}
 	}
 
+	if (prg_path && sdcard_path) {
+		printf("'-prg' cannot be combined with '-sdcard'!\n");
+		exit(1);
+	}
+
+	if (has_serial && sdcard_path) {
+		printf("'-serial' cannot be combined with '-sdcard'!\n");
+		// The ROM would fall back from SD card to Serial if no SD card
+		// is inserted, but the emulator can't attach/detach SD cards,
+		// so with -sdcard, the ROM will never fall back to Serial anyway.
+		exit(1);
+	}
+
 	SDL_RWops *f = SDL_RWFromFile(rom_path, "rb");
 	if (!f) {
 		printf("Cannot open %s!\n", rom_path);
@@ -790,11 +805,6 @@ main(int argc, char **argv)
 
 	prg_override_start = -1;
 	if (prg_path) {
-		if (sdcard_file) {
-			printf("'-prg' cannot be combined with '-sdcard'!\n");
-			exit(1);
-		}
-
 		char *comma = strchr(prg_path, ',');
 		if (comma) {
 			prg_override_start = (uint16_t)strtol(comma + 1, NULL, 16);
