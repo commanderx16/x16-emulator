@@ -184,7 +184,9 @@ lst_for_address(uint16_t address)
 	switch (memory_get_rom_bank()) {
 		case 0: lst = lst_bank0; break;
 		case 2: lst = lst_bank2; break;
+		case 3: lst = lst_bank3; break;
 		case 4: lst = lst_bank4; break;
+		case 5: lst = lst_bank5; break;
 		default:
 			return NULL;
 	}
