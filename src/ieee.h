@@ -3,11 +3,11 @@
 // All rights reserved. License: 2-clause BSD
 
 void ieee_init();
-void SECOND();
-void TKSA();
-int ACPTR();
-int CIOUT();
+void SECOND(uint8_t a);
+void TKSA(uint8_t a);
+int ACPTR(uint8_t *a);
+int CIOUT(uint8_t a);
 void UNTLK();
 int UNLSN();
-void LISTEN();
-void TALK();
+void LISTEN(uint8_t a);
+void TALK(uint8_t a);

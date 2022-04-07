@@ -22,6 +22,7 @@
 #include "memory.h"
 #include "video.h"
 #include "via.h"
+#include "serial.h"
 #include "ps2.h"
 #include "i2c.h"
 #include "rtc.h"
@@ -84,6 +85,7 @@ bool warp_mode = false;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
 bool set_system_time = false;
+bool has_serial = false;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
@@ -352,6 +354,8 @@ usage()
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
 	printf("\tSpecify SD card image (partition map + FAT32)\n");
+	printf("-serial\n");
+	printf("\tConnect host fs through Serial Bus [experimental]\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
 	printf("\tLoad application from the local disk into RAM\n");
 	printf("\t(.PRG file with 2 byte start address header)\n");
@@ -746,6 +750,10 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			set_system_time = true;
+		} else if (!strcmp(argv[0], "-serial")) {
+			argc--;
+			argv++;
+			has_serial = true;
 		} else if (!strcmp(argv[0], "-version")){
 			printf("%s", VER_INFO);
 			argc--;
@@ -754,6 +762,19 @@ main(int argc, char **argv)
 		} else {
 			usage();
 		}
+	}
+
+	if (prg_path && sdcard_path) {
+		printf("'-prg' cannot be combined with '-sdcard'!\n");
+		exit(1);
+	}
+
+	if (has_serial && sdcard_path) {
+		printf("'-serial' cannot be combined with '-sdcard'!\n");
+		// The ROM would fall back from SD card to Serial if no SD card
+		// is inserted, but the emulator can't attach/detach SD cards,
+		// so with -sdcard, the ROM will never fall back to Serial anyway.
+		exit(1);
 	}
 
 	SDL_RWops *f = SDL_RWFromFile(rom_path, "rb");
@@ -784,11 +805,6 @@ main(int argc, char **argv)
 
 	prg_override_start = -1;
 	if (prg_path) {
-		if (sdcard_file) {
-			printf("'-prg' cannot be combined with '-sdcard'!\n");
-			exit(1);
-		}
-
 		char *comma = strchr(prg_path, ',');
 		if (comma) {
 			prg_override_start = (uint16_t)strtol(comma + 1, NULL, 16);
@@ -1025,19 +1041,35 @@ emulator_loop(void *param)
 #endif
 
 #ifdef LOAD_HYPERCALLS
-		if (!sdcard_file && is_kernal() && pc > 0xFF80) {
+		if (!has_serial && !sdcard_file && is_kernal() && pc > 0xFF80) {
 			bool handled = true;
 			int s = -1;
 			switch(pc) {
-				// IEEE-488
-				case 0xFF93:	SECOND();	break;
-				case 0xFF96:	TKSA();		break;
-				case 0xFFA5:	s=ACPTR();	break;
-				case 0xFFA8:	s=CIOUT();	break;
-				case 0xFFAB:	UNTLK();	break;
-				case 0xFFAE:	s=UNLSN();	break;
-				case 0xFFB1:	LISTEN();	break;
-				case 0xFFB4:	TALK();		break;
+				case 0xFF93:
+					SECOND(a);
+					break;
+				case 0xFF96:
+					TKSA(a);
+					break;
+				case 0xFFA5:
+					s=ACPTR(&a);
+					status = (status & ~2) | (!a << 1);
+					break;
+				case 0xFFA8:
+					s=CIOUT(a);
+					break;
+				case 0xFFAB:
+					UNTLK();
+					break;
+				case 0xFFAE:
+					s=UNLSN();
+					break;
+				case 0xFFB1:
+					LISTEN(a);
+					break;
+				case 0xFFB4:
+					TALK(a);
+					break;
 				default:
 					handled = false;
 					break;
@@ -1065,6 +1097,9 @@ emulator_loop(void *param)
 		via1_step(clocks);
 		via2_step(clocks);
 		vera_spi_step(clocks);
+		if (has_serial) {
+			serial_step(clocks);
+		}
 		new_frame |= video_step(MHZ, clocks);
 		for (uint8_t i = 0; i < clocks; i++) {
 			i2c_step();

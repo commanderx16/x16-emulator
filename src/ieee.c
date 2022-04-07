@@ -2,6 +2,13 @@
 // Copyright (c) 2022 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
+// Commodore Bus emulation
+// * L2: TALK/LISTEN layer: https://www.pagetable.com/?p=1031
+// * L3: Commodore DOS: https://www.pagetable.com/?p=1038
+// This is used from
+// * serial.c: L1: Serial Bus emulation (low level)
+// * main.c: IEEE KERNAL call hooks (high level)
+
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -9,7 +16,8 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <SDL.h>
-#include "glue.h"
+#include "ieee.h"
+extern SDL_RWops *prg_file;
 
 #define UNIT_NO 8
 
@@ -41,11 +49,6 @@ typedef struct {
 
 channel_t channels[16];
 
-__attribute__((unused)) static void
-set_z(char f)
-{
-	status = (status & ~2) | (!!f << 1);
-}
 
 static int
 create_directory_listing(uint8_t *data)
@@ -284,10 +287,8 @@ copen(int channel)
 			if (log_ieee) {
 				printf("  FILE NOT FOUND\n");
 			}
-			a = 2; // FNF
-			status |= 1;
 			set_error(0x62, 0, 0);
-			ret = a;
+			ret = 2; // FNF
 		} else {
 			if (!channels[channel].write) {
 				SDL_RWseek(channels[channel].f, 0, RW_SEEK_END);
@@ -323,7 +324,7 @@ ieee_init()
 }
 
 void
-SECOND()
+SECOND(uint8_t a)
 {
 	if (log_ieee) {
 		printf("%s $%02x\n", __func__, a);
@@ -352,7 +353,7 @@ SECOND()
 }
 
 void
-TKSA()
+TKSA(uint8_t a)
 {
 	if (log_ieee) {
 		printf("%s $%02x\n", __func__, a);
@@ -364,24 +365,24 @@ TKSA()
 
 
 int
-ACPTR()
+ACPTR(uint8_t *a)
 {
 	int ret = -1;
 	if (channel == 15) {
 		if (error_pos >= error_len) {
 			clear_error();
 		}
-		a = error[error_pos++];
+		*a = error[error_pos++];
 	} else if (!channels[channel].write) {
 		if (channels[channel].name[0] == '$') {
 			if (dirlist_pos < dirlist_len) {
-				a = dirlist[dirlist_pos++];
+				*a = dirlist[dirlist_pos++];
 			}
 			if (dirlist_pos == dirlist_len) {
 				ret = 0x40;
 			}
 		} else if (channels[channel].f) {
-			a = SDL_ReadU8(channels[channel].f);
+			*a = SDL_ReadU8(channels[channel].f);
 			if (channels[channel].pos == channels[channel].size - 1) {
 				ret = 0x40;
 			} else {
@@ -391,15 +392,14 @@ ACPTR()
 	} else {
 		ret = 2; // FNF
 	}
-	set_z(!a);
 	if (log_ieee) {
-		printf("%s-> $%02x\n", __func__, a);
+		printf("%s-> $%02x\n", __func__, *a);
 	}
 	return ret;
 }
 
 int
-CIOUT()
+CIOUT(uint8_t a)
 {
 	int ret = -1;
 	if (log_ieee) {
@@ -459,23 +459,23 @@ UNLSN() {
 }
 
 void
-LISTEN()
+LISTEN(uint8_t a)
 {
 	if (log_ieee) {
 		printf("%s $%02x\n", __func__, a);
 	}
-	if (a == UNIT_NO) {
+	if ((a & 0x1f) == UNIT_NO) {
 		listening = true;
 	}
 }
 
 void
-TALK()
+TALK(uint8_t a)
 {
 	if (log_ieee) {
 		printf("%s $%02x\n", __func__, a);
 	}
-	if (a == UNIT_NO) {
+	if ((a & 0x1f) == UNIT_NO) {
 		talking = true;
 	}
 }
