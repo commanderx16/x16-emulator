@@ -2,6 +2,11 @@
 // Copyright (c) 2022 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
+// Commodore Bus emulation, L1: Serial Bus
+// This code is hacky, buggy and incomplete, but
+// it helped bringing up the serial bus on real
+// hardware.
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -22,7 +27,7 @@ static bool eoi = false;
 static bool fnf = false; // file not found
 static int clocks_since_last_change = 0;
 
-//#define printf(...)
+#define printf(...)
 
 static uint8_t
 read_byte(bool *eoi)

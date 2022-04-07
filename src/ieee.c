@@ -2,6 +2,13 @@
 // Copyright (c) 2022 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
+// Commodore Bus emulation
+// * L2: TALK/LISTEN layer: https://www.pagetable.com/?p=1031
+// * L3: Commodore DOS: https://www.pagetable.com/?p=1038
+// This is used from
+// * serial.c: L1: Serial Bus emulation (low level)
+// * main.c: IEEE KERNAL call hooks (high level)
+
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
