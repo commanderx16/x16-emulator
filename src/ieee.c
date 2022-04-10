@@ -16,13 +16,13 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <SDL.h>
+#include "glue.h"
 #include "ieee.h"
-extern SDL_RWops *prg_file;
 
 #define UNIT_NO 8
 
-//bool log_ieee = true;
-bool log_ieee = false;
+bool log_ieee = true;
+//bool log_ieee = false;
 
 char error[80];
 int error_len = 0;
@@ -313,6 +313,10 @@ cclose(int channel)
 	channels[channel].name[0] = 0;
 	if (channels[channel].f) {
 		SDL_RWclose(channels[channel].f);
+		if (channels[channel].f == prg_file) {
+			printf("prg_finished_loading\n");
+			callback_prg_finished_loading();
+		}
 		channels[channel].f = NULL;
 	}
 }

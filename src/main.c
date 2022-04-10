@@ -99,6 +99,7 @@ uint16_t trace_address = 0;
 
 int instruction_counter;
 SDL_RWops *prg_file;
+bool prg_finished_loading;
 int prg_override_start = -1;
 bool run_after_load = false;
 
@@ -455,6 +456,17 @@ usage_keymap()
 	exit(1);
 }
 
+void
+callback_prg_finished_loading()
+{
+	prg_finished_loading = true;
+	if (sdcard_file) {
+		// after auto-loading a PRG from the host fs,
+		// switch to the SD card if requested
+		sdcard_attach();
+	}
+}
+
 int
 main(int argc, char **argv)
 {
@@ -785,18 +797,10 @@ main(int argc, char **argv)
 		}
 	}
 
-	if (prg_path && sdcard_path) {
-		printf("'-prg' cannot be combined with '-sdcard'!\n");
-		exit(1);
-	}
-
-	if (has_serial && sdcard_path) {
-		printf("'-serial' cannot be combined with '-sdcard'!\n");
-		// The ROM would fall back from SD card to Serial if no SD card
-		// is inserted, but the emulator can't attach/detach SD cards,
-		// so with -sdcard, the ROM will never fall back to Serial anyway.
-		exit(1);
-	}
+//	if (prg_path && sdcard_path) {
+//		printf("'-prg' cannot be combined with '-sdcard'!\n");
+//		exit(1);
+//	}
 
 	SDL_RWops *f = SDL_RWFromFile(rom_path, "rb");
 	if (!f) {
@@ -821,7 +825,11 @@ main(int argc, char **argv)
 			printf("Cannot open %s!\n", sdcard_path);
 			exit(1);
 		}
-		sdcard_attach();
+		if (!prg_path) {
+			// when auto-loading from the host-fs, defer attaching
+			// SD card
+			sdcard_attach();
+		}
 	}
 
 	prg_override_start = -1;
@@ -1080,7 +1088,7 @@ emulator_loop(void *param)
 #endif
 
 #ifdef LOAD_HYPERCALLS
-		if (!has_serial && !sdcard_file && is_kernal() && pc > 0xFF80) {
+		if (!has_serial && (!sdcard_file || !prg_finished_loading) && is_kernal() && pc > 0xFF80) {
 			bool handled = true;
 			int s = -1;
 			switch(pc) {
