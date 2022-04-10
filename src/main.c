@@ -99,6 +99,7 @@ uint16_t trace_address = 0;
 
 int instruction_counter;
 SDL_RWops *prg_file;
+bool prg_finished_loading;
 int prg_override_start = -1;
 bool run_after_load = false;
 
@@ -785,19 +786,6 @@ main(int argc, char **argv)
 		}
 	}
 
-	if (prg_path && sdcard_path) {
-		printf("'-prg' cannot be combined with '-sdcard'!\n");
-		exit(1);
-	}
-
-	if (has_serial && sdcard_path) {
-		printf("'-serial' cannot be combined with '-sdcard'!\n");
-		// The ROM would fall back from SD card to Serial if no SD card
-		// is inserted, but the emulator can't attach/detach SD cards,
-		// so with -sdcard, the ROM will never fall back to Serial anyway.
-		exit(1);
-	}
-
 	SDL_RWops *f = SDL_RWFromFile(rom_path, "rb");
 	if (!f) {
 		printf("Cannot open %s!\n", rom_path);
@@ -970,6 +958,84 @@ set_kernal_status(uint8_t s)
 	return true;
 }
 
+bool
+handle_hostfs()
+{
+	if (has_serial) {
+		// if we do bit-level serial bus emulation, we don't
+		// do high-level KERNAL IEEE API interception
+		return false;
+	}
+
+	if (sdcard_file && !prg_file) {
+		// if should emulate an SD card (and don't need to
+		// hack a PRG into RAM), we'll always skip host fs
+		return false;
+	}
+
+	if (sdcard_file && prg_file && prg_finished_loading) {
+		// also skip if we should do SD card and we're done
+		// with the PRG hack
+		return false;
+	}
+
+	if (!is_kernal() || pc <= 0xFF80) {
+		return false;
+	}
+
+	static int count_unlistn = 0;
+	bool handled = true;
+	int s = -1;
+	switch(pc) {
+		case 0xFF93:
+			SECOND(a);
+			break;
+		case 0xFF96:
+			TKSA(a);
+			break;
+		case 0xFFA5:
+			s=ACPTR(&a);
+			status = (status & ~2) | (!a << 1);
+			break;
+		case 0xFFA8:
+			s=CIOUT(a);
+			break;
+		case 0xFFAB:
+			UNTLK();
+			break;
+		case 0xFFAE:
+			s=UNLSN();
+			if (prg_file && sdcard_file && ++count_unlistn == 2) {
+				// after auto-loading a PRG from the host fs,
+				// switch to the SD card if requested
+				prg_finished_loading = true;
+				sdcard_attach();
+			}
+			break;
+		case 0xFFB1:
+			LISTEN(a);
+			break;
+		case 0xFFB4:
+			TALK(a);
+			break;
+		default:
+			handled = false;
+			break;
+	}
+
+	if (handled) {
+		if (s >= 0) {
+			if (!set_kernal_status(s)) {
+				printf("Warning: Could not set STATUS!\n");
+			}
+		}
+
+		pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
+		sp += 2;
+	}
+	return handled;
+}
+
 void
 emscripten_main_loop(void) {
 	emulator_loop(NULL);
@@ -1079,54 +1145,9 @@ emulator_loop(void *param)
 		}
 #endif
 
-#ifdef LOAD_HYPERCALLS
-		if (!has_serial && !sdcard_file && is_kernal() && pc > 0xFF80) {
-			bool handled = true;
-			int s = -1;
-			switch(pc) {
-				case 0xFF93:
-					SECOND(a);
-					break;
-				case 0xFF96:
-					TKSA(a);
-					break;
-				case 0xFFA5:
-					s=ACPTR(&a);
-					status = (status & ~2) | (!a << 1);
-					break;
-				case 0xFFA8:
-					s=CIOUT(a);
-					break;
-				case 0xFFAB:
-					UNTLK();
-					break;
-				case 0xFFAE:
-					s=UNLSN();
-					break;
-				case 0xFFB1:
-					LISTEN(a);
-					break;
-				case 0xFFB4:
-					TALK(a);
-					break;
-				default:
-					handled = false;
-					break;
-			}
-
-			if (handled) {
-				if (s >= 0) {
-					if (!set_kernal_status(s)) {
-						printf("Warning: Could not set STATUS!\n");
-					}
-				}
-
-				pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
-				sp += 2;
-				continue;
-			}
+		if (handle_hostfs()) {
+			continue;
 		}
-#endif
 
 		uint32_t old_clockticks6502 = clockticks6502;
 		step6502();
