@@ -979,7 +979,7 @@ handle_hostfs()
 		return false;
 	}
 
-	if (!is_kernal() || pc <= 0xFF80) {
+	if (!is_kernal() || pc < 0xFF44) {
 		return false;
 	}
 
@@ -987,6 +987,14 @@ handle_hostfs()
 	bool handled = true;
 	int s = -1;
 	switch(pc) {
+		case 0xFF44: {
+			uint16_t count = a;
+			s=MACPTR(y << 8 | x, &count);
+			x = count & 0xff;
+			y = count >> 8;
+			status &= 0xfe; // clear C -> supported
+			break;
+		}
 		case 0xFF93:
 			SECOND(a);
 			break;

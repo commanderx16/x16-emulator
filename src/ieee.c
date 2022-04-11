@@ -15,7 +15,9 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <limits.h>
 #include <SDL.h>
+#include "memory.h"
 #include "ieee.h"
 extern SDL_RWops *prg_file;
 
@@ -478,4 +480,26 @@ TALK(uint8_t a)
 	if ((a & 0x1f) == UNIT_NO) {
 		talking = true;
 	}
+}
+
+int
+MACPTR(uint16_t addr, uint16_t *c)
+{
+	int ret = -1;
+	int count = *c;
+	if (count == 0) {
+		count = INT_MAX;
+	}
+	int i;
+	for (i = 0; i < count; i++) {
+		uint8_t byte;
+		ret = ACPTR(&byte);
+		if (ret >= 0) {
+			break;
+		}
+		write6502(addr, byte);
+		addr++;
+	}
+	*c = i;
+	return ret;
 }
