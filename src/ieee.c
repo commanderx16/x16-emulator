@@ -16,6 +16,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <SDL.h>
+#include "memory.h"
 #include "ieee.h"
 extern SDL_RWops *prg_file;
 
@@ -478,4 +479,29 @@ TALK(uint8_t a)
 	if ((a & 0x1f) == UNIT_NO) {
 		talking = true;
 	}
+}
+
+int
+MACPTR(uint16_t addr, uint16_t *c)
+{
+	int ret = -1;
+	int count = *c ?: 256;
+	uint8_t ram_bank = read6502(0);
+	int i;
+	for (i = 0; i < count; i++) {
+		uint8_t byte;
+		ret = ACPTR(&byte);
+		write6502(addr, byte);
+		addr++;
+		if (addr == 0xc000) {
+			addr = 0xa000;
+			ram_bank++;
+			write6502(0, ram_bank);
+		}
+		if (ret >= 0) {
+			break;
+		}
+	}
+	*c = i;
+	return ret;
 }
