@@ -961,6 +961,10 @@ set_kernal_status(uint8_t s)
 bool
 handle_hostfs()
 {
+#ifndef LOAD_HYPERCALLS
+	return false;
+#endif
+
 	if (has_serial) {
 		// if we do bit-level serial bus emulation, we don't
 		// do high-level KERNAL IEEE API interception
