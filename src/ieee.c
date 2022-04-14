@@ -489,7 +489,7 @@ MACPTR(uint16_t addr, uint16_t *c)
 	uint8_t ram_bank = read6502(0);
 	int i;
 	for (i = 0; i < count; i++) {
-		uint8_t byte;
+		uint8_t byte = 0;
 		ret = ACPTR(&byte);
 		write6502(addr, byte);
 		addr++;
