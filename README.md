@@ -323,6 +323,16 @@ All rights reserved. License: 2-clause BSD
 Release Notes
 -------------
 
+### Release 40 ("Bonn")
+
+* Features
+	* improved VERA video timings [Natt Akuma]
+	* added Host FS bridging using IEEE API
+	* added Serial Bus emulation [experimental]
+* Other
+	* Fixed I2C (RTC, SMC)
+	* LST support for -trace
+
 ## Release 39 ("Buenos Aires")
 
 * Switch to Proto2 Hardware
