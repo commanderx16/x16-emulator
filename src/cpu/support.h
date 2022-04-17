@@ -72,5 +72,6 @@ void reset6502() {
     y = 0;
     sp = 0xFD;
     status |= FLAG_CONSTANT;
+	waiting = 0;
 }
 
