@@ -56,6 +56,7 @@ extern bool log_keyboard;
 extern bool log_speed;
 extern echo_mode_t echo_mode;
 extern bool save_on_exit;
+extern bool disable_emu_cmd_keys;
 extern gif_recorder_state_t record_gif;
 extern char *gif_path;
 extern uint8_t keymap;

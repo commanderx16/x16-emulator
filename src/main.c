@@ -84,6 +84,7 @@ bool dump_vram = false;
 bool warp_mode = false;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
+bool disable_emu_cmd_keys = false;
 bool set_system_time = false;
 bool has_serial = false;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
