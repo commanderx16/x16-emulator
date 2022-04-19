@@ -235,6 +235,7 @@ emu_write(uint8_t reg, uint8_t value)
 		case 3: echo_mode = value; break;
 		case 4: save_on_exit = v; break;
 		case 5: emu_recorder_set((gif_recorder_command_t) value); break;
+		case 6: disable_emu_cmd_keys = v; break;
 		default: printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
 	}
 }
@@ -254,6 +255,8 @@ emu_read(uint8_t reg, bool debugOn)
 		return save_on_exit ? 1 : 0;
 	} else if (reg == 5) {
 		return record_gif;
+	} else if (reg == 6) {
+		return disable_emu_cmd_keys ? 1 : 0;
 
 	} else if (reg == 8) {
 		return (clockticks6502 >> 0) & 0xff;
