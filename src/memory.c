@@ -255,6 +255,8 @@ emu_read(uint8_t reg, bool debugOn)
 		return save_on_exit ? 1 : 0;
 	} else if (reg == 5) {
 		return record_gif;
+	} else if (reg == 6) {
+		return disable_emu_cmd_keys ? 1 : 0;
 
 	} else if (reg == 8) {
 		return (clockticks6502 >> 0) & 0xff;
