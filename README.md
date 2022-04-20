@@ -96,6 +96,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-keymap` tells the KERNAL to switch to a specific keyboard layout. Use it without an argument to view the supported layouts.
 * `-sdcard` lets you specify an SD card image (partition table + FAT32). Without this option, drive 8 will interface to the current directory on the host.
 * `-serial` makes accesses to the host filesystem go through the Serial Bus [experimental].
+* `-nohostieee` disables IEEE API interception to access the host fs.
 * `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
 * `-bas` lets you specify a BASIC program in ASCII format that automatically typed in (and tokenized).
 * `-run` executes the application specified through `-prg` or `-bas` using `RUN` or `SYS`, depending on the load address.

@@ -11,7 +11,6 @@
 
 //#define TRACE
 //#define PERFSTAT
-#define LOAD_HYPERCALLS
 
 #define MHZ 8
 

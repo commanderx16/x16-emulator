@@ -87,6 +87,7 @@ bool save_on_exit = true;
 bool disable_emu_cmd_keys = false;
 bool set_system_time = false;
 bool has_serial = false;
+bool no_ieee_intercept = false;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
@@ -379,6 +380,10 @@ usage()
 	printf("\tSpecify SD card image (partition map + FAT32)\n");
 	printf("-serial\n");
 	printf("\tConnect host fs through Serial Bus [experimental]\n");
+	printf("-nohostieee\n");
+	printf("\tDisable host fs through IEEE API interception.\n");
+	printf("\tIEEE API host fs is normally enabled unless -sdcard or\n");
+	printf("\t-serial is specified.\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
 	printf("\tLoad application from the local disk into RAM\n");
 	printf("\t(.PRG file with 2 byte start address header)\n");
@@ -777,6 +782,10 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			has_serial = true;
+		} else if (!strcmp(argv[0], "-nohostieee")) {
+			argc--;
+			argv++;
+			no_ieee_intercept = true;
 		} else if (!strcmp(argv[0], "-version")){
 			printf("%s", VER_INFO);
 			argc--;
@@ -960,11 +969,11 @@ set_kernal_status(uint8_t s)
 }
 
 bool
-handle_hostfs()
+handle_ieee_intercept()
 {
-#ifndef LOAD_HYPERCALLS
-	return false;
-#endif
+	if (no_ieee_intercept) {
+		return false;
+	}
 
 	if (has_serial) {
 		// if we do bit-level serial bus emulation, we don't
@@ -1158,7 +1167,7 @@ emulator_loop(void *param)
 		}
 #endif
 
-		if (handle_hostfs()) {
+		if (handle_ieee_intercept()) {
 			continue;
 		}
 
