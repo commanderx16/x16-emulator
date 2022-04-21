@@ -227,6 +227,7 @@ void DEBUGSetBreakPoint(int newBreakPoint) {
 void DEBUGBreakToDebugger(void) {
 	currentMode = DMODE_STOP;
 	currentPC = pc;
+   currentPCBank = pc < 0xC000 ? memory_get_ram_bank() : memory_get_rom_bank();
 }
 
 // *******************************************************************************************
