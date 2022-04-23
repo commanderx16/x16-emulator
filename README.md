@@ -105,6 +105,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-echo [{iso|raw}]` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
 * `-warp` causes the emulator to run as fast as possible, possibly faster than a real X16.
 * `-gif <filename>[,wait]` to record the screen into a GIF. See below for more info.
+* `-wav <filename>[{,wait|,auto}]` to record audio into a WAV. See below for more info.
 * `-quality` change image scaling algorithm quality
 	* `nearest`: nearest pixel sampling
 	* `linear`: linear filtering
@@ -188,6 +189,14 @@ GIF Recording
 With the argument `-gif`, followed by a filename, a screen recording will be saved into the given GIF file. Please exit the emulator before reading the GIF file.
 
 If the option `,wait` is specified after the filename, it will start recording on `POKE $9FB5,2`. It will capture a single frame on `POKE $9FB5,1` and pause recording on `POKE $9FB5,0`. `PEEK($9FB5)` returns a 128 if recording is enabled but not active.
+
+
+WAV Recording
+-------------
+
+With the argument `-wav`, followed by a filename, an audio recording will be saved into the given WAV file. Please exit the emulator before reading the WAV file.
+
+If the option `,wait` is specified after the filename, it will start recording on `POKE $9FB6,1`. If the option `,auto` is specified after the filename, it will start recording on the first non-zero audio signal. It will pause recording on `POKE $9FB6,0`. `PEEK($9FB6)` returns a 1 if recording is enabled but not active.
 
 
 BASIC and the Screen Editor
@@ -330,6 +339,7 @@ Release Notes
 	* improved VERA video timings [Natt Akuma]
 	* added Host FS bridging using IEEE API
 	* added Serial Bus emulation [experimental]
+	* added WAV file recording [Stephen Horn]
 * Other
 	* Fixed I2C (RTC, SMC)
 	* LST support for -trace

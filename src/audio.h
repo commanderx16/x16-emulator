@@ -6,6 +6,8 @@
 
 #include <SDL.h>
 
+#define AUDIO_SAMPLERATE (25000000 / 512)
+
 void audio_init(const char *dev_name, int num_audio_buffers);
 void audio_close(void);
 void audio_render(int cpu_clocks);

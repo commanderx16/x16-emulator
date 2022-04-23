@@ -13,6 +13,7 @@
 #include "ym2151.h"
 #include "ps2.h"
 #include "cpu/fake6502.h"
+#include "wav_recorder.h"
 
 uint8_t ram_bank;
 uint8_t rom_bank;
@@ -223,6 +224,7 @@ emu_recorder_set(gif_recorder_command_t command)
 // 3: echo_mode
 // 4: save_on_exit
 // 5: record_gif
+// 6: record_wav
 // POKE $9FB3,1:PRINT"ECHO MODE IS ON":POKE $9FB3,0
 void
 emu_write(uint8_t reg, uint8_t value)
@@ -235,7 +237,7 @@ emu_write(uint8_t reg, uint8_t value)
 		case 3: echo_mode = value; break;
 		case 4: save_on_exit = v; break;
 		case 5: emu_recorder_set((gif_recorder_command_t) value); break;
-		// 6 is used by Box16 for recording wav output
+		case 6: wav_recorder_set((wav_recorder_command_t) value); break;
 		case 7: disable_emu_cmd_keys = v; break;
 		default: printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
 	}
@@ -256,7 +258,8 @@ emu_read(uint8_t reg, bool debugOn)
 		return save_on_exit ? 1 : 0;
 	} else if (reg == 5) {
 		return record_gif;
-	// 6 is used by Box16 for recording wav output
+	} else if (reg == 6) {
+		return wav_recorder_get_state();
 	} else if (reg == 7) {
 		return disable_emu_cmd_keys ? 1 : 0;
 

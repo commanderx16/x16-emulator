@@ -5,13 +5,12 @@
 #include "audio.h"
 #include "vera_psg.h"
 #include "vera_pcm.h"
+#include "wav_recorder.h"
 #include "ym2151.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-#define SAMPLERATE (25000000 / 512)
 
 #ifdef __EMSCRIPTEN__
 	#define SAMPLES_PER_BUFFER (1024)
@@ -86,7 +85,7 @@ audio_init(const char *dev_name, int num_audio_buffers)
 
 	// Setup SDL audio
 	memset(&desired, 0, sizeof(desired));
-	desired.freq     = SAMPLERATE;
+	desired.freq     = AUDIO_SAMPLERATE;
 	desired.format   = AUDIO_S16SYS;
 	desired.samples  = SAMPLES_PER_BUFFER;
 	desired.channels = 2;
@@ -169,6 +168,8 @@ audio_render(int cpu_clocks)
 			for (int i = 0; i < 2 * SAMPLES_PER_BUFFER; i++) {
 				buf[i] = ((int)psg_buf[i] + (int)pcm_buf[i] + (int)ym_buf[i]) / 3;
 			}
+
+			wav_recorder_process(buf, SAMPLES_PER_BUFFER);
 
 			SDL_LockAudioDevice(audio_dev);
 			wridx++;

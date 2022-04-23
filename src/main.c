@@ -38,6 +38,7 @@
 #include "ym2151.h"
 #include "audio.h"
 #include "version.h"
+#include "wav_recorder.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -90,6 +91,7 @@ bool has_serial = false;
 bool no_ieee_intercept = false;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
+char *wav_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
 char *scale_quality = "best";
@@ -415,6 +417,12 @@ usage()
 	printf("\tPOKE $9FB5,2 to start recording.\n");
 	printf("\tPOKE $9FB5,1 to capture a single frame.\n");
 	printf("\tPOKE $9FB5,0 to pause.\n");
+	printf("-wav <file.gif>[{,wait|,auto}]\n");
+	printf("\tRecord a wav for the audio output.\n");
+	printf("\tUse ,wait to start paused, or ,auto to start paused and automatically begin recording on the first non-zero audio signal.\n");
+	printf("\tPOKE $9FB6,2 to automatically begin recording on the first non-zero audio signal.\n");
+	printf("\tPOKE $9FB6,1 to begin recording immediately.\n");
+	printf("\tPOKE $9FB6,0 to pause.\n");
 	printf("-scale {1|2|3|4}\n");
 	printf("\tScale output to an integer multiple of 640x480\n");
 	printf("-quality {nearest|linear|best}\n");
@@ -676,6 +684,16 @@ main(int argc, char **argv)
 			gif_path = argv[0];
 			argv++;
 			argc--;
+		} else if (!strcmp(argv[0], "-wav")) {
+			argc--;
+			argv++;
+			// set up for recording
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			wav_path = argv[0];
+			argv++;
+			argc--;
 		} else if (!strcmp(argv[0], "-debug")) {
 			argc--;
 			argv++;
@@ -869,6 +887,7 @@ main(int argc, char **argv)
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
 
 	audio_init(audio_dev_name, audio_buffers);
+	wav_recorder_set_path(wav_path);
 
 	memory_init();
 	video_init(window_scale, scale_quality);
@@ -889,6 +908,7 @@ main(int argc, char **argv)
 	emulator_loop(NULL);
 #endif
 
+	wav_recorder_shutdown();
 	audio_close();
 	video_end();
 	SDL_Quit();
