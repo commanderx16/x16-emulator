@@ -9,7 +9,7 @@ set -e
 
 ##############################
 export PRERELEASE_VERSION=40
-PRE=_pre1
+PRE=_rc2
 ##############################
 
 

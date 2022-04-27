@@ -239,14 +239,13 @@ On Windows, you can use the [OSFMount](https://www.osforensics.com/tools/mount-d
 Host Filesystem Interface
 -------------------------
 
-If the system ROM contains any version of the KERNAL, and there is no SD card image attached, the LOAD (`$FFD5`) and SAVE (`$FFD8`) KERNAL calls (and BASIC statements) are intercepted by the emulator for device 8 (the default). So the BASIC statements will target the host computer's local filesystem:
+If the system ROM contains any version of the KERNAL, and there is no SD card image attached, all accesses to the ("IEEE") Commodore Bus are intercepted by the emulator for device 8 (the default). So the BASIC statements will target the host computer's local filesystem:
 
-      LOAD"$
+      DOS"$
       LOAD"FOO.PRG
       LOAD"IMAGE.PRG",8,1
       SAVE"BAR.PRG
-
-Note that this feature is very limited! Manually reading and writing files (e.g. `OPEN` in BASIC) is not supported by the host filesystem interface. Use SD card images for this.
+      OPEN2,8,2,"FOO,S,R"
 
 The emulator will interpret filenames relative to the directory it was started in. On macOS, when double-clicking the executable, this is the home directory.
 
@@ -340,8 +339,10 @@ Release Notes
 	* added Host FS bridging using IEEE API
 	* added Serial Bus emulation [experimental]
 	* added WAV file recording [Stephen Horn]
+	* possible to disable Ctrl/Cmd key interception ($9FB7) [mooinglemur] 
 * Other
 	* Fixed I2C (RTC, SMC)
+	* Fixed RAM/ROM bank for PC when entering break [mjallison42]
 	* LST support for -trace
 
 ## Release 39 ("Buenos Aires")
