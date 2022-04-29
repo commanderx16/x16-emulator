@@ -172,6 +172,8 @@ ps2_scancode_from_SDL_Scancode(SDL_Scancode scancode)
 			return 0x59;
 		case SDL_SCANCODE_LSHIFT:
 			return 0x12;
+		case SDL_SCANCODE_CAPSLOCK:
+			return 0x58;
 		case SDL_SCANCODE_LCTRL:
 			return 0x14;
 		case SDL_SCANCODE_RCTRL:
