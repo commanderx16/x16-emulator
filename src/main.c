@@ -1047,9 +1047,12 @@ handle_ieee_intercept()
 			break;
 		case 0xFFAE:
 			s=UNLSN();
-			if (prg_file && sdcard_file && ++count_unlistn == 2) {
+			if (prg_file && sdcard_file && ++count_unlistn == 4) {
 				// after auto-loading a PRG from the host fs,
 				// switch to the SD card if requested
+				// 4x UNLISTEN:
+				//    2x for LOAD"AUTOBOOT.X16*"
+				//    2x for LOAD":*"
 				prg_finished_loading = true;
 				sdcard_attach();
 			}
