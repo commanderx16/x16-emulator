@@ -34,7 +34,7 @@ endif
 OUTPUT=x16emu
 
 ifeq ($(MAC_STATIC),1)
-	LDFLAGS=/opt/homebrew/Cellar/sdl2/2.0.20/lib/libSDL2.a -lm -liconv -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,ForceFeedback -lobjc -Wl,-framework,CoreVideo -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,IOKit -Wl,-weak_framework,QuartzCore -Wl,-weak_framework,Metal -Wl,-framework,CoreHaptics -Wl,-framework,GameController
+	LDFLAGS=/opt/homebrew/Cellar/sdl2/2.0.20/lib/libSDL2.a -lm -liconv -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,ForceFeedback -lobjc -Wl,-framework,CoreVideo -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,IOKit -Wl,-weak_framework,QuartzCore -Wl,-weak_framework,Metal -Wl,-weak_framework,CoreHaptics -Wl,-weak_framework,GameController
 endif
 
 ifeq ($(CROSS_COMPILE_WINDOWS),1)
