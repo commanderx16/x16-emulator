@@ -487,12 +487,13 @@ MACPTR(uint16_t addr, uint16_t *c)
 	int ret = -1;
 	int count = *c ?: 256;
 	uint8_t ram_bank = read6502(0);
-	int i;
-	for (i = 0; i < count; i++) {
+	int i = 0;
+	do {
 		uint8_t byte = 0;
 		ret = ACPTR(&byte);
 		write6502(addr, byte);
 		addr++;
+		i++;
 		if (addr == 0xc000) {
 			addr = 0xa000;
 			ram_bank++;
@@ -501,7 +502,7 @@ MACPTR(uint16_t addr, uint16_t *c)
 		if (ret >= 0) {
 			break;
 		}
-	}
+	} while(i < count);
 	*c = i;
 	return ret;
 }
