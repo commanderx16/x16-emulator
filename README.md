@@ -332,6 +332,13 @@ All rights reserved. License: 2-clause BSD
 Release Notes
 -------------
 
+### Release 41 ("Marrakech")
+
+* allow apps to intercept Cmd/Win, Menu and Caps-Lock keys
+* fixed `-prg` with `-sdcard`
+* fixed loading from host filesystem (length reporting by `MACPTR` on EOI)
+* macOS: support for older versions like Catalina (10.15)
+
 ### Release 40 ("Bonn")
 
 * Features
