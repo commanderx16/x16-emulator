@@ -8,6 +8,9 @@ set -e
 cp ../x16-rom/build/x16/rom_labels.h src
 cp ../x16-rom/build/x16/rom_lst.h src
 
+# update ROM symbols (for keyboard injection)
+sh rom_symbols.sh
+
 # always force re-build of main.c because of updated rom_labels.h
 rm -f build/main.o
 
