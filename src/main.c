@@ -387,8 +387,8 @@ usage()
 	printf("\tIEEE API host fs is normally enabled unless -sdcard or\n");
 	printf("\t-serial is specified.\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
-	printf("\tLoad application from the local disk into RAM\n");
-	printf("\t(.PRG file with 2 byte start address header)\n");
+	printf("\tLoad application from the *host filesystem* into RAM,\n");
+	printf("\teven if an SD card is attached.\n");
 	printf("\tThe override load address is hex without a prefix.\n");
 	printf("-bas <app.txt>\n");
 	printf("\tInject a BASIC program in ASCII encoding through the\n");

@@ -97,7 +97,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-sdcard` lets you specify an SD card image (partition table + FAT32). Without this option, drive 8 will interface to the current directory on the host.
 * `-serial` makes accesses to the host filesystem go through the Serial Bus [experimental].
 * `-nohostieee` disables IEEE API interception to access the host fs.
-* `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
+* `-prg` lets you specify a `.prg` file that gets loaded after start. It is fetched from the host filesystem, even if an SD card is attached!
 * `-bas` lets you specify a BASIC program in ASCII format that automatically typed in (and tokenized).
 * `-run` executes the application specified through `-prg` or `-bas` using `RUN` or `SYS`, depending on the load address.
 * `-geos` launches GEOS at startup.
