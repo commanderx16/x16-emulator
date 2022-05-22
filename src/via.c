@@ -228,9 +228,9 @@ via_step(via_t *via, unsigned clocks)
 // PA5: NESDAT2   NES DATA  (controller 2)
 // PA6: NESDAT1   NES DATA  (controller 1)
 // PA7: NESDAT0   NES DATA  (controller 0)
-// PB0: PS2MDAT   PS/2 DATA mouse
-// PB1: PS2MCLK   PS/2 CLK  mouse
-// PB2: I2CDATA   I2C DATA
+// PB0: I2CDATA   I2C DATA
+// PB1: I2CCLK    I2C CLK
+// PB2: MUTE
 // PB3: IECATTO   Serial ATN  out
 // PB4: IECCLKO   Serial CLK  out
 // PB5: IECDATAO  Serial DATA out
@@ -239,7 +239,7 @@ via_step(via_t *via, unsigned clocks)
 // CA1: PS2MCLK   PS/2 CLK  mouse
 // CA2: PS2KCLK   PS/2 CLK  keyboard
 // CB1: IECSRQ
-// CB2: I2CCLK    I2C CLK
+// CB2: -
 
 void
 via1_init()
@@ -274,14 +274,14 @@ via1_read(uint8_t reg, bool debug)
 			} else {
 				return
 					(~via[0].registers[2] & (
-						ps2_port[1].out |
-						(i2c_port.data_out << 2) |
+						(i2c_port.data_out << 0) |
+						/*(i2c_port.clk_out << 1) |*/
 						(serial_port_read_clk() << 6) |
 						(serial_port_read_data() << 7)
 					)) |
 					(via[0].registers[2] & (
-						ps2_port[1].in |
-						(i2c_port.data_in << 2) |
+						(i2c_port.data_in << 0) |
+						(i2c_port.clk_in << 1) |
 						(serial_port.in.atn << 3) |
 						((!serial_port.in.clk) << 4) |
 						((!serial_port.in.data) << 5)
@@ -314,8 +314,8 @@ via1_write(uint8_t reg, uint8_t value)
 		i2c_step();
 		// PB
 		const uint8_t pb = via[0].registers[0] | ~via[0].registers[2];
-		ps2_port[1].in   = pb & PS2_VIA_MASK;
 		i2c_port.data_in = (pb & I2C_DATA_MASK) != 0;
+		i2c_port.clk_in = (pb & I2C_CLK_MASK) != 0;
 		serial_port.in.atn = (pb & SERIAL_ATNIN_MASK) != 0;
 		serial_port.in.clk = (pb & SERIAL_CLOCKIN_MASK) == 0;
 		serial_port.in.data = (pb & SERIAL_DATAIN_MASK) == 0;
@@ -326,16 +326,6 @@ via1_write(uint8_t reg, uint8_t value)
 		ps2_port[0].in   = pa & PS2_VIA_MASK;
 		joystick_set_latch(via[0].registers[1] & JOY_LATCH_MASK);
 		joystick_set_clock(via[0].registers[1] & JOY_CLK_MASK);
-	} else if (reg == 12) {
-		i2c_step();
-		switch (value >> 5) {
-			case 6: // %110xxxxx
-				i2c_port.clk_in = 0;
-				break;
-			case 7: // %111xxxxx
-				i2c_port.clk_in = 1;
-				break;
-		}
 	}
 }
 
