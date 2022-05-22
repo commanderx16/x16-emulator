@@ -8,8 +8,8 @@
 set -e 
 
 ##############################
-export PRERELEASE_VERSION=40
-PRE=_rc2
+export PRERELEASE_VERSION=41
+#PRE=_rc3
 ##############################
 
 
@@ -58,6 +58,7 @@ scp intel16.local:/tmp/x16-emulator/x16emu_mac.zip x16emu_mac_intel.zip
                 cd arm
                 mv x16emu x16emu.arm
                 lipo x16emu.arm ../intel/x16emu -create -output x16emu
+                rm x16emu.arm
                 zip -r ../../x16emu_mac.zip *
         )
 )
