@@ -72,6 +72,17 @@ Type `make` to build the source. The output will be `x16emu` in the current dire
 
 Steps for compiling WebAssembly/HTML5 can be found [here][webassembly].
 
+### Windows Build
+
+Currently macOS/Linux/MSYS2 is needed to build for Windows. Install mingw-w64 toolchain and mingw32 version of SDL.
+Type the following command to build the source:
+```
+CROSS_COMPILE_WINDOWS=1 MINGW32=/usr/x86_64-w64-mingw32 WIN_SDL2=/usr/x86_64-w64-mingw32 make
+```
+Paths to those libraries can be changed to your installation directory if they aren't located there.
+
+The output will be `x16emu.exe` in the current directory. Remember you will also need a `rom.bin` as described above and `SDL2.dll` in SDL2's binary folder.
+
 
 Starting
 --------
@@ -80,17 +91,21 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 
 * When starting `x16emu` without arguments, it will pick up the system ROM (`rom.bin`) from the executable's directory.
 * The system ROM filename/path can be overridden with the `-rom` command line argument.
+* `-ram <ramsize>` specifies banked RAM size in KB (8, 16, 32, ..., 2048). The default is 512.
 * `-nvram` lets you specify a 64 byte file for the system's non-volatile RAM. If it does not exist, it will be created once the NVRAM is modified.
 * `-keymap` tells the KERNAL to switch to a specific keyboard layout. Use it without an argument to view the supported layouts.
-* `-sdcard` lets you specify an SD card image (partition table + FAT32).
-* `-prg` lets you specify a `.prg` file that gets injected into RAM after start.
+* `-sdcard` lets you specify an SD card image (partition table + FAT32). Without this option, drive 8 will interface to the current directory on the host.
+* `-serial` makes accesses to the host filesystem go through the Serial Bus [experimental].
+* `-nohostieee` disables IEEE API interception to access the host fs.
+* `-prg` lets you specify a `.prg` file that gets loaded after start. It is fetched from the host filesystem, even if an SD card is attached!
 * `-bas` lets you specify a BASIC program in ASCII format that automatically typed in (and tokenized).
 * `-run` executes the application specified through `-prg` or `-bas` using `RUN` or `SYS`, depending on the load address.
 * `-geos` launches GEOS at startup.
 * `-scale` scales video output to an integer multiple of 640x480
-* `-echo` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
+* `-echo [{iso|raw}]` causes all KERNAL/BASIC output to be printed to the host's terminal. Enable this and use the BASIC command "LIST" to convert a BASIC program to ASCII (detokenize).
 * `-warp` causes the emulator to run as fast as possible, possibly faster than a real X16.
 * `-gif <filename>[,wait]` to record the screen into a GIF. See below for more info.
+* `-wav <filename>[{,wait|,auto}]` to record audio into a WAV. See below for more info.
 * `-quality` change image scaling algorithm quality
 	* `nearest`: nearest pixel sampling
 	* `linear`: linear filtering
@@ -104,10 +119,12 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 	* `C`: CPU registers (7 B: A,X,Y,SP,STATUS,PC)
 	* `R`: RAM (40 KiB)
 	* `B`: Banked RAM (2 MiB)
-	* `V`: Video RAM and registers (128 KiB VRAM, 32 B composer registers, 512 B pallete, 16 B layer0 registers, 16 B layer1 registers, 16 B sprite registers, 2 KiB sprite attributes)
+	* `V`: Video RAM and registers (128 KiB VRAM, 32 B composer registers, 512 B palette, 16 B layer0 registers, 16 B layer1 registers, 16 B sprite registers, 2 KiB sprite attributes)
+* `-joy1` , `-joy2`, `-joy3`, `-joy4` enables binding a gamepad to that SNES controller port
 * `-sound` can be used to specify the output sound device.
 * `-abufs` can be used to specify the number of audio buffers (defaults to 8). If you're experiencing stuttering in the audio try to increase this number. This will result in additional audio latency though.
 * `-rtc` causes the real-time-clock set to the system's time and date.
+* `-version` prints additional version information of the emulator and ROM.
 * When compiled with `#define TRACE`, `-trace` will enable an instruction trace on stdout.
 
 Run `x16emu -h` to see all command line options.
@@ -174,6 +191,14 @@ With the argument `-gif`, followed by a filename, a screen recording will be sav
 If the option `,wait` is specified after the filename, it will start recording on `POKE $9FB5,2`. It will capture a single frame on `POKE $9FB5,1` and pause recording on `POKE $9FB5,0`. `PEEK($9FB5)` returns a 128 if recording is enabled but not active.
 
 
+WAV Recording
+-------------
+
+With the argument `-wav`, followed by a filename, an audio recording will be saved into the given WAV file. Please exit the emulator before reading the WAV file.
+
+If the option `,wait` is specified after the filename, it will start recording on `POKE $9FB6,1`. If the option `,auto` is specified after the filename, it will start recording on the first non-zero audio signal. It will pause recording on `POKE $9FB6,0`. `PEEK($9FB6)` returns a 1 if recording is enabled but not active.
+
+
 BASIC and the Screen Editor
 ---------------------------
 
@@ -214,14 +239,13 @@ On Windows, you can use the [OSFMount](https://www.osforensics.com/tools/mount-d
 Host Filesystem Interface
 -------------------------
 
-If the system ROM contains any version of the KERNAL, and there is no SD card image attached, the LOAD (`$FFD5`) and SAVE (`$FFD8`) KERNAL calls (and BASIC statements) are intercepted by the emulator for device 8 (the default). So the BASIC statements will target the host computer's local filesystem:
+If the system ROM contains any version of the KERNAL, and there is no SD card image attached, all accesses to the ("IEEE") Commodore Bus are intercepted by the emulator for device 8 (the default). So the BASIC statements will target the host computer's local filesystem:
 
-      LOAD"$
+      DOS"$
       LOAD"FOO.PRG
       LOAD"IMAGE.PRG",8,1
       SAVE"BAR.PRG
-
-Note that this feature is very limited! Manually reading and writing files (e.g. `OPEN` in BASIC) is not supported by the host filesystem interface. Use SD card images for this.
+      OPEN2,8,2,"FOO,S,R"
 
 The emulator will interpret filenames relative to the directory it was started in. On macOS, when double-clicking the executable, this is the home directory.
 
@@ -260,8 +284,11 @@ The debugger uses its own command line with the following syntax:
 |---------|----------------------------------------------------------------------------------------------------|
 |d %x|Change the code panel to view disassembly starting from the address %x.|
 |m %x|Change the data panel to view memory starting from the address %x.|
-|b %s %d|Changes the current memory bank for disassembly and data. The %s param can be either 'ram' or 'rom', the %d is the memory bank to display.|
+|v %x|Display VERA RAM (VRAM) starting from address %x.|
+|b %s %d|Changes the current memory bank for disassembly and data. The %s param can be either 'ram' or 'rom', the %d is the memory bank to display (but see NOTE below!).|
 |r %s %x|Changes the value in the specified register. Valid registers in the %s param are 'pc', 'a', 'x', 'y', and 'sp'. %x is the value to store in that register.|
+
+NOTE. To disassemble or dump memory locations in banked RAM or ROM, prepend the bank number to the address; for example, "m 4a300" displays memory contents of BANK 4, starting at address $a300.  This also works for the 'd' command.
 
 The debugger keys are similar to the Microsoft Debugger shortcut keys, and work as follows
 
@@ -274,6 +301,8 @@ The debugger keys are similar to the Microsoft Debugger shortcut keys, and work 
 |F10|steps 'over' routines - if the next instruction is JSR it will break on return.		|
 |F11|steps 'into' routines.																	|
 |F12|is used to break back into the debugger. This does not happen if you do not have -debug|
+|PAGE UP| is used to scroll up in the debugger.|
+|PAGE DOWN| is used to scroll down in the debugger.|
 |TAB|when stopped, or single stepping, hides the debug information when pressed 			|
 
 When `-debug` is selected the STP instruction (opcode $DB) will break into the debugger automatically.
@@ -303,6 +332,56 @@ All rights reserved. License: 2-clause BSD
 Release Notes
 -------------
 
+### Release 41 ("Marrakech")
+
+* allow apps to intercept Cmd/Win, Menu and Caps-Lock keys
+* fixed `-prg` with `-sdcard`
+* fixed loading from host filesystem (length reporting by `MACPTR` on EOI)
+* macOS: support for older versions like Catalina (10.15)
+
+### Release 40 ("Bonn")
+
+* Features
+	* improved VERA video timings [Natt Akuma]
+	* added Host FS bridging using IEEE API
+	* added Serial Bus emulation [experimental]
+	* added WAV file recording [Stephen Horn]
+	* possible to disable Ctrl/Cmd key interception ($9FB7) [mooinglemur] 
+* Other
+	* Fixed I2C (RTC, SMC)
+	* Fixed RAM/ROM bank for PC when entering break [mjallison42]
+	* LST support for -trace
+
+## Release 39 ("Buenos Aires")
+
+* Switch to Proto2 Hardware
+	* banking through zp addresses 0 and 1
+	* modified I/O layout
+	* modified VIA GPIO layout
+	* support for 4 controllers
+	* I2C bus with SMC and RTC/NVRAM
+* Features
+	* implemented VIA timers [Natt Akuma]
+	* added option to disable sound [Jimmy Dansbo]
+	* added support for Delete, Insert, End, PgUp and PgDn keys [Stefan B Jakobsson]
+	* debugger scroll up & down description [Matas Lesinskas]
+	* added anti-aliasing to VERA PSG waveforms [TaleTN]
+* Bugs
+	* fixed sending only one mouse update per frame [Elektron72]
+	* fixed VSYNC timing [Elektron72]
+	* switched front and back porches [Elektron72]
+	* fixed LOAD/SAVE hypercall so debugger doesn't break [Stephen Horn]
+	* fixed YM2151 frequency from 4MHz ->3.579545MHz [Stephen Horn]
+	* do not set compositor bypass hint for SDL Window [Stephen Horn]
+	* reset timing after exiting debugger [Elektron72]
+	* don't write nvram after every frame
+	* fixed write outside of line buffer [Stephen Horn]
+	* fixed BRA extra CPU cycle [LRFLEW]
+	* fix: clear layer line once layer is disabled
+	* fixed BBSx/BBRx timing [Natt Akuma]
+* Other
+	* misc speed optimizations [Stephen Horn]
+
 ## Release 38 ("Kyoto")
 
 * CPU
@@ -327,7 +406,6 @@ Release Notes
 	* expose 32 bit cycle counter (up to 500 sec) in emulator I/O area
 	* zero page register display in debugger [Mike Allison]
 	* Various WebAssembly improvements and fixes [Sebastian Voges]
-
 
 ### Release 37 ("Geneva")
 

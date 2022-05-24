@@ -227,6 +227,7 @@ void DEBUGSetBreakPoint(int newBreakPoint) {
 void DEBUGBreakToDebugger(void) {
 	currentMode = DMODE_STOP;
 	currentPC = pc;
+   currentPCBank = pc < 0xC000 ? memory_get_ram_bank() : memory_get_rom_bank();
 }
 
 // *******************************************************************************************
@@ -512,7 +513,7 @@ static void DEBUGRenderCmdLine(int x, int width, int height) {
 
 static void DEBUGRenderZeroPageRegisters(int y) {
 #define LAST_R 15
-	int reg = 0;
+	unsigned char reg = 0;
 	int y_start = y;
 	char lbl[6];
 	while (reg < DBGMAX_ZERO_PAGE_REGISTERS) {

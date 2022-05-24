@@ -1,5 +1,5 @@
 // Commander X16 Emulator
-// Copyright (c) 2019 Michael Steil
+// Copyright (c) 2019,2022 Michael Steil
 // All rights reserved. License: 2-clause BSD
 
 #ifndef __APPLE__
@@ -22,12 +22,13 @@
 #include "memory.h"
 #include "video.h"
 #include "via.h"
+#include "serial.h"
 #include "ps2.h"
 #include "i2c.h"
 #include "rtc.h"
 #include "vera_spi.h"
 #include "sdcard.h"
-#include "loadsave.h"
+#include "ieee.h"
 #include "glue.h"
 #include "debugger.h"
 #include "utf8.h"
@@ -37,6 +38,7 @@
 #include "ym2151.h"
 #include "audio.h"
 #include "version.h"
+#include "wav_recorder.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -83,9 +85,13 @@ bool dump_vram = false;
 bool warp_mode = false;
 echo_mode_t echo_mode;
 bool save_on_exit = true;
+bool disable_emu_cmd_keys = false;
 bool set_system_time = false;
+bool has_serial = false;
+bool no_ieee_intercept = false;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
+char *wav_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
 char *scale_quality = "best";
@@ -96,7 +102,8 @@ uint16_t trace_address = 0;
 #endif
 
 int instruction_counter;
-SDL_RWops *prg_file ;
+SDL_RWops *prg_file;
+bool prg_finished_loading;
 int prg_override_start = -1;
 bool run_after_load = false;
 
@@ -104,6 +111,7 @@ char *nvram_path = NULL;
 
 #ifdef TRACE
 #include "rom_labels.h"
+#include "rom_lst.h"
 char *
 label_for_address(uint16_t address)
 {
@@ -169,6 +177,26 @@ label_for_address(uint16_t address)
 	}
 	return NULL;
 }
+
+char *
+lst_for_address(uint16_t address)
+{
+	if (address < 0xc000) {
+		return NULL;
+	}
+
+	char **lst;
+	switch (memory_get_rom_bank()) {
+		case 0: lst = lst_bank0; break;
+		case 2: lst = lst_bank2; break;
+		case 3: lst = lst_bank3; break;
+		case 4: lst = lst_bank4; break;
+		case 5: lst = lst_bank5; break;
+		default:
+			return NULL;
+	}
+	return lst[address - 0xc000];
+}
 #endif
 
 void
@@ -214,6 +242,7 @@ machine_dump()
 void
 machine_reset()
 {
+	ieee_init();
 	memory_reset();
 	vera_spi_init();
 	via1_init();
@@ -336,7 +365,7 @@ static void
 usage()
 {
 	printf("\nCommander X16 Emulator r%s (%s)\n", VER, VER_NAME);
-	printf("(C)2019,2020 Michael Steil et al.\n");
+	printf("(C)2019,2022 Michael Steil et al.\n");
 	printf("All rights reserved. License: 2-clause BSD\n\n");
 	printf("Usage: x16emu [option] ...\n\n");
 	printf("-rom <rom.bin>\n");
@@ -346,14 +375,20 @@ usage()
 	printf("\tThe default is 512.\n");
 	printf("-nvram <nvram.bin>\n");
 	printf("\tSpecify NVRAM image. By default, the machine starts with\n");
-	printf("\trmpty NVRAM and does not save it to disk.\n");
+	printf("\tempty NVRAM and does not save it to disk.\n");
 	printf("-keymap <keymap>\n");
 	printf("\tEnable a specific keyboard layout decode table.\n");
 	printf("-sdcard <sdcard.img>\n");
 	printf("\tSpecify SD card image (partition map + FAT32)\n");
+	printf("-serial\n");
+	printf("\tConnect host fs through Serial Bus [experimental]\n");
+	printf("-nohostieee\n");
+	printf("\tDisable host fs through IEEE API interception.\n");
+	printf("\tIEEE API host fs is normally enabled unless -sdcard or\n");
+	printf("\t-serial is specified.\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
-	printf("\tLoad application from the local disk into RAM\n");
-	printf("\t(.PRG file with 2 byte start address header)\n");
+	printf("\tLoad application from the *host filesystem* into RAM,\n");
+	printf("\teven if an SD card is attached.\n");
 	printf("\tThe override load address is hex without a prefix.\n");
 	printf("-bas <app.txt>\n");
 	printf("\tInject a BASIC program in ASCII encoding through the\n");
@@ -382,6 +417,12 @@ usage()
 	printf("\tPOKE $9FB5,2 to start recording.\n");
 	printf("\tPOKE $9FB5,1 to capture a single frame.\n");
 	printf("\tPOKE $9FB5,0 to pause.\n");
+	printf("-wav <file.gif>[{,wait|,auto}]\n");
+	printf("\tRecord a wav for the audio output.\n");
+	printf("\tUse ,wait to start paused, or ,auto to start paused and automatically begin recording on the first non-zero audio signal.\n");
+	printf("\tPOKE $9FB6,2 to automatically begin recording on the first non-zero audio signal.\n");
+	printf("\tPOKE $9FB6,1 to begin recording immediately.\n");
+	printf("\tPOKE $9FB6,0 to pause.\n");
 	printf("-scale {1|2|3|4}\n");
 	printf("\tScale output to an integer multiple of 640x480\n");
 	printf("-quality {nearest|linear|best}\n");
@@ -414,7 +455,7 @@ usage()
 	printf("\tcan be specified.\n");
 #endif
 	printf("-version\n");
-	printf("\tPrint additional version information the emulator and ROM.\n");
+	printf("\tPrint additional version information of the emulator and ROM.\n");
 	printf("\n");
 	exit(1);
 }
@@ -643,6 +684,16 @@ main(int argc, char **argv)
 			gif_path = argv[0];
 			argv++;
 			argc--;
+		} else if (!strcmp(argv[0], "-wav")) {
+			argc--;
+			argv++;
+			// set up for recording
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			wav_path = argv[0];
+			argv++;
+			argc--;
 		} else if (!strcmp(argv[0], "-debug")) {
 			argc--;
 			argv++;
@@ -745,6 +796,14 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			set_system_time = true;
+		} else if (!strcmp(argv[0], "-serial")) {
+			argc--;
+			argv++;
+			has_serial = true;
+		} else if (!strcmp(argv[0], "-nohostieee")) {
+			argc--;
+			argv++;
+			no_ieee_intercept = true;
 		} else if (!strcmp(argv[0], "-version")){
 			printf("%s", VER_INFO);
 			argc--;
@@ -828,6 +887,7 @@ main(int argc, char **argv)
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
 
 	audio_init(audio_dev_name, audio_buffers);
+	wav_recorder_set_path(wav_path);
 
 	memory_init();
 	video_init(window_scale, scale_quality);
@@ -848,6 +908,7 @@ main(int argc, char **argv)
 	emulator_loop(NULL);
 #endif
 
+	wav_recorder_shutdown();
 	audio_close();
 	video_end();
 	SDL_Quit();
@@ -879,6 +940,145 @@ main(int argc, char **argv)
 #endif
 
 	return 0;
+}
+
+bool
+set_kernal_status(uint8_t s)
+{
+	// There is no KERNAL API to write the STATUS variable.
+	// But there is code to read it, READST, which should
+	// always look like this:
+	// 00:.,d6a0 ad 89 02 lda $0289
+	// 00:.,d6a3 0d 89 02 ora $0289
+	// 00:.,d6a6 8d 89 02 sta $0289
+	// We can extract the location of the STATUS variable
+	// from it.
+
+	// JMP in the KERNAL API vectors
+	if (read6502(0xffb7) != 0x4c) {
+		return false;
+	}
+	// target of KERNAL API vector JMP
+	uint16_t readst = read6502(0xffb8) | read6502(0xffb9) << 8;
+	if (readst < 0xc000) {
+		return false;
+	}
+	// ad 89 02 lda $0289
+	if (read6502(readst) != 0xad) {
+		return false;
+	}
+	// ad 89 02 lda $0289
+	if (read6502(readst + 3) != 0x0d) {
+		return false;
+	}
+	// ad 89 02 lda $0289
+	if (read6502(readst + 6) != 0x8d) {
+		return false;
+	}
+	uint16_t status0 = read6502(readst+1) | read6502(readst+2) << 8;
+	uint16_t status1 = read6502(readst+4) | read6502(readst+5) << 8;
+	uint16_t status2 = read6502(readst+7) | read6502(readst+8) << 8;
+	// all three addresses must be the same
+	if (status0 != status1 || status0 != status2) {
+		return false;
+	}
+
+	// everything okay, write the status!
+	RAM[status0] = s;
+	return true;
+}
+
+bool
+handle_ieee_intercept()
+{
+	if (no_ieee_intercept) {
+		return false;
+	}
+
+	if (has_serial) {
+		// if we do bit-level serial bus emulation, we don't
+		// do high-level KERNAL IEEE API interception
+		return false;
+	}
+
+	if (sdcard_file && !prg_file) {
+		// if should emulate an SD card (and don't need to
+		// hack a PRG into RAM), we'll always skip host fs
+		return false;
+	}
+
+	if (sdcard_file && prg_file && prg_finished_loading) {
+		// also skip if we should do SD card and we're done
+		// with the PRG hack
+		return false;
+	}
+
+	if (!is_kernal() || pc < 0xFF44) {
+		return false;
+	}
+
+	static int count_unlistn = 0;
+	bool handled = true;
+	int s = -1;
+	switch(pc) {
+		case 0xFF44: {
+			uint16_t count = a;
+			s=MACPTR(y << 8 | x, &count);
+			x = count & 0xff;
+			y = count >> 8;
+			status &= 0xfe; // clear C -> supported
+			break;
+		}
+		case 0xFF93:
+			SECOND(a);
+			break;
+		case 0xFF96:
+			TKSA(a);
+			break;
+		case 0xFFA5:
+			s=ACPTR(&a);
+			status = (status & ~2) | (!a << 1);
+			break;
+		case 0xFFA8:
+			s=CIOUT(a);
+			break;
+		case 0xFFAB:
+			UNTLK();
+			break;
+		case 0xFFAE:
+			s=UNLSN();
+			if (prg_file && sdcard_file && ++count_unlistn == 4) {
+				// after auto-loading a PRG from the host fs,
+				// switch to the SD card if requested
+				// 4x UNLISTEN:
+				//    2x for LOAD"AUTOBOOT.X16*"
+				//    2x for LOAD":*"
+				prg_finished_loading = true;
+				sdcard_attach();
+			}
+			break;
+		case 0xFFB1:
+			LISTEN(a);
+			break;
+		case 0xFFB4:
+			TALK(a);
+			break;
+		default:
+			handled = false;
+			break;
+	}
+
+	if (handled) {
+		if (s >= 0) {
+			if (!set_kernal_status(s)) {
+				printf("Warning: Could not set STATUS!\n");
+			}
+		}
+
+		pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
+		sp += 2;
+	}
+	return handled;
 }
 
 void
@@ -919,8 +1119,22 @@ emulator_loop(void *param)
 			trace_mode = true;
 		}
 		if (trace_mode) {
-			//printf("\t\t\t\t");
-			printf("[%6d] ", instruction_counter);
+			char *lst = lst_for_address(pc);
+			if (lst) {
+				char *lf;
+				while ((lf = strchr(lst, '\n'))) {
+					for (int i = 0; i < 104; i++) {
+						printf(" ");
+					}
+					for (char *c = lst; c < lf; c++) {
+						printf("%c", *c);
+					}
+					printf("\n");
+					lst = lf + 1;
+				}
+			}
+
+			printf("[%8d] ", instruction_counter);
 
 			char *label = label_for_address(pc);
 			int label_len = label ? strlen(label) : 0;
@@ -949,6 +1163,10 @@ emulator_loop(void *param)
 				printf("%c", (status & (1 << i)) ? "czidb.vn"[i] : '-');
 			}
 
+			if (lst) {
+				printf("    %s", lst);
+			}
+
 #if 0
 			printf(" ---");
 			for (int i = 0; i < 6; i++) {
@@ -972,24 +1190,21 @@ emulator_loop(void *param)
 		}
 #endif
 
-#ifdef LOAD_HYPERCALLS
-		if ((pc == 0xffd5 || pc == 0xffd8) && is_kernal() && RAM[FA] == 8 && !sdcard_file) {
-			if (pc == 0xffd5) {
-				LOAD();
-			} else {
-				SAVE();
-			}
-			pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
-			sp += 2;
+		if (handle_ieee_intercept()) {
 			continue;
 		}
-#endif
 
 		uint32_t old_clockticks6502 = clockticks6502;
 		step6502();
 		uint8_t clocks = clockticks6502 - old_clockticks6502;
 		bool new_frame = false;
+		bool via1_irq_old = via1_irq();
+		via1_step(clocks);
+		via2_step(clocks);
 		vera_spi_step(clocks);
+		if (has_serial) {
+			serial_step(clocks);
+		}
 		new_frame |= video_step(MHZ, clocks);
 		for (uint8_t i = 0; i < clocks; i++) {
 			i2c_step();
@@ -1020,7 +1235,11 @@ emulator_loop(void *param)
 #endif
 		}
 
-		if (video_get_irq_out()) {
+		if (!via1_irq_old && via1_irq()) {
+			nmi6502();
+		}
+
+		if (video_get_irq_out() || via2_irq()) {
 			if (!(status & 4)) {
 //				printf("IRQ!\n");
 				irq6502();
@@ -1064,31 +1283,23 @@ emulator_loop(void *param)
 
 		if (pc == 0xffcf && is_kernal()) {
 			// as soon as BASIC starts reading a line...
-			if (prg_file) {
-				// ...inject the app into RAM
-				uint8_t start_lo = SDL_ReadU8(prg_file);
-				uint8_t start_hi = SDL_ReadU8(prg_file);
-				uint16_t start;
+			static bool prg_done = false;
+			if (prg_file && !prg_done) {
+				// LOAD":*" will cause the IEEE library
+				// to load from "prg_file"
 				if (prg_override_start >= 0) {
-					start = prg_override_start;
+					snprintf(paste_text_data, sizeof(paste_text_data), "LOAD\":*\",8,1,$%04X\r", prg_override_start);
 				} else {
-					start = start_hi << 8 | start_lo;
+					snprintf(paste_text_data, sizeof(paste_text_data), "LOAD\":*\",8,1\r");
 				}
-				uint16_t end = start + SDL_RWread(prg_file, RAM + start, 1, 65536-start);
-				SDL_RWclose(prg_file);
-				prg_file = NULL;
-				if (start == 0x0801) {
-					// set start of variables
-					RAM[VARTAB] = end & 0xff;
-					RAM[VARTAB + 1] = end >> 8;
-				}
+				paste_text = paste_text_data;
+				prg_done = true;
 
 				if (run_after_load) {
-					if (start == 0x0801) {
-						paste_text = "RUN\r";
+					if (prg_override_start >= 0) {
+						snprintf(strchr(paste_text_data, 0), sizeof(paste_text_data), "SYS$%04X\r", prg_override_start);
 					} else {
-						paste_text = paste_text_data;
-						snprintf(paste_text, sizeof(paste_text_data), "SYS$%04X\r", start);
+						snprintf(strchr(paste_text_data, 0), sizeof(paste_text_data), "RUN\r");
 					}
 				}
 			}

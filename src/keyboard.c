@@ -172,6 +172,8 @@ ps2_scancode_from_SDL_Scancode(SDL_Scancode scancode)
 			return 0x59;
 		case SDL_SCANCODE_LSHIFT:
 			return 0x12;
+		case SDL_SCANCODE_CAPSLOCK:
+			return 0x58;
 		case SDL_SCANCODE_LCTRL:
 			return 0x14;
 		case SDL_SCANCODE_RCTRL:
@@ -180,8 +182,11 @@ ps2_scancode_from_SDL_Scancode(SDL_Scancode scancode)
 			return 0x11;
 		case SDL_SCANCODE_RALT:
 			return 0x11 | EXTENDED_FLAG;
-//		case SDL_SCANCODE_LGUI: // Windows/Command
-//			return 0x5b | EXTENDED_FLAG;
+		case SDL_SCANCODE_LGUI: // Windows/Command
+		case SDL_SCANCODE_RGUI:
+			return 0x5b | EXTENDED_FLAG;
+		case SDL_SCANCODE_APPLICATION: // Menu
+			return 0x2f | EXTENDED_FLAG;
 		case SDL_SCANCODE_NONUSBACKSLASH:
 			return 0x61;
 		case SDL_SCANCODE_KP_ENTER:

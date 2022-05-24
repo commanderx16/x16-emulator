@@ -1,11 +1,21 @@
+##################################################################################################
+#
+# COMMANDER X16 EMULATOR MAKEFILE
+#
+##################################################################################################
 
-# the mingw32 path on macOS installed through homebrew
-MINGW32=/usr/local/Cellar/mingw-w64/7.0.0_2/toolchain-i686/i686-w64-mingw32
-# the Windows SDL2 path on macOS installed through ./configure --prefix=... && make && make install
-WIN_SDL2=~/tmp/sdl2-win32
+# the mingw-w64 path on macOS installed through homebrew
+ifndef MINGW32
+	MINGW32=/opt/homebrew/Cellar/mingw-w64/9.0.0_4/toolchain-x86_64/x86_64-w64-mingw32
+endif
+# the Windows SDL2 path on macOS installed through
+# ./configure  --host=x86_64-w64-mingw32 --prefix=... && make && make install
+ifndef WIN_SDL2
+	WIN_SDL2=~/tmp/sdl2-win32
+endif
 
 ifeq ($(CROSS_COMPILE_WINDOWS),1)
-	SDL2CONFIG=$(WIN_SDL2)/bin/sdl2-config
+	SDL2CONFIG=$(WIN_SDL2)/bin/sdl2-config --prefix=$(WIN_SDL2)
 else
 	SDL2CONFIG=sdl2-config
 endif
@@ -24,14 +34,14 @@ endif
 OUTPUT=x16emu
 
 ifeq ($(MAC_STATIC),1)
-	LDFLAGS=/usr/local/lib/libSDL2.a -lm -liconv -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,ForceFeedback -lobjc -Wl,-framework,CoreVideo -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,IOKit -Wl,-weak_framework,QuartzCore -Wl,-weak_framework,Metal
+	LDFLAGS=/opt/homebrew/Cellar/sdl2/2.0.20/lib/libSDL2.a -lm -liconv -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,ForceFeedback -lobjc -Wl,-framework,CoreVideo -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,IOKit -Wl,-weak_framework,QuartzCore -Wl,-weak_framework,Metal -Wl,-weak_framework,CoreHaptics -Wl,-weak_framework,GameController
 endif
 
 ifeq ($(CROSS_COMPILE_WINDOWS),1)
 	LDFLAGS+=-L$(MINGW32)/lib
 	# this enables printf() to show, but also forces a console window
 	LDFLAGS+=-Wl,--subsystem,console
-	CC=i686-w64-mingw32-gcc
+	CC=x86_64-w64-mingw32-gcc
 endif
 
 ifdef EMSCRIPTEN
@@ -42,9 +52,9 @@ ifdef EMSCRIPTEN
 	OUTPUT=x16emu.html
 endif
 
-_OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o i2c.o smc.o rtc.o via.o loadsave.o vera_spi.o audio.o vera_pcm.o vera_psg.o sdcard.o main.o debugger.o javascript_interface.o joystick.o rendertext.o keyboard.o icon.o timing.o
+_OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o i2c.o smc.o rtc.o via.o serial.o ieee.o vera_spi.o audio.o vera_pcm.o vera_psg.o sdcard.o main.o debugger.o javascript_interface.o joystick.o rendertext.o keyboard.o icon.o timing.o wav_recorder.o
 
-_HEADERS = audio.h cpu/65c02.h cpu/fake6502.h cpu/instructions.h cpu/mnemonics.h cpu/modes.h cpu/support.h cpu/tables.h debugger.h disasm.h extern/include/gif.h extern/src/ym2151.h glue.h i2c.h icon.h joystick.h keyboard.h loadsave.h memory.h ps2.h rendertext.h rom_symbols.h rtc.h sdcard.h smc.h timing.h utf8.h utf8_encode.h vera_pcm.h vera_psg.h vera_spi.h version.h via.h video.h
+_HEADERS = audio.h cpu/65c02.h cpu/fake6502.h cpu/instructions.h cpu/mnemonics.h cpu/modes.h cpu/support.h cpu/tables.h debugger.h disasm.h extern/include/gif.h extern/src/ym2151.h glue.h i2c.h icon.h joystick.h keyboard.h ieee.h memory.h ps2.h rendertext.h rom_symbols.h rtc.h sdcard.h smc.h timing.h utf8.h utf8_encode.h vera_pcm.h vera_psg.h vera_spi.h version.h via.h serial.o video.h wav_recorder.h
 
 _OBJS += extern/src/ym2151.o
 _HEADERS += extern/src/ym2151.h
@@ -73,6 +83,14 @@ cpu/tables.h cpu/mnemonics.h: cpu/buildtables.py cpu/6502.opcodes cpu/65c02.opco
 wasm:
 	emmake make
 
+clean:
+	rm -rf $(ODIR) x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem
+
+##################################################################################################
+
+
+
+##################################################################################################
 #
 # PACKAGING
 #
@@ -91,11 +109,12 @@ wasm:
 # * For converting the documentation from Markdown to HTML, pandoc is required:
 #   brew install pandoc
 #
+##################################################################################################
 
 # hostname of the Linux VM
 LINUX_COMPILE_HOST = ubuntu.local
 # path to the equivalent of `pwd` on the Mac
-LINUX_BASE_DIR = /mnt/Documents/git/x16-emulator
+LINUX_BASE_DIR = /tmp/
 
 TMPDIR_NAME=TMP-x16emu-package
 
@@ -118,6 +137,10 @@ define add_extra_files_to_package
 	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="Commander X16 Emulator" README.md --output $(TMPDIR_NAME)/docs/README.html
 	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="Commander X16 KERNAL/BASIC/DOS ROM"  ../x16-rom/README.md --output $(TMPDIR_NAME)/docs/KERNAL-BASIC.html
 	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="Commander X16 Programmer's Reference Guide"  ../x16-docs/Commander\ X16\ Programmer\'s\ Reference\ Guide.md --output $(TMPDIR_NAME)/docs/Programmer\'s\ Reference\ Guide.html --lua-filter=mdtohtml.lua
+	for IN in ../x16-docs/X16\ Reference\ *; do \
+		OUT=$$(basename "$$IN" .md).html; \
+		pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="Commander X16 Programmer's Reference Guide" "$$IN" --output "$(TMPDIR_NAME)/docs/$$OUT" --lua-filter=mdtohtml.lua; \
+	done
 	pandoc --from gfm --to html -c github-pandoc.css --standalone --metadata pagetitle="VERA Programmer's Reference.md"  ../x16-docs/VERA\ Programmer\'s\ Reference.md --output $(TMPDIR_NAME)/docs/VERA\ Programmer\'s\ Reference.html
 	cp github-pandoc.css $(TMPDIR_NAME)/docs
 endef
@@ -141,8 +164,6 @@ package_win:
 	rm -rf $(TMPDIR_NAME) x16emu_win.zip
 	mkdir $(TMPDIR_NAME)
 	cp x16emu.exe $(TMPDIR_NAME)
-	cp $(MINGW32)/lib/libgcc_s_sjlj-1.dll $(TMPDIR_NAME)/
-	cp $(MINGW32)/bin/libwinpthread-1.dll $(TMPDIR_NAME)/
 	cp $(WIN_SDL2)/bin/SDL2.dll $(TMPDIR_NAME)/
 	$(call add_extra_files_to_package)
 	(cd $(TMPDIR_NAME)/; zip -r "../x16emu_win.zip" *)
@@ -150,13 +171,11 @@ package_win:
 
 package_linux:
 	(cd ../x16-rom/; make clean all)
-	ssh $(LINUX_COMPILE_HOST) "cd $(LINUX_BASE_DIR); make clean all"
+	(cd ..; tar cp x16-rom x16-emulator x16-docs | ssh $(LINUX_COMPILE_HOST) "cd $(LINUX_BASE_DIR); tar xp")
+	ssh $(LINUX_COMPILE_HOST) "cd $(LINUX_BASE_DIR)/x16-emulator; make clean all"
 	rm -rf $(TMPDIR_NAME) x16emu_linux.zip
 	mkdir $(TMPDIR_NAME)
-	cp x16emu $(TMPDIR_NAME)
+	scp $(LINUX_COMPILE_HOST):$(LINUX_BASE_DIR)/x16-emulator/x16emu $(TMPDIR_NAME)
 	$(call add_extra_files_to_package)
 	(cd $(TMPDIR_NAME)/; zip -r "../x16emu_linux.zip" *)
 	rm -rf $(TMPDIR_NAME)
-
-clean:
-	rm -rf $(ODIR) x16emu x16emu.exe x16emu.js x16emu.wasm x16emu.data x16emu.worker.js x16emu.html x16emu.html.mem
