@@ -39,6 +39,7 @@
 #include "audio.h"
 #include "version.h"
 #include "wav_recorder.h"
+#include "testbench.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -95,6 +96,9 @@ char *wav_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
 char *scale_quality = "best";
+bool test_init_complete=false;
+bool headless = false;
+bool testbench = false;
 
 #ifdef TRACE
 bool trace_mode = false;
@@ -106,6 +110,8 @@ SDL_RWops *prg_file;
 bool prg_finished_loading;
 int prg_override_start = -1;
 bool run_after_load = false;
+
+bool test = true;
 
 char *nvram_path = NULL;
 
@@ -449,6 +455,8 @@ usage()
 	printf("\tbut will increase audio latency.\n");
 	printf("-rtc\n");
 	printf("\tSet the real-time-clock to the current system time and date.\n");
+	printf("-testbench\n");
+	printf("\tHeadless mode for unit testing with an external test runner\n");
 #ifdef TRACE
 	printf("-trace [<address>]\n");
 	printf("\tPrint instruction trace. Optionally, a trigger address\n");
@@ -809,6 +817,13 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			exit(0);
+		} else if (!strcmp(argv[0], "-testbench")){
+			printf("Testbench mode...\n");
+			fflush(stdout);
+			argc--;
+			argv++;
+			testbench=true;
+			headless=true;
 		} else {
 			usage();
 		}
@@ -884,13 +899,15 @@ main(int argc, char **argv)
 	// Available since SDL 2.0.8
 	SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
 #endif
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
+	if (!headless) {
+		SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
+		audio_init(audio_dev_name, audio_buffers);
+		video_init(window_scale, scale_quality);
+	}
 
-	audio_init(audio_dev_name, audio_buffers);
 	wav_recorder_set_path(wav_path);
-
+	
 	memory_init();
-	video_init(window_scale, scale_quality);
 
 	joystick_init();
 
@@ -908,10 +925,12 @@ main(int argc, char **argv)
 	emulator_loop(NULL);
 #endif
 
-	wav_recorder_shutdown();
-	audio_close();
-	video_end();
-	SDL_Quit();
+	if (!headless){
+		wav_recorder_shutdown();
+		audio_close();
+		video_end();
+		SDL_Quit();
+	}
 
 #ifdef PERFSTAT
 	for (int pc = 0xc000; pc < sizeof(stat)/sizeof(*stat); pc++) {
@@ -1092,6 +1111,10 @@ emulator_loop(void *param)
 {
 	for (;;) {
 
+		if (testbench && pc == 0xfffd){
+			testbench_init();
+		}
+
 		if (debugger_enabled) {
 			int dbgCmd = DEBUGGetCurrentStatus();
 			if (dbgCmd > 0) continue;
@@ -1205,16 +1228,22 @@ emulator_loop(void *param)
 		if (has_serial) {
 			serial_step(clocks);
 		}
-		new_frame |= video_step(MHZ, clocks);
+		if (!headless) {
+			new_frame |= video_step(MHZ, clocks);
+		}
+		
 		for (uint8_t i = 0; i < clocks; i++) {
 			i2c_step();
 		}
 		rtc_step(clocks);
-		audio_render(clocks);
+		
+		if (!headless) {
+			audio_render(clocks);
+		}
 
 		instruction_counter++;
 
-		if (new_frame) {
+		if (!headless && new_frame) {
 			if (nvram_dirty && nvram_path) {
 				SDL_RWops *f = SDL_RWFromFile(nvram_path, "wb");
 				if (f) {
@@ -1284,6 +1313,7 @@ emulator_loop(void *param)
 		if (pc == 0xffcf && is_kernal()) {
 			// as soon as BASIC starts reading a line...
 			static bool prg_done = false;
+
 			if (prg_file && !prg_done) {
 				// LOAD":*" will cause the IEEE library
 				// to load from "prg_file"
@@ -1302,6 +1332,11 @@ emulator_loop(void *param)
 						snprintf(strchr(paste_text_data, 0), sizeof(paste_text_data), "RUN\r");
 					}
 				}
+			}
+			else if (testbench && !test_init_complete){
+				snprintf(paste_text_data, sizeof(paste_text_data), "SYS65533\r");
+				paste_text = paste_text_data;
+				test_init_complete=true;
 			}
 
 			if (paste_text) {
