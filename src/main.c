@@ -899,13 +899,15 @@ main(int argc, char **argv)
 	// Available since SDL 2.0.8
 	SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
 #endif
-	if (!headless) SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
+	if (!headless) {
+		SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
+		audio_init(audio_dev_name, audio_buffers);
+		video_init(window_scale, scale_quality);
+	}
 
-	if (!headless) audio_init(audio_dev_name, audio_buffers);
 	wav_recorder_set_path(wav_path);
-
+	
 	memory_init();
-	if (!headless) video_init(window_scale, scale_quality);
 
 	joystick_init();
 
@@ -1226,12 +1228,18 @@ emulator_loop(void *param)
 		if (has_serial) {
 			serial_step(clocks);
 		}
-		if (!headless) new_frame |= video_step(MHZ, clocks);
+		if (!headless) {
+			new_frame |= video_step(MHZ, clocks);
+		}
+		
 		for (uint8_t i = 0; i < clocks; i++) {
 			i2c_step();
 		}
 		rtc_step(clocks);
-		if (!headless) audio_render(clocks);
+		
+		if (!headless) {
+			audio_render(clocks);
+		}
 
 		instruction_counter++;
 
