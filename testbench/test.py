@@ -1,5 +1,3 @@
-import asyncio
-import traceback
 import unittest
 from testbench import X16TestBench
 from testbench import Status
