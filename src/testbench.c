@@ -10,7 +10,7 @@ int hex_to_int16(char* str);
 bool hex_validate(char* str);
 void invalid();
 
-size_t getline(char **lineptr, size_t *n, FILE *stream)
+size_t get_testline(char **lineptr, size_t *n, FILE *stream)
 {
     char *cptr;
     size_t maxlen;
@@ -69,7 +69,7 @@ void testbench_init(){
     fflush(stdout);
 
     while(!init_done){
-        getline(&line, &len, stdin);                        //Read command from stdin
+        get_testline(&line, &len, stdin);                        //Read command from stdin
 
         if (strncmp(line, "RAM", 3)==0){                    //Set RAM bank
             strncpy(val, line+4, 2);
