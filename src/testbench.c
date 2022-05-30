@@ -10,6 +10,48 @@ int hex_to_int16(char* str);
 bool hex_validate(char* str);
 void invalid();
 
+size_t get_testline(char **lineptr, size_t *n, FILE *stream)
+{
+    char *cptr;
+    size_t maxlen;
+    size_t slen;
+    int c;
+
+    if(*lineptr == NULL) {
+        *lineptr = malloc(256);
+        *n = 256;
+    }
+
+    cptr = *lineptr;
+    maxlen = *n;
+    slen = 0;
+
+    do {
+        c = fgetc(stream);
+
+        if(c == EOF) {
+            break;
+        }
+
+        *cptr = c;
+        ++cptr;
+        ++slen;
+
+        if(slen >= maxlen) {
+            maxlen = maxlen << 1;
+            *lineptr = realloc(*lineptr, maxlen);
+            cptr = *lineptr + slen;
+        }
+    } while(c != '\n');
+
+    *cptr = '\0';
+    ++cptr;
+    ++slen;
+
+    *n = maxlen;
+    return slen;
+}
+
 void testbench_init(){
     char* line = NULL;
 
@@ -27,7 +69,7 @@ void testbench_init(){
     fflush(stdout);
 
     while(!init_done){
-        get_testline(&line, &len, stdin);                        //Read command from stdin
+        get_testline(&line, &len, stdin);                   //Read command from stdin
 
         if (strncmp(line, "RAM", 3)==0){                    //Set RAM bank
             strncpy(val, line+4, 2);
