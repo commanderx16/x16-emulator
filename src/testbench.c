@@ -9,6 +9,7 @@ int hex_to_int8(char* str);
 int hex_to_int16(char* str);
 bool hex_validate(char* str);
 void invalid();
+void ready();
 
 size_t get_testline(char **lineptr, size_t *n, FILE *stream)
 {
@@ -64,9 +65,7 @@ void testbench_init(){
 
     bool init_done=false;
 
-    //Send READY message
-    printf("RDY\n");
-    fflush(stdout);
+    ready();
 
     while(!init_done){
         get_testline(&line, &len, stdin);                   //Read command from stdin
@@ -79,6 +78,7 @@ void testbench_init(){
             }
             else{
                 memory_set_ram_bank((uint8_t)ival);
+                ready();
             }
         }
 
@@ -90,6 +90,7 @@ void testbench_init(){
             }
             else{
                 memory_set_rom_bank((uint8_t)ival);
+                ready();
             }
         }
 
@@ -105,6 +106,7 @@ void testbench_init(){
             }
             else{
                 write6502((uint16_t)iaddr, (uint8_t)ival);
+                ready();
             }
         }
 
@@ -124,6 +126,7 @@ void testbench_init(){
                 for (;iaddr<=iaddr2;iaddr++){
                     write6502((uint16_t)iaddr, (uint8_t)ival);
                 }
+                ready();
             }
         }
 
@@ -135,6 +138,7 @@ void testbench_init(){
             }
             else{
                 a = (uint8_t)ival;
+                ready();
             }
         }
 
@@ -146,6 +150,7 @@ void testbench_init(){
             }
             else{
                 x = (uint8_t)ival;
+                ready();
             }
         }
 
@@ -157,6 +162,7 @@ void testbench_init(){
             }
             else{
                 y = (uint8_t)ival;
+                ready();
             }
         }
 
@@ -168,6 +174,7 @@ void testbench_init(){
             }
             else{
                 status = (uint8_t)ival;
+                ready();
             }
         }
 
@@ -179,6 +186,7 @@ void testbench_init(){
             }
             else{
                 sp = (uint8_t)ival;
+                ready();
             }
         }
 
@@ -283,5 +291,10 @@ bool hex_validate(char* str){
 
 void invalid(){
     printf("ERR Invalid command\n");
+    fflush(stdout);
+}
+
+void ready(){
+    printf("RDY\n");
     fflush(stdout);
 }

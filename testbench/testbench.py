@@ -1,6 +1,14 @@
 import signal
 import subprocess
 
+class Status:
+    C = 1
+    Z = 2
+    I = 4
+    D = 8
+    V = 64
+    N = 128
+
 class Label:
     name = ""
     address = ""
@@ -92,35 +100,46 @@ class X16TestBench:
         signal.alarm(timeout)
 
         r = ""
-        while r != "RDY\n":
+        while r.startswith("RDY")==False and r.startswith("ERR")==False:
             r = self.__readline()
+            if r.startswith("ERR"):
+                raise Exception(r[3:].strip())
 
     def setRamBank(self, value):
         self.__writeline("RAM " + self.__tohex8(value))
+        self.waitReady()
 
     def setRomBank(self, value):
         self.__writeline("ROM " + self.__tohex8(value))
+        self.waitReady()
     
     def setMemory(self, address, value):
         self.__writeline("STM " + self.__tohex16(address) + " " + self.__tohex8(value))
-
+        self.waitReady()
+        
     def fillMemory(self, address1, address2, value):
         self.__writeline("FLM " + self.__tohex16(address1) + " " + self.__tohex16(address2) + " " + self.__tohex8(value))
+        self.waitReady()
 
     def setA(self, value):
         self.__writeline("STA " + self.__tohex8(value))
+        self.waitReady()
 
     def setX(self, value):
         self.__writeline("STX " + self.__tohex8(value))
+        self.waitReady()
 
     def setY(self, value):
         self.__writeline("STY " + self.__tohex8(value))
+        self.waitReady()
 
     def setStatus(self, value):
         self.__writeline("SST " + self.__tohex8(value))
+        self.waitReady()
     
     def setStackPointer(self, value):
         self.__writeline("SSP " + self.__tohex8(value))
+        self.waitReady()
 
     def run(self, address, timeout=5):
         #Set timeout
