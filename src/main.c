@@ -52,17 +52,33 @@ void emscripten_main_loop(void);
 // This must match the KERNAL's set!
 char *keymaps[] = {
 	"en-us",
+	"en-us-int",
 	"en-gb",
+	"sv",
 	"de",
-	"nordic",
+	"da",
 	"it",
 	"pl",
+	"nb",
 	"hu",
 	"es",
+	"fi",
+	"pt-br",
+	"cz",
+	"jp",
 	"fr",
 	"de-ch",
+	"en-us-dvo",
+	"et",
 	"fr-be",
-	"pt-br",
+	"fr-ca",
+	"is",
+	"pt",
+	"hr",
+	"sk",
+	"sl",
+	"lv",
+	"lt",
 };
 
 #ifdef PERFSTAT
@@ -410,7 +426,7 @@ usage()
 	printf("\tPrint all KERNAL output to the host's stdout.\n");
 	printf("\tBy default, everything but printable ASCII characters get\n");
 	printf("\tescaped. \"iso\" will escape everything but non-printable\n");
-	printf("\tISO-8859-1 characters and convert the output to UTF-8.\n");
+	printf("\tISO-8859-15 characters and convert the output to UTF-8.\n");
 	printf("\t\"raw\" will not do any substitutions.\n");
 	printf("\tWith the BASIC statement \"LIST\", this can be used\n");
 	printf("\tto detokenize a BASIC program.\n");

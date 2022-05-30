@@ -55,7 +55,7 @@ i2c_write(uint8_t device, uint8_t offset, uint8_t value) {
 			// no-op
 	}
 #if LOG_LEVEL >= 1
-	printf("I2C WRITE $%02X:$%02X, $%02X\n", device, offset, byte);
+	printf("I2C WRITE $%02X:$%02X, $%02X\n", device, offset, value);
 #endif
 }
 
@@ -137,13 +137,13 @@ i2c_step()
 					}
 					if (ack) {
 #if LOG_LEVEL >= 3
-						printf("I2C ACK(%d) $%02X\n", count, byte);
+						printf("I2C ACK(%d) $%02X\n", count, value);
 #endif
 						i2c_port.data_out = 0;
 						count++;
 					} else {
 #if LOG_LEVEL >= 3
-						printf("I2C NACK(%d) $%02X\n", count, byte);
+						printf("I2C NACK(%d) $%02X\n", count, value);
 #endif
 						count = 0;
 						read_mode = false;
