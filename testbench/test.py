@@ -10,8 +10,7 @@ class TestTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestTest, self).__init__(*args, **kwargs)
         
-        self.e = X16TestBench("../x16emu", ["-prg", "/Users/stefanjakobsson/Programming/x16edit/build/X16EDIT.PRG"])
-        self.e.importLabels("/Users/stefanjakobsson/Programming/x16edit/build/ramlabels.txt")
+        self.e = X16TestBench("../x16emu")
         self.e.waitReady()
 
     def test_add(self):
