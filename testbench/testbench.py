@@ -9,26 +9,53 @@ class Status:
     V = 64
     N = 128
 
-class Label:
-    name = ""
-    address = ""
-
 class X16TestBench:
     emu = None
-    labels = []
+    labels = dict()
 
+    """
+    Class constructor.
+
+    Args:
+        emulatorpath: Path to the x16emu executable
+        emulatoroptions: A list of launch options used when starting the emulator
+
+    Raises:
+        FileNotFoundError: Happens if emulatorpath not valid
+    """
     def __init__(self, emulatorpath, emulatoroptions=[]):
-        options = [emulatorpath,"-testbench"]
+        path = [emulatorpath, "-testbench"]
         for o in emulatoroptions:
-            options.append(o)
-
-        self.emu = subprocess.Popen(options, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            path.append(o)
+        
+        self.emu = subprocess.Popen(path, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        print (self.emu.poll())
     
     def __del__(self):
         self.emu.stdout.close()
         self.emu.stdin.close()
         self.emu.terminate()
         self.emu.wait()
+
+    """
+    Waits until the emulator has sent the ready signal ("RDY").
+
+    Args:
+        timeout: Number of seconds until abort waiting
+
+    Raises:
+        Exception: If aborted by timeout
+    """
+    def waitReady(self, timeout=5):
+        #Set timeout
+        signal.signal(signal.SIGALRM, self.__timeout)
+        signal.alarm(timeout)
+
+        r = ""
+        while r.startswith("RDY")==False and r.startswith("ERR")==False:
+            r = self.__readline()
+            if r.startswith("ERR"):
+                raise Exception(r[3:].strip())
 
     def __writeline(self, str):
         self.emu.stdin.write((str + "\n").encode('utf-8'))
@@ -42,7 +69,7 @@ class X16TestBench:
         while r == "":
             r = self.__readline()
         
-        if r[0:3] == "ERR":
+        if r.startswith("ERR"):
             raise Exception("Invalid command")
         else:
             return r
@@ -76,34 +103,23 @@ class X16TestBench:
     def __timeout(self, s, f):
         raise Exception("Timeout error")
 
-    def importLabels(self, path):
+    """
+    Opens and reads a text file in VICE format, to import label names 
+    and corresponding memory addresses.
+
+    Params:
+        path: Path to the label file
+
+    Raises:
+        FileNotFoundError
+    """
+    def importViceLabels(self, path):
         f = open(path, "r")
         for line in f.readlines():
-            l = Label()
-            addr_start = line.find(" ") + 1
-            addr_len = line[addr_start:].find(" ")
-            label_start = addr_start + addr_len + line[addr_start+addr_len:].find(".") + 1
-            l.name = line[label_start:-1] 
-            l.address = self.__toint16(line[addr_start:addr_start+addr_len])
-            self.labels.append(l)
+            fields = line.split(" ")
+            if len(fields) >= 3:
+                self.labels[fields[2][1:].strip()] = self.__toint16(fields[1].strip())
         f.close()
-
-    def getLabelAddress(self, labelName):
-        for l in self.labels:
-            if l.name == labelName:
-                return l.address
-        raise Exception("Label not found")
-
-    def waitReady(self, timeout=5):
-        #Set timeout
-        signal.signal(signal.SIGALRM, self.__timeout)
-        signal.alarm(timeout)
-
-        r = ""
-        while r.startswith("RDY")==False and r.startswith("ERR")==False:
-            r = self.__readline()
-            if r.startswith("ERR"):
-                raise Exception(r[3:].strip())
 
     def setRamBank(self, value):
         self.__writeline("RAM " + self.__tohex8(value))
@@ -116,7 +132,7 @@ class X16TestBench:
     def setMemory(self, address, value):
         self.__writeline("STM " + self.__tohex16(address) + " " + self.__tohex8(value))
         self.waitReady()
-        
+
     def fillMemory(self, address1, address2, value):
         self.__writeline("FLM " + self.__tohex16(address1) + " " + self.__tohex16(address2) + " " + self.__tohex8(value))
         self.waitReady()
@@ -142,13 +158,8 @@ class X16TestBench:
         self.waitReady()
 
     def run(self, address, timeout=5):
-        #Set timeout
-        signal.signal(signal.SIGALRM, self.__timeout)
-        signal.alarm(timeout)
-
-        #Run code
         self.__writeline("RUN " + self.__tohex16(address))
-        self.waitReady()
+        self.waitReady(timeout)
 
     def getMemory(self, address):
         self.__writeline("RQM " + self.__tohex16(address))
