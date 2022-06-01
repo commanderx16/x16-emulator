@@ -46,9 +46,6 @@ size_t get_testline(char **lineptr, size_t *n, FILE *stream)
     } while(c != '\n');
 
     *cptr = '\0';
-    ++cptr;
-    ++slen;
-
     *n = maxlen;
     return slen;
 }
@@ -61,18 +58,17 @@ void testbench_init(){
     char val[3] = "00";
 
     int iaddr, iaddr2, ival;
-    size_t len = 0;
+    size_t slen = 0;
 
     bool init_done=false;
 
     ready();
 
     while(!init_done){
-        get_testline(&line, &len, stdin);                   //Read command from stdin
-        size_t line_len = strlen(line);
+        size_t len = get_testline(&line, &slen, stdin);                   //Read command from stdin
 
         if (strncmp(line, "RAM", 3)==0){                    //Set RAM bank
-            if (line_len<7){
+            if (len<7){
                 invalid();
             }
             else{
@@ -89,7 +85,7 @@ void testbench_init(){
         }
 
         else if (strncmp(line, "ROM", 3)==0){               //Set ROM bank
-            if (line_len<7){
+            if (len<7){
                 invalid();
             }
             else{
@@ -106,7 +102,7 @@ void testbench_init(){
         }
 
         else if (strncmp(line, "STM", 3)==0){               //Set memory address value
-            if (line_len<12){
+            if (len<12){
                 invalid();
             }
             else{
@@ -127,7 +123,7 @@ void testbench_init(){
         }
 
         else if (strncmp(line, "FLM", 3)==0){               //Fill memory address range with value
-            if (line_len<17){
+            if (len<17){
                 invalid();
             }
             else{
@@ -152,7 +148,7 @@ void testbench_init(){
         }
 
         else if (strncmp(line, "STA", 3)==0){               //Set accumulator value
-            if (line_len<7){
+            if (len<7){
                 invalid();
             }
             else{
@@ -169,7 +165,7 @@ void testbench_init(){
         }
 
         else if (strncmp(line, "STX", 3)==0){               //Set X register value
-            if (line_len<7){
+            if (len<7){
                 invalid();
             }
             else{
@@ -186,7 +182,7 @@ void testbench_init(){
         }
 
         else if (strncmp(line, "STY", 3)==0){               //Set Y register value
-            if (line_len<7){
+            if (len<7){
                 invalid();
             }
             else{
@@ -203,7 +199,7 @@ void testbench_init(){
         }
 
         else if (strncmp(line, "SST", 3)==0){               //Set status register value
-            if (line_len<7){
+            if (len<7){
                 invalid();
             }
             else{
@@ -220,7 +216,7 @@ void testbench_init(){
         }
 
         else if (strncmp(line, "SSP", 3)==0){               //Set stack pointer value
-            if (line_len<7){
+            if (len<7){
                 invalid();
             }
             else{
@@ -237,7 +233,7 @@ void testbench_init(){
         }
 
         else if (strncmp(line, "RUN", 3)==0){               //Run code at address
-            if (line_len<9){
+            if (len<9){
                 invalid();
             }
             else{
@@ -260,7 +256,7 @@ void testbench_init(){
         }
 
         else if(strncmp(line, "RQM", 3)==0){                //Request memory address value
-            if (line_len<9){
+            if (len<9){
                 invalid();
             }
             else{
