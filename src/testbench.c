@@ -69,154 +69,210 @@ void testbench_init(){
 
     while(!init_done){
         get_testline(&line, &len, stdin);                   //Read command from stdin
+        size_t line_len = strlen(line);
 
         if (strncmp(line, "RAM", 3)==0){                    //Set RAM bank
-            strncpy(val, line+4, 2);
-            ival = hex_to_int8(val);
-            if (ival==-1){
+            if (line_len<7){
                 invalid();
             }
             else{
-                memory_set_ram_bank((uint8_t)ival);
-                ready();
+                strncpy(val, line+4, 2);
+                ival = hex_to_int8(val);
+                if (ival==-1){
+                    invalid();
+                }
+                else{
+                    memory_set_ram_bank((uint8_t)ival);
+                    ready();
+                }
             }
         }
 
         else if (strncmp(line, "ROM", 3)==0){               //Set ROM bank
-            strncpy(val, line+4, 2);
-            ival = hex_to_int8(val);
-            if (ival==-1){
+            if (line_len<7){
                 invalid();
             }
             else{
-                memory_set_rom_bank((uint8_t)ival);
-                ready();
+                strncpy(val, line+4, 2);
+                ival = hex_to_int8(val);
+                if (ival==-1){
+                    invalid();
+                }
+                else{
+                    memory_set_rom_bank((uint8_t)ival);
+                    ready();
+                }
             }
         }
 
         else if (strncmp(line, "STM", 3)==0){               //Set memory address value
-            strncpy(addr, line+4, 4);
-            strncpy(val, line+9, 2);
-
-            iaddr = hex_to_int16(addr);
-            ival = hex_to_int8(val);
-
-            if (iaddr==-1 || ival==-1){
+            if (line_len<12){
                 invalid();
             }
             else{
-                write6502((uint16_t)iaddr, (uint8_t)ival);
-                ready();
+                strncpy(addr, line+4, 4);
+                strncpy(val, line+9, 2);
+
+                iaddr = hex_to_int16(addr);
+                ival = hex_to_int8(val);
+
+                if (iaddr==-1 || ival==-1){
+                    invalid();
+                }
+                else{
+                    write6502((uint16_t)iaddr, (uint8_t)ival);
+                    ready();
+                }
             }
         }
 
         else if (strncmp(line, "FLM", 3)==0){               //Fill memory address range with value
-            strncpy(addr, line+4, 4);
-            strncpy(addr2, line+9, 4);
-            strncpy(val, line+14, 2);
-
-            iaddr = hex_to_int16(addr);
-            iaddr2 = hex_to_int16(addr2);
-            ival = hex_to_int8(val);
-
-            if (iaddr==-1 || iaddr2==-1 || ival==-1){
+            if (line_len<17){
                 invalid();
             }
             else{
-                for (;iaddr<=iaddr2;iaddr++){
-                    write6502((uint16_t)iaddr, (uint8_t)ival);
+                strncpy(addr, line+4, 4);
+                strncpy(addr2, line+9, 4);
+                strncpy(val, line+14, 2);
+
+                iaddr = hex_to_int16(addr);
+                iaddr2 = hex_to_int16(addr2);
+                ival = hex_to_int8(val);
+
+                if (iaddr==-1 || iaddr2==-1 || ival==-1){
+                    invalid();
                 }
-                ready();
+                else{
+                    for (;iaddr<=iaddr2;iaddr++){
+                        write6502((uint16_t)iaddr, (uint8_t)ival);
+                    }
+                    ready();
+                }
             }
         }
 
         else if (strncmp(line, "STA", 3)==0){               //Set accumulator value
-            strncpy(val, line+4, 2);
-            ival = hex_to_int8(val);
-            if (ival==-1){
+            if (line_len<7){
                 invalid();
             }
             else{
-                a = (uint8_t)ival;
-                ready();
+                strncpy(val, line+4, 2);
+                ival = hex_to_int8(val);
+                if (ival==-1){
+                    invalid();
+                }
+                else{
+                    a = (uint8_t)ival;
+                    ready();
+                }
             }
         }
 
         else if (strncmp(line, "STX", 3)==0){               //Set X register value
-            strncpy(val, line+4, 2);
-            ival = hex_to_int8(val);
-            if (ival==-1){
+            if (line_len<7){
                 invalid();
             }
             else{
-                x = (uint8_t)ival;
-                ready();
+                strncpy(val, line+4, 2);
+                ival = hex_to_int8(val);
+                if (ival==-1){
+                    invalid();
+                }
+                else{
+                    x = (uint8_t)ival;
+                    ready();
+                }
             }
         }
 
         else if (strncmp(line, "STY", 3)==0){               //Set Y register value
-            strncpy(val, line+4, 2);
-            ival = hex_to_int8(val);
-            if (ival==-1){
+            if (line_len<7){
                 invalid();
             }
             else{
-                y = (uint8_t)ival;
-                ready();
+                strncpy(val, line+4, 2);
+                ival = hex_to_int8(val);
+                if (ival==-1){
+                    invalid();
+                }
+                else{
+                    y = (uint8_t)ival;
+                    ready();
+                }
             }
         }
 
         else if (strncmp(line, "SST", 3)==0){               //Set status register value
-            strncpy(val, line+4, 2);
-            ival = hex_to_int8(val);
-            if (ival==-1){
+            if (line_len<7){
                 invalid();
             }
             else{
-                status = (uint8_t)ival;
-                ready();
+                strncpy(val, line+4, 2);
+                ival = hex_to_int8(val);
+                if (ival==-1){
+                    invalid();
+                }
+                else{
+                    status = (uint8_t)ival;
+                    ready();
+                }
             }
         }
 
         else if (strncmp(line, "SSP", 3)==0){               //Set stack pointer value
-            strncpy(val, line+4, 2);
-            ival = hex_to_int8(val);
-            if (ival==-1){
+            if (line_len<7){
                 invalid();
             }
             else{
-                sp = (uint8_t)ival;
-                ready();
+                strncpy(val, line+4, 2);
+                ival = hex_to_int8(val);
+                if (ival==-1){
+                    invalid();
+                }
+                else{
+                    sp = (uint8_t)ival;
+                    ready();
+                }
             }
         }
 
         else if (strncmp(line, "RUN", 3)==0){               //Run code at address
-            strncpy(addr, line+4, 4);
-
-            iaddr = hex_to_int16(addr);
-            if (iaddr==-1){
+            if (line_len<9){
                 invalid();
             }
             else{
-                write6502(0x0100+sp, (0xfffd-1)>>8);
-                sp--;
-                write6502(0x0100+sp, (0xfffd-1) & 255);
-                sp--;
-                pc = (uint16_t)iaddr;
-            
-                init_done=true;
+                strncpy(addr, line+4, 4);
+
+                iaddr = hex_to_int16(addr);
+                if (iaddr==-1){
+                    invalid();
+                }
+                else{
+                    write6502(0x0100+sp, (0xfffd-1)>>8);
+                    sp--;
+                    write6502(0x0100+sp, (0xfffd-1) & 255);
+                    sp--;
+                    pc = (uint16_t)iaddr;
+                
+                    init_done=true;
+                }
             }
         }
 
         else if(strncmp(line, "RQM", 3)==0){                //Request memory address value
-            strncpy(addr, line+4, 4);
-            iaddr = hex_to_int16(addr);
-            if (iaddr==-1){
+            if (line_len<9){
                 invalid();
             }
             else{
-                printf("%lx\n", (long)read6502((uint16_t)iaddr));
-                fflush(stdout);
+                strncpy(addr, line+4, 4);
+                iaddr = hex_to_int16(addr);
+                if (iaddr==-1){
+                    invalid();
+                }
+                else{
+                    printf("%lx\n", (long)read6502((uint16_t)iaddr));
+                    fflush(stdout);
+                }
             }
         }
 
