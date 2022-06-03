@@ -21,8 +21,7 @@ class TestTest(unittest.TestCase):
         self.e.run(0x6000)
         
         self.assertEqual(self.e.getA(), 0)
-        self.assertNotEqual(self.e.getStatus() & Status.Z, 0)
-        self.assertNotEqual(self.e.getStatus() & Status.C, 0)  
+        self.assertNotEqual(self.e.getStatus() & Status.C, 0)
         
 if __name__ == '__main__':
     unittest.main()

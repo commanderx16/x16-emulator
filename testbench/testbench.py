@@ -29,7 +29,6 @@ class X16TestBench:
             path.append(o)
         
         self.emu = subprocess.Popen(path, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        print (self.emu.poll())
     
     def __del__(self):
         self.emu.stdout.close()
@@ -52,7 +51,7 @@ class X16TestBench:
         signal.alarm(timeout)
 
         r = ""
-        while r.startswith("RDY")==False and r.startswith("ERR")==False:
+        while r.startswith("RDY")==False:
             r = self.__readline()
             if r.startswith("ERR"):
                 raise Exception(r[3:].strip())

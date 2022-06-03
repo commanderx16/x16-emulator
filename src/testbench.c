@@ -69,7 +69,7 @@ void testbench_init(){
     ready();
 
     while(!init_done){
-        size_t len = get_testline(&line, &slen, stdin);                   //Read command from stdin
+        size_t len = get_testline(&line, &slen, stdin);     //Read command from stdin
 
         if (strncmp(line, "RAM", 3)==0){                    //Set RAM bank
             if (len<7){

@@ -3,7 +3,6 @@
 // All rights reserved. License: 2-clause BSD
 
 /*
-
 TESTBENCH
 ---------
 
@@ -18,7 +17,7 @@ over stdin/stdout.
 2. Messages from the emulator to the test runner (stdout)
 
 RDY                 Sent when the emulator is ready to receive commands from the test runner
-<hex value>         Emulator response to requests made by the test runner
+<hex value>         Emulator response to get requests
 ERR <message>       Invalid arguments
 
 
