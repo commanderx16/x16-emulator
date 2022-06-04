@@ -162,7 +162,7 @@ class X16TestBench:
 
     def getMemory(self, address):
         self.__writeline("RQM " + self.__tohex16(address))
-        return self.__int8(self.__getresponse())
+        return self.__toint8(self.__getresponse())
 
     def getA(self):
         self.__writeline("RQA")
