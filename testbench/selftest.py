@@ -2,11 +2,11 @@ import unittest
 from testbench import X16TestBench
 from testbench import Status
 
-class TestTest(unittest.TestCase):
+class SelfTest(unittest.TestCase):
     e = None
 
     def __init__(self, *args, **kwargs):
-        super(TestTest, self).__init__(*args, **kwargs)
+        super(SelfTest, self).__init__(*args, **kwargs)
         
         self.e = X16TestBench("../x16emu", ["-warp"])
         self.e.waitReady()
@@ -30,9 +30,9 @@ class TestTest(unittest.TestCase):
         self.e.setMemory(0x6000, 0)
         self.assertEqual(self.e.getMemory(0x6000), 0)
 
-        #Set and retrieve value 128
-        self.e.setMemory(0x6000, 128)
-        self.assertEqual(self.e.getMemory(0x6000), 128)
+        #Set and retrieve value 255
+        self.e.setMemory(0x6000, 255)
+        self.assertEqual(self.e.getMemory(0x6000), 255)
 
         #Set value -1, should cause an exception
         with self.assertRaises(Exception):
@@ -42,14 +42,23 @@ class TestTest(unittest.TestCase):
         with self.assertRaises(Exception):
             self.e.setMemory(0x6000, 256)
 
+    def test_fillmemory(self):
+        self.e.fillMemory(0x6000, 0x61ff, 0x80)
+        self.e.fillMemory(0x6001, 0x61fe, 0xff)
+        
+        self.assertEqual(self.e.getMemory(0x6000), 0x80)
+        self.assertEqual(self.e.getMemory(0x6001), 0xff)
+        self.assertEqual(self.e.getMemory(0x61fe), 0xff)
+        self.assertEqual(self.e.getMemory(0x61ff), 0x80)
+
     def test_a(self):
         #Set and retrieve value 0
         self.e.setA(0)
         self.assertEqual(self.e.getA(), 0)
 
-        #Set and retrieve value 128
-        self.e.setA(128)
-        self.assertEqual(self.e.getA(), 128)
+        #Set and retrieve value 255
+        self.e.setA(255)
+        self.assertEqual(self.e.getA(), 255)
 
         #Set value -1, should cause an exception
         with self.assertRaises(Exception):
@@ -64,9 +73,9 @@ class TestTest(unittest.TestCase):
         self.e.setX(0)
         self.assertEqual(self.e.getX(), 0)
 
-        #Set and retrieve value 128
-        self.e.setX(128)
-        self.assertEqual(self.e.getX(), 128)
+        #Set and retrieve value 255
+        self.e.setX(255)
+        self.assertEqual(self.e.getX(), 255)
 
         #Set value -1, should cause an exception
         with self.assertRaises(Exception):
@@ -81,9 +90,9 @@ class TestTest(unittest.TestCase):
         self.e.setY(0)
         self.assertEqual(self.e.getY(), 0)
 
-        #Set and retrieve value 128
-        self.e.setY(128)
-        self.assertEqual(self.e.getY(), 128)
+        #Set and retrieve value 255
+        self.e.setY(255)
+        self.assertEqual(self.e.getY(), 255)
 
         #Set value -1, should cause an exception
         with self.assertRaises(Exception):
@@ -98,9 +107,9 @@ class TestTest(unittest.TestCase):
         self.e.setStackPointer(0)
         self.assertEqual(self.e.getStackPointer(), 0)
 
-        #Set and retrieve value 128
-        self.e.setStackPointer(128)
-        self.assertEqual(self.e.getStackPointer(), 128)
+        #Set and retrieve value 255
+        self.e.setStackPointer(255)
+        self.assertEqual(self.e.getStackPointer(), 255)
 
         #Set value -1, should cause an exception
         with self.assertRaises(Exception):
@@ -115,9 +124,9 @@ class TestTest(unittest.TestCase):
         self.e.setStatus(0)
         self.assertEqual(self.e.getStatus(), 0)
 
-        #Set and retrieve value 128
-        self.e.setStatus(128)
-        self.assertEqual(self.e.getStatus(), 128)
+        #Set and retrieve value 255
+        self.e.setStatus(255)
+        self.assertEqual(self.e.getStatus(), 255)
 
         #Set value -1, should cause an exception
         with self.assertRaises(Exception):
