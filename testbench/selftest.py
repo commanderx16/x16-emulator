@@ -171,9 +171,9 @@ class TestTest(unittest.TestCase):
         self.assertNotEqual(self.e.getStatus() & Status.V, Status.V)
 
         #Run code that causes overflow
-        self.e.setMemory(0x6000, 0xa9)      #lda #1
+        self.e.setMemory(0x6000, 0xa9)      #lda #80
         self.e.setMemory(0x6001, 0x80)
-        self.e.setMemory(0x6002, 0x69)      #adc #1
+        self.e.setMemory(0x6002, 0x69)      #adc #ff
         self.e.setMemory(0x6003, 0xff)
         self.e.setMemory(0x6004, 0x60)      #rts
         self.e.run(0x6000)
