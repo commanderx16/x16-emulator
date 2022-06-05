@@ -42,6 +42,14 @@ class SelfTest(unittest.TestCase):
         with self.assertRaises(Exception):
             self.e.setMemory(0x6000, 256)
 
+        #Use address -1, should cause an exception
+        with self.assertRaises(Exception):
+            self.e.setMemory(-1, 0)
+        
+        #Use address 10000, should cause an exception
+        with self.assertRaises(Exception):
+            self.e.setMemory(0x10000, 0)
+
     def test_fillmemory(self):
         self.e.fillMemory(0x6000, 0x61ff, 0x80)
         self.e.fillMemory(0x6001, 0x61fe, 0xff)
@@ -211,6 +219,15 @@ class SelfTest(unittest.TestCase):
         self.e.setMemory(0x6005, 0x60)      #rts
         self.e.run(0x6000)
         self.assertNotEqual(self.e.getStatus() & Status.N, Status.N)
+
+    def test_run(self):
+        #Use address -1, should cause an exception
+        with self.assertRaises(Exception):
+            self.e.run(-1)
+        
+        #Use address 10000, should cause an exception
+        with self.assertRaises(Exception):
+            self.e.run(0x10000)
 
 if __name__ == '__main__':
     unittest.main()
