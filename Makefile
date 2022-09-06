@@ -52,9 +52,9 @@ ifdef EMSCRIPTEN
 	OUTPUT=x16emu.html
 endif
 
-_OBJS = cpu/fake6502.o memory.o disasm.o video.o ps2.o i2c.o smc.o rtc.o via.o serial.o ieee.o vera_spi.o audio.o vera_pcm.o vera_psg.o sdcard.o main.o debugger.o javascript_interface.o joystick.o rendertext.o keyboard.o icon.o timing.o wav_recorder.o testbench.o
+_OBJS = cpu/fake6502.o memory.o disasm.o video.o i2c.o smc.o rtc.o via.o serial.o ieee.o vera_spi.o audio.o vera_pcm.o vera_psg.o sdcard.o main.o debugger.o javascript_interface.o joystick.o rendertext.o keyboard.o icon.o timing.o wav_recorder.o testbench.o
 
-_HEADERS = audio.h cpu/65c02.h cpu/fake6502.h cpu/instructions.h cpu/mnemonics.h cpu/modes.h cpu/support.h cpu/tables.h debugger.h disasm.h extern/include/gif.h extern/src/ym2151.h glue.h i2c.h icon.h joystick.h keyboard.h ieee.h memory.h ps2.h rendertext.h rom_symbols.h rtc.h sdcard.h smc.h timing.h utf8.h utf8_encode.h vera_pcm.h vera_psg.h vera_spi.h version.h via.h serial.o video.h wav_recorder.h testbench.h
+_HEADERS = audio.h cpu/65c02.h cpu/fake6502.h cpu/instructions.h cpu/mnemonics.h cpu/modes.h cpu/support.h cpu/tables.h debugger.h disasm.h extern/include/gif.h extern/src/ym2151.h glue.h i2c.h icon.h joystick.h keyboard.h ieee.h memory.h rendertext.h rom_symbols.h rtc.h sdcard.h smc.h timing.h utf8.h utf8_encode.h vera_pcm.h vera_psg.h vera_spi.h version.h via.h serial.o video.h wav_recorder.h testbench.h
 
 _OBJS += extern/src/ym2151.o
 _HEADERS += extern/src/ym2151.h

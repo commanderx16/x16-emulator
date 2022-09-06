@@ -11,7 +11,6 @@
 #include "memory.h"
 #include "video.h"
 #include "ym2151.h"
-#include "ps2.h"
 #include "cpu/fake6502.h"
 #include "wav_recorder.h"
 

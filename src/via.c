@@ -3,11 +3,9 @@
 // All rights reserved. License: 2-clause BSD
 
 #include "via.h"
-#include "ps2.h"
 #include "i2c.h"
 #include "memory.h"
 #include "serial.h"
-#include "ps2.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -220,26 +218,26 @@ via_step(via_t *via, unsigned clocks)
 //
 // VIA#1
 //
-// PA0: PS2KDAT   PS/2 DATA keyboard
-// PA1: PS2KCLK   PS/2 CLK  keyboard
+// PA0: I2CDATA   I2C DATA
+// PA1: I2CCLK    I2C CLK
 // PA2: NESLATCH  NES LATCH (for all controllers)
 // PA3: NESCLK    NES CLK   (for all controllers)
 // PA4: NESDAT3   NES DATA  (controller 3)
 // PA5: NESDAT2   NES DATA  (controller 2)
 // PA6: NESDAT1   NES DATA  (controller 1)
 // PA7: NESDAT0   NES DATA  (controller 0)
-// PB0: PS2MDAT   PS/2 DATA mouse
-// PB1: PS2MCLK   PS/2 CLK  mouse
-// PB2: I2CDATA   I2C DATA
+// PB0: -         Unused
+// PB1: -         Unused
+// PB2: -         Unused
 // PB3: IECATTO   Serial ATN  out
 // PB4: IECCLKO   Serial CLK  out
 // PB5: IECDATAO  Serial DATA out
 // PB6: IECCLKI   Serial CLK  in
 // PB7: IECDATAI  Serial DATA in
-// CA1: PS2MCLK   PS/2 CLK  mouse
-// CA2: PS2KCLK   PS/2 CLK  keyboard
+// CA1: -         Unused
+// CA2: -         Unused
 // CB1: IECSRQ
-// CB2: I2CCLK    I2C CLK
+// CB2: -         Unused
 
 void
 via1_init()
@@ -258,15 +256,10 @@ via1_read(uint8_t reg, bool debug)
 {
 	// DDR=0 (input)  -> take input bit
 	// DDR=1 (output) -> take output bit
-	// physically, both PS/2 and I2C has shared clock/data bus, so reading them
-	// would return values currently being driven by either VIA or peripherals
-	// (or pulled-up 1 in case of no drivers)
-	// for now, just assume that peripherals always drive all lines and VIA
+	// For now, just assume that I2C peripherals always drive all lines and VIA
 	// overrides them with their input values based on current DDR bits
 	switch (reg) {
 		case 0: // PB
-			ps2_autostep(1);
-			i2c_step();
 			if (!debug) via_clear_prb_irqs(&via[0]);
 			if (via[0].registers[11] & 2) {
 				// TODO latching mechanism (requires IEC implementation)
@@ -274,14 +267,10 @@ via1_read(uint8_t reg, bool debug)
 			} else {
 				return
 					(~via[0].registers[2] & (
-						ps2_port[1].out |
-						(i2c_port.data_out << 2) |
 						(serial_port_read_clk() << 6) |
 						(serial_port_read_data() << 7)
 					)) |
 					(via[0].registers[2] & (
-						ps2_port[1].in |
-						(i2c_port.data_in << 2) |
 						(serial_port.in.atn << 3) |
 						((!serial_port.in.clk) << 4) |
 						((!serial_port.in.data) << 5)
@@ -290,14 +279,17 @@ via1_read(uint8_t reg, bool debug)
 			
 		case 1: // PA
 		case 15:
-			ps2_autostep(0);
+			i2c_step();
 			if (!debug) via_clear_pra_irqs(&via[0]);
 			if (via[0].registers[11] & 1) {
 				// CA1 is currently not connected to anything (?)
 				return 0;
 			} else {
-				return (~via[0].registers[3] & ps2_port[0].out) |
-					(via[0].registers[3] & ps2_port[0].in) | Joystick_data;
+				return (~via[0].registers[3] & i2c_port.data_out) |					//I2C Data: PA0=1 if DDR bit is 0 (input) and data_out is 1; usage of data_out and data_in is a bit confusing...
+					(via[0].registers[3] & i2c_port.data_in) |						//I2C Data: PA0=1 if DDR bit is 1 (output) and data_in is 1
+					(~via[0].registers[3] & I2C_CLK_MASK ) |						//I2C Clock: PA1=1 if DDR bit is 0 (input), simulating an input pull-up
+					(via[0].registers[3] & i2c_port.clk_in) |						//I2C Clock: PA1=1 if DDR bit is 1 (output) and clk_in is 1, simulating a pin driven by the VIA 
+					Joystick_data;
 			}
 
 		default:
@@ -310,32 +302,20 @@ via1_write(uint8_t reg, uint8_t value)
 {
 	via_write(&via[0], reg, value);
 	if (reg == 0 || reg == 2) {
-		ps2_autostep(1);
-		i2c_step();
 		// PB
 		const uint8_t pb = via[0].registers[0] | ~via[0].registers[2];
-		ps2_port[1].in   = pb & PS2_VIA_MASK;
-		i2c_port.data_in = (pb & I2C_DATA_MASK) != 0;
 		serial_port.in.atn = (pb & SERIAL_ATNIN_MASK) != 0;
 		serial_port.in.clk = (pb & SERIAL_CLOCKIN_MASK) == 0;
 		serial_port.in.data = (pb & SERIAL_DATAIN_MASK) == 0;
+
 	} else if (reg == 1 || reg == 3) {
-		ps2_autostep(0);
+		i2c_step();
 		// PA
 		const uint8_t pa = via[0].registers[1] | ~via[0].registers[3];
-		ps2_port[0].in   = pa & PS2_VIA_MASK;
+		i2c_port.data_in = pa & I2C_DATA_MASK;										//Sets data_in = 1 if the corresponding DDR bit is 0 (input), simulates a pull-up
+		i2c_port.clk_in = (pa & I2C_CLK_MASK) >> 1;									//Sets clk_in = 1 if pin is an input, simulates a pull-up
 		joystick_set_latch(via[0].registers[1] & JOY_LATCH_MASK);
 		joystick_set_clock(via[0].registers[1] & JOY_CLK_MASK);
-	} else if (reg == 12) {
-		i2c_step();
-		switch (value >> 5) {
-			case 6: // %110xxxxx
-				i2c_port.clk_in = 0;
-				break;
-			case 7: // %111xxxxx
-				i2c_port.clk_in = 1;
-				break;
-		}
 	}
 }
 
