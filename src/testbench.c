@@ -69,7 +69,7 @@ void testbench_init(){
     fflush(stdout);
 
     while(!init_done){
-        get_testline(&line, &len, stdin);                   //Read command from stdin
+        get_testline(&line, &len, stdin);                        //Read command from stdin
 
         if (strncmp(line, "RAM", 3)==0){                    //Set RAM bank
             strncpy(val, line+4, 2);

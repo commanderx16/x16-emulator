@@ -1,26 +1,14 @@
-import signal
+from operator import eq
 import subprocess
-
-class Label:
-    name = ""
-    address = ""
 
 class X16TestBench:
     emu = None
-    labels = []
 
-    def __init__(self, emulatorpath, emulatoroptions=[]):
-        options = [emulatorpath,"-testbench"]
-        for o in emulatoroptions:
-            options.append(o)
-
-        self.emu = subprocess.Popen(options, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    def __init__(self, emulatorpath):
+        self.emu = subprocess.Popen([emulatorpath, "-testbench"], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     
     def __del__(self):
-        self.emu.stdout.close()
-        self.emu.stdin.close()
-        self.emu.terminate()
-        self.emu.wait()
+        self.emu.kill()
 
     def __writeline(self, str):
         self.emu.stdin.write((str + "\n").encode('utf-8'))
@@ -57,40 +45,8 @@ class X16TestBench:
             raise Exception("Value out of range")
         else:
             return i
-    
-    def __toint16(self, val):
-        i = int(val, 16)
-        if i < 0 or i > 65535:
-            raise Exception("Value out of range")
-        else:
-            return i
 
-    def __timeout(self, s, f):
-        raise Exception("Timeout error")
-
-    def importLabels(self, path):
-        f = open(path, "r")
-        for line in f.readlines():
-            l = Label()
-            addr_start = line.find(" ") + 1
-            addr_len = line[addr_start:].find(" ")
-            label_start = addr_start + addr_len + line[addr_start+addr_len:].find(".") + 1
-            l.name = line[label_start:-1] 
-            l.address = self.__toint16(line[addr_start:addr_start+addr_len])
-            self.labels.append(l)
-        f.close()
-
-    def getLabelAddress(self, labelName):
-        for l in self.labels:
-            if l.name == labelName:
-                return l.address
-        raise Exception("Label not found")
-
-    def waitReady(self, timeout=5):
-        #Set timeout
-        signal.signal(signal.SIGALRM, self.__timeout)
-        signal.alarm(timeout)
-
+    def waitReady(self):
         r = ""
         while r != "RDY\n":
             r = self.__readline()
@@ -122,12 +78,7 @@ class X16TestBench:
     def setStackPointer(self, value):
         self.__writeline("SSP " + self.__tohex8(value))
 
-    def run(self, address, timeout=5):
-        #Set timeout
-        signal.signal(signal.SIGALRM, self.__timeout)
-        signal.alarm(timeout)
-
-        #Run code
+    def run(self, address):
         self.__writeline("RUN " + self.__tohex16(address))
         self.waitReady()
 
