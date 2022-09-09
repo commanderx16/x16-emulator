@@ -18,6 +18,7 @@
 #include "sdcard.h"
 
 #include <limits.h>
+#include <stdint.h>
 
 #ifdef __EMSCRIPTEN__
 #include "emscripten.h"
@@ -507,12 +508,13 @@ render_sprite_line(const uint16_t y)
 		const uint8_t *bitmap_data = video_ram + props->sprite_address + (eff_sy << (props->sprite_width_log2 - (1 - props->color_mode)));
 
 		uint8_t unpacked_sprite_line[64];
+		const uint16_t width = (props->sprite_width<64? props->sprite_width : 64);
 		if (props->color_mode == 0) {
 			// 4bpp
-			expand_4bpp_data(unpacked_sprite_line, bitmap_data, props->sprite_width);
+			expand_4bpp_data(unpacked_sprite_line, bitmap_data, width);
 		} else {
 			// 8bpp
-			memcpy(unpacked_sprite_line, bitmap_data, props->sprite_width);
+			memcpy(unpacked_sprite_line, bitmap_data, width);
 		}
 
 		for (uint16_t sx = 0; sx < props->sprite_width; ++sx) {
