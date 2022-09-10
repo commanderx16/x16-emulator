@@ -36,7 +36,7 @@ static int DEBUGRenderRegisters(void);
 static void DEBUGRenderVRAM(int y, int data);
 static void DEBUGRenderCode(int lines,int initialPC);
 static void DEBUGRenderStack(int bytesCount);
-static void DEBUGRenderCmdLine();
+static void DEBUGRenderCmdLine(int x, int width, int height);
 static bool DEBUGBuildCmdLine(SDL_Keycode key);
 static void DEBUGExecCmd();
 
