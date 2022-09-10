@@ -127,8 +127,6 @@ bool prg_finished_loading;
 int prg_override_start = -1;
 bool run_after_load = false;
 
-bool test = true;
-
 char *nvram_path = NULL;
 
 #ifdef TRACE
