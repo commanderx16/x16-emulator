@@ -175,7 +175,7 @@ video_reset()
 }
 
 bool
-video_init(int window_scale, char *quality)
+video_init(int window_scale, double screen_x_scale, char *quality)
 {
 	uint32_t window_flags = SDL_WINDOW_ALLOW_HIGHDPI;
 
@@ -187,11 +187,11 @@ video_init(int window_scale, char *quality)
 	video_reset();
 
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, quality);
-	SDL_CreateWindowAndRenderer(SCREEN_WIDTH * window_scale, SCREEN_HEIGHT * window_scale, window_flags, &window, &renderer);
+	SDL_CreateWindowAndRenderer(SCREEN_WIDTH * window_scale * screen_x_scale, SCREEN_HEIGHT * window_scale, window_flags, &window, &renderer);
 #ifndef __MORPHOS__
 	SDL_SetWindowResizable(window, true);
 #endif
-	SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+	SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH * screen_x_scale, SCREEN_HEIGHT);
 
 	sdlTexture = SDL_CreateTexture(renderer,
 									SDL_PIXELFORMAT_RGB888,
