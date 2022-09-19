@@ -406,6 +406,8 @@ usage()
 	printf("\tDisable host fs through IEEE API interception.\n");
 	printf("\tIEEE API host fs is normally enabled unless -sdcard or\n");
 	printf("\t-serial is specified.\n");
+	printf("-noemucmdkeys\n");
+	printf("\tDisable emulator command keys.\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
 	printf("\tLoad application from the *host filesystem* into RAM,\n");
 	printf("\teven if an SD card is attached.\n");
@@ -826,6 +828,10 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			no_ieee_intercept = true;
+		} else if (!strcmp(argv[0], "-noemucmdkeys")) {
+			argc--;
+			argv++;
+			disable_emu_cmd_keys = true;
 		} else if (!strcmp(argv[0], "-version")){
 			printf("%s", VER_INFO);
 			argc--;
@@ -920,7 +926,7 @@ main(int argc, char **argv)
 	}
 
 	wav_recorder_set_path(wav_path);
-	
+
 	memory_init();
 
 	joystick_init();
@@ -1245,12 +1251,12 @@ emulator_loop(void *param)
 		if (!headless) {
 			new_frame |= video_step(MHZ, clocks);
 		}
-		
+
 		for (uint8_t i = 0; i < clocks; i++) {
 			i2c_step();
 		}
 		rtc_step(clocks);
-		
+
 		if (!headless) {
 			audio_render(clocks);
 		}
