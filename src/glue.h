@@ -60,6 +60,7 @@ extern gif_recorder_state_t record_gif;
 extern char *gif_path;
 extern uint8_t keymap;
 extern bool warp_mode;
+extern bool testbench;
 
 extern void machine_dump();
 extern void machine_reset();

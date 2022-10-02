@@ -1486,6 +1486,9 @@ void
 stop6502(uint16_t address) {
 	if (debugger_enabled) {
 		DEBUGBreakToDebugger();
+	} else if (testbench) {
+		printf("STP\n");
+        fflush(stdout);
 	} else {
 		int return_btn;
 		char error_message[80];
