@@ -1481,3 +1481,26 @@ bool video_is_special_address(int addr)
 {
 	return addr >= 0x1F9C0;
 }
+
+void
+stop6502(uint16_t address) {
+	if (debugger_enabled) {
+		DEBUGBreakToDebugger();
+	} else {
+		int return_btn;
+		char error_message[80];
+		const SDL_MessageBoxButtonData btns[2] = {
+			{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0, "Reset Machine"},
+			{SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, -1, "Ignore"}
+		};
+		const SDL_MessageBoxData msg_box = {
+			SDL_MESSAGEBOX_ERROR, window, "Error", error_message,
+			2, btns, NULL
+		};
+		
+		sprintf(error_message, "Encountered stop instruction at address $%04X. CPU cannot continue.", address);
+		if (SDL_ShowMessageBox(&msg_box, &return_btn) == 0 && return_btn == 0) {
+			machine_reset();
+		};
+	}
+}
