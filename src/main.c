@@ -1062,7 +1062,7 @@ handle_ieee_intercept()
 	switch(pc) {
 		case 0xFF44: {
 			uint16_t count = a;
-			s=MACPTR(y << 8 | x, &count);
+			s=MACPTR(y << 8 | x, &count, status & 0x01);
 			x = count & 0xff;
 			y = count >> 8;
 			status &= 0xfe; // clear C -> supported
