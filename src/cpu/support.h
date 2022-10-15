@@ -71,7 +71,9 @@ void reset6502() {
     x = 0;
     y = 0;
     sp = 0xFD;
-    status |= FLAG_CONSTANT;
-	waiting = 0;
+    status |= FLAG_CONSTANT | FLAG_BREAK;
+    setinterrupt();
+    cleardecimal();
+    waiting = 0;
 }
 
