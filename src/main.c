@@ -1289,10 +1289,8 @@ emulator_loop(void *param)
 		}
 
 		if (video_get_irq_out() || via2_irq()) {
-			if (!(status & 4)) {
-//				printf("IRQ!\n");
-				irq6502();
-			}
+//			printf("IRQ!\n");
+			irq6502();
 		}
 
 		if (pc == 0xffff) {
