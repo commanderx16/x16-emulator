@@ -20,7 +20,7 @@
 #include "disasm.h"
 #include "memory.h"
 #include "video.h"
-#include "cpu/fake6502.h"
+#include "cpu/cpu.h"
 #include "debugger.h"
 #include "rendertext.h"
 
@@ -142,6 +142,7 @@ SDL_Renderer *dbgRenderer; 										// Renderer passed in.
 int  DEBUGGetCurrentStatus(void) {
 
 	SDL_Event event;
+	uint16_t pc = cpu_get_pc();
 	if (currentPC < 0) currentPC = pc;							// Initialise current PC displayed.
 
 	if (currentMode == DMODE_STEP) {							// Single step before
@@ -225,6 +226,7 @@ void DEBUGSetBreakPoint(int newBreakPoint) {
 // *******************************************************************************************
 
 void DEBUGBreakToDebugger(void) {
+	uint16_t pc = cpu_get_pc();
 	currentMode = DMODE_STOP;
 	currentPC = pc;
    currentPCBank = pc < 0xC000 ? memory_get_ram_bank() : memory_get_rom_bank();
@@ -238,6 +240,7 @@ void DEBUGBreakToDebugger(void) {
 
 static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift) {
 	int opcode;
+	uint16_t pc = cpu_get_pc();
 
 	switch(key) {
 
@@ -271,7 +274,7 @@ static void DEBUGHandleKeyEvent(SDL_Keycode key,int isShift) {
 			break;
 
 		case DBGKEY_RESET:									// F2 reset the 6502
-			reset6502();
+			cpu_reset();
 			currentPC = pc;
 			currentPCBank= -1;
 			break;
@@ -436,19 +439,19 @@ static void DEBUGExecCmd() {
 			sscanf(line, "%s %x", reg, &number);
 
 			if(!strcmp(reg, "pc")) {
-				pc= number & 0xFFFF;
+				cpu_set_pc(number & 0xFFFF);
 			}
 			if(!strcmp(reg, "a")) {
-				a= number & 0x00FF;
+				cpu_set_a(number & 0xFF);
 			}
 			if(!strcmp(reg, "x")) {
-				x= number & 0x00FF;
+				cpu_set_x(number & 0xFF);
 			}
 			if(!strcmp(reg, "y")) {
-				y= number & 0x00FF;
+				cpu_set_y(number & 0xFF);
 			}
 			if(!strcmp(reg, "sp")) {
-				sp= number & 0x00FF;
+				cpu_set_sp(number & 0xFF);
 			}
 			break;
 
@@ -533,7 +536,7 @@ static void DEBUGRenderZeroPageRegisters(int y) {
 			if (oldRegChange[reg] != NULL)
 				DEBUGString(dbgRenderer, DBG_ZP_REG+9, y, oldRegChange[reg], col_data);
 
-			if (oldRegisterTicks != clockticks6502) {   // change detection only when the emulated CPU changes
+			if (oldRegisterTicks != cpu_clock()) {   // change detection only when the emulated CPU changes
 				oldRegChange[reg] = n != oldRegisters[reg] ? "*" : " ";
 				oldRegisters[reg]=n;
 			}
@@ -542,6 +545,7 @@ static void DEBUGRenderZeroPageRegisters(int y) {
 		y++;
 	}
 
+	unsigned long clockticks6502 = cpu_clock();
 	if (oldRegisterTicks != clockticks6502) {
 		oldRegisterTicks = clockticks6502;
 	}
@@ -600,6 +604,7 @@ DEBUGRenderVRAM(int y, int data)
 
 static void DEBUGRenderCode(int lines, int initialPC) {
 	char buffer[32];
+	uint16_t pc = cpu_get_pc();
 	for (int y = 0; y < lines; y++) { 							// Each line
 
 		DEBUGAddress(DBG_ASMX, y, currentPCBank, initialPC, col_label);
@@ -622,6 +627,9 @@ static char *labels[] = { "NV-BDIZC","","","A","X","Y","","BKA","BKO", "PC","SP"
 
 static int DEBUGRenderRegisters(void) {
 	int n = 0,yc = 0;
+	uint16_t pc = cpu_get_pc();
+	uint8_t a = cpu_get_a(), x = cpu_get_x(), y = cpu_get_y(),
+			sp = cpu_get_sp(), status = cpu_get_status();
 	while (labels[n] != NULL) {									// Labels
 		DEBUGString(dbgRenderer, DBG_LBLX,n,labels[n], col_label);n++;
 	}
@@ -664,7 +672,7 @@ static int DEBUGRenderRegisters(void) {
 // *******************************************************************************************
 
 static void DEBUGRenderStack(int bytesCount) {
-	int data= (sp+1) | 0x100;
+	int data= (cpu_get_sp()+1) | 0x100;
 	int y= 0;
 	while (y < bytesCount) {
 		DEBUGNumber(DBG_STCK,y,data & 0xFFFF,4, col_label);

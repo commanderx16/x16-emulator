@@ -16,7 +16,7 @@
 #ifdef __MINGW32__
 #include <ctype.h>
 #endif
-#include "cpu/fake6502.h"
+#include "cpu/cpu.h"
 #include "timing.h"
 #include "disasm.h"
 #include "memory.h"
@@ -124,13 +124,14 @@ bool trace_mode = false;
 uint16_t trace_address = 0;
 #endif
 
-int instruction_counter;
 SDL_RWops *prg_file;
 bool prg_finished_loading;
 int prg_override_start = -1;
 bool run_after_load = false;
 
 char *nvram_path = NULL;
+
+static uint8_t last_irq = 0;
 
 #ifdef TRACE
 #include "rom_labels.h"
@@ -246,6 +247,16 @@ machine_dump(const char* reason)
 	}
 
 	if (dump_cpu) {
+		uint8_t a, x, y, sp, status;
+		uint16_t pc;
+
+		a = cpu_get_a();
+		x = cpu_get_x();
+		y = cpu_get_y();
+		sp = cpu_get_sp();
+		status = cpu_get_status();
+		pc = cpu_get_pc();
+
 		SDL_RWwrite(f, &a, sizeof(uint8_t), 1);
 		SDL_RWwrite(f, &x, sizeof(uint8_t), 1);
 		SDL_RWwrite(f, &y, sizeof(uint8_t), 1);
@@ -267,6 +278,7 @@ void
 machine_reset()
 {
 	ieee_init();
+	cpu_reset();
 	memory_reset();
 	vera_spi_init();
 	via1_init();
@@ -274,7 +286,6 @@ machine_reset()
 		via2_init();
 	}
 	video_reset();
-	reset6502();
 }
 
 void
@@ -978,6 +989,8 @@ main(int argc, char **argv)
 
 	wav_recorder_set_path(wav_path);
 
+	cpu_init();
+
 	memory_init();
 
 	joystick_init();
@@ -987,8 +1000,6 @@ main(int argc, char **argv)
 	machine_reset();
 
 	timing_init();
-
-	instruction_counter = 0;
 
 #ifdef __EMSCRIPTEN__
 	emscripten_set_main_loop(emscripten_main_loop, 0, 1);
@@ -1103,6 +1114,7 @@ handle_ieee_intercept()
 		return false;
 	}
 
+	uint16_t pc = cpu_get_pc();
 	if (!is_kernal() || pc < 0xFF44) {
 		return false;
 	}
@@ -1110,13 +1122,15 @@ handle_ieee_intercept()
 	static int count_unlistn = 0;
 	bool handled = true;
 	int s = -1;
+	uint8_t a = cpu_get_a();
 	switch(pc) {
 		case 0xFF44: {
+			uint8_t x = cpu_get_x(), y = cpu_get_y();
 			uint16_t count = a;
-			s=MACPTR(y << 8 | x, &count, status & 0x01);
-			x = count & 0xff;
-			y = count >> 8;
-			status &= 0xfe; // clear C -> supported
+			s=MACPTR(y << 8 | x, &count, cpu_get_status() & 0x01);
+			cpu_set_x(count & 0xff);
+			cpu_set_y(count >> 8);
+			cpu_set_status(cpu_get_status() & 0xfe); // clear C -> supported
 			break;
 		}
 		case 0xFF93:
@@ -1127,11 +1141,12 @@ handle_ieee_intercept()
 			break;
 		case 0xFFA5:
 			s=ACPTR(&a);
-			status = (status & ~3) | (!a << 1); // unconditional CLC, and set zero flag based on byte read
+			cpu_set_status((cpu_get_status() & ~3) | (!a << 1));
+			cpu_set_a(a);
 			break;
 		case 0xFFA8:
 			s=CIOUT(a);
-			status = (status & ~1); // unconditonal CLC
+			cpu_set_status(cpu_get_status() & ~1);
 			break;
 		case 0xFFAB:
 			UNTLK();
@@ -1166,8 +1181,10 @@ handle_ieee_intercept()
 			}
 		}
 
-		pc = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
+		uint8_t sp = cpu_get_sp();
+		cpu_set_pc((RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1);
 		sp += 2;
+		cpu_set_sp(sp);
 	}
 	return handled;
 }
@@ -1183,7 +1200,7 @@ emulator_loop(void *param)
 {
 	for (;;) {
 
-		if (testbench && pc == 0xfffd){
+		if (testbench && cpu_get_pc() == 0xfffd){
 			testbench_init();
 		}
 
@@ -1229,7 +1246,7 @@ emulator_loop(void *param)
 				}
 			}
 
-			printf("[%8d] ", instruction_counter);
+			printf("[%8d] ", cpu_instruction_count());
 
 			char *label = label_for_address(pc);
 			int label_len = label ? strlen(label) : 0;
@@ -1289,9 +1306,13 @@ emulator_loop(void *param)
 			continue;
 		}
 
-		uint32_t old_clockticks6502 = clockticks6502;
-		step6502();
-		uint8_t clocks = clockticks6502 - old_clockticks6502;
+		/* TODO: instead of using cpu_step, we should run CPU for more than one
+		   instruction (cpu_run) and rely on its cycle counter. this way
+		   the emulator loop can be made a lot tighter => faster.
+		   the CPU cycle counter can be read from the read/write callbacks.
+		   the only question is: how do we handle interrupts?
+		   see discussion in <https://github.com/commanderx16/x16-emulator/pull/437/> */
+		uint8_t clocks = cpu_step();
 		bool new_frame = false;
 		via1_step(clocks);
 		vera_spi_step(clocks);
@@ -1314,8 +1335,6 @@ emulator_loop(void *param)
 			audio_step(clocks);
 		}
 
-		instruction_counter++;
-
 		if (!headless && new_frame) {
 			if (nvram_dirty && nvram_path) {
 				SDL_RWops *f = SDL_RWFromFile(nvram_path, "wb");
@@ -1337,11 +1356,14 @@ emulator_loop(void *param)
 #endif
 		}
 
-		if (video_get_irq_out() || via1_irq() || (has_via2 && via2_irq())) {
+		uint8_t new_irq = video_get_irq_out() || via1_irq() || (has_via2 && via2_irq());
+		if (new_irq != last_irq) {
 //			printf("IRQ!\n");
-			irq6502();
+			cpu_irq(new_irq);
+			last_irq = new_irq;
 		}
 
+		uint16_t pc = cpu_get_pc();
 		if (pc == 0xffff) {
 			if (save_on_exit) {
 				machine_dump("CPU program counter reached $ffff");
@@ -1350,7 +1372,7 @@ emulator_loop(void *param)
 		}
 
 		if (echo_mode != ECHO_MODE_NONE && pc == 0xffd2 && is_kernal()) {
-			uint8_t c = a;
+			uint8_t c = cpu_get_a();
 			if (echo_mode == ECHO_MODE_COOKED) {
 				if (c == 0x0d) {
 					printf("\n");
@@ -1413,7 +1435,7 @@ emulator_loop(void *param)
 		}
 
 #if 0 // enable this for slow pasting
-		if (!(instruction_counter % 100000))
+		if (!(cpu_instruction_count() % 100000))
 #endif
 		while (pasting_bas && RAM[NDX] < 10) {
 			uint32_t c;

@@ -4,7 +4,7 @@
 #endif
 #include "glue.h"
 #include "video.h"
-#include "cpu/fake6502.h"
+#include "cpu/cpu.h"
 #include <SDL.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -12,7 +12,7 @@
 uint32_t frames;
 uint32_t sdlTicks_base;
 uint32_t last_perf_update;
-uint32_t clockticks6502_old;
+unsigned long clockticks6502_old;
 int64_t cpu_ticks;
 int64_t last_perf_cpu_ticks;
 char window_title[30];
@@ -23,7 +23,7 @@ timing_init() {
 	sdlTicks_base = SDL_GetTicks();
 	last_perf_update = 0;
 	last_perf_cpu_ticks = 0;
-	clockticks6502_old = clockticks6502;
+	clockticks6502_old = cpu_clock();
 	cpu_ticks = 0;
 }
 
@@ -31,8 +31,8 @@ void
 timing_update()
 {
 	frames++;
-	cpu_ticks += clockticks6502 - clockticks6502_old;
-	clockticks6502_old = clockticks6502;
+	cpu_ticks += cpu_clock() - clockticks6502_old;
+	clockticks6502_old = cpu_clock();
 	uint32_t sdlTicks = SDL_GetTicks() - sdlTicks_base;
 	int64_t diff_time = cpu_ticks / MHZ - sdlTicks * 1000LL;
 	if (!warp_mode && diff_time > 0) {

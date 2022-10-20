@@ -14,6 +14,9 @@ uint8_t read6502(uint16_t address);
 uint8_t real_read6502(uint16_t address, bool debugOn, uint8_t bank);
 void write6502(uint16_t address, uint8_t value);
 
+uint8_t w65c02s_read(uint16_t address);
+void w65c02s_write(uint16_t address, uint8_t value);
+
 void memory_init();
 void memory_reset();
 void memory_report_uninitialized_access(bool);
