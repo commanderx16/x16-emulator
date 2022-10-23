@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 #include "glue.h"
 #include "via.h"
 #include "memory.h"
@@ -22,6 +23,9 @@ uint8_t ROM[ROM_SIZE];
 
 static uint8_t addr_ym = 0;
 
+bool reportUninitializedAccess = false;
+bool *RAM_access_flags;
+
 #define DEVICE_EMULATOR (0x9fb0)
 
 uint8_t cpuio_read(uint8_t reg);
@@ -30,7 +34,20 @@ void cpuio_write(uint8_t reg, uint8_t value);
 void
 memory_init()
 {
+	//Initialize RAM array
 	RAM = calloc(RAM_SIZE, sizeof(uint8_t));
+	
+	//Initialize RAM access flag array
+	RAM_access_flags = (bool*) malloc(RAM_SIZE * sizeof(bool));
+	
+	//Randomize all RAM and set all access flags to false
+	time_t t;
+	srand((unsigned)time(&t));
+	for (int i = 0; i < RAM_SIZE; i++){
+		RAM[i] = rand();
+		RAM_access_flags[i]=false;
+	}
+
 	memory_reset();
 }
 
@@ -40,6 +57,10 @@ memory_reset()
 	// default banks are 0
 	memory_set_ram_bank(0);
 	memory_set_rom_bank(0);
+}
+
+void memory_report_uninitialized_access(bool value){
+	reportUninitializedAccess = value;
 }
 
 static uint8_t
@@ -55,6 +76,29 @@ effective_ram_bank()
 
 uint8_t
 read6502(uint16_t address) {
+	//Report access to uninitialized RAM (if option selected)
+	if (reportUninitializedAccess == true) {
+		uint8_t pc_bank;
+		
+		if (pc < 0xa000) {
+			pc_bank = 0;
+		} else if (pc < 0xc000) {
+			pc_bank = memory_get_ram_bank();
+		} else {
+			pc_bank = memory_get_rom_bank();
+		}
+
+		if (address < 0x9f00) {
+			if (RAM_access_flags[address] == false) {
+				printf("Warning: %02X:%04X accessed uninitialized RAM address 00:%04X\n", pc_bank, pc, address);
+			}
+		} else if (address >= 0xa000 && address < 0xc000) {
+			if (RAM_access_flags[0xa000 + (effective_ram_bank() << 13) + address - 0xa000] == false){
+				printf("Warning: %02X:%04X accessed uninitialized RAM address %02X:%04X\n", pc_bank, pc, memory_get_ram_bank(), address);
+			}
+		}
+	}
+
 	return real_read6502(address, false, 0);
 }
 
@@ -95,6 +139,14 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 void
 write6502(uint16_t address, uint8_t value)
 {
+	//Update RAM access flag
+	if (address < 0xa000) {
+		RAM_access_flags[address] = true;
+	} else if (address < 0xc000) {
+		RAM_access_flags[0xa000 + (effective_ram_bank() << 13) + address - 0xa000] = true;
+	}
+
+	//Write to memory
 	if (address < 2) { // CPU I/O ports
 		cpuio_write(address, value);
 	} else if (address < 0x9f00) { // RAM
