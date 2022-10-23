@@ -110,6 +110,7 @@ char *gif_path = NULL;
 char *wav_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
+double screen_x_scale = 1.0;
 char *scale_quality = "best";
 bool test_init_complete=false;
 bool headless = false;
@@ -448,6 +449,8 @@ usage()
 	printf("\tScale output to an integer multiple of 640x480\n");
 	printf("-quality {nearest|linear|best}\n");
 	printf("\tScaling algorithm quality\n");
+	printf("-widescreen\n");
+	printf("\tStretch output to 16:9 resolution to mimic display of a widescreen monitor.\n");
 	printf("-debug [<address>]\n");
 	printf("\tEnable debugger. Optionally, set a breakpoint\n");
 	printf("-dump {C|R|B|V}...\n");
@@ -797,6 +800,10 @@ main(int argc, char **argv)
 			}
 			argc--;
 			argv++;
+		} else if (!strcmp(argv[0], "-widescreen")) {
+			argc--;
+			argv++;
+			screen_x_scale = 1.333;
 		} else if (!strcmp(argv[0], "-sound")) {
 			argc--;
 			argv++;
@@ -921,7 +928,7 @@ main(int argc, char **argv)
 	if (!headless) {
 		SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
 		audio_init(audio_dev_name, audio_buffers);
-		video_init(window_scale, scale_quality);
+		video_init(window_scale, screen_x_scale, scale_quality);
 	}
 
 	wav_recorder_set_path(wav_path);
