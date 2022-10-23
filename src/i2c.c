@@ -175,9 +175,9 @@ uint8_t kbd_tail=0;
 /**
  * Adds value to the keyboard ring buffer; the value is discarded if the buffer is full
  **/
-void i2c_kbd_buffer_add(uint8_t value){
+void i2c_kbd_buffer_add(uint8_t value) {
 	uint8_t next = (kbd_head + 1) & (KBD_SIZE - 1);		//Next available index
-    if (next != kbd_tail){								//next = tail => buffer full
+    if (next != kbd_tail) {								//next = tail => buffer full
     	kbd_buffer[kbd_head] = value;					//Set new value
         kbd_head = next;								//Update buffer head pointer
     }
@@ -186,9 +186,9 @@ void i2c_kbd_buffer_add(uint8_t value){
 /**
  * Returns the tail value from the keyboard ring buffer; if the buffer is empty, it returns 0
  **/
-uint8_t i2c_kbd_buffer_next(){
+uint8_t i2c_kbd_buffer_next() {
 	uint8_t value = 0;									//Prepare to return 0 of buffer is empty
-	if (kbd_head!=kbd_tail){							//head = tail => empty
+	if (kbd_head != kbd_tail) {							//head = tail => empty
     	value = kbd_buffer[kbd_tail];					//Get value
         kbd_tail = (kbd_tail + 1) & (KBD_SIZE - 1);		//Update buffer tail pointer
     }
@@ -198,7 +198,7 @@ uint8_t i2c_kbd_buffer_next(){
 /**
  * Clears the keyboard ring buffer
  **/
-void i2c_kbd_buffer_flush(){
+void i2c_kbd_buffer_flush() {
 	kbd_tail = kbd_head = 0;
 }
 
@@ -211,9 +211,9 @@ uint8_t mse_tail=0;
 /**
  * Adds value to the mouse ring buffer; discards the value if the buffer is full
  **/
-void i2c_mse_buffer_add(uint8_t value){
+void i2c_mse_buffer_add(uint8_t value) {
 	uint8_t next = (mse_head + 1) & (MSE_SIZE - 1);				//Next available index
-    if (next != mse_tail){										//next = tail => buffer full
+    if (next != mse_tail) {										//next = tail => buffer full
     	mse_buffer[mse_head] = value;							//Set value
         mse_head = next;										//Update head pointer
     }
@@ -222,9 +222,9 @@ void i2c_mse_buffer_add(uint8_t value){
 /**
  * Returns the tail value from the mouse ring buffer; if the buffer is empty, it returns 0
  **/
-uint8_t i2c_mse_buffer_next(){
+uint8_t i2c_mse_buffer_next() {
 	uint8_t value = 0;											//Prepare to return 0 if buffer empty
-	if (mse_head!=mse_tail){									//head = tail => buffer empty
+	if (mse_head != mse_tail) {									//head = tail => buffer empty
     	value = mse_buffer[mse_tail];							//Get tail value
         mse_tail = (mse_tail + 1) & (MSE_SIZE - 1);				//Update tail pointer
     }
@@ -234,15 +234,15 @@ uint8_t i2c_mse_buffer_next(){
 /**
  * Clears the mouse ring buffer
  **/
-void i2c_mse_buffer_flush(){
+void i2c_mse_buffer_flush() {
 	mse_tail = mse_head = 0;
 }
 
 /**
  * Returns number of values currently stored in the ring buffer
  **/
-uint8_t i2c_mse_buffer_count(){
-    return (MSE_SIZE+mse_head-mse_tail)&(MSE_SIZE-1);
+uint8_t i2c_mse_buffer_count() {
+    return (MSE_SIZE + mse_head - mse_tail) & (MSE_SIZE - 1);
 }
 
 
