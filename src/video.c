@@ -5,7 +5,6 @@
 
 #include "video.h"
 #include "memory.h"
-#include "ps2.h"
 #include "glue.h"
 #include "debugger.h"
 #include "keyboard.h"
@@ -16,6 +15,7 @@
 #include "vera_pcm.h"
 #include "icon.h"
 #include "sdcard.h"
+#include "i2c.h"
 
 #include <limits.h>
 #include <stdint.h>
