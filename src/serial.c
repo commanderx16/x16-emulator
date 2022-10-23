@@ -203,7 +203,7 @@ serial_step(int clocks)
 								switch (byte & 0x60) {
 									case 0x20:
 										if (byte == 0x3f) {
-											int ret = UNLSN(byte);
+											int ret = UNLSN();
 											fnf = ret == 2;
 											listening = false;
 										} else {
@@ -213,7 +213,7 @@ serial_step(int clocks)
 										break;
 									case 0x40:
 										if (byte == 0x5f) {
-											UNTLK(byte);
+											UNTLK();
 											talking = false;
 										} else {
 											TALK(byte);
