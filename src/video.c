@@ -1286,6 +1286,10 @@ video_space_write(uint32_t address, uint8_t value)
 // if debugOn, read without any side effects (registers & memory unchanged)
 
 uint8_t video_read(uint8_t reg, bool debugOn) {
+	bool ntsc_mode = reg_composer[0] & 2;
+	uint16_t scanline = ntsc_mode ? ntsc_scan_pos_y % SCAN_HEIGHT : vga_scan_pos_y;
+	if (scanline >= 512) scanline=511;
+
 	switch (reg & 0x1F) {
 		case 0x00: return io_addr[io_addrsel] & 0xff;
 		case 0x01: return (io_addr[io_addrsel] >> 8) & 0xff;
@@ -1307,9 +1311,9 @@ uint8_t video_read(uint8_t reg, bool debugOn) {
 			return value;
 		}
 		case 0x05: return (io_dcsel << 1) | io_addrsel;
-		case 0x06: return ((irq_line & 0x100) >> 1) | (ien & 0xF);
+		case 0x06: return ((irq_line & 0x100) >> 1) | ((scanline & 0x100) >> 2) | (ien & 0xF);
 		case 0x07: return isr | (pcm_is_fifo_almost_empty() ? 8 : 0);
-		case 0x08: return irq_line & 0xFF;
+		case 0x08: return scanline & 0xFF;
 
 		case 0x09:
 		case 0x0A:
