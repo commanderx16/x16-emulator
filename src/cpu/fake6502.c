@@ -174,15 +174,17 @@ void nmi6502() {
     push8(status);
     status |= FLAG_INTERRUPT;
     pc = (uint16_t)read6502(0xFFFA) | ((uint16_t)read6502(0xFFFB) << 8);
-	waiting = 0;
+    waiting = 0;
 }
 
 void irq6502() {
-    push16(pc);
-    push8(status & ~FLAG_BREAK);
-    status |= FLAG_INTERRUPT;
-    pc = (uint16_t)read6502(0xFFFE) | ((uint16_t)read6502(0xFFFF) << 8);
-	waiting = 0;
+    if (!(status & FLAG_INTERRUPT)) {
+        push16(pc);
+        push8(status & ~FLAG_BREAK);
+        status |= FLAG_INTERRUPT;
+        pc = (uint16_t)read6502(0xFFFE) | ((uint16_t)read6502(0xFFFF) << 8);
+    }
+    waiting = 0;
 }
 
 uint8_t callexternal = 0;
