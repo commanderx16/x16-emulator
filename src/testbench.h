@@ -16,6 +16,7 @@ over stdin/stdout.
 RDY                 Sent when the emulator is ready to receive commands from the test runner
 <hex value>         Emulator response to requests made by the test runner
 ERR <message>       Invalid arguments
+STP                 Sent when STP instruction is executed
 
 
 3. Messages from the test runner to the emulator (stdin)

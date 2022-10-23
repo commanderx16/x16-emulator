@@ -104,7 +104,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include "../debugger.h"
 
 //6502 defines
 #define UNDOCUMENTED //when this is defined, undocumented opcodes are handled.
@@ -144,6 +143,7 @@ uint8_t waiting = 0;
 //externally supplied functions
 extern uint8_t read6502(uint16_t address);
 extern void write6502(uint16_t address, uint8_t value);
+extern void stop6502(uint16_t address);
 
 #include "support.h"
 #include "modes.h"
