@@ -23,6 +23,7 @@ uint8_t ROM[ROM_SIZE];
 
 static uint8_t addr_ym = 0;
 
+bool randomizeRAM = false;
 bool reportUninitializedAccess = false;
 bool *RAM_access_flags;
 
@@ -34,18 +35,24 @@ void cpuio_write(uint8_t reg, uint8_t value);
 void
 memory_init()
 {
-	//Initialize RAM array
+	// Initialize RAM array
 	RAM = calloc(RAM_SIZE, sizeof(uint8_t));
 	
-	//Initialize RAM access flag array
-	RAM_access_flags = (bool*) malloc(RAM_SIZE * sizeof(bool));
-	
-	//Randomize all RAM and set all access flags to false
-	time_t t;
-	srand((unsigned)time(&t));
-	for (int i = 0; i < RAM_SIZE; i++){
-		RAM[i] = rand();
-		RAM_access_flags[i]=false;
+	// Randomize all RAM (if option selected)
+	if (randomizeRAM) {
+		time_t t;
+		srand((unsigned)time(&t));
+		for (int i = 0; i < RAM_SIZE; i++) {
+			RAM[i] = rand();
+		}
+	}
+
+	// Initialize RAM access flag array (if option selected)
+	if (reportUninitializedAccess) {
+		RAM_access_flags = (bool*) malloc(RAM_SIZE * sizeof(bool));
+		for (int i = 0; i < RAM_SIZE; i++) {
+			RAM_access_flags[i] = false;
+		}
 	}
 
 	memory_reset();
@@ -59,8 +66,14 @@ memory_reset()
 	memory_set_rom_bank(0);
 }
 
-void memory_report_uninitialized_access(bool value){
+void memory_report_uninitialized_access(bool value)
+{
 	reportUninitializedAccess = value;
+}
+
+void memory_randomize_ram(bool value)
+{
+	randomizeRAM = value;
 }
 
 static uint8_t
@@ -76,8 +89,8 @@ effective_ram_bank()
 
 uint8_t
 read6502(uint16_t address) {
-	//Report access to uninitialized RAM (if option selected)
-	if (reportUninitializedAccess == true) {
+	// Report access to uninitialized RAM (if option selected)
+	if (reportUninitializedAccess) {
 		uint8_t pc_bank;
 		
 		if (pc < 0xa000) {
@@ -139,14 +152,16 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 void
 write6502(uint16_t address, uint8_t value)
 {
-	//Update RAM access flag
-	if (address < 0xa000) {
-		RAM_access_flags[address] = true;
-	} else if (address < 0xc000) {
-		RAM_access_flags[0xa000 + (effective_ram_bank() << 13) + address - 0xa000] = true;
+	// Update RAM access flag
+	if (reportUninitializedAccess) {
+		if (address < 0xa000) {
+			RAM_access_flags[address] = true;
+		} else if (address < 0xc000) {
+			RAM_access_flags[0xa000 + (effective_ram_bank() << 13) + address - 0xa000] = true;
+		}
 	}
 
-	//Write to memory
+	// Write to memory
 	if (address < 2) { // CPU I/O ports
 		cpuio_write(address, value);
 	} else if (address < 0x9f00) { // RAM

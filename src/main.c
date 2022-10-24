@@ -453,6 +453,8 @@ usage()
 	printf("\tStretch output to 16:9 resolution to mimic display of a widescreen monitor.\n");
 	printf("-debug [<address>]\n");
 	printf("\tEnable debugger. Optionally, set a breakpoint\n");
+	printf("-randram\n");
+	printf("\tSet all RAM to random values\n");
 	printf("-wuninit\n");
 	printf("\tPrints warning to stdout if uninitialized RAM is accessed\n");
 	printf("-dump {C|R|B|V}...\n");
@@ -731,6 +733,10 @@ main(int argc, char **argv)
 				argc--;
 				argv++;
 			}
+		} else if (!strcmp(argv[0], "-randram")) {
+			argc--;
+			argv++;
+			memory_randomize_ram(true);
 		} else if (!strcmp(argv[0], "-wuninit")) {
 			argc--;
 			argv++;
