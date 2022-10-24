@@ -42,14 +42,14 @@ int dirlist_pos = 0;
 
 typedef struct {
 	char name[80];
+	bool read;
 	bool write;
-	int pos;
-	int size;
 	SDL_RWops *f;
 } channel_t;
 
 channel_t channels[16];
 
+static void cseek(int channel, uint32_t pos);
 
 static int
 create_directory_listing(uint8_t *data)
@@ -224,7 +224,13 @@ command(char *cmd)
 	if (!cmd[0]) {
 		return;
 	}
-	printf("  COMMAND \"%s\"\n", cmd);
+	if (log_ieee) {
+		if (cmd[0] == 'P') {
+			printf("  COMMAND \"%c\" [binary parameters suppressed]\n", cmd[0]);
+		} else {
+			printf("  COMMAND \"%s\"\n", cmd);
+		}
+	}
 	switch(cmd[0]) {
 		case 'U':
 			switch(cmd[1]) {
@@ -235,6 +241,17 @@ command(char *cmd)
 		case 'I': // Initialize
 			clear_error();
 			return;
+		case 'P': // Seek
+			cseek(cmd[1],
+				((uint8_t)cmd[2])
+				| ((uint8_t)cmd[3] << 8)
+				| ((uint8_t)cmd[4] << 16)
+				| ((uint8_t)cmd[5] << 24));
+			return;
+		default:
+			if (log_ieee) {
+				printf("    (unsupported command ignored)\n");
+			}
 	}
 	set_error(0x30, 0, 0);
 }
@@ -251,6 +268,7 @@ copen(int channel)
 
 	// decode ",P,W"-like suffix to know whether we're writing
 	bool append = false;
+	channels[channel].read = true;
 	channels[channel].write = false;
 	char *first = strchr(channels[channel].name, ',');
 	if (first) {
@@ -262,6 +280,11 @@ copen(int channel)
 					append = true;
 					// fallthrough
 				case 'W':
+					channels[channel].read = false;
+					channels[channel].write = true;
+					break;
+				case 'M':
+					channels[channel].read = true;
 					channels[channel].write = true;
 					break;
 			}
@@ -270,9 +293,12 @@ copen(int channel)
 	if (channel <= 1) {
 		// channels 0 and 1 are magic
 		channels[channel].write = channel;
+		channels[channel].read = !channel;
 	}
 	if (log_ieee) {
-		printf("  OPEN \"%s\",%d (%c)\n", channels[channel].name, channel, channels[channel].write ? 'W' : 'R');
+		printf("  OPEN \"%s\",%d (%s%s)\n", channels[channel].name, channel,
+			channels[channel].read ? "R" : "",
+			channels[channel].write ? "W" : "");
 	}
 
 	if (!channels[channel].write && channels[channel].name[0] == '$') {
@@ -281,6 +307,8 @@ copen(int channel)
 	} else {
 		if (!strcmp(channels[channel].name, ":*")) {
 			channels[channel].f = prg_file;
+		} else if (channels[channel].read && channels[channel].write) {
+			channels[channel].f = SDL_RWFromFile(channels[channel].name, "rb+");
 		} else {
 			channels[channel].f = SDL_RWFromFile(channels[channel].name, channels[channel].write ? "wb" : "rb");
 		}
@@ -291,12 +319,7 @@ copen(int channel)
 			set_error(0x62, 0, 0);
 			ret = 2; // FNF
 		} else {
-			if (!channels[channel].write) {
-				SDL_RWseek(channels[channel].f, 0, RW_SEEK_END);
-				channels[channel].size = SDL_RWtell(channels[channel].f);
-				SDL_RWseek(channels[channel].f, 0, RW_SEEK_SET);
-				channels[channel].pos = 0;
-			} else if (append) {
+			if (append) {
 				SDL_RWseek(channels[channel].f, 0, RW_SEEK_END);
 			}
 			clear_error();
@@ -315,6 +338,19 @@ cclose(int channel)
 	if (channels[channel].f) {
 		SDL_RWclose(channels[channel].f);
 		channels[channel].f = NULL;
+	}
+}
+
+static void
+cseek(int channel, uint32_t pos)
+{
+	if (channel == 15) {
+		set_error(0x30, 0, 0);
+		return;
+	}
+
+	if (channels[channel].f) {
+		SDL_RWseek(channels[channel].f, pos, RW_SEEK_SET);
 	}
 }
 
@@ -374,7 +410,7 @@ ACPTR(uint8_t *a)
 			clear_error();
 		}
 		*a = error[error_pos++];
-	} else if (!channels[channel].write) {
+	} else if (channels[channel].read) {
 		if (channels[channel].name[0] == '$') {
 			if (dirlist_pos < dirlist_len) {
 				*a = dirlist[dirlist_pos++];
@@ -383,11 +419,8 @@ ACPTR(uint8_t *a)
 				ret = 0x40;
 			}
 		} else if (channels[channel].f) {
-			*a = SDL_ReadU8(channels[channel].f);
-			if (channels[channel].pos == channels[channel].size - 1) {
+			if (SDL_RWread(channels[channel].f, a, 1, 1) != 1) {
 				ret = 0x40;
-			} else {
-				channels[channel].pos++;
 			}
 		}
 	} else {
@@ -413,7 +446,9 @@ CIOUT(uint8_t a)
 			}
 		} else {
 			if (channel == 15) {
-				if (a == 13) {
+				// P command takes binary parameters, so we can't terminate
+				// the command on CR.
+				if ((a == 13) && (cmd[0] != 'P')) {
 					cmd[cmdlen] = 0;
 					command(cmd);
 					cmdlen = 0;
