@@ -296,7 +296,7 @@ The debugger keys are similar to the Microsoft Debugger shortcut keys, and work 
 |---|---------------------------------------------------------------------------------------|
 |F1 |resets the shown code position to the current PC										|
 |F2 |resets the 65C02 CPU but not any of the hardware.										|
-|F5 |is used to return to Run mode, the emulator should run as normal.						|
+|F5 |close debugger window and return to Run mode, the emulator should run as normal.						|
 |F9 |sets the breakpoint to the currently code position.									|
 |F10|steps 'over' routines - if the next instruction is JSR it will break on return.		|
 |F11|steps 'into' routines.																	|
