@@ -1,5 +1,8 @@
-/*
+// Commander X16 Emulator
+// Copyright (c) 2019 Michael Steil
+// All rights reserved. License: 2-clause BSD
 
+/*
 TESTBENCH
 ---------
 
@@ -7,14 +10,14 @@ TESTBENCH
 
 The testbench option is intended to be used for unit testing where the test runner is
 made in a high level language. The test runner starts the emulator with the
--testbench switch. During the test, the test runner communicates with the emulator
+-testbench option. During the test, the test runner communicates with the emulator
 over stdin/stdout.
 
 
 2. Messages from the emulator to the test runner (stdout)
 
 RDY                 Sent when the emulator is ready to receive commands from the test runner
-<hex value>         Emulator response to requests made by the test runner
+<hex value>         Emulator response to get requests
 ERR <message>       Invalid arguments
 STP                 Sent when STP instruction is executed
 
