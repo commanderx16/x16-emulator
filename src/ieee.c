@@ -517,7 +517,7 @@ TALK(uint8_t a)
 }
 
 int
-MACPTR(uint16_t addr, uint16_t *c)
+MACPTR(uint16_t addr, uint16_t *c, uint8_t stream_mode)
 {
 	int ret = -1;
 	int count = *c ?: 256;
@@ -527,12 +527,14 @@ MACPTR(uint16_t addr, uint16_t *c)
 		uint8_t byte = 0;
 		ret = ACPTR(&byte);
 		write6502(addr, byte);
-		addr++;
 		i++;
-		if (addr == 0xc000) {
-			addr = 0xa000;
-			ram_bank++;
-			write6502(0, ram_bank);
+		if (!stream_mode) {
+			addr++;
+			if (addr == 0xc000) {
+				addr = 0xa000;
+				ram_bank++;
+				write6502(0, ram_bank);
+			}
 		}
 		if (ret >= 0) {
 			break;
