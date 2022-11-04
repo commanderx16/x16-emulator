@@ -47,7 +47,6 @@ jobs:
         run: |
           make V=1 -j3
           mkdir emu_binaries
-          cp $(which SDL2.dll) emu_binaries/.
           cp sdcard.img.zip emu_binaries/.
           cp x16emu emu_binaries/.
           file emu_binaries/*
