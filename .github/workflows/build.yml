@@ -76,9 +76,6 @@ jobs:
           brew install make sdl2 
       - name: Build Emulator
         run: |
-          ls -l /usr/local/Cellar/
-          ls -lR /usr/local/Cellar/sdl2 || true
-          which libSDL2.a || true
           MAC_STATIC=1 LIBSDL_FILE=/usr/local/Cellar/sdl2/*/lib/libSDL2.a make V=1 -j3
           mkdir emu_binaries
           cp sdcard.img.zip emu_binaries/.
