@@ -13,14 +13,26 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          install: git make mingw-w64-x86_64-toolchain mingw-w64-x86_64-libelf mingw-w64-x86_64-SDL2
+          install: make mingw-w64-x86_64-toolchain mingw-w64-x86_64-libelf mingw-w64-x86_64-SDL2
       - name: Build Emulator
         run: |
           CROSS_COMPILE_WINDOWS=1 SDL2CONFIG=sdl2-config make V=1 -j4
           mkdir emu_binaries
           cp $(which SDL2.dll) emu_binaries/.
           cp x16emu.exe emu_binaries/.
-          file emu_binaries/bin/*
+          file emu_binaries/*
+      - name: Download latest ROM
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          repo: ${{ github.repository }}
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          workflow_conclusion: success
+          path: latest_rom
+      - name: Copy ROM
+        run: |
+          ls -lR .
+          cp latest_rom/rom.bin emu_binaries/.
       - uses: actions/upload-artifact@v3
         with:
           name: Windows 64-bit
