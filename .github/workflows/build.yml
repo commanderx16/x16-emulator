@@ -24,7 +24,7 @@ jobs:
       - name: Download latest ROM
         id: download
         run: |
-          gh run download --name maxgerhardt/x16-rom --dir ${{env.working-directory}}/latest_rom
+          gh run download -R maxgerhardt/x16-rom -n "ROM Image" --dir ${{env.working-directory}}/latest_rom
         shell: cmd
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -34,5 +34,5 @@ jobs:
           cp latest_rom/rom.bin emu_binaries/.
       - uses: actions/upload-artifact@v3
         with:
-          name: Windows 64-bit
+          name: X16-Emu (${GITHUB_SHA::7}) Windows 64-bit
           path: emu_binaries/*
