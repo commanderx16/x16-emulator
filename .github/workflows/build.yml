@@ -25,6 +25,7 @@ jobs:
         id: download
         run: |
           gh run download --name maxgerhardt/x16-rom --dir ${{env.working-directory}}/latest_rom
+        shell: cmd
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Copy ROM
