@@ -15,7 +15,7 @@ ifndef WIN_SDL2
 endif
 
 ifeq ($(CROSS_COMPILE_WINDOWS),1)
-	SDL2CONFIG=$(WIN_SDL2)/bin/sdl2-config --prefix=$(WIN_SDL2)
+	SDL2CONFIG?=$(WIN_SDL2)/bin/sdl2-config --prefix=$(WIN_SDL2)
 else
 	SDL2CONFIG=sdl2-config
 endif

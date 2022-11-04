@@ -1,0 +1,27 @@
+name: Build Binaries
+on: [push, pull_request]
+
+jobs:
+  build-win64:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: git make mingw-w64-x86_64-toolchain mingw-w64-x86_64-libelf mingw-w64-x86_64-SDL2
+      - name: Build Emulator
+        run: |
+          CROSS_COMPILE_WINDOWS=1 SDL2CONFIG=sdl2-config make V=1 -j4
+          mkdir emu_binaries
+          cp $(which SDL2.dll) emu_binaries/.
+          cp x16emu.exe emu_binaries/.
+          file emu_binaries/bin/*
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Windows 64-bit
+          path: emu_binaries/*
