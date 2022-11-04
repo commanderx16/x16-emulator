@@ -60,7 +60,40 @@ jobs:
         run: |
           cp latest_rom/rom.bin emu_binaries/.
           cp latest_rom/*.sym emu_binaries/.
+      - name: Tar files
+        run: tar -cvf x16emu.tar.gz -C emu_binaries .
       - uses: actions/upload-artifact@v3
         with:
           name: X16-Emu Linux 64-bit
-          path: emu_binaries/*
+          path: x16emu.tar.gz
+  build-darwin-x64:
+    # this is currently macos-11, Big Sur
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Dependenncies
+        run: | 
+          brew install make sdl2 
+      - name: Build Emulator
+        run: |
+          MAC_STATIC=1 make V=1 -j3
+          mkdir emu_binaries
+          cp sdcard.img.zip emu_binaries/.
+          cp x16emu emu_binaries/.
+          file emu_binaries/*
+      - name: Download latest ROM
+        id: download
+        run: |
+          gh run download -R maxgerhardt/x16-rom -n "ROM Image" --dir latest_rom
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Copy ROM
+        run: |
+          cp latest_rom/rom.bin emu_binaries/.
+          cp latest_rom/*.sym emu_binaries/.
+      - name: Tar files
+        run: tar -cvf x16emu.tar.gz -C emu_binaries .
+      - uses: actions/upload-artifact@v3
+        with:
+          name: X16-Emu Mac Intel 64-bit
+          path: x16emu.tar.gz
