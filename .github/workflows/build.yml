@@ -25,7 +25,7 @@ jobs:
         id: download-artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          repo: https://github.com/maxgerhardt/x16-rom/
+          repo: maxgerhardt/x16-rom
           github_token: ${{secrets.GITHUB_TOKEN}}
           workflow_conclusion: success
           path: latest_rom
