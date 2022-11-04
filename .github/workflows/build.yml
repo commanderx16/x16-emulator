@@ -22,13 +22,11 @@ jobs:
           cp x16emu.exe emu_binaries/.
           file emu_binaries/*
       - name: Download latest ROM
-        id: download-artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          repo: maxgerhardt/x16-rom
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow_conclusion: success
-          path: latest_rom
+        id: download
+        run: |
+          gh run download --name maxgerhardt/x16-rom --dir ${{env.working-directory}}/latest_rom
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Copy ROM
         run: |
           ls -lR .
