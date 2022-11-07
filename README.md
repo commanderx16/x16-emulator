@@ -1,8 +1,7 @@
 <p align="center">
   <img src="./.gh/logo.png" />
 </p>
-
-[![Build Status](https://travis-ci.org/commanderx16/x16-emulator.svg?branch=master)](https://travis-ci.org/commanderx16/x16-emulator)
+[![Build Status](https://github.com/commanderx16/x16-emulator/actions/workflows/build.yml/badge.svg)](https://github.com/commanderx16/x16-emulator/actions/workflows/build.yml)
 [![Release](https://img.shields.io/github/v/release/commanderx16/x16-emulator)](https://github.com/commanderx16/x16-emulator/releases)
 [![License: BSD-Clause](https://img.shields.io/github/license/commanderx16/x16-emulator)](./LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/commanderx16/x16-emulator.svg)](https://github.com/commanderx16/x16-emulator/graphs/contributors)
