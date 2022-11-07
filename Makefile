@@ -15,7 +15,7 @@ ifndef WIN_SDL2
 endif
 
 ifeq ($(CROSS_COMPILE_WINDOWS),1)
-	SDL2CONFIG=$(WIN_SDL2)/bin/sdl2-config --prefix=$(WIN_SDL2)
+	SDL2CONFIG?=$(WIN_SDL2)/bin/sdl2-config --prefix=$(WIN_SDL2)
 else
 	SDL2CONFIG=sdl2-config
 endif
@@ -34,7 +34,8 @@ endif
 OUTPUT=x16emu
 
 ifeq ($(MAC_STATIC),1)
-	LDFLAGS=/opt/homebrew/Cellar/sdl2/2.0.20/lib/libSDL2.a -lm -liconv -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,ForceFeedback -lobjc -Wl,-framework,CoreVideo -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,IOKit -Wl,-weak_framework,QuartzCore -Wl,-weak_framework,Metal -Wl,-weak_framework,CoreHaptics -Wl,-weak_framework,GameController
+	LIBSDL_FILE?=/opt/homebrew/Cellar/sdl2/2.0.20/lib/libSDL2.a
+	LDFLAGS=$(LIBSDL_FILE) -lm -liconv -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,ForceFeedback -lobjc -Wl,-framework,CoreVideo -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,IOKit -Wl,-weak_framework,QuartzCore -Wl,-weak_framework,Metal -Wl,-weak_framework,CoreHaptics -Wl,-weak_framework,GameController
 endif
 
 ifeq ($(CROSS_COMPILE_WINDOWS),1)
