@@ -25,7 +25,7 @@ jobs:
       - name: Download latest ROM
         id: download
         run: |
-          gh run download -R maxgerhardt/x16-rom -n "ROM Image" --dir latest_rom
+          gh run download -R commanderx16/x16-rom -n "ROM Image" --dir latest_rom
         shell: cmd
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -53,7 +53,7 @@ jobs:
       - name: Download latest ROM
         id: download
         run: |
-          gh run download -R maxgerhardt/x16-rom -n "ROM Image" --dir latest_rom
+          gh run download -R commanderx16/x16-rom -n "ROM Image" --dir latest_rom
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Copy ROM
@@ -84,7 +84,7 @@ jobs:
       - name: Download latest ROM
         id: download
         run: |
-          gh run download -R maxgerhardt/x16-rom -n "ROM Image" --dir latest_rom
+          gh run download -R commanderx16/x16-rom -n "ROM Image" --dir latest_rom
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Copy ROM
