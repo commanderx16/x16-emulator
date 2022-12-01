@@ -52,7 +52,7 @@ int disasm(uint16_t pc, uint8_t *RAM, char *line, unsigned int max_line, bool de
 			length = 3;
 			snprintf(line, max_line, mnemonic, real_read6502(pc + 1, debugOn, bank) | real_read6502(pc + 2, debugOn, bank) << 8);
 		}
-		if(opcode == 0x00) { 
+		if (opcode == 0x00) { 
 			// BRK instruction is 2 bytes long according to WDC datasheet.
 			// CPU skips the second byte when it executes a BRK.
 			length = 2;
