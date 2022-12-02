@@ -42,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install Dependencies
-        run: sudo apt-get install -y build-essential make libsdl2-dev
+        run: sudo apt-get update && sudo apt-get install -y build-essential make libsdl2-dev
       - name: Build Emulator
         run: |
           make V=1 -j3
