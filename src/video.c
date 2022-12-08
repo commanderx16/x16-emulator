@@ -1155,6 +1155,10 @@ video_update()
 					mouse_button_down(1);
 					mouse_changed = true;
 					break;
+				case SDL_BUTTON_MIDDLE:
+					mouse_button_down(2);
+					mouse_changed = true;
+					break;
 			}
 		}
 		if (event.type == SDL_MOUSEBUTTONUP) {
@@ -1165,6 +1169,10 @@ video_update()
 					break;
 				case SDL_BUTTON_RIGHT:
 					mouse_button_up(1);
+					mouse_changed = true;
+					break;
+				case SDL_BUTTON_MIDDLE:
+					mouse_button_up(2);
 					mouse_changed = true;
 					break;
 			}
@@ -1504,7 +1512,7 @@ stop6502(uint16_t address) {
 			SDL_MESSAGEBOX_ERROR, window, "Error", error_message,
 			2, btns, NULL
 		};
-		
+
 		sprintf(error_message, "Encountered stop instruction at address $%04X. CPU cannot continue.", address);
 		if (SDL_ShowMessageBox(&msg_box, &return_btn) == 0 && return_btn == 0) {
 			machine_reset();
