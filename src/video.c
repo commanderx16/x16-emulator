@@ -1107,7 +1107,7 @@ video_update()
 			bool consumed = false;
 			if (cmd_down) {
 				if (event.key.keysym.sym == SDLK_s) {
-					machine_dump();
+					machine_dump("user keyboard request");
 					consumed = true;
 				} else if (event.key.keysym.sym == SDLK_r) {
 					machine_reset();

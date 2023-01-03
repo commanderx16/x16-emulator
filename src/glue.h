@@ -62,7 +62,7 @@ extern uint8_t keymap;
 extern bool warp_mode;
 extern bool testbench;
 
-extern void machine_dump();
+extern void machine_dump(const char* reason);
 extern void machine_reset();
 extern void machine_paste(char *text);
 extern void machine_toggle_warp();

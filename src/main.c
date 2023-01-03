@@ -220,8 +220,9 @@ lst_for_address(uint16_t address)
 #endif
 
 void
-machine_dump()
+machine_dump(const char* reason)
 {
+	printf("Dumping system memory. Reason: %s\n", reason);
 	int index = 0;
 	char filename[22];
 	for (;;) {
@@ -1313,7 +1314,7 @@ emulator_loop(void *param)
 
 		if (pc == 0xffff) {
 			if (save_on_exit) {
-				machine_dump();
+				machine_dump("CPU program counter reached $ffff");
 			}
 			break;
 		}
