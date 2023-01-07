@@ -547,9 +547,7 @@ main(int argc, char **argv)
 				usage();
 			}
 			int kb = atoi(argv[0]);
-			bool found = false;
-			if ((kb & 7)==0) found = true;
-			if (!found) {
+			if (!((kb & 7)==0)) {
 				usage();
 			}
 			num_ram_banks = kb /8;
