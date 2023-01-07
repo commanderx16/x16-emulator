@@ -548,7 +548,7 @@ main(int argc, char **argv)
 			}
 			int kb = atoi(argv[0]);
 			bool found = false;
-			for (int cmp = 8; cmp <= 2048; cmp *= 2) {
+			for (int cmp = 8; cmp <= 2048; cmp += 8) {
 				if (kb == cmp)  {
 					found = true;
 				}
