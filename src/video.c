@@ -950,11 +950,9 @@ update_isr_and_coll(uint16_t y, uint16_t compare)
 			isr = (isr & 0xf) | sprite_line_collisions;
 		}
 		sprite_line_collisions = 0;
-		if (ien & 1) { // VSYNC IRQ
-			isr |= 1;
-		}
+		isr |= 1; // VSYNC IRQ
 	}
-	if ((ien & 2) && (y < SCREEN_HEIGHT) && (y == compare)) { // LINE IRQ
+	if ((y < SCREEN_HEIGHT) && (y == compare)) { // LINE IRQ
 		isr |= 2;
 	}
 }
