@@ -58,6 +58,8 @@ extern bool save_on_exit;
 extern bool disable_emu_cmd_keys;
 extern gif_recorder_state_t record_gif;
 extern char *gif_path;
+extern char *fsroot_path;
+extern char *startin_path;
 extern uint8_t keymap;
 extern bool warp_mode;
 extern bool testbench;
