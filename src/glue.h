@@ -61,6 +61,7 @@ extern char *gif_path;
 extern uint8_t keymap;
 extern bool warp_mode;
 extern bool testbench;
+extern uint32_t host_sample_rate;
 
 extern void machine_dump(const char* reason);
 extern void machine_reset();

@@ -440,7 +440,7 @@ usage()
 	printf("\tPOKE $9FB5,2 to start recording.\n");
 	printf("\tPOKE $9FB5,1 to capture a single frame.\n");
 	printf("\tPOKE $9FB5,0 to pause.\n");
-	printf("-wav <file.gif>[{,wait|,auto}]\n");
+	printf("-wav <file.wav>[{,wait|,auto}]\n");
 	printf("\tRecord a wav for the audio output.\n");
 	printf("\tUse ,wait to start paused, or ,auto to start paused and automatically begin recording on the first non-zero audio signal.\n");
 	printf("\tPOKE $9FB6,2 to automatically begin recording on the first non-zero audio signal.\n");
@@ -1271,7 +1271,7 @@ emulator_loop(void *param)
 		rtc_step(clocks);
 
 		if (!headless) {
-			audio_render(clocks);
+			audio_step(clocks);
 		}
 
 		instruction_counter++;

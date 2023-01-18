@@ -6,6 +6,7 @@
 
 #include "SDL.h"
 #include "audio.h"
+#include "glue.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -153,7 +154,7 @@ wav_recorder_process(const int16_t *samples, const int num_samples)
 		for (i = 0; i < num_samples; ++i) {
 			if (samples[i] != 0) {
 				Wav_record_state = RECORD_WAV_RECORDING;
-				wav_begin(Wav_path, AUDIO_SAMPLERATE);
+				wav_begin(Wav_path, host_sample_rate);
 				break;
 			}
 		}
@@ -174,7 +175,7 @@ wav_recorder_set(wav_recorder_command_t command)
 				break;
 			case RECORD_WAV_RECORD:
 				Wav_record_state = RECORD_WAV_RECORDING;
-				wav_begin(Wav_path, AUDIO_SAMPLERATE);
+				wav_begin(Wav_path, host_sample_rate);
 				break;
 			case RECORD_WAV_AUTOSTART:
 				Wav_record_state = RECORD_WAV_AUTOSTARTING;
@@ -216,7 +217,7 @@ wav_recorder_set_path(const char *path)
 			Wav_record_state               = RECORD_WAV_AUTOSTARTING;
 		} else {
 			Wav_record_state = RECORD_WAV_RECORDING;
-			wav_begin(Wav_path, AUDIO_SAMPLERATE);
+			wav_begin(Wav_path, host_sample_rate);
 		}
 	} else {
 		Wav_record_state = RECORD_WAV_DISABLED;
