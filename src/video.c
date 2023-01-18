@@ -1409,6 +1409,11 @@ void video_write(uint8_t reg, uint8_t value) {
 				// interlace field bit is read-only
 				reg_composer[0] = (reg_composer[0] & ~0x7f) | (value & 0x7f);
 				video_palette.dirty = true;
+				if ((value & 0x40) == 0) {
+					memset(sprite_line_col, 0, SCREEN_WIDTH);
+					memset(sprite_line_z, 0, SCREEN_WIDTH);
+					memset(sprite_line_mask, 0, SCREEN_WIDTH);
+				}
 			} else {
 				reg_composer[i] = value;
 			}
