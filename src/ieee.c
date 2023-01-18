@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <SDL.h>
 #include <errno.h>
+#include <time.h>
 #include "memory.h"
 #include "ieee.h"
 #include "glue.h"
@@ -25,6 +26,8 @@
 #include <direct.h>
 // realpath doesn't exist on Windows, but _fullpath is similar enough
 #define realpath(N,R) _fullpath((R),(N),PATH_MAX)
+// Windows just has to be different
+#define localtime_r(S,D) !localtime_s(D,S)
 #endif
 
 extern SDL_RWops *prg_file;
@@ -117,7 +120,7 @@ resolve_path(const char *name, bool must_exist)
 	char *ret;
 
 	if (tmp == NULL) {
-		set_error(0x71, 0, 0);
+		set_error(0x70, 0, 0);
 		return NULL;
 	}
 
@@ -145,6 +148,10 @@ resolve_path(const char *name, bool must_exist)
 			// path does not exist, but as long as everything but the final
 			// path element exists, we're still okay.
 			tmp = malloc(strlen(name)+1);
+			if (tmp == NULL) {
+				set_error(0x70, 0, 0);
+				return NULL;
+			}
 			strcpy(tmp, name);
 			c = strrchr(tmp, '/');
 			if (c == NULL)
@@ -154,6 +161,11 @@ resolve_path(const char *name, bool must_exist)
 
 			// assemble a path with what we have left
 			ret = malloc(strlen(tmp)+strlen(hostfscwd)+2);
+			if (ret == NULL) {
+				free(tmp);
+				set_error(0x70, 0, 0);
+				return NULL;
+			}
 			strcpy(ret, hostfscwd);
 			*(ret+strlen(hostfscwd)) = '/';
 			strcpy(ret+strlen(hostfscwd)+1, tmp);
@@ -173,6 +185,10 @@ resolve_path(const char *name, bool must_exist)
 					// found everything up to the parent path element
 					// restore ret to original case
 					ret = malloc(strlen(name)+strlen(hostfscwd)+2);
+					if (ret == NULL) {
+						set_error(0x70, 0, 0);
+						return NULL;
+					}
 					strcpy(ret, hostfscwd);
 					ret[strlen(hostfscwd)] = '/';
 					strcpy(ret+strlen(hostfscwd)+1, name);
@@ -189,11 +205,11 @@ resolve_path(const char *name, bool must_exist)
 	// Prevent resolving outside the fsroot_path
 	if (strlen(fsroot_path) > strlen(ret)) {
 		free(ret);
-		set_error(0x71, 0, 0);
+		set_error(0x62, 0, 0);
 		return NULL;
 	} else if (strncmp(fsroot_path, ret, strlen(fsroot_path))) {
 		free(ret);
-		set_error(0x71, 0, 0);
+		set_error(0x62, 0, 0);
 		return NULL;
 	} else if (strlen(fsroot_path) < strlen(ret) &&
 	           fsroot_path[strlen(fsroot_path)-1] != '/' &&
@@ -209,7 +225,7 @@ resolve_path(const char *name, bool must_exist)
 		//   ret == "/home/user/bah".
 		// This condition should be considered a jailbreak and we fail out
 		free(ret);
-		set_error(0x71, 0, 0);
+		set_error(0x62, 0, 0);
 		return NULL;
 	}		
 	return ret;
@@ -218,7 +234,7 @@ resolve_path(const char *name, bool must_exist)
 
 
 static int
-create_directory_listing(uint8_t *data)
+create_directory_listing(uint8_t *data, bool timestamps)
 {
 	uint8_t *data_start = data;
 	struct stat st;
@@ -303,6 +319,18 @@ create_directory_listing(uint8_t *data)
 			*data++ = 'R';
 			*data++ = 'G';
 		}
+		// This would be a '<' if file were protected, but it's a space instead
+		*data++ = ' ';
+
+		if (timestamps) {
+			// ISO-8601 date+time
+			struct tm mtime;
+			if (localtime_r(&st.st_mtime, &mtime)) {
+				*data++ = ' '; // space before the date
+				data += strftime((char *)data, 20, "%Y-%m-%d %H:%M:%S", &mtime);
+			}
+		}
+		
 		*data++ = 0;
 	}
 
@@ -358,6 +386,10 @@ create_cwd_listing(uint8_t *data)
 	*data++ = 0;
 
 	char *tmp = malloc(strlen(hostfscwd)+1);
+	if (tmp == NULL) {
+		set_error(0x70, 0, 0);
+		return 0;
+	}
 	int i = strlen(hostfscwd);
 	int j = strlen(fsroot_path);
 	strcpy(tmp,hostfscwd);
@@ -658,6 +690,10 @@ crename(char *f)
 	// "R:NEW=OLD" or "RENAME:NEW=OLD" or anything in between
 	// let's simply find the first colon and chop it there
 	char *tmp = malloc(strlen(f)+1);
+	if (tmp == NULL) {
+		set_error(0x70, 0, 0);
+		return;
+	}
 	strcpy(tmp,f);
 	char *d = strchr(tmp,':');
 
@@ -755,6 +791,10 @@ cunlink(char *f)
 	// let's simply find the first colon and chop it there
 	// TODO path syntax and multiple files
 	char *tmp = malloc(strlen(f)+1);
+	if (tmp == NULL) {
+		set_error(0x70, 0, 0);
+		return;
+	}
 	strcpy(tmp,f);
 	char *fn = strchr(tmp,':');
 
@@ -839,14 +879,17 @@ copen(int channel)
 			channels[channel].write ? "W" : "");
 	}
 
-	if (!channels[channel].write && !strncmp(channels[channel].name,"$=C",3)) {
-		// This emulates the behavior in the ROM code in
-		// https://github.com/commanderx16/x16-rom/pull/373
-		dirlist_len = create_cwd_listing(dirlist);
+	if (!channels[channel].write && channels[channel].name[0] == '$') {	
 		dirlist_pos = 0;
-	} else if (!channels[channel].write && channels[channel].name[0] == '$') {
-		dirlist_len = create_directory_listing(dirlist);
-		dirlist_pos = 0;
+		if (!strncmp(channels[channel].name,"$=C",3)) {
+			// This emulates the behavior in the ROM code in
+			// https://github.com/commanderx16/x16-rom/pull/373
+			dirlist_len = create_cwd_listing(dirlist);
+		} else if (!strncmp(channels[channel].name,"$=T",3)) {
+			dirlist_len = create_directory_listing(dirlist, true);
+		} else {
+			dirlist_len = create_directory_listing(dirlist, false);
+		}
 	} else {
 		if (!strcmp(channels[channel].name, ":*")) {
 			channels[channel].f = prg_file; // special case
@@ -946,6 +989,10 @@ ieee_init()
 
 	// Now initialize our emulated cwd.
 	hostfscwd = malloc(strlen(startin_path)+1);
+	if (hostfscwd == NULL) {
+		fprintf(stderr, "Failed to allocate memory for hostfscwd\n");
+		exit(1);
+	}
 	strcpy(hostfscwd, startin_path);
 
 	set_error(0x73, 0, 0);
