@@ -78,8 +78,8 @@ static uint32_t vera_samps_per_host_samps = 0;
 static uint32_t ym_samps_per_host_samps = 0;
 static uint32_t limiter_amp = 0;
 
-static int16_t psg_buf[2 * SAMPLES_PER_BUFFER];
-static int16_t pcm_buf[2 * SAMPLES_PER_BUFFER];
+static int32_t psg_buf[2 * SAMPLES_PER_BUFFER];
+static int32_t pcm_buf[2 * SAMPLES_PER_BUFFER];
 static int16_t ym_buf[2 * SAMPLES_PER_BUFFER];
 
 uint32_t host_sample_rate = 0;
@@ -288,14 +288,14 @@ audio_render()
 		// Don't resample VERA outputs if the host sample rate is as desired
 		if (host_sample_rate == AUDIO_SAMPLERATE) {
 			pos = (vera_samp_pos_rd >> SAMP_POS_FRAC_BITS) * 2;
-			vera_out_l = ((int32_t)psg_buf[pos] + (int32_t)pcm_buf[pos]) / 2 * 32768;
-			vera_out_r = ((int32_t)psg_buf[pos + 1] + (int32_t)pcm_buf[pos + 1]) / 2 * 32768;
+			vera_out_l = ((psg_buf[pos] + pcm_buf[pos]) >> 8) * 32768;
+			vera_out_r = ((psg_buf[pos + 1] + pcm_buf[pos + 1]) >> 8) * 32768;
 		} else {
 			filter_idx = (vera_samp_pos_rd >> (SAMP_POS_FRAC_BITS - 8)) & 0xff;
 			for (int j = 0; j < 8; j += 2) {
 				pos = (vera_samp_pos_rd >> SAMP_POS_FRAC_BITS) * 2;
-				samp[j] = ((int32_t)psg_buf[pos] + (int32_t)pcm_buf[pos]) / 2;
-				samp[j + 1] = ((int32_t)psg_buf[pos + 1] + (int32_t)pcm_buf[pos + 1]) / 2;
+				samp[j] = (psg_buf[pos] + pcm_buf[pos]) >> 8;
+				samp[j + 1] = (psg_buf[pos + 1] + pcm_buf[pos + 1]) >> 8;
 				pos = (pos + 2) & (SAMP_POS_MASK * 2);
 			}
 			vera_out_l += samp[0] * filter[256 + filter_idx];
