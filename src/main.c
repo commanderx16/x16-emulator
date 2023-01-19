@@ -105,6 +105,7 @@ bool disable_emu_cmd_keys = false;
 bool set_system_time = false;
 bool has_serial = false;
 bool no_ieee_intercept = false;
+bool has_via2 = false;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
 char *wav_path = NULL;
@@ -267,7 +268,9 @@ machine_reset()
 	memory_reset();
 	vera_spi_init();
 	via1_init();
-	via2_init();
+	if (has_via2) {
+		via2_init();
+	}
 	video_reset();
 	reset6502();
 }
@@ -478,6 +481,8 @@ usage()
 	printf("\tbut will increase audio latency.\n");
 	printf("-rtc\n");
 	printf("\tSet the real-time-clock to the current system time and date.\n");
+	printf("-via2\n");
+	printf("\tInstall the second VIA chip expansion at $9F10\n");
 	printf("-testbench\n");
 	printf("\tHeadless mode for unit testing with an external test runner\n");
 #ifdef TRACE
@@ -845,6 +850,10 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			disable_emu_cmd_keys = true;
+		} else if (!strcmp(argv[0], "-via2")) {
+			argc--;
+			argv++;
+			has_via2 = true;
 		} else if (!strcmp(argv[0], "-version")){
 			printf("%s", VER_INFO);
 			argc--;
@@ -1254,12 +1263,13 @@ emulator_loop(void *param)
 		step6502();
 		uint8_t clocks = clockticks6502 - old_clockticks6502;
 		bool new_frame = false;
-		bool via1_irq_old = via1_irq();
 		via1_step(clocks);
-		via2_step(clocks);
 		vera_spi_step(clocks);
 		if (has_serial) {
 			serial_step(clocks);
+		}
+		if (has_via2) {
+			via2_step(clocks);
 		}
 		if (!headless) {
 			new_frame |= video_step(MHZ, clocks);
@@ -1297,11 +1307,7 @@ emulator_loop(void *param)
 #endif
 		}
 
-		if (!via1_irq_old && via1_irq()) {
-			nmi6502();
-		}
-
-		if (video_get_irq_out() || via2_irq()) {
+		if (video_get_irq_out() || via1_irq() || (has_via2 && via2_irq())) {
 //			printf("IRQ!\n");
 			irq6502();
 		}

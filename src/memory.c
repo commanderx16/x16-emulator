@@ -129,7 +129,7 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 		}
 		if (address >= 0x9f00 && address < 0x9f10) {
 			return via1_read(address & 0xf, debugOn);
-		} else if (address >= 0x9f10 && address < 0x9f20) {
+		} else if (has_via2 && (address >= 0x9f10 && address < 0x9f20)) {
 			return via2_read(address & 0xf, debugOn);
 		} else if (address >= 0x9f20 && address < 0x9f40) {
 			return video_read(address & 0x1f, debugOn);
@@ -181,7 +181,7 @@ write6502(uint16_t address, uint8_t value)
 		}
 		if (address >= 0x9f00 && address < 0x9f10) {
 			via1_write(address & 0xf, value);
-		} else if (address >= 0x9f10 && address < 0x9f20) {
+		} else if (has_via2 && (address >= 0x9f10 && address < 0x9f20)) {
 			via2_write(address & 0xf, value);
 		} else if (address >= 0x9f20 && address < 0x9f40) {
 			video_write(address & 0x1f, value);
