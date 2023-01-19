@@ -1096,7 +1096,8 @@ CIOUT(uint8_t a)
 					}
 				}
 			} else if (channels[channel].write && channels[channel].f) {
-				SDL_WriteU8(channels[channel].f, a);
+				if (!SDL_WriteU8(channels[channel].f, a))
+					ret = 0x40;
 			} else {
 				ret = 2; // FNF
 			}

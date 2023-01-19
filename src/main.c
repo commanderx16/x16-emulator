@@ -1122,6 +1122,7 @@ handle_ieee_intercept()
 			break;
 		case 0xFFA8:
 			s=CIOUT(a);
+			status = (status & ~1); // unconditonal CLC
 			break;
 		case 0xFFAB:
 			UNTLK();
