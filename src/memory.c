@@ -123,6 +123,10 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 	} else if (address < 0x9f00) { // RAM
 		return RAM[address];
 	} else if (address < 0xa000) { // I/O
+		if (!debugOn && address >= 0x9fa0) {
+			// slow IO6-8 range
+			clockticks6502 += 3;
+		}
 		if (address >= 0x9f00 && address < 0x9f10) {
 			return via1_read(address & 0xf, debugOn);
 		} else if (address >= 0x9f10 && address < 0x9f20) {
@@ -130,6 +134,10 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 		} else if (address >= 0x9f20 && address < 0x9f40) {
 			return video_read(address & 0x1f, debugOn);
 		} else if (address >= 0x9f40 && address < 0x9f60) {
+			// slow IO3 range
+			if (!debugOn) {
+				clockticks6502 += 3;
+			}
 			return 0;
 		} else if (address >= 0x9fb0 && address < 0x9fc0) {
 			// emulator state
@@ -167,6 +175,10 @@ write6502(uint16_t address, uint8_t value)
 	} else if (address < 0x9f00) { // RAM
 		RAM[address] = value;
 	} else if (address < 0xa000) { // I/O
+		if (address >= 0x9fa0) {
+			// slow IO6-8 range
+			clockticks6502 += 3;
+		}
 		if (address >= 0x9f00 && address < 0x9f10) {
 			via1_write(address & 0xf, value);
 		} else if (address >= 0x9f10 && address < 0x9f20) {
@@ -174,6 +186,8 @@ write6502(uint16_t address, uint8_t value)
 		} else if (address >= 0x9f20 && address < 0x9f40) {
 			video_write(address & 0x1f, value);
 		} else if (address >= 0x9f40 && address < 0x9f60) {
+			// slow IO3 range
+			clockticks6502 += 3;
 			if (address == 0x9f40) {        // YM address
 				addr_ym = value;
 			} else if (address == 0x9f41) { // YM data
