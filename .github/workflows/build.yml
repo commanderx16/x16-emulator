@@ -60,12 +60,10 @@ jobs:
         run: |
           cp latest_rom/rom.bin emu_binaries/.
           cp latest_rom/*.sym emu_binaries/.
-      - name: Tar files
-        run: tar -cvf x16emu.tar.gz -C emu_binaries .
       - uses: actions/upload-artifact@v3
         with:
           name: X16-Emu Linux 64-bit
-          path: x16emu.tar.gz
+          path: emu_binaries/*
   build-darwin-x64:
     # this is currently macos-11, Big Sur
     runs-on: macos-latest
@@ -91,9 +89,7 @@ jobs:
         run: |
           cp latest_rom/rom.bin emu_binaries/.
           cp latest_rom/*.sym emu_binaries/.
-      - name: Tar files
-        run: tar -cvf x16emu.tar.gz -C emu_binaries .
       - uses: actions/upload-artifact@v3
         with:
           name: X16-Emu Mac Intel 64-bit
-          path: x16emu.tar.gz
+          path: emu_binaries/*
