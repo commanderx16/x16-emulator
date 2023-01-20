@@ -37,6 +37,44 @@ jobs:
         with:
           name: X16-Emu Windows 64-bit
           path: emu_binaries/*
+  build-win32:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: make mingw-w64-i686-toolchain mingw-w64-i686-libelf mingw-w64-i686-SDL2
+          path-type: inherit
+      - name: Add /mingw32/bin to path
+        run: echo "/mingw32/bin" >> $GITHUB_PATH
+      - name: Build Emulator
+        run: |
+          WIN_SDL2=/mingw32 TARGET_CPU=x86 CROSS_COMPILE_WINDOWS=1 make V=1 -j2
+          mkdir emu_binaries
+          cp $(which SDL2.dll) emu_binaries/.
+          cp sdcard.img.zip emu_binaries/.
+          cp x16emu.exe emu_binaries/.
+          file emu_binaries/*
+      - name: Download latest ROM
+        id: download
+        run: |
+          gh run download -R commanderx16/x16-rom -n "ROM Image" --dir latest_rom
+        shell: cmd
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Copy ROM
+        run: |
+          cp latest_rom/rom.bin emu_binaries/.
+          cp latest_rom/*.sym emu_binaries/.
+      - uses: actions/upload-artifact@v3
+        with:
+          name: X16-Emu Windows 32-bit
+          path: emu_binaries/*
   build-lin64:
     runs-on: ubuntu-latest
     steps:

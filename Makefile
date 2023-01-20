@@ -42,7 +42,11 @@ ifeq ($(CROSS_COMPILE_WINDOWS),1)
 	LDFLAGS+=-L$(MINGW32)/lib
 	# this enables printf() to show, but also forces a console window
 	LDFLAGS+=-Wl,--subsystem,console
+ifeq ($(TARGET_CPU),x86)
+	CC=i686-w64-mingw32-gcc
+else
 	CC=x86_64-w64-mingw32-gcc
+endif
 endif
 
 ifdef EMSCRIPTEN
