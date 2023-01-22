@@ -49,15 +49,19 @@ int channel = 0;
 bool listening = false;
 bool talking = false;
 bool opening = false;
+bool overwrite = false;
+bool path_exists = false;
 
 char *hostfscwd = NULL;
-char *dirbuff = NULL;
-int dirbuff_len = 0;
-int dirbuff_pos = 0;
 
-uint8_t dirlist[65536];
+uint8_t dirlist[1024]; // Plenty large to hold a single entry
 int dirlist_len = 0;
 int dirlist_pos = 0;
+bool dirlist_cwd = false; // whether we're doing a cwd dirlist or a normal one
+bool dirlist_eof = true;
+bool dirlist_timestmaps = false;
+DIR *dirlist_dirp;
+char dirlist_wildcard[256];
 
 const char *blocks_free = "BLOCKS FREE.";
 
@@ -107,17 +111,88 @@ cgetcwd(char *buf, size_t len)
 	return 0;
 }
 
+static char *
+parse_dos_filename(const char *name)
+{
+	// in case the name starts with something with special meaning,
+	// such as @0:
+	char *name_ptr;
+	char *newname = malloc(strlen(name)+1);
+	int i, j;
+
+	newname[strlen(name)+1] = 0;
+	
+	overwrite = false;
+
+	// [[@][<media 0-9>][</relative_path/> | <//absolute_path/>]:]<file_path>[*]
+	// Examples of valid dos filenames
+	//   ":FILE.PRG"  (same as "FILE.PRG")
+	//   "@:FILE.PRG"  (same as "FILE.PRG" but overwrite okay)
+	//   "@0:FILE.PRG"  (same as above)
+	//   "//DIR/:FILE.PRG"  (same as "/DIR/FILE.PRG")
+	//   "/DIR/:FILE.PRG"  (same as "./DIR/FILE.PRG")
+	//   "FILE*" (matches the first file in the directory which starts with "FILE")
+
+	// This routine only parses the bits before the ':'
+	// and normalizes directory parts by attaching them to the name part
+
+	// resolve_path() is responsible for resolving absolute and relative
+	// paths, and for processing the wildcard option
+
+
+	if ((name_ptr = strchr(name,':'))) {
+		name_ptr++;
+		i = 0;
+		j = 0;
+
+		// @ is overwrite flag
+		if (name[i] == '@') {
+			overwrite = true;
+			i++;
+		}
+
+		// Medium, we don't care what this number is
+		while (name[i] >= '0' && name[i] <= '9')
+			i++;
+
+
+		// Directory name
+		if (name[i] == '/') {
+			i++;
+			for (; name+i+1 < name_ptr; i++, j++) {
+				newname[j] = name[i];
+			}
+
+			// Directory portion must end with /
+			if (newname[j-1] != '/') {
+				free(newname);
+				return NULL;
+			}
+		}
+
+		strcpy(newname+j,name_ptr);
+
+	} else {
+		strcpy(newname,name);
+	}
+
+	return newname;
+}
 
 // Returns a ptr to malloc()ed space which must be free()d later, or NULL
 static char *
 resolve_path(const char *name, bool must_exist)
 {
+	path_exists = false;
 	clear_error();
 	// Resolve the filename in the context of the emulated cwd
 	// allocate plenty of string space
 	char *tmp = malloc(strlen(name)+strlen(hostfscwd)+2);
 	char *c;
+	char *d;
 	char *ret;
+	DIR *dirp;
+	struct dirent *dp;
 
 	if (tmp == NULL) {
 		set_error(0x70, 0, 0);
@@ -127,14 +202,88 @@ resolve_path(const char *name, bool must_exist)
 	// If the filename begins with /, simply append it to the fsroot_path,
 	// slash(es) and all, otherwise append it to the cwd, but with a /
 	// in between
-	if (name[0] == '/' || name[0] == '\\') {
+	if (name[0] == '/' || name[0] == '\\') { // absolute
 		strcpy(tmp, fsroot_path);
 		strcpy(tmp+strlen(fsroot_path), name);
-	} else {
+	} else { // relative
 		strcpy(tmp, hostfscwd);
 		tmp[strlen(hostfscwd)] = '/';
 		strcpy(tmp+strlen(hostfscwd)+1, name);
 	}
+
+	if (tmp[strlen(tmp)-1] == '*') { // oh goodie, a wildcard
+		// we have to search the directory for the first occurrence
+		// in directory order
+
+		c = strrchr(tmp,'\\');
+		d = strrchr(tmp,'/');
+
+		if (c == NULL && d == NULL) { // This should never happen
+			free(tmp);
+			set_error(0x62, 0, 0);
+			return NULL;
+		}
+
+		// Chop off ret at the last path separator
+		// and set c to point at the element with the wildcard
+		// pattern
+		if (c > d) {
+			*c = 0;
+			c++;
+		} else {
+			*d = 0;
+			c = d+1;
+		}
+
+		d = strchr(c,'*');
+		if (d == NULL) { // This also should never happen
+			free(tmp);
+			set_error(0x62, 0, 0);
+			return NULL;		
+		}
+
+		*d = 0; // chop off at wildcard char
+
+		if (!(dirp = opendir(tmp))) { // Directory couldn't be opened
+			free(tmp);
+			set_error(0x62, 0, 0);
+			return NULL;
+		}
+
+		ret = NULL;
+
+		while ((dp = readdir(dirp))) {
+			// in an empty wildcard match, leading dot filenames are not considered
+			if (!strlen(c) && *(dp->d_name) == '.')
+				continue;
+			if (!strncmp(dp->d_name,c,strlen(c))) { // simple wildcard match
+				ret = malloc(strlen(tmp)+strlen(dp->d_name)+2);
+				if (ret == NULL) { // memory allocation error
+					free(tmp);
+					closedir(dirp);
+					set_error(0x70, 0, 0);
+					return NULL;
+				}
+				strcpy(ret, tmp);
+				ret[strlen(tmp)] = '/';
+				strcpy(ret+strlen(tmp)+1, dp->d_name);
+				free(tmp);
+				break;
+			}
+		}
+
+		closedir(dirp);
+
+		if (!ret) { // No wildcard match
+			free(tmp);
+			set_error(0x62, 0, 0);
+			return NULL;
+		}
+
+		tmp = ret; // section after this expects the topic to be in tmp
+
+	}
+
 
 	// now resolve the path using OS routines
 	ret = realpath(tmp, NULL);
@@ -166,9 +315,16 @@ resolve_path(const char *name, bool must_exist)
 				set_error(0x70, 0, 0);
 				return NULL;
 			}
-			strcpy(ret, hostfscwd);
-			*(ret+strlen(hostfscwd)) = '/';
-			strcpy(ret+strlen(hostfscwd)+1, tmp);
+
+			if (name[0] == '/' || name[0] == '\\') { // absolute
+				strcpy(ret, fsroot_path);
+				strcpy(ret+strlen(fsroot_path), tmp);
+			} else { // relative
+				strcpy(ret, hostfscwd);
+				*(ret+strlen(hostfscwd)) = '/';
+				strcpy(ret+strlen(hostfscwd)+1, tmp);
+			}
+
 			free(tmp);
 
 			// if we found a path separator in the name string
@@ -194,13 +350,14 @@ resolve_path(const char *name, bool must_exist)
 					strcpy(ret+strlen(hostfscwd)+1, name);
 				}
 			}
-
 		}
-
+	} else {
+		path_exists = true;
 	}
 
 	if (ret == NULL)
 		return ret;
+
 
 	// Prevent resolving outside the fsroot_path
 	if (strlen(fsroot_path) > strlen(ret)) {
@@ -227,7 +384,8 @@ resolve_path(const char *name, bool must_exist)
 		free(ret);
 		set_error(0x62, 0, 0);
 		return NULL;
-	}		
+	}
+
 	return ret;
 }
 
@@ -237,11 +395,10 @@ static int
 create_directory_listing(uint8_t *data, bool timestamps)
 {
 	uint8_t *data_start = data;
-	struct stat st;
-	DIR *dirp;
-	struct dirent *dp;
-	int file_size;
-	char *tmpnam;
+
+	dirlist_eof = true;
+	dirlist_cwd = false;
+	dirlist_timestmaps = timestamps;
 
 	// load address
 	*data++ = 1;
@@ -269,10 +426,23 @@ create_directory_listing(uint8_t *data, bool timestamps)
 	*data++ = ' ';
 	*data++ = 0;
 
-	if (!(dirp = opendir(hostfscwd))) {
+	if (!(dirlist_dirp = opendir(hostfscwd))) {
 		return 0;
 	}
-	while ((dp = readdir(dirp))) {
+	dirlist_eof = false;
+	return data - data_start;
+}
+
+static int
+continue_directory_listing(uint8_t *data)
+{
+	uint8_t *data_start = data;
+	struct stat st;
+	struct dirent *dp;
+	int file_size;
+	char *tmpnam;
+
+	while ((dp = readdir(dirlist_dirp))) {
 		size_t namlen = strlen(dp->d_name);
 		tmpnam = resolve_path(dp->d_name, true);
 		if (tmpnam == NULL) continue;
@@ -300,9 +470,9 @@ create_directory_listing(uint8_t *data, bool timestamps)
 			}
 		}
 		*data++ = '"';
-		if (namlen > 16) {
-			namlen = 16; // TODO hack
-		}
+		//if (namlen > 16) {
+		//	namlen = 16; // TODO hack
+		//}
 		memcpy(data, dp->d_name, namlen);
 		data += namlen;
 		*data++ = '"';
@@ -322,7 +492,7 @@ create_directory_listing(uint8_t *data, bool timestamps)
 		// This would be a '<' if file were protected, but it's a space instead
 		*data++ = ' ';
 
-		if (timestamps) {
+		if (dirlist_timestmaps) {
 			// ISO-8601 date+time
 			struct tm mtime;
 			if (localtime_r(&st.st_mtime, &mtime)) {
@@ -332,6 +502,7 @@ create_directory_listing(uint8_t *data, bool timestamps)
 		}
 		
 		*data++ = 0;
+		return data - data_start;
 	}
 
 	// link
@@ -348,7 +519,8 @@ create_directory_listing(uint8_t *data, bool timestamps)
 	// link
 	*data++ = 0;
 	*data++ = 0;
-	(void)closedir(dirp);
+	(void)closedir(dirlist_dirp);
+	dirlist_eof = true;
 	return data - data_start;
 }
 
@@ -374,7 +546,8 @@ create_cwd_listing(uint8_t *data)
 		*data++ = ' ';
 	}
 	if (cgetcwd((char *)data - 16, 16)) {
-		return false;
+		dirlist_eof = true;
+		return 0;
 	}
 	*data++ = '"';
 	*data++ = ' ';
@@ -409,6 +582,8 @@ create_cwd_listing(uint8_t *data)
 		file_size = 0;
 		size_t namlen = strlen(tmp+i);
 
+		if (!namlen) continue; // there was a doubled path separator
+
 		// link
 		*data++ = 1;
 		*data++ = 1;
@@ -425,9 +600,9 @@ create_cwd_listing(uint8_t *data)
 			}
 		}
 		*data++ = '"';
-		if (namlen > 16) {
-			namlen = 16; // TODO hack
-		}
+//		if (namlen > 16) {
+//			namlen = 16; // TODO hack
+//		}
 		memcpy(data, tmp+i, namlen);
 		data += namlen;
 		*data++ = '"';
@@ -460,6 +635,10 @@ create_cwd_listing(uint8_t *data)
 	// link
 	*data++ = 0;
 	*data++ = 0;
+
+	dirlist_eof = true;
+	dirlist_cwd = true;
+
 	return data - data_start;
 }
 
@@ -842,6 +1021,7 @@ copen(int channel)
 	}
 
 	char *resolved_filename = NULL;
+	char *parsed_filename = NULL;
 	int ret = -1;
 
 	// decode ",P,W"-like suffix to know whether we're writing
@@ -891,18 +1071,36 @@ copen(int channel)
 			dirlist_len = create_directory_listing(dirlist, false);
 		}
 	} else {
-		if (!strcmp(channels[channel].name, ":*")) {
+		if (!strcmp(channels[channel].name, ":*") && prg_file) {
 			channels[channel].f = prg_file; // special case
-		} else if ((resolved_filename = resolve_path(channels[channel].name, false)) == NULL) {
-			// Resolve the path, if we get a null ptr back, error is already set.
-			return 2; // FNF
-		} else if (channels[channel].read && channels[channel].write) {
-			channels[channel].f = SDL_RWFromFile(resolved_filename, "rb+");
 		} else {
-			channels[channel].f = SDL_RWFromFile(resolved_filename, channels[channel].write ? "wb" : "rb");
-		}
+			if ((parsed_filename = parse_dos_filename(channels[channel].name)) == NULL) {
+				set_error(0x32, 0, 0); // Didn't parse out properly
+				return 2; 
+			}
 
-		free(resolved_filename);
+			resolved_filename = resolve_path(parsed_filename, false);
+			free(parsed_filename);
+
+			if (resolved_filename == NULL) {
+				// Resolve the path, if we get a null ptr back, error is already set.
+				return 2;
+			}
+
+			if (path_exists && !overwrite && !append && !channels[channel].read) {
+				free(resolved_filename);
+				set_error(0x63, 0, 0); // forbid overwrite unless requested
+				return 2;
+			}
+		
+			if (channels[channel].read && channels[channel].write) {
+				channels[channel].f = SDL_RWFromFile(resolved_filename, "rb+");
+			} else {
+				channels[channel].f = SDL_RWFromFile(resolved_filename, channels[channel].write ? "wb" : "rb");
+			}
+
+			free(resolved_filename);
+		}
 
 		if (!channels[channel].f) {
 			if (log_ieee) {
@@ -1052,9 +1250,16 @@ ACPTR(uint8_t *a)
 		if (channels[channel].name[0] == '$') {
 			if (dirlist_pos < dirlist_len) {
 				*a = dirlist[dirlist_pos++];
+			} else {
+				*a = 0;
 			}
 			if (dirlist_pos == dirlist_len) {
-				ret = 0x40;
+				if (dirlist_eof) {
+					ret = 0x40;
+				} else {
+					dirlist_pos = 0;
+					dirlist_len = continue_directory_listing(dirlist);
+				}
 			}
 		} else if (channels[channel].f) {
 			if (SDL_RWread(channels[channel].f, a, 1, 1) != 1) {
