@@ -62,6 +62,7 @@ bool dirlist_eof = true;
 bool dirlist_timestmaps = false;
 DIR *dirlist_dirp;
 char dirlist_wildcard[256];
+char dirlist_type_filter;
 
 const char *blocks_free = "BLOCKS FREE.";
 
@@ -193,6 +194,7 @@ resolve_path(const char *name, bool must_exist)
 	char *ret;
 	DIR *dirp;
 	struct dirent *dp;
+	int i;
 
 	if (tmp == NULL) {
 		set_error(0x70, 0, 0);
@@ -211,7 +213,7 @@ resolve_path(const char *name, bool must_exist)
 		strcpy(tmp+strlen(hostfscwd)+1, name);
 	}
 
-	if (tmp[strlen(tmp)-1] == '*') { // oh goodie, a wildcard
+	if (strchr(tmp,'*') || strchr(tmp,'?')) { // oh goodie, a wildcard
 		// we have to search the directory for the first occurrence
 		// in directory order
 
@@ -235,15 +237,6 @@ resolve_path(const char *name, bool must_exist)
 			c = d+1;
 		}
 
-		d = strchr(c,'*');
-		if (d == NULL) { // This also should never happen
-			free(tmp);
-			set_error(0x62, 0, 0);
-			return NULL;		
-		}
-
-		*d = 0; // chop off at wildcard char
-
 		if (!(dirp = opendir(tmp))) { // Directory couldn't be opened
 			free(tmp);
 			set_error(0x62, 0, 0);
@@ -252,11 +245,28 @@ resolve_path(const char *name, bool must_exist)
 
 		ret = NULL;
 
+		bool found = false;
+
 		while ((dp = readdir(dirp))) {
-			// in an empty wildcard match, leading dot filenames are not considered
-			if (!strlen(c) && *(dp->d_name) == '.')
+			// in a wildcard match that starts at first position, leading dot filenames are not considered
+			if ((*c == '*' || *c == '?') && *(dp->d_name) == '.')
 				continue;
-			if (!strncmp(dp->d_name,c,strlen(c))) { // simple wildcard match
+			for (i = 0; i < strlen(c) && i < strlen(dp->d_name); i++) {
+				if (c[i] == '*') {
+					found = true;
+					break;
+				} else if (c[i] == '?') {
+					continue;
+				} else if (c[i] != (dp->d_name)[i]) {
+					break;
+				}
+			}
+
+			// If we reach the end of both strings, it's a match
+			if (i == strlen(dp->d_name) && i == strlen(c)) 
+				found = true;
+
+			if (found) { // simple wildcard match
 				ret = malloc(strlen(tmp)+strlen(dp->d_name)+2);
 				if (ret == NULL) { // memory allocation error
 					free(tmp);
@@ -392,13 +402,50 @@ resolve_path(const char *name, bool must_exist)
 
 
 static int
-create_directory_listing(uint8_t *data, bool timestamps)
+create_directory_listing(uint8_t *data, char *dirstring)
 {
 	uint8_t *data_start = data;
 
 	dirlist_eof = true;
 	dirlist_cwd = false;
-	dirlist_timestmaps = timestamps;
+	int i = 1;
+	int j;
+
+	
+	dirlist_timestmaps = false;
+	dirlist_type_filter = 0;
+	dirlist_wildcard[0] = 0;
+
+	// Here's where we parse out directory listing options
+	// Such as "$=T:MATCH*=P"
+
+	// position 0 is assumed to be $
+	// so i starts at 1
+	while (i < strlen(dirstring)) {
+		if (dirstring[i] == '=') {
+			i++;
+			if (dirstring[i] == 'T')
+				dirlist_timestmaps = true;
+		} else if (dirstring[i] == ':') {
+			i++;
+			j = 0;
+			while (i < strlen(dirstring)) {
+				if (dirstring[i] == '=' || dirstring[i] == 0) {
+					dirlist_wildcard[j] = 0;
+
+					if (dirstring[++i] == 'D')
+						dirlist_type_filter = 'D';
+					else if (dirstring[i] == 'P')
+						dirlist_type_filter = 'P';
+
+					break;
+				} else {
+					dirlist_wildcard[j++] = dirstring[i++];
+				}
+			}
+		}
+		i++;
+	}
 
 	// load address
 	*data++ = 1;
@@ -441,6 +488,8 @@ continue_directory_listing(uint8_t *data)
 	struct dirent *dp;
 	int file_size;
 	char *tmpnam;
+	bool found;
+	int i;
 
 	while ((dp = readdir(dirlist_dirp))) {
 		size_t namlen = strlen(dp->d_name);
@@ -448,6 +497,41 @@ continue_directory_listing(uint8_t *data)
 		if (tmpnam == NULL) continue;
 		stat(tmpnam, &st);
 		free(tmpnam);
+
+		// Type match
+		if (dirlist_type_filter) {
+			switch (dirlist_type_filter) {
+				case 'D':
+					if (!S_ISDIR(st.st_mode))
+						continue;
+					break;
+				case 'P':
+					if (!S_ISREG(st.st_mode))
+						continue;
+					break;
+			}
+		}
+
+		if (dirlist_wildcard[0]) { // wildcard match selected
+			// in a wildcard match that starts at first position, leading dot filenames are not considered
+			if ((dirlist_wildcard[0] == '*' || dirlist_wildcard[0] == '?') && *(dp->d_name) == '.')
+				continue;
+
+			found = false;
+			for (i = 0; i < strlen(dirlist_wildcard) && i < strlen(dp->d_name); i++) {
+				if (dirlist_wildcard[i] == '*') {
+					found = true;
+					break;
+				} else if (dirlist_wildcard[i] == '?') {
+					continue;
+				} else if (dirlist_wildcard[i] != (dp->d_name)[i]) {
+					break;
+				}
+			}
+
+			if (!found) continue;
+		}
+
 
 		file_size = (st.st_size + 255)/256;
 		if (file_size > 0xFFFF) {
@@ -1065,10 +1149,8 @@ copen(int channel)
 			// This emulates the behavior in the ROM code in
 			// https://github.com/commanderx16/x16-rom/pull/373
 			dirlist_len = create_cwd_listing(dirlist);
-		} else if (!strncmp(channels[channel].name,"$=T",3)) {
-			dirlist_len = create_directory_listing(dirlist, true);
 		} else {
-			dirlist_len = create_directory_listing(dirlist, false);
+			dirlist_len = create_directory_listing(dirlist, channels[channel].name);
 		}
 	} else {
 		if (!strcmp(channels[channel].name, ":*") && prg_file) {
