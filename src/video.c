@@ -943,12 +943,10 @@ static void
 update_isr_and_coll(uint16_t y, uint16_t compare)
 {
 	if (y == SCREEN_HEIGHT) {
-		if (ien & 4) {
-			if (sprite_line_collisions != 0) {
-				isr |= 4;
-			}
-			isr = (isr & 0xf) | sprite_line_collisions;
+		if (sprite_line_collisions != 0) {
+			isr |= 4;
 		}
+		isr = (isr & 0xf) | sprite_line_collisions;
 		sprite_line_collisions = 0;
 		isr |= 1; // VSYNC IRQ
 	}
