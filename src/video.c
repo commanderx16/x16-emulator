@@ -83,8 +83,12 @@ static uint8_t sprite_data[128][8];
 static uint32_t io_addr[2];
 static uint8_t io_rddata[2];
 static uint8_t io_inc[2];
+static uint8_t io_wrpattern[2]; // https://github.com/fvdhoef/vera-module/pull/32
 static uint8_t io_addrsel;
 static uint8_t io_dcsel;
+
+static uint8_t blitcache[4]; // https://github.com/fvdhoef/vera-module/pull/32
+static const uint8_t blitmask[] = {0x00, 0x0f, 0xf0, 0xff};
 
 static uint8_t ien;
 static uint8_t isr;
@@ -1299,7 +1303,7 @@ uint8_t video_read(uint8_t reg, bool debugOn) {
 	switch (reg & 0x1F) {
 		case 0x00: return io_addr[io_addrsel] & 0xff;
 		case 0x01: return (io_addr[io_addrsel] >> 8) & 0xff;
-		case 0x02: return (io_addr[io_addrsel] >> 16) | (io_inc[io_addrsel] << 3);
+		case 0x02: return (io_addr[io_addrsel] >> 16) | io_wrpattern[io_addrsel] << 1 | (io_inc[io_addrsel] << 3);
 		case 0x03:
 		case 0x04: {
 			if (debugOn) {
@@ -1307,6 +1311,11 @@ uint8_t video_read(uint8_t reg, bool debugOn) {
 			}
 
 			uint32_t address = get_and_inc_address(reg - 3);
+
+			// This is the "blit" cache read implemented in https://github.com/fvdhoef/vera-module/pull/32
+			if (address < 0x1f9c0 && io_wrpattern[reg - 3] == 0x3 && (address % 4 == 0)) {
+				video_space_read_range(blitcache, address, 4);
+			}
 
 			uint8_t value = io_rddata[reg - 3];
 			io_rddata[reg - 3] = video_space_read(io_addr[reg - 3]);
@@ -1368,6 +1377,7 @@ void video_write(uint8_t reg, uint8_t value) {
 			break;
 		case 0x02:
 			io_addr[io_addrsel] = (io_addr[io_addrsel] & 0x0ffff) | ((value & 0x1) << 16);
+			io_wrpattern[io_addrsel] = (value >> 1) & 0x3;
 			io_inc[io_addrsel]  = value >> 3;
 			io_rddata[io_addrsel] = video_space_read(io_addr[io_addrsel]);
 			break;
@@ -1377,7 +1387,81 @@ void video_write(uint8_t reg, uint8_t value) {
 			if (log_video) {
 				printf("WRITE video_space[$%X] = $%02X\n", address, value);
 			}
-			video_space_write(address, value);
+			if (video_is_special_address(address)) {
+				video_space_write(address, value);
+			} else {
+				// https://github.com/fvdhoef/vera-module/pull/32
+				switch (io_wrpattern[reg - 3]) {
+					case 0x0:
+						video_ram[(address+0) & 0x1FFFF] = value;
+						break;
+					case 0x1:
+						switch (address % 4) {
+							case 0x0:
+								video_ram[(address+1) & 0x1FFFF] = value;
+								video_ram[(address+3) & 0x1FFFF] = value;
+								break;
+							case 0x1:
+								video_ram[(address-1) & 0x1FFFF] = value;
+								video_ram[(address+1) & 0x1FFFF] = value;
+								break;
+							case 0x2:
+								video_ram[(address-2) & 0x1FFFF] = value;
+								video_ram[(address-1) & 0x1FFFF] = value;
+								break;
+							case 0x3:
+								video_ram[(address-3) & 0x1FFFF] = value;
+								video_ram[(address+0) & 0x1FFFF] = value;
+								break;
+						}
+						break;
+					case 0x2:
+						switch (address % 4) {
+							case 0x0:
+								video_ram[(address+0) & 0x1FFFF] = value;
+								video_ram[(address+1) & 0x1FFFF] = value;
+								video_ram[(address+2) & 0x1FFFF] = value;
+								video_ram[(address+3) & 0x1FFFF] = value;
+								break;
+							case 0x1:
+								video_ram[(address+1) & 0x1FFFF] = value;
+								// fallthrough
+							case 0x2:
+								video_ram[(address-1) & 0x1FFFF] = value;
+								video_ram[(address+0) & 0x1FFFF] = value;
+								break;
+							case 0x3:
+								video_ram[(address-3) & 0x1FFFF] = value;
+								video_ram[(address-2) & 0x1FFFF] = value;
+								video_ram[(address+0) & 0x1FFFF] = value;
+								break;
+						}
+						break;
+					case 0x3:
+						switch (address % 4) {
+							case 0x0: // blit write
+								for (int i = 0; i < 4; i++) {
+									video_ram[(address+i) & 0x1FFFF] &= blitmask[(value >> i*2) & 0x3];
+									video_ram[(address+i) & 0x1FFFF] |= (blitcache[i] & ~blitmask[(value >> i*2) & 0x3]);
+								}
+								break;
+							case 0x1:
+								video_ram[(address+2) & 0x1FFFF] = value;
+								// fallthrough
+							case 0x2:
+								video_ram[(address+0) & 0x1FFFF] = value;
+								video_ram[(address+1) & 0x1FFFF] = value;
+								break;
+							case 0x3:
+								video_ram[(address-3) & 0x1FFFF] = value;
+								video_ram[(address-1) & 0x1FFFF] = value;
+								video_ram[(address+0) & 0x1FFFF] = value;
+								break;
+						}
+						break;
+				}
+
+			}
 
 			io_rddata[reg - 3] = video_space_read(io_addr[reg - 3]);
 			break;
