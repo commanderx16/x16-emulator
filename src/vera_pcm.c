@@ -105,7 +105,7 @@ pcm_is_fifo_almost_empty(void)
 }
 
 void
-pcm_render(int16_t *buf, unsigned num_samples)
+pcm_render(int32_t *buf, unsigned num_samples)
 {
 	while (num_samples--) {
 		uint8_t old_phase = phase;
@@ -137,8 +137,7 @@ pcm_render(int16_t *buf, unsigned num_samples)
 				}
 			}
 		}
-
-		*(buf++) = ((int)cur_l * (int)volume_lut[ctrl & 0xF]) >> 6;
-		*(buf++) = ((int)cur_r * (int)volume_lut[ctrl & 0xF]) >> 6;
+		*(buf++) = (int32_t)cur_l * volume_lut[ctrl & 0xF] << 1;
+		*(buf++) = (int32_t)cur_r * volume_lut[ctrl & 0xF] << 1;
 	}
 }

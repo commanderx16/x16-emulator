@@ -16,6 +16,7 @@
 #include "icon.h"
 #include "sdcard.h"
 #include "i2c.h"
+#include "audio.h"
 
 #include <limits.h>
 #include <stdint.h>
@@ -1276,6 +1277,7 @@ video_space_write(uint32_t address, uint8_t value)
 	video_ram[address & 0x1FFFF] = value;
 
 	if (address >= ADDR_PSG_START && address < ADDR_PSG_END) {
+		audio_render();
 		psg_writereg(address & 0x3f, value);
 	} else if (address >= ADDR_PALETTE_START && address < ADDR_PALETTE_END) {
 		palette[address & 0x1ff] = value;
@@ -1442,9 +1444,9 @@ void video_write(uint8_t reg, uint8_t value) {
 			refresh_layer_properties(1);
 			break;
 
-		case 0x1B: pcm_write_ctrl(value); break;
-		case 0x1C: pcm_write_rate(value); break;
-		case 0x1D: pcm_write_fifo(value); break;
+		case 0x1B: audio_render(); pcm_write_ctrl(value); break;
+		case 0x1C: audio_render(); pcm_write_rate(value); break;
+		case 0x1D: audio_render(); pcm_write_fifo(value); break;
 
 		case 0x1E:
 		case 0x1F:
