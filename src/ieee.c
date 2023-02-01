@@ -529,6 +529,10 @@ continue_directory_listing(uint8_t *data)
 				}
 			}
 
+			// If we reach the end of both strings, it's a match
+			if (i == strlen(dp->d_name) && i == strlen(dirlist_wildcard)) 
+				found = true;
+
 			if (!found) continue;
 		}
 
