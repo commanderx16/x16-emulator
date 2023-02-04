@@ -108,6 +108,8 @@ bool no_ieee_intercept = false;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
 char *wav_path = NULL;
+char *fsroot_path = NULL;
+char *startin_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
 double screen_x_scale = 1.0;
@@ -407,6 +409,15 @@ usage()
 	printf("\tDisable host fs through IEEE API interception.\n");
 	printf("\tIEEE API host fs is normally enabled unless -sdcard or\n");
 	printf("\t-serial is specified.\n");
+	printf("-fsroot <directory>\n");
+	printf("\tSpecify the host filesystem directory path which is to\n");
+	printf("\tact as the emulated root directory of the Commander X16.\n");
+	printf("\tDefault is the current working directory.\n");
+	printf("-startin <directory>\n");
+	printf("\tSpecify the host filesystem directory path that the\n");
+	printf("\temulated filesystem starts in. Default is the current\n");
+	printf("\tworking directory if it lies within the hierarchy of fsroot,\n");
+	printf("\totherwise it defaults to fsroot itself.\n");
 	printf("-noemucmdkeys\n");
 	printf("\tDisable emulator command keys.\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
@@ -841,6 +852,24 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			no_ieee_intercept = true;
+		} else if (!strcmp(argv[0], "-fsroot")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			fsroot_path = argv[0];
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-startin")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			startin_path = argv[0];
+			argc--;
+			argv++;
 		} else if (!strcmp(argv[0], "-noemucmdkeys")) {
 			argc--;
 			argv++;
@@ -1093,6 +1122,7 @@ handle_ieee_intercept()
 			break;
 		case 0xFFA8:
 			s=CIOUT(a);
+			status = (status & ~1); // unconditonal CLC
 			break;
 		case 0xFFAB:
 			UNTLK();
