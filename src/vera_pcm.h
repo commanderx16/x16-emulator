@@ -13,5 +13,5 @@ uint8_t pcm_read_ctrl(void);
 void    pcm_write_rate(uint8_t val);
 uint8_t pcm_read_rate(void);
 void    pcm_write_fifo(uint8_t val);
-void    pcm_render(int16_t *buf, unsigned num_samples);
+void    pcm_render(int32_t *buf, unsigned num_samples);
 bool    pcm_is_fifo_almost_empty(void);

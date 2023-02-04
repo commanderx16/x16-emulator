@@ -4,14 +4,17 @@
 #endif
 #include "glue.h"
 #include "video.h"
+#include "cpu/fake6502.h"
 #include <SDL.h>
 #include <stdio.h>
 #include <unistd.h>
 
-int frames;
-int32_t sdlTicks_base;
-int32_t last_perf_update;
-int32_t perf_frame_count;
+uint32_t frames;
+uint32_t sdlTicks_base;
+uint32_t last_perf_update;
+uint32_t clockticks6502_old;
+int64_t cpu_ticks;
+int64_t last_perf_cpu_ticks;
 char window_title[30];
 
 void
@@ -19,22 +22,29 @@ timing_init() {
 	frames = 0;
 	sdlTicks_base = SDL_GetTicks();
 	last_perf_update = 0;
-	perf_frame_count = 0;
+	last_perf_cpu_ticks = 0;
+	clockticks6502_old = clockticks6502;
+	cpu_ticks = 0;
 }
 
 void
 timing_update()
 {
 	frames++;
-	int32_t sdlTicks = SDL_GetTicks() - sdlTicks_base;
-	int32_t diff_time = 1000 * frames / 60 - sdlTicks;
+	cpu_ticks += clockticks6502 - clockticks6502_old;
+	clockticks6502_old = clockticks6502;
+	uint32_t sdlTicks = SDL_GetTicks() - sdlTicks_base;
+	int64_t diff_time = cpu_ticks / MHZ - sdlTicks * 1000LL;
 	if (!warp_mode && diff_time > 0) {
-		usleep(1000 * diff_time);
+		if (diff_time >= 1000000) {
+			sleep(diff_time / 1000000);
+			diff_time %= 1000000;
+		}
+		usleep(diff_time);
 	}
 
 	if (sdlTicks - last_perf_update > 5000) {
-		int32_t frameCount = frames - perf_frame_count;
-		int perf = frameCount / 3;
+		uint32_t perf = (cpu_ticks - last_perf_cpu_ticks) / (MHZ * 50000);
 
 		if (perf < 100 || warp_mode) {
 			sprintf(window_title, "Commander X16 (%d%%)", perf);
@@ -43,12 +53,12 @@ timing_update()
 			video_update_title("Commander X16");
 		}
 
-		perf_frame_count = frames;
+		last_perf_cpu_ticks = cpu_ticks;
 		last_perf_update = sdlTicks;
 	}
 
 	if (log_speed) {
-		float frames_behind = -((float)diff_time / 16.666666);
+		float frames_behind = -((float)diff_time * 6e-5);
 		int load = (int)((1 + frames_behind) * 100);
 		printf("Load: %d%%\n", load > 100 ? 100 : load);
 

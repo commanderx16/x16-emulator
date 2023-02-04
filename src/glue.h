@@ -58,10 +58,13 @@ extern bool save_on_exit;
 extern bool disable_emu_cmd_keys;
 extern gif_recorder_state_t record_gif;
 extern char *gif_path;
+extern char *fsroot_path;
+extern char *startin_path;
 extern uint8_t keymap;
 extern bool warp_mode;
 extern bool testbench;
 extern bool has_via2;
+extern uint32_t host_sample_rate;
 
 extern void machine_dump(const char* reason);
 extern void machine_reset();

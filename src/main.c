@@ -109,6 +109,8 @@ bool has_via2 = false;
 gif_recorder_state_t record_gif = RECORD_GIF_DISABLED;
 char *gif_path = NULL;
 char *wav_path = NULL;
+char *fsroot_path = NULL;
+char *startin_path = NULL;
 uint8_t keymap = 0; // KERNAL's default
 int window_scale = 1;
 double screen_x_scale = 1.0;
@@ -410,6 +412,15 @@ usage()
 	printf("\tDisable host fs through IEEE API interception.\n");
 	printf("\tIEEE API host fs is normally enabled unless -sdcard or\n");
 	printf("\t-serial is specified.\n");
+	printf("-fsroot <directory>\n");
+	printf("\tSpecify the host filesystem directory path which is to\n");
+	printf("\tact as the emulated root directory of the Commander X16.\n");
+	printf("\tDefault is the current working directory.\n");
+	printf("-startin <directory>\n");
+	printf("\tSpecify the host filesystem directory path that the\n");
+	printf("\temulated filesystem starts in. Default is the current\n");
+	printf("\tworking directory if it lies within the hierarchy of fsroot,\n");
+	printf("\totherwise it defaults to fsroot itself.\n");
 	printf("-noemucmdkeys\n");
 	printf("\tDisable emulator command keys.\n");
 	printf("-prg <app.prg>[,<load_addr>]\n");
@@ -443,7 +454,7 @@ usage()
 	printf("\tPOKE $9FB5,2 to start recording.\n");
 	printf("\tPOKE $9FB5,1 to capture a single frame.\n");
 	printf("\tPOKE $9FB5,0 to pause.\n");
-	printf("-wav <file.gif>[{,wait|,auto}]\n");
+	printf("-wav <file.wav>[{,wait|,auto}]\n");
 	printf("\tRecord a wav for the audio output.\n");
 	printf("\tUse ,wait to start paused, or ,auto to start paused and automatically begin recording on the first non-zero audio signal.\n");
 	printf("\tPOKE $9FB6,2 to automatically begin recording on the first non-zero audio signal.\n");
@@ -846,6 +857,24 @@ main(int argc, char **argv)
 			argc--;
 			argv++;
 			no_ieee_intercept = true;
+		} else if (!strcmp(argv[0], "-fsroot")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			fsroot_path = argv[0];
+			argc--;
+			argv++;
+		} else if (!strcmp(argv[0], "-startin")) {
+			argc--;
+			argv++;
+			if (!argc || argv[0][0] == '-') {
+				usage();
+			}
+			startin_path = argv[0];
+			argc--;
+			argv++;
 		} else if (!strcmp(argv[0], "-noemucmdkeys")) {
 			argc--;
 			argv++;
@@ -1102,6 +1131,7 @@ handle_ieee_intercept()
 			break;
 		case 0xFFA8:
 			s=CIOUT(a);
+			status = (status & ~1); // unconditonal CLC
 			break;
 		case 0xFFAB:
 			UNTLK();
@@ -1281,7 +1311,7 @@ emulator_loop(void *param)
 		rtc_step(clocks);
 
 		if (!headless) {
-			audio_render(clocks);
+			audio_step(clocks);
 		}
 
 		instruction_counter++;

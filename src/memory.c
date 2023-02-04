@@ -14,6 +14,7 @@
 #include "ym2151.h"
 #include "cpu/fake6502.h"
 #include "wav_recorder.h"
+#include "audio.h"
 
 uint8_t ram_bank;
 uint8_t rom_bank;
@@ -191,6 +192,7 @@ write6502(uint16_t address, uint8_t value)
 			if (address == 0x9f40) {        // YM address
 				addr_ym = value;
 			} else if (address == 0x9f41) { // YM data
+				audio_render();
 				YM_write_reg(addr_ym, value);
 			}
 			// TODO:

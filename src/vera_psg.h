@@ -8,4 +8,4 @@
 
 void psg_reset(void);
 void psg_writereg(uint8_t reg, uint8_t val);
-void psg_render(int16_t *buf, unsigned num_samples);
+void psg_render(int32_t *buf, unsigned num_samples);
