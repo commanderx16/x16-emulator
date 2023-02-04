@@ -160,3 +160,29 @@ jobs:
         with:
           name: X16-Emu MacOS 12 Monterey Intel 64-bit
           path: emu_binaries/*
+  build-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential make libsdl2-dev
+      - uses: mymindstorm/setup-emsdk@v12
+      - name: Download latest ROM
+        id: download
+        run: |
+          gh run download -R commanderx16/x16-rom -n "ROM Image" --dir latest_rom
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Emulator
+        run: |
+          cp latest_rom/rom.bin .
+          make V=1 -j3 wasm
+          mkdir emu_binaries
+          cp x16emu.data x16emu.html x16emu.js x16emu.wasm emu_binaries/
+          mkdir emu_binaries/webassembly
+          cp webassembly/styles.css webassembly/main.js emu_binaries/webassembly/
+          file emu_binaries/*
+      - uses: actions/upload-artifact@v3
+        with:
+          name: X16-Emu Webassembly
+          path: emu_binaries/*

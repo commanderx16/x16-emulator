@@ -9,6 +9,10 @@
 // * serial.c: L1: Serial Bus emulation (low level)
 // * main.c: IEEE KERNAL call hooks (high level)
 
+#ifndef __APPLE__
+#define _XOPEN_SOURCE   600
+#define _POSIX_C_SOURCE 1
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
