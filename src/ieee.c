@@ -655,11 +655,10 @@ create_cwd_listing(uint8_t *data)
 	int j = strlen(fsroot_path);
 	strcpy(tmp,hostfscwd);
 
-	for(;;) {
-		if (i >= j && tmp[i-1] != '/' && tmp[i-1] != '\\') {
-			i--;
+	for(; i>= j-1; --i) {
+		// find the beginning of a path element
+		if (i >= j && tmp[i-1] != '/' && tmp[i-1] != '\\')
 			continue;
-		}
 		
 		tmp[i-1]=0;
 
@@ -702,9 +701,6 @@ create_cwd_listing(uint8_t *data)
 		*data++ = 'I';
 		*data++ = 'R';
 		*data++ = 0;
-
-		if (i < j) break;
-		i--;
 	}
 
 	free(tmp);
