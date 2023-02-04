@@ -124,6 +124,7 @@ You can start `x16emu`/`x16emu.exe` either by double-clicking it, or from the co
 * `-sound` can be used to specify the output sound device.
 * `-abufs` can be used to specify the number of audio buffers (defaults to 8). If you're experiencing stuttering in the audio try to increase this number. This will result in additional audio latency though.
 * `-rtc` causes the real-time-clock set to the system's time and date.
+* `-via2` installs the second VIA chip expansion at $9F10.
 * `-version` prints additional version information of the emulator and ROM.
 * When compiled with `#define TRACE`, `-trace` will enable an instruction trace on stdout.
 
