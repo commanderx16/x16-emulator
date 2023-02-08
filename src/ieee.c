@@ -28,8 +28,6 @@
 #include "glue.h"
 #ifdef __MINGW32__
 #include <direct.h>
-// realpath doesn't exist on Windows, but _fullpath is similar enough
-#define realpath(N,R) _fullpath((R),(N),PATH_MAX)
 // Windows just has to be different
 #define localtime_r(S,D) !localtime_s(D,S)
 #endif
@@ -78,6 +76,22 @@ typedef struct {
 } channel_t;
 
 channel_t channels[16];
+
+#ifdef __MINGW32__
+// realpath doesn't exist on Windows. This function implements its behavior.
+static char *
+realpath(const char *path, char *resolved_path) {
+	char *ret = _fullpath(resolved_path, path, PATH_MAX);
+
+	if (ret && _access(ret,0) && errno == ENOENT) {
+		if (resolved_path == NULL)
+			free(ret);
+		return NULL;
+	}
+
+	return ret;
+}
+#endif
 
 // Prototypes for some of the static functions
 
