@@ -538,10 +538,15 @@ main(int argc, char **argv)
 
 	char *base_path = SDL_GetBasePath();
 
+    if (!base_path) {
+        base_path = SDL_strdup("./");
+    }
+
 	// This causes the emulator to load ROM data from the executable's directory when
 	// no ROM file is specified on the command line.
 	memcpy(rom_path, base_path, strlen(base_path) + 1);
 	strncpy(rom_path + strlen(rom_path), rom_filename, PATH_MAX - strlen(rom_path));
+    SDL_free(base_path);
 
 	argc--;
 	argv++;
