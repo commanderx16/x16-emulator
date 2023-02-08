@@ -1127,7 +1127,7 @@ handle_ieee_intercept()
 			break;
 		case 0xFFA5:
 			s=ACPTR(&a);
-			status = (status & ~2) | (!a << 1);
+			status = (status & ~3) | (!a << 1); // unconditional CLC, and set zero flag based on byte read
 			break;
 		case 0xFFA8:
 			s=CIOUT(a);
