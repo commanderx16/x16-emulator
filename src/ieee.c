@@ -303,6 +303,15 @@ resolve_path(const char *name, bool must_exist)
 	ret = realpath(tmp, NULL);
 	free(tmp);
 
+#ifdef __MINGW32__
+	if (ret && _access(ret,0)) {
+		if (errno == ENOENT) {
+			free(ret);
+			ret = NULL;
+		}
+	}
+#endif
+
 	if (ret == NULL) {
 		if (must_exist) {
 			// path wasn't found or had another error in construction
