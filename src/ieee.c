@@ -84,7 +84,8 @@ realpath(const char *path, char *resolved_path) {
 	char *ret = _fullpath(resolved_path, path, PATH_MAX);
 
 	if (ret && _access(ret,0) && errno == ENOENT) {
-		free(ret);
+		if (resolved_path == NULL)
+			free(ret);
 		return NULL;
 	}
 
