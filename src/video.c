@@ -17,6 +17,7 @@
 #include "sdcard.h"
 #include "i2c.h"
 #include "audio.h"
+#include "cpu/cpu.h"
 
 #include <limits.h>
 #include <stdint.h>
@@ -1521,4 +1522,16 @@ stop6502(uint16_t address) {
 			machine_reset();
 		};
 	}
+}
+
+
+bool
+handle_cpu_stop(void) {
+	if (debugger_enabled) {
+		DEBUGBreakToDebugger();
+		cpu_break();
+		return true;
+	}
+	stop6502(cpu_get_pc() - 1);
+	return false;
 }

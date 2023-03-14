@@ -12,7 +12,7 @@
 #include "memory.h"
 #include "video.h"
 #include "ym2151.h"
-#include "cpu/fake6502.h"
+#include "cpu/cpu.h"
 #include "wav_recorder.h"
 #include "audio.h"
 
@@ -84,7 +84,7 @@ effective_ram_bank()
 }
 
 //
-// interface for fake6502
+// read/write impl
 //
 // if debugOn then reads memory only for debugger; no I/O, no side effects whatsoever
 
@@ -92,6 +92,7 @@ uint8_t
 read6502(uint16_t address) {
 	// Report access to uninitialized RAM (if option selected)
 	if (reportUninitializedAccess) {
+		uint16_t pc = cpu_get_pc();
 		uint8_t pc_bank;
 		
 		if (pc < 0xa000) {
@@ -126,7 +127,7 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 	} else if (address < 0xa000) { // I/O
 		if (!debugOn && address >= 0x9fa0) {
 			// slow IO6-8 range
-			clockticks6502 += 3;
+			cpu_stall(3);
 		}
 		if (address >= 0x9f00 && address < 0x9f10) {
 			return via1_read(address & 0xf, debugOn);
@@ -137,7 +138,7 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 		} else if (address >= 0x9f40 && address < 0x9f60) {
 			// slow IO3 range
 			if (!debugOn) {
-				clockticks6502 += 3;
+				cpu_stall(3);
 			}
 			return 0;
 		} else if (address >= 0x9fb0 && address < 0x9fc0) {
@@ -178,7 +179,7 @@ write6502(uint16_t address, uint8_t value)
 	} else if (address < 0xa000) { // I/O
 		if (address >= 0x9fa0) {
 			// slow IO6-8 range
-			clockticks6502 += 3;
+			cpu_stall(3);
 		}
 		if (address >= 0x9f00 && address < 0x9f10) {
 			via1_write(address & 0xf, value);
@@ -188,7 +189,7 @@ write6502(uint16_t address, uint8_t value)
 			video_write(address & 0x1f, value);
 		} else if (address >= 0x9f40 && address < 0x9f60) {
 			// slow IO3 range
-			clockticks6502 += 3;
+			cpu_stall(3);
 			if (address == 0x9f40) {        // YM address
 				addr_ym = value;
 			} else if (address == 0x9f41) { // YM data
@@ -208,6 +209,20 @@ write6502(uint16_t address, uint8_t value)
 	} else { // ROM
 		// ignore
 	}
+}
+
+//
+// interface for w65c02s
+//
+
+uint8_t
+w65c02s_read(uint16_t address) {
+	return read6502(address);
+}
+
+void
+w65c02s_write(uint16_t address, uint8_t value) {
+	write6502(address, value);
 }
 
 //
@@ -346,13 +361,13 @@ emu_read(uint8_t reg, bool debugOn)
 		return disable_emu_cmd_keys ? 1 : 0;
 
 	} else if (reg == 8) {
-		return (clockticks6502 >> 0) & 0xff;
+		return (cpu_clock() >> 0) & 0xff;
 	} else if (reg == 9) {
-		return (clockticks6502 >> 8) & 0xff;
+		return (cpu_clock() >> 8) & 0xff;
 	} else if (reg == 10) {
-		return (clockticks6502 >> 16) & 0xff;
+		return (cpu_clock() >> 16) & 0xff;
 	} else if (reg == 11) {
-		return (clockticks6502 >> 24) & 0xff;
+		return (cpu_clock() >> 24) & 0xff;
 
 	} else if (reg == 13) {
 		return keymap;
